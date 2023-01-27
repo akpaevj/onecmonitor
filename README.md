@@ -17,3 +17,10 @@
 - *Анализ цепочек вызовов (call/scall)* - так-же отображает waterfall график. Позволяет увидеть наиболее длительные участки кода  
 
 Доступные анализы (и функционал в целом) по мере доработки будут пополняться.
+
+<p float="left">
+<img style="display: flex" src="screenshots/tech_log.png" width=23% height=23%>
+<img style="display: flex" src="screenshots/seances.png" width=23% height=23%>
+<img style="display: flex" src="screenshots/log_cfg_templates.png" width=23% height=23%>
+<img style="display: flex" src="screenshots/log_cfg_template_details.png" width=23% height=23%>
+</p>
