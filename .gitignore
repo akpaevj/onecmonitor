@@ -9,9 +9,6 @@
 *.user
 *.userosscache
 *.sln.docstates
-/*/om-server.db*
-/*/om-agent.db*
-/onecmonitor-server/wwwroot/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -367,3 +364,6 @@ FodyWeavers.xsd
 /onecmonitor-server/wwwroot/6959d0d983ee318f8880.woff
 /onecmonitor-server/wwwroot/b2e5aab643c6f0fd2da6.woff2
 /onecmonitor-server/package-lock.json
+/onecmonitor-server/om-server.db*
+/onecmonitor-agent/om-agent.db*
+/onecmonitor-server/wwwroot/

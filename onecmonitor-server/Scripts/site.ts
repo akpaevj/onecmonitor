@@ -5,6 +5,7 @@ import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 import '../node_modules/bootstrap-icons/font/bootstrap-icons.css';
 
 // scripts
+import '../node_modules/bootstrap/dist/js/bootstrap.bundle'
 import * as ace from 'ace-builds';
 import 'ace-builds/src-noconflict/theme-twilight';
 import 'ace-builds/src-noconflict/mode-xml';
