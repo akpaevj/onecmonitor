@@ -1,0 +1,53 @@
+﻿@using OnecMonitor.Server.ViewModels.Agents.Index;
+@model AgentsIndexViewModel
+
+<div class="table-responsive">
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th class="col-4">Id</th>
+                <th class="col">Instance name</th>
+                <th class="col">Connected</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Agents)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.InstanceName</td>
+                    <td class="text-center" style="vertical-align: middle">
+                        <i class="bi-brightness-alt-high-fill @(item.IsConnected ? "text-success" : "text-danger")"></i>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal" id="deletingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agent deleting</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="message">Do you really want to delete this agent ({template_name})?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a class="btn btn-primary" asp-controller="Agents" asp-action="Delete" asp-route-id="deleting_item_id">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+        <script type="text/javascript">
+            function setModalContent(name, id) {
+                var modal = document.getElementsByClassName('modal')[0];
+                modal.innerHTML = modal.innerHTML.replace('{template_name}', name).replace('deleting_item_id', id);
+            }
+        </script>
+}

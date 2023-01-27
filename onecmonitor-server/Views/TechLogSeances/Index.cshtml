@@ -1,0 +1,79 @@
+﻿@using OnecMonitor.Server.Controllers;
+@using OnecMonitor.Server.ViewModels.TechLogSeances;
+@using OnecMonitor.Server.Models;
+
+@model TechLogSeancesIndexViewModel
+
+<div class="mb-3">
+    <a class="btn btn-primary" asp-action="Edit" role="button">Add</a>
+</div>
+
+<form method="get">
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped text-center">
+            <thead class="bg-dark text-white">
+                <tr>
+                    <th>Description</th>
+                    <th>Mode</th>
+                    <th>StartTime</th>
+                    <th>Duration</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Seances)
+                {
+                    <tr>
+                        <td>@item.Description</td>
+                        <td>@item.StartMode</td>
+                        @if (item.StartMode == OnecMonitor.Server.Models.TechLogSeanceStartMode.Monitor)
+                        {
+                            <td colspan="2"/>
+                        }
+                        else
+                        {
+                            <td>@item.StartDateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td>@item.Duration</td>
+                        }
+                        <td>
+                            <a class="btn btn-outline-info btn-sm" asp-action="TechLog" asp-route-id="@item.Id">Log</a>
+                            <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                            <a class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deletingModal" onclick="setModalContent('@item.Id')">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <nav om-current-page="@Model.CurrentPage" class="align-self-center" om-pages-count="@Model.PagesCount" />
+
+</form>
+
+<div class="modal" id="deletingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Deleting</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="message">Do you really want to delete tech log seance?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a class="btn btn-primary" asp-controller="TechLogSeances" asp-action="Delete" asp-route-id="deleting_item_id">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        function setModalContent(id) {
+            var modal = document.getElementsByClassName('modal')[0];
+            modal.innerHTML = modal.innerHTML.replace('deleting_item_id', id);
+        }
+    </script>
+}

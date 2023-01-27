@@ -1,0 +1,55 @@
+﻿@using OnecMonitor.Server.ViewModels.Log.Index;
+@model LogTemplatesIndexViewModel
+
+<div class="mb-3">
+    <a class="btn btn-primary" asp-controller="LogTemplates" asp-action="Edit" role="button">Add</a>
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="LogTemplates" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                    <a class="btn btn-outline-warning btn-sm" asp-controller="LogTemplates" asp-action="Edit" asp-route-id="@item.Id" asp-route-copy="true">Copy</a>
+                    <a class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deletingModal" onclick="setModalContent('@item.Name', '@item.Id')">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="modal" id="deletingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Template deleting</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="message">Do you really want to delete "{template_name}" template?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a class="btn btn-primary" asp-controller="LogTemplates" asp-action="Delete" asp-route-id="deleting_item_id">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        function setModalContent(name, id) {
+            var modal = document.getElementsByClassName('modal')[0];
+            modal.innerHTML = modal.innerHTML.replace('{template_name}', name).replace('deleting_item_id', id);
+        }
+    </script>
+}

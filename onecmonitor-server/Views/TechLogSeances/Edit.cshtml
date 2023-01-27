@@ -1,0 +1,191 @@
+﻿@using OnecMonitor.Server.Helpers;
+@using OnecMonitor.Server.Models;
+@using OnecMonitor.Server.ViewModels.TechLogSeances;
+@model TechLogSeanceEditViewModel
+
+<form method="post" style="height: 100%">
+
+    <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
+    
+    <div class="mb-3">
+        <button class="btn btn-primary" onclick="editor." type="submit">Save</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Back</button>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="Description">Description:</label>
+        <input type="text" class="form-control" asp-for="Description" value="@Model.Description">
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" onchange="updateAvailability()" asp-for="StartMode" id="immediately" value="@TechLogSeanceStartMode.Immediately">
+            <label class="form-check-label" for="immediately">Immediately</label>`
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" onchange="updateAvailability()" asp-for="StartMode" id="monitor" value="@TechLogSeanceStartMode.Monitor">
+            <label class="form-check-label" for="monitor">Monitor</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" onchange="updateAvailability()" asp-for="StartMode" id="scheduled" value="@TechLogSeanceStartMode.Scheduled">
+            <label class="form-check-label" for="scheduled">Scheduled</label>
+        </div>
+    </div>
+
+    <div id="AllPropertiesContainer" class="row mb-3">
+        <div id="StartDateTimeContainer" class="col">
+            <label class="form-label" for="StartDateTime">Start:</label>
+            <input type="datetime-local" class="form-control" asp-for=StartDateTime asp-format="dd-MM-yyyy HH:mm:ss" value="@HtmlConvertHelper.DateTimeToString(Model.StartDateTime)">
+            <span asp-validation-for="StartDateTime" class="text-danger"></span>
+        </div>
+        <div id="DurationContainer" class="col">
+            <label class="form-label" for="Duration">Duration (minutes):</label>
+            <input type="number" class="form-control" asp-for=Duration>
+            <span asp-validation-for="Duration" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col">
+            <div>
+                <label class="form-label" for="allTemplates">Connected templates:</label>
+                <div id="allTemplates" class="input-group mb-3">
+                    <select class="form-select" onchange="updateAvailability()" asp-items="Model.AllTemplates.Where(c => !Model.ConnectedTemplates.Any(a => a.Id.ToString() == c.Value))">
+                        <option value="" disabled selected hidden>Please select one</option>
+                    </select>
+                    <button class="btn btn-outline-secondary" onclick="addItemToTable('allTemplates', 'connectedTemplates', 'templates')" id="addTemplateBtn" type="button">Add</button>
+                </div>
+                <span asp-validation-for="ConnectedTemplates" class="text-danger"></span>
+                <table id="templates" class="table table-responsive">
+                    <tbody>
+                        @foreach (var item in Model.ConnectedTemplates)
+                        {
+                            <tr>
+                                <td>@item.Name</td>
+                                <td>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteItemFromTable('@item.Id', 'allTemplates', 'connectedTemplates')" type="button">Delete</button>
+                                </td>
+                                <td hidden>
+                                    <input type="text" name="connectedTemplates[]" value="@item.Id" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col">
+            <div>
+                <label class="form-label" for="allAgents">Connected agents:</label>
+                <div id="allAgents" class="input-group mb-3">
+                    <select class="form-select" onchange="updateAvailability()" asp-items="Model.AllAgents.Where(c => !Model.ConnectedAgents.Any(a => a.Id.ToString() == c.Value))">
+                        <option value="" disabled selected hidden>Please select one</option>
+                    </select>
+                    <button class="btn btn-outline-secondary" onclick="addItemToTable('allAgents', 'connectedAgents', 'agents')" id="addAgentBtn" type="button">Add</button>
+                </div>
+                <span asp-validation-for="ConnectedAgents" class="text-danger"></span>
+                <table id="agents" class="table table-responsive">
+                    <tbody>
+                        @foreach (var agent in Model.ConnectedAgents)
+                        {
+                            <tr>
+                                <td>@agent.Name</td>
+                                <td>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteItemFromTable('@agent.Id', 'allAgents', 'connectedAgents')" type="button">Delete</button>
+                                </td>
+                                <td hidden>
+                                    <input type="text" name="connectedAgents[]" value="@agent.Id" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script type="text/javascript">
+        updateAvailability();
+
+        function updateAvailability() {
+            let allTemplates = document.querySelector('#allTemplates').querySelector('select')
+            if (allTemplates.options.length <= 1 || allTemplates.selectedOptions[0].value.length === 0) {
+                document.querySelector('#addTemplateBtn').classList.add('disabled');
+            } else {
+                document.querySelector('#addTemplateBtn').classList.remove('disabled');
+            }
+
+            let allAgents = document.querySelector('#allAgents').querySelector('select')
+            if (allAgents.options.length <= 1 || allAgents.selectedOptions[0].value.length === 0) {
+                document.querySelector('#addAgentBtn').classList.add('disabled');
+            } else {
+                document.querySelector('#addAgentBtn').classList.remove('disabled');
+            }
+
+            const immediately = document.querySelector('#immediately').checked;
+            const monitor = document.querySelector('#monitor').checked;
+            const schedule = document.querySelector('#scheduled').checked;
+
+            if (immediately) {
+                document.querySelector('#AllPropertiesContainer').removeAttribute('hidden');
+                document.querySelector('#StartDateTimeContainer').setAttribute('hidden', '');
+                document.querySelector('#DurationContainer').removeAttribute('hidden');
+            } else if (monitor) {
+                document.querySelector('#AllPropertiesContainer').setAttribute('hidden', '');
+            } else if (schedule) {
+                document.querySelector('#AllPropertiesContainer').removeAttribute('hidden');
+                document.querySelector('#StartDateTimeContainer').removeAttribute('hidden');
+                document.querySelector('#DurationContainer').removeAttribute('hidden');
+            }
+        }
+
+        function addItemToTable(selectId, inputName, tableName) {
+            const select = document.querySelector(`#${selectId}`).getElementsByTagName('select')[0];
+            const selectedIndex = select.selectedIndex;
+            const selectedItem = select.options[selectedIndex];
+
+            const newRow = document.createElement('tr');
+
+            const nameCell = newRow.insertCell(0);
+            nameCell.innerText = selectedItem.innerText;
+
+            const deleteCell = newRow.insertCell(1);
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.onclick = () => deleteItemFromTable(selectedItem.value, selectId, inputName);
+            deleteButton.className = 'btn btn-outline-danger btn-sm';
+            deleteButton.innerText = 'Delete';
+            deleteCell.appendChild(deleteButton);
+
+            const inputCell = newRow.insertCell(2);
+            inputCell.hidden = true;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.setAttribute('name', `${inputName}[]`);
+            input.setAttribute('value', selectedItem.value);
+            inputCell.appendChild(input);
+
+            document.querySelector(`#${tableName} tbody`).appendChild(newRow);
+
+            selectedItem.remove();
+
+            updateAvailability();
+        }
+
+        function deleteItemFromTable(value, selectId, inputName) {
+            const row = document.querySelector(`input[name='${inputName}[]'][value='${value}']`).parentElement.parentElement
+
+            const newOption = document.createElement('option');
+            newOption.innerText = row.cells[0].innerText;
+            newOption.value = value;
+            document.querySelector(`#${selectId}`).getElementsByTagName('select')[0].options.add(newOption);
+
+            row.remove();
+
+            updateAvailability();
+        }
+    </script>
+}

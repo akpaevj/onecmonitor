@@ -1,0 +1,47 @@
+﻿@using OnecMonitor.Server.Models;
+
+@model LockWaitingGraphMember
+
+<table class="table">
+    <thead class="bg-dark text-white">
+        <tr>
+            <th class="col-3">Timestamp</th>
+            <th class="col-2">Duration, μs</th>
+            <th class="col-2">Affect duration, μs</th>
+            <th>Event</th>
+            <th>Level</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>@Model.Event.DateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff")</td>
+            <td>@Model.Event.Duration</td>
+            <td>@((Model.LockAffectEndDateTime - Model.Event.StartDateTime).TotalMicroseconds)</td>
+            <td>@Model.Event.EventName</td>
+            <td>@Model.Event.Level</td>
+        </tr>
+        <tr>
+            <td colspan="5" class="m-0 border-0 p-0">
+                <div class="m-0 border-0 p-0" id="eventDetails-@Model.Event.Id">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var property in Model.Event.Properties)
+                            {
+                                <tr>
+                                    <td style="word-break: break-all">@property.Key</td>
+                                    <td style="word-break: break-all">@property.Value</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>

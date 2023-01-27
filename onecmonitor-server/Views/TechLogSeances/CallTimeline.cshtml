@@ -1,0 +1,17 @@
+﻿@using Newtonsoft.Json;
+@using OnecMonitor.Server.ViewModels.TechLogSeances;
+@model CallChainViewModel
+
+<input type="text" hidden id="chain" name="chain" value="@JsonConvert.SerializeObject(Model.Chain)" />
+
+<div id="timeline-container"></div>
+
+@section Scripts {
+    <script type="text/javascript">
+        function init() {
+            const chain = document.querySelector('#chain').value;
+            OM.initCallTimeline(chain);
+        } 
+        init();
+    </script>
+}

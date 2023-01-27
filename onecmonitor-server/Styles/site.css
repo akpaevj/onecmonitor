@@ -1,0 +1,59 @@
+@import '../node_modules/vis-timeline/styles/vis-timeline-graph2d.min.css';
+
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    padding: 58px 0 0;
+    box-shadow: 0 2px 5px 0 rgb(0 0 0 / 5%), 0 2px 10px 0 rgb(0 0 0 / 5%);
+    width: 240px;
+    z-index: 600;
+}
+
+.om-warning {
+    background-color: #fffeb9
+}
+
+.om-danger {
+    background-color: #ffb9b9
+}
+
+.om-victim-bg {
+    background-color: #ffb9b9
+}
+
+.om-direct-culprit-bg {
+    background-color: #b3d3ff
+}
+
+.om-indirect-culprit-bg {
+    background-color: #e2b2ff
+}
+
+.onec-text-yellow {
+    color: #ffe016
+}
+
+.om-event-row {
+    background-color: #eee
+}

@@ -1,0 +1,45 @@
+﻿@using OnecMonitor.Server.ViewModels.Log;
+@model LogTemplateEditViewModel
+
+<form method="post" style="height: 100%">
+    <div class="mb-3">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Back</button>
+    </div>
+
+    <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
+
+    <div class="mb-3">
+        <label class="form-label" for="name">Name:</label>
+        <input type="text" class="form-control" asp-for=Name value="@Model.Name">
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="content">Content:</label>
+        <textarea hidden asp-for="Content" id="content">@Model.Content</textarea>
+        <div class="form-control" style="min-height: 400px" id="xml_editor"></div>
+    </div>
+
+</form>
+
+@section Scripts {
+    <script type="text/javascript">
+        var editor = ace.edit(document.getElementById('xml_editor'), {
+            mode: "ace/mode/xml",
+            selectionStyle: "text"
+        });
+
+        editor.setOptions({
+            autoScrollEditorIntoView: true,
+            copyWithEmptySelection: true,
+        });
+
+        // set value from input to code editor
+        editor.setValue(document.getElementById('content').value);
+
+        // set code editor value to input when it's being changed
+        editor.on('change', function () {
+            document.getElementById('content').innerHTML = editor.getValue();
+        });
+    </script>
+}

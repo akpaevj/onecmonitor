@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-onecmonitor_agent-803fcdbb-c4d6-4a1b-840e-b9719d878278</UserSecretsId>
+    <RootNamespace>OnecMonitor.Agent</RootNamespace>
+	<ServerGarbageCollection>true</ServerGarbageCollection>
+	<Configurations>Debug;Release;Вуигп agent;Debug server</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="om-agent.db" />
+    <None Remove="om-agent.db-shm" />
+    <None Remove="om-agent.db-wal" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MessagePack" Version="2.4.59" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="7.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\onecmonitor-common\onecmonitor-common.csproj" />
+  </ItemGroup>
+	
+</Project>

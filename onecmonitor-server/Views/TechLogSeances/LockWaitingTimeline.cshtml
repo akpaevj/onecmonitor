@@ -1,0 +1,24 @@
+﻿@using Newtonsoft.Json;
+@using OnecMonitor.Server.ViewModels.TechLogSeances;
+@model LockWaitingTimelineViewModel
+
+<input type="text" hidden id="graph" name="graph" value="@JsonConvert.SerializeObject(Model.Graph)" />
+
+<div id="timeline-container"></div>
+
+@foreach(var member in Model.Graph)
+{
+    <div id="details-@member.Key" class="mt-3" hidden>
+        <vc:tj-event-details tj-event="@member.Value.Event"></vc:tj-event-details>
+    </div>
+}
+
+@section Scripts {
+    <script type="text/javascript">
+        function init() {
+            const chain = document.querySelector('#graph').value;
+            OM.initLockWaitingTimeline(chain);
+        } 
+        init();
+    </script>
+}

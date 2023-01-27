@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "jquery@3.6.2",
+      "destination": "wwwroot/lib/jquery"
+    },
+    {
+      "library": "bootstrap@5.2.3",
+      "destination": "wwwroot/lib/bootstrap"
+    },
+    {
+      "library": "bootstrap-icons@1.10.2",
+      "destination": "wwwroot/lib/bootstrap-icons"
+    },
+    {
+      "library": "ace@1.13.1",
+      "destination": "wwwroot/lib/ace"
+    }
+  ]
+}
