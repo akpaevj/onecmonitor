@@ -9,6 +9,8 @@
 *.user
 *.userosscache
 *.sln.docstates
+om-server.db*
+wwwroot/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -361,3 +363,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/onecmonitor-server/wwwroot/6959d0d983ee318f8880.woff
+/onecmonitor-server/wwwroot/b2e5aab643c6f0fd2da6.woff2
+/onecmonitor-server/package-lock.json
