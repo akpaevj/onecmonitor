@@ -9,8 +9,9 @@
 *.user
 *.userosscache
 *.sln.docstates
-om-server.db*
-wwwroot/
+/*/om-server.db*
+/*/om-agent.db*
+/onecmonitor-server/wwwroot/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

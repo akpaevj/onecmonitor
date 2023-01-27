@@ -1,11 +1,14 @@
 ﻿const path = require('path');
+const webpack = require('webpack');
+
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const webpack = require('webpack');
 
 module.exports = {
     entry: {
-        script: ['./Scripts/site.ts'],
+        script: [
+            './Scripts/site.ts'
+        ]
     },
     mode: 'development',
     devtool: 'inline-source-map',
@@ -18,17 +21,16 @@ module.exports = {
             {
                 test: /\.tsx?$/,
                 loader: 'ts-loader',
-                include: /Scripts/,
-                exclude: /node_modules/,
                 options: {
                     transpileOnly: true
                 }
             },
             {
                 test: /\.css$/i,
-                use: [MiniCssExtractPlugin.loader, "css-loader"],
-                include: path.resolve(__dirname, 'Styles/site.css'),
-                exclude: /node_modules/,
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    "css-loader"
+                ]
             },
         ],
     },

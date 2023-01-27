@@ -1,8 +1,40 @@
+// styles
 import '../Styles/site.css';
+import '../node_modules/vis-timeline/styles/vis-timeline-graph2d.min.css';
+import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
+import '../node_modules/bootstrap-icons/font/bootstrap-icons.css';
+
+// scripts
+import * as ace from 'ace-builds';
+import 'ace-builds/src-noconflict/theme-twilight';
+import 'ace-builds/src-noconflict/mode-xml';
+
 import { Timeline, DataItem, TimelineOptions, DataGroup } from 'vis-timeline';
 import { CallGraphMember, LockWaitingMember, LockWaitingMemberType } from './models';
-import { Chart, ChartConfiguration, ChartDataset } from 'chart.js'
-import * as vis from 'visjs-network'
+//import { Chart, ChartConfiguration, ChartDataset } from 'chart.js';
+import * as vis from 'visjs-network';
+
+export function initLogCfgTemplateEditor(editorContainer: Element, contentContainer: HTMLTextAreaElement) {
+    let editor = ace.edit(editorContainer, {
+        mode: "ace/mode/xml",
+        selectionStyle: "text",
+        theme: 'ace/theme/twilight',
+        enableLiveAutocompletion: true
+    });
+
+    editor.setOptions({
+        autoScrollEditorIntoView: true,
+        copyWithEmptySelection: true,
+    });
+
+    // set value from input to code editor
+    editor.setValue(contentContainer.value);
+
+    // set code editor value to input when it's being changed
+    editor.on('change', function () {
+        contentContainer.innerHTML = editor.getValue();
+    });
+}
 
 export function initCallTimeline(chainStr: string) {
     let chain: Array<CallGraphMember> = JSON.parse(chainStr);

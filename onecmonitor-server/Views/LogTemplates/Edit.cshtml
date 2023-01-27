@@ -24,22 +24,12 @@
 
 @section Scripts {
     <script type="text/javascript">
-        var editor = ace.edit(document.getElementById('xml_editor'), {
-            mode: "ace/mode/xml",
-            selectionStyle: "text"
-        });
+        function init() {
+            const editorContainer = document.getElementById('xml_editor');
+            const contentContainer = document.getElementById('content');
 
-        editor.setOptions({
-            autoScrollEditorIntoView: true,
-            copyWithEmptySelection: true,
-        });
-
-        // set value from input to code editor
-        editor.setValue(document.getElementById('content').value);
-
-        // set code editor value to input when it's being changed
-        editor.on('change', function () {
-            document.getElementById('content').innerHTML = editor.getValue();
-        });
+            OM.initLogCfgTemplateEditor(editorContainer, contentContainer);
+        } 
+        init();
     </script>
 }
