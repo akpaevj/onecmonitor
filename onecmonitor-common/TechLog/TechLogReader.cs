@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace OnecMonitor.Agent.Services
+namespace OnecMonitor.Common.TechLog
 {
     public class TechLogReader : IDisposable
     {
@@ -25,14 +24,6 @@ namespace OnecMonitor.Agent.Services
         /// Actual reader's position
         /// </summary>
         public long Position { get; private set; } = 0;
-        /// <summary>
-        /// Techlog's parent folder
-        /// </summary>
-        public string SeanceId { get; private set; } = string.Empty;
-        /// <summary>
-        /// Techlog's parent folder
-        /// </summary>
-        public string TemplateId { get; private set; } = string.Empty;
         /// <summary>
         /// Techlog folder. Represents process name that's writing log files
         /// </summary>
@@ -54,11 +45,13 @@ namespace OnecMonitor.Agent.Services
         /// Event's start position
         /// </summary>
         public long EventContentStartPosition { get; private set; } = 0;
+        /// <summary>
+        /// EOF
+        /// </summary>
+        public bool EndOfStream { get; private set; } = false;
 
         public TechLogReader(string path, long startPosition = 0, int bufferSize = 4096)
         {
-            SeanceId = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(path)))) ?? "";
-            TemplateId = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(path))) ?? "";
             Folder = Path.GetFileName(Path.GetDirectoryName(path)) ?? "";
             FileName = Path.GetFileNameWithoutExtension(path)!;
 
@@ -71,10 +64,9 @@ namespace OnecMonitor.Agent.Services
 
             if (Position == 0)
             {
-                // skip bom
-                if (_bufferSize < 3)
-                    FillBuffer();
+                FillBuffer();
 
+                // skip bom
                 if (_bufferSize >= 3 && _buffer.Span[0] == 0xef && _buffer.Span[1] == 0xbb && _buffer.Span[2] == 0xbf)
                 {
                     Position = 3;
@@ -87,63 +79,86 @@ namespace OnecMonitor.Agent.Services
 
         public bool MoveNext()
         {
-            _eventContentBuffer[_eventPrefixLength..].Span.Clear();
-            _eventContentSize = _eventPrefixLength;
+            EndOfStream = false;
 
+            _eventContentSize = _eventPrefixLength;
             EventContentStartPosition = Position;
 
             while (true)
             {
                 // check there is available data in the buffer
-                if (_bufferSize - _bufferPos == 0 && FillBuffer() == 0)
-                    break; // break it cause it reached the end of file
+                if (AvailableBytes() == 0 && FillBuffer() == 0)
+                {
+                    EndOfStream = true;
+                    break;
+                }
 
                 // try to find line feed in the buffer
-                var index = _buffer[_bufferPos..].Span.IndexOf((byte)0x0a);
-                var found = index >= 0;
+                var lineFeedIndex = _buffer[_bufferPos..].Span.IndexOf((byte)0x0a);
+                var lineFeedFound = lineFeedIndex >= 0;
 
-                var chunkEndIndex = found ? index + 1 : _bufferSize - _bufferPos;
-                var chunk = _buffer[_bufferPos..][..chunkEndIndex];
-                var chunkLength = chunk.Length;
+                var chunkLength = lineFeedFound ? lineFeedIndex + 1 : AvailableBytes();
+                var chunk = _buffer.Slice(_bufferPos, chunkLength);
 
-                // Add event chunk to the buffer
-                var targetEventSize = _eventContentSize + chunkLength;
-                if (targetEventSize > _eventContentBuffer.Length)
+                // check event content buffer has enough size
+                var necessaryLength = _eventContentSize + chunkLength;
+                if (necessaryLength > _eventContentBuffer.Length)
                 {
-                    var newBuffer = new Memory<byte>(new byte[targetEventSize]);
+                    var newSize = GetEventContentBufferNewSize(necessaryLength);
+                    var newBuffer = new Memory<byte>(new byte[newSize]);
                     _eventContentBuffer.CopyTo(newBuffer);
                     _eventContentBuffer = newBuffer;
                 }
 
+                // Add event chunk to event content buffer
                 chunk.CopyTo(_eventContentBuffer[_eventContentSize..]);
                 _bufferPos += chunkLength;
                 _eventContentSize += chunkLength;
                 Position += chunkLength;
 
-                if (found)
+                if (lineFeedFound)
                 {
                     // it needs 6 bytes to recognize new line as beginning of the next event
-                    if (_bufferSize - _bufferPos < 6)
+                    if (AvailableBytes() < 6)
                         FillBuffer();
 
-                    if (_bufferSize - _bufferPos < 6)
-                        break; // there is no available data in the file
-
-                    // check the next line is beginning of new event
-                    var bytes = _buffer[_bufferPos..][..6];
-
-                    if (IsNewEventLine(bytes))
+                    // Check the next line is an event beginning
+                    if (AvailableBytes() >= 6 && IsNewEventLine())
                         break;
                     else
                         continue;
                 }
             }
 
-            return _eventContentSize > _eventPrefixLength;
+            return EventContentHasData();
         }
 
-        private static bool IsNewEventLine(Memory<byte> bytes)
+        private bool EventContentHasData()
+            => _eventContentSize > _eventPrefixLength;
+
+        private int GetEventContentBufferNewSize(int necessaryLength)
         {
+            // double event content buffer while target event content buffer size less than calculated one
+            var multiplier = 2;
+
+            while (true)
+            {
+                var newSize = _eventContentBuffer.Length * multiplier;
+
+                if (newSize > necessaryLength)
+                    return newSize;
+                else
+                    multiplier *= 2;
+            }
+        }
+
+        private int AvailableBytes()
+            => _bufferSize - _bufferPos;
+
+        private bool IsNewEventLine()
+        {
+            var bytes = _buffer.Slice(_bufferPos, 6);
+
             var b0 = bytes.Span[0];
             var b1 = bytes.Span[1];
             var b3 = bytes.Span[3];
@@ -161,7 +176,7 @@ namespace OnecMonitor.Agent.Services
         private int FillBuffer()
         {
             var offset = 0;
-            var needShift = _bufferSize - _bufferPos;
+            var needShift = AvailableBytes();
 
             if (needShift > 0)
             {
@@ -182,12 +197,8 @@ namespace OnecMonitor.Agent.Services
         {
             if (!disposedValue)
             {
-                if (disposing)
-                {
-
-                }
-
                 _fileStream?.Dispose();
+                _eventContentBuffer = null;
 
                 disposedValue = true;
             }

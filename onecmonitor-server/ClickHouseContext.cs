@@ -64,10 +64,11 @@ namespace OnecMonitor.Server
                     _folder String,
                     _file String,
                     _end_position Int64,
-                    _version DateTime64(6, 'UTC') Codec(Delta, LZ4)
+                    INDEX for_calls_chain(event_name,t_client_id,call_id) TYPE minmax GRANULARITY 3
                 )
-                ENGINE = ReplacingMergeTree(_version)
-                ORDER BY (_agent_id, _seance_id, _template_id, _folder, _file, _end_position)
+                ENGINE = MergeTree
+                PARTITION BY (toYYYYMMDD(date_time), event_name)
+                ORDER BY (_end_position, event_name)
                 """
                 , cancellationToken);
         }
@@ -130,7 +131,7 @@ namespace OnecMonitor.Server
             var queryText = new StringBuilder(
                 $@"SELECT 
                     *
-                FROM {_database}.{IClickHouseContext.RAW_TJEVENTS_TABLENAME} FINAL");
+                FROM {_database}.{IClickHouseContext.RAW_TJEVENTS_TABLENAME}");
 
             if (!string.IsNullOrEmpty(filter))
             {
@@ -159,7 +160,7 @@ namespace OnecMonitor.Server
                 $"""
                 SELECT 
                     *
-                FROM {_database}.{IClickHouseContext.RAW_TJEVENTS_TABLENAME} FINAL
+                FROM {_database}.{IClickHouseContext.RAW_TJEVENTS_TABLENAME}
                 """);
 
             if (!string.IsNullOrEmpty(filter))
@@ -196,7 +197,7 @@ namespace OnecMonitor.Server
                 $"""
                 SELECT 
                     COUNT(*) 
-                FROM {_database}.{IClickHouseContext.RAW_TJEVENTS_TABLENAME} FINAL
+                FROM {_database}.{IClickHouseContext.RAW_TJEVENTS_TABLENAME}
                 """);
 
             if (!string.IsNullOrEmpty(filter))
@@ -234,7 +235,7 @@ namespace OnecMonitor.Server
                     $"""
                     SELECT 
                         _end_position 
-                    FROM {_database}.{IClickHouseContext.RAW_TJEVENTS_TABLENAME} FINAL
+                    FROM {_database}.{IClickHouseContext.RAW_TJEVENTS_TABLENAME}
                     PREWHERE
                         _agent_id = toUUID('{agentId}')
                         and _seance_id = toUUID('{seanceId}')
@@ -284,7 +285,7 @@ namespace OnecMonitor.Server
 
             queryText.AppendLine();
 
-            queryText.AppendLine($"FROM {_database}.{IClickHouseContext.RAW_TJEVENTS_TABLENAME} FINAL");
+            queryText.AppendLine($"FROM {_database}.{IClickHouseContext.RAW_TJEVENTS_TABLENAME}");
 
             if (!string.IsNullOrEmpty(filter))
             {

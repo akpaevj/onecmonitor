@@ -181,6 +181,8 @@ namespace OnecMonitor.Server.Services
 
                         if (content.Length == 0)
                             return true;
+                        else if (content[0] == ',')
+                            content = content[1..];
                     }
                     else
                         return false;

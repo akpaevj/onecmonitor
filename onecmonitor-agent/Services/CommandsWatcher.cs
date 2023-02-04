@@ -17,10 +17,10 @@ namespace OnecMonitor.Agent.Services
         private readonly AppDbContext _appDbContext;
         private readonly ILogger<CommandsWatcher> _logger;
 
-        public CommandsWatcher(ServerConnection serverConnection, IServiceProvider serviceProvider, ILogger<CommandsWatcher> logger) 
+        public CommandsWatcher(IServiceProvider serviceProvider, ILogger<CommandsWatcher> logger) 
         {
-            _serverConnection = serverConnection;
             _scope = serviceProvider.CreateAsyncScope();
+            _serverConnection = _scope.ServiceProvider.GetRequiredService<ServerConnection>();
             _appDbContext = _scope.ServiceProvider.GetRequiredService<AppDbContext>();
             _logger = logger;
         }

@@ -6,7 +6,7 @@ var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((hostContext, services) =>
     {
         services.AddDbContext<AppDbContext>();
-        services.AddSingleton<ServerConnection>();
+        services.AddTransient<ServerConnection>();
         services.AddSingleton<TechLogFolderWatcher>();
         services.AddSingleton<TechLogExporter>();
         services.AddHostedService<TechLogSeancesWatcher>();
