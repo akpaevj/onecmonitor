@@ -7,7 +7,7 @@
 		<UserSecretsId>dotnet-onecmonitor-047196c4-3fb2-4036-87d3-7523309e7be4</UserSecretsId>
 		<RootNamespace>OnecMonitor.Server</RootNamespace>
 		<AssemblyName>OnecMonitor</AssemblyName>
-		<Configurations>Debug;Release;Вуигп agent;Debug server</Configurations>
+		<Configurations>Debug;Release;Debug agent;Debug server</Configurations>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -23,28 +23,28 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Grpc.AspNetCore" Version="2.49.0" />
-		<PackageReference Include="Grpc.AspNetCore.Server" Version="2.51.0" />
-		<PackageReference Include="Grpc.AspNetCore.Web" Version="2.51.0" />
-		<PackageReference Include="Grpc.Net.Client" Version="2.51.0" />
-		<PackageReference Include="Grpc.Net.ClientFactory" Version="2.51.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.51.0">
+		<PackageReference Include="Grpc.AspNetCore" Version="2.57.0" />
+		<PackageReference Include="Grpc.AspNetCore.Server" Version="2.57.0" />
+		<PackageReference Include="Grpc.AspNetCore.Web" Version="2.57.0" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.57.0" />
+		<PackageReference Include="Grpc.Net.ClientFactory" Version="2.57.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.58.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="7.0.2" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.2">
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="7.0.11" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.11">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.2" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.2">
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.11" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.11">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
-		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="7.0.2" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
+		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="7.0.10" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="System.Threading.Tasks.Dataflow" Version="7.0.0" />
 	</ItemGroup>
 

@@ -5,12 +5,13 @@
     <RootNamespace>OnecMonitor.Common</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Configurations>Debug;Release;Вуигп agent;Debug server</Configurations>
+    <Configurations>Debug;Release;Debug agent;Debug server</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.4.59" />
-    <PackageReference Include="MessagePack.Annotations" Version="2.4.59" />
+    <PackageReference Include="MessagePack" Version="2.5.129" />
+    <PackageReference Include="MessagePack.Annotations" Version="2.5.129" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
 </Project>
