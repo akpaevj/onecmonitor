@@ -7,7 +7,7 @@
     <UserSecretsId>dotnet-onecmonitor_agent-803fcdbb-c4d6-4a1b-840e-b9719d878278</UserSecretsId>
     <RootNamespace>OnecMonitor.Agent</RootNamespace>
 	<ServerGarbageCollection>true</ServerGarbageCollection>
-	<Configurations>Debug;Release;Вуигп agent;Debug server</Configurations>
+	<Configurations>Debug;Release;Debug agent;Debug server</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,14 +17,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.4.59" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="7.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.2">
+    <PackageReference Include="MessagePack" Version="2.5.129" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="7.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.11">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="7.0.0" />
   </ItemGroup>
 
