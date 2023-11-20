@@ -39,6 +39,12 @@ namespace OnecMonitor.Server.Migrations
 
             AppDbContext.AddBuiltInLogTemplate(
                 migrationBuilder,
+                LogTemplate.VrsId,
+                "VRS responses and requestes",
+                LogTemplate.VrsTemplate);
+
+            AppDbContext.AddBuiltInLogTemplate(
+                migrationBuilder,
                 LogTemplate.FullId,
                 "Full",
                 LogTemplate.FullTemplate);

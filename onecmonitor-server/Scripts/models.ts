@@ -22,7 +22,7 @@ export interface TjEvent {
     _seance_id: string;
     _folder: string;
     _file: string;
-    _end_pos: number;
+    _end_position: number;
     props: Map<string, string>;
     Unknown: boolean;
     real_end_date_time: string;

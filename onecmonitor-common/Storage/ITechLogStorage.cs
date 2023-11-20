@@ -1,11 +1,10 @@
-﻿using OnecMonitor.Server.Models;
+﻿using OnecMonitor.Common.Models;
 
 namespace OnecMonitor.Common.Storage
 {
     public interface ITechLogStorage
     {
         Task InitDatabase(CancellationToken cancellationToken = default);
-        Task AddTjEvent(TjEvent item, CancellationToken cancellationToken = default);
         Task AddTjEvents(TjEvent[] items, CancellationToken cancellationToken = default);
         Task<TjEvent?> GetTjEvent(string filter, CancellationToken cancellationToken = default);
         Task<TjEvent?> GetTjEvent(string filter, string[] fields, CancellationToken cancellationToken = default);

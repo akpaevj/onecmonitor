@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.CodeAnalysis.Host;
 using Microsoft.EntityFrameworkCore;
+using OnecMonitor.Common.Storage;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Services;
 using OnecMonitor.Server.ViewModels.Log;
@@ -16,14 +17,14 @@ namespace OnecMonitor.Server.Controllers
     {
         private readonly AppDbContext _dbContext;
         private readonly AgentsConnectionsManager _connectionsManager;
-        private readonly IClickHouseContext _clickHouseContext;
+        private readonly ITechLogStorage _clickHouseContext;
         private readonly TechLogAnalyzer _analyzerService;
         private readonly ILogger<TechLogSeancesController> _logger;
 
         public TechLogSeancesController(
             AppDbContext dbContext,
-            AgentsConnectionsManager connectionsManager, 
-            IClickHouseContext clickHouseContext,
+            AgentsConnectionsManager connectionsManager,
+            ITechLogStorage clickHouseContext,
             TechLogAnalyzer analyzerService,
             ILogger<TechLogSeancesController> logger)
         {
@@ -208,9 +209,9 @@ namespace OnecMonitor.Server.Controllers
             filter = filter.Trim();
 
             if (string.IsNullOrEmpty(filter))
-                filter = $"_seance_id = toUUID('{id}')";
+                filter = $"SeanceId = toUUID('{id}')";
             else
-                filter = $"_seance_id = toUUID('{id}') and {filter}";
+                filter = $"SeanceId = toUUID('{id}') and {filter}";
 
             var items = await _clickHouseContext.GetTjEvents(viewModel.PageSize, (viewModel.CurrentPage - 1) * viewModel.PageSize, filter, cancellationToken);
             viewModel.TjEvents = items.Select(c => new TechLogListItemViewModel(c)).ToList();

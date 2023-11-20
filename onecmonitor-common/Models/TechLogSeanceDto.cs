@@ -12,6 +12,8 @@ namespace OnecMonitor.Common.Models
         [Key(2)]
         public DateTime FinishDateTime { get; set; }
         [Key(3)]
+        public bool DirectSending { get; set; }
+        [Key(4)]
         public string Template { get; set; } = string.Empty;
     }
 }

@@ -63,8 +63,8 @@ namespace OnecMonitor.Server.Models
             <log location="{LOG_PATH}" history="1">
                 <event>
                     <eq property="name" value="SDBL"/>
-                    <eq property="Func_1" value="CommitTransaction"/>
-                    <eq property="Func_1" value="RollbackTransaction"/>
+                    <eq property="Func1" value="CommitTransaction"/>
+                    <eq property="Func1" value="RollbackTransaction"/>
                 </event>
                 <event>
                     <eq property="name" value="TLOCK"/>
@@ -84,8 +84,8 @@ namespace OnecMonitor.Server.Models
             <log location="{LOG_PATH}" history="1">
                 <event>
                     <eq property="name" value="SDBL"/>
-                    <eq property="Func_1" value="CommitTransaction"/>
-                    <eq property="Func_1" value="RollbackTransaction"/>
+                    <eq property="Func1" value="CommitTransaction"/>
+                    <eq property="Func1" value="RollbackTransaction"/>
                 </event>
                 <event>
                     <eq property="name" value="TLOCK"/>
@@ -115,8 +115,8 @@ namespace OnecMonitor.Server.Models
             <log location="{LOG_PATH}" history="1">
                 <event>
                     <eq property="name" value="SDBL"/>
-                    <eq property="Func_1" value="CommitTransaction"/>
-                    <eq property="Func_1" value="RollbackTransaction"/>
+                    <eq property="Func1" value="CommitTransaction"/>
+                    <eq property="Func1" value="RollbackTransaction"/>
                 </event>
                 <event>
                     <eq property="name" value="TLOCK"/>
@@ -140,6 +140,19 @@ namespace OnecMonitor.Server.Models
                 <property name="all"/>
             </log>
             """;
+        public static Guid VrsId => new("3090a9ec-dc9c-4a81-b3e4-70d26ff4f929");
+        public static string VrsTemplate =>
+            """
+            <log location="{LOG_PATH}" history="4">
+                <event>
+                    <eq property="name" value="VRSREQUEST"/>
+                </event>
+                <event>
+                    <eq property="name" value="VRSRESPONSE"/>
+                </event>
+                <property name="all"/>
+            </log>
+            """;
         public static Guid[] BuiltInTemplatesIds => new[]
         {
             ServerMonitoringId,
@@ -147,6 +160,7 @@ namespace OnecMonitor.Server.Models
             TimeoutsOnManagedLocksId,
             DeadlocksOnManagedLocksId,
             CallScallsId,
+            VrsId,
             FullId
         };
     }

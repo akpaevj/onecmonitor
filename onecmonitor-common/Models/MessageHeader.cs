@@ -25,7 +25,7 @@ namespace OnecMonitor.Common.Models
             CallId = callId;
         }
 
-        public ReadOnlyMemory<byte> ToBytesArray()
+        public readonly ReadOnlyMemory<byte> AsMemory()
         {
             var memory = new Memory<byte>(new byte[HEADER_LENGTH]);
 
@@ -36,7 +36,18 @@ namespace OnecMonitor.Common.Models
             return memory;
         }
 
-        public static MessageHeader FromBytesArray(ReadOnlySpan<byte> bytes)
+        public readonly byte[] ToBytesArray()
+        {
+            var memory = new byte[HEADER_LENGTH];
+
+            memory[0] = (byte)Type;
+            BitConverter.TryWriteBytes(memory.AsSpan()[1..], Length);
+            CallId.TryWriteBytes(memory.AsSpan()[5..]);
+
+            return memory;
+        }
+
+        public static MessageHeader FromSpan(ReadOnlySpan<byte> bytes)
         {
             var type = (MessageType)bytes[0];
             var length = BitConverter.ToInt32(bytes[1..]);

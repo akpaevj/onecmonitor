@@ -1,4 +1,5 @@
-﻿using OnecMonitor.Server.Models;
+﻿using OnecMonitor.Common.Models;
+using OnecMonitor.Server.Models;
 using System.Security.Policy;
 
 namespace OnecMonitor.Server.ViewModels.TechLogSeances

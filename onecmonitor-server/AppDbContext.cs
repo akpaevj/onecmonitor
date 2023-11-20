@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Migrations;
 using OnecMonitor.Server.Converters.Sqlite;
 using OnecMonitor.Server.Models;
+using OnecMonitor.Common.Models;
 
 namespace OnecMonitor.Server
 {

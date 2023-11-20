@@ -88,7 +88,7 @@ namespace OnecMonitor.Agent.Services
                         .Where(c => c.Status == TechLogSeanceStatus.Started).ToListAsync(stoppingToken);
 
                     if (startedSeances.Count == 0)
-                        File.Delete(_logCfgPath);
+                        DeleteFile(_logCfgPath, stoppingToken);
                     else
                     {
                         var logCfgContentBuilder = new StringBuilder("<config xmlns=\"http://v8.1c.ru/v8/tech-log\">\n");
@@ -102,7 +102,7 @@ namespace OnecMonitor.Agent.Services
 
                         logCfgContentBuilder.AppendLine("</config>");
 
-                        await File.WriteAllTextAsync(_logCfgPath, logCfgContentBuilder.ToString(), stoppingToken);
+                        await WriteTextToFile(logCfgContentBuilder.ToString(), _logCfgPath, stoppingToken);
                     }
 
                     await _dbContext.Database.CommitTransactionAsync(stoppingToken);
@@ -120,6 +120,41 @@ namespace OnecMonitor.Agent.Services
 
                 // read the table every second
                 await Task.Delay(1000, stoppingToken);
+            }
+        }
+
+        private async Task WriteTextToFile(string text, string path, CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await File.WriteAllTextAsync(path, text, cancellationToken);
+
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to write logcfg");
+                }
+            }
+        }
+
+        private void DeleteFile(string path, CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested) 
+            {
+                try
+                {
+                    if (File.Exists(path))
+                        File.Delete(path);
+
+                    break;
+                }
+                catch(Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete logcfg");
+                }
             }
         }
     }

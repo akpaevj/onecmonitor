@@ -7,25 +7,41 @@ import '../node_modules/bootstrap-icons/font/bootstrap-icons.css';
 // scripts
 import '../node_modules/bootstrap/dist/js/bootstrap.bundle'
 import * as ace from 'ace-builds';
+import 'ace-builds/src-noconflict/ext-language_tools';
 import 'ace-builds/src-noconflict/theme-twilight';
 import 'ace-builds/src-noconflict/mode-xml';
+import 'ace-builds/src-noconflict/mode-sql';
 
 import { Timeline, DataItem, TimelineOptions, DataGroup } from 'vis-timeline';
-import { CallGraphMember, LockWaitingMember, LockWaitingMemberType } from './models';
+import { CallGraphMember, LockWaitingMember, LockWaitingMemberType, TjEvent } from './models';
 //import { Chart, ChartConfiguration, ChartDataset } from 'chart.js';
 import * as vis from 'visjs-network';
 
-export function initLogCfgTemplateEditor(editorContainer: Element, contentContainer: HTMLTextAreaElement) {
+export function initAceEditor(editorContainer: Element, contentContainer: HTMLTextAreaElement, mode: string, heightToContent: Boolean = false) {
     let editor = ace.edit(editorContainer, {
-        mode: "ace/mode/xml",
+        mode: `ace/mode/${mode}`,
         selectionStyle: "text",
         theme: 'ace/theme/twilight',
-        enableLiveAutocompletion: true
+        enableLiveAutocompletion: true,
+        autoScrollEditorIntoView: false
     });
+
+    if (mode === 'sql') {
+        editor.setOption('enableSnippets', true);
+        let langTools = ace.require('ace/ext/language_tools');
+        langTools.addCompleter(getClickHouseCompleter());
+    }
+
+    if (heightToContent) {
+        editor.container.style.minHeight = 'inherit';
+        editor.setOption('maxLines', 1);
+        editor.setOption('showLineNumbers', false);
+        editor.setOption('highlightActiveLine', false);
+    }
 
     editor.setOptions({
         autoScrollEditorIntoView: true,
-        copyWithEmptySelection: true,
+        copyWithEmptySelection: true
     });
 
     // set value from input to code editor
@@ -35,6 +51,41 @@ export function initLogCfgTemplateEditor(editorContainer: Element, contentContai
     editor.on('change', function () {
         contentContainer.innerHTML = editor.getValue();
     });
+}
+
+function getClickHouseCompleter() {
+    let properties = [
+        'Id',
+        'StartDateTime',
+        'DateTime',
+        'Duration',
+        'EventName',
+        'Level',
+        'SessionId',
+        'CallId',
+        'TClientId',
+        'TConnectId',
+        'PProcessName',
+        'WaitConnections',
+        'Locks',
+        'AgentId',
+        'SeanceId',
+        'Folder',
+        'File',
+        'EndPosition',
+        'Properties[\'\']'
+    ];
+
+    return {
+        getCompletions: function (editor, session, pos, prefix, callback) {
+            callback(null, properties.map(function (name) {
+                return {
+                    value: name,
+                    meta: "Property"
+                };
+            }));
+        }
+    };
 }
 
 export function initCallTimeline(chainStr: string) {
@@ -74,7 +125,7 @@ export function initCallTimeline(chainStr: string) {
         } else {
             let start = new Date(value.Event.start_date_time + "Z");
             let end = new Date(value.Event.date_time + "Z");
-            groupId = value.Event.props['process'];
+            groupId = value.Event.Properties['process'];
 
             item = {
                 id: value.Event.id,

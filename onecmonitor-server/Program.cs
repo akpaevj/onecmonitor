@@ -5,8 +5,15 @@ using Grpc.Net.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Hosting;
+using OnecMonitor.Common.Storage;
+using OnecMonitor.Common.TechLog;
+using Grpc.Core;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddWindowsService(options =>
+{
+    options.ServiceName = "OnecMonitor";
+});
 builder.WebHost.ConfigureKestrel((context, options) =>
 {
     // configure http listener
@@ -23,27 +30,10 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<TechLogAnalyzer>();
 builder.Services.AddDbContext<AppDbContext>();
 builder.Services.AddCors();
-builder.Services.AddScoped<IClickHouseContext>(sp =>
-{
-    var host = builder.Configuration.GetValue("ClickHouse:Host", "127.0.0.1");
-    var port = builder.Configuration.GetValue("ClickHouse:Port", 9100);
-
-    var channel = GrpcChannel.ForAddress($"http://{host}:{port}", new GrpcChannelOptions()
-    {
-        // used to avoid performance issues with too many requests per connection
-        HttpHandler = new SocketsHttpHandler()
-        {
-            EnableMultipleHttp2Connections = true
-        },
-        MaxReceiveMessageSize = 128 * 1024 * 1024
-    });
-
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    var logger = sp.GetRequiredService<ILogger<ClickHouseContext>>();
-
-    return new ClickHouseContext(channel, configuration, logger);
-});
+builder.Services.AddSingleton<ITechLogStorage, ClickHouseContext>();
+builder.Services.AddHostedService((sp) => sp.GetRequiredService<TechLogProcessor>());
 builder.Services.AddSingleton<TechLogProcessor>();
+builder.Services.AddHostedService((sp) => sp.GetRequiredService<AgentsConnectionsManager>());
 builder.Services.AddSingleton<AgentsConnectionsManager>();
 
 var app = builder.Build();
@@ -69,18 +59,11 @@ app.UseCors(options =>
 
 using var scope = app.Services.CreateAsyncScope();
 
-var clickHouseContext = scope.ServiceProvider.GetRequiredService<IClickHouseContext>();
+var clickHouseContext = scope.ServiceProvider.GetRequiredService<ITechLogStorage>();
 await clickHouseContext.InitDatabase();
 
 var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 await appDbContext.Database.MigrateAsync();
-
-var appLifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
-var connectionsManager = app.Services.GetRequiredService<AgentsConnectionsManager>();
-appLifetime.ApplicationStarted.Register(() =>
-{
-    _ = connectionsManager.Start(appLifetime.ApplicationStopping);
-});
 
 app.MapControllerRoute(
     name: "default",

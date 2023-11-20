@@ -4,8 +4,14 @@
 
 <form class="mb-3" method="get">
 
-    <div class="input-group mb-3">
+    @* <div class="input-group mb-3">
         <input class="form-control" asp-for="Filter" type="text" placeholder="WHERE clause" list="filtersList" aria-describedby="searchBtn">
+        <input class="btn btn-primary" type="submit" id="searchBtn" value="Search" />
+    </div> *@
+
+    <div class="input-group  mb-3">
+        <textarea hidden asp-for="Filter" id="where">@Model.Filter</textarea>
+        <div class="form-control" style="min-height: 400px" id="sql_editor"></div>
         <input class="btn btn-primary" type="submit" id="searchBtn" value="Search" />
     </div>
 
@@ -22,7 +28,7 @@
         <tbody>
             @foreach (var item in Model.TjEvents)
             {
-                <tr class="@item.AdditionalCss cursor-pointer om-event-row">
+                <tr class="cursor-pointer om-event-row @item.AdditionalCss">
                     <td scope="row" data-bs-toggle="collapse" data-bs-target="#eventDetails-@item.TjEvent.Id" aria-expanded="false">@item.TjEvent.DateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff")</td>
                     <td scope="row" data-bs-toggle="collapse" data-bs-target="#eventDetails-@item.TjEvent.Id" aria-expanded="false">@item.TjEvent.Duration</td>
                     <td scope="row" data-bs-toggle="collapse" data-bs-target="#eventDetails-@item.TjEvent.Id" aria-expanded="false">@item.TjEvent.EventName</td>
@@ -64,3 +70,15 @@
     <nav om-current-page="@Model.CurrentPage" class="align-self-center" om-pages-count="@Model.PagesCount" om-filter="@Model.Filter" />
 
 </form>
+
+@section Scripts {
+    <script type="text/javascript">
+        function init() {
+            const editorContainer = document.getElementById('sql_editor');
+            const contentContainer = document.getElementById('where');
+
+            OM.initAceEditor(editorContainer, contentContainer, 'sql', true);
+        } 
+        init();
+    </script>
+}

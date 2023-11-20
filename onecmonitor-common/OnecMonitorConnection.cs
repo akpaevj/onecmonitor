@@ -11,8 +11,7 @@ namespace OnecMonitor.Common
 {
     public abstract class OnecMonitorConnection : IDisposable
     {
-        private bool _serverMode;
-        private const int CALL_TIMEOUT = 10;
+        private readonly bool _serverMode;
         protected internal CancellationTokenSource? _loopsCts;
 
         protected internal Socket? _socket;
@@ -21,7 +20,8 @@ namespace OnecMonitor.Common
         private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Message>> _calls = new();
         protected internal Channel<Message> _inputChannel = Channel.CreateBounded<Message>(1000);
         protected internal Channel<Message> _outputChannel = Channel.CreateBounded<Message>(1000);
-
+        private bool disposedValue;
+        private readonly SemaphoreSlim _disconnectingEventSemaphore = new(1);
         protected internal delegate void DisconnectedHandler();
         protected internal event DisconnectedHandler? Disconnected;
 
@@ -30,15 +30,29 @@ namespace OnecMonitor.Common
             _serverMode = serverMode;
         }
 
-        protected internal void RunSteamLoops()
+        private async Task RaiseDisconnected(CancellationToken cancellationToken)
         {
+            await _disconnectingEventSemaphore.WaitAsync(cancellationToken);
+
+            if (_loopsCts?.IsCancellationRequested == false)
+            {
+                StopStreamLoops();
+                Disconnected?.Invoke();
+                _disconnectingEventSemaphore.Release();
+            }
+        }
+
+        protected internal void RunStreamLoops()
+        {
+            _disconnectingEventSemaphore.Release();
+
             _loopsCts = new CancellationTokenSource();
 
             _ = StartWritingToStream(_loopsCts.Token);
             _ = StartReadingFromStream(_loopsCts.Token);
         }
 
-        protected internal void StopSteamLoops()
+        protected internal void StopStreamLoops()
         {
             _loopsCts?.Cancel();
         }
@@ -66,18 +80,15 @@ namespace OnecMonitor.Common
 
             await _outputChannel.Writer.WriteAsync(message, cancellationToken);
 
-            //var result = await cts.Task.WaitAsync(TimeSpan.FromSeconds(CALL_TIMEOUT), cancellationToken);
-            var result = await cts.Task.WaitAsync(cancellationToken);
-
-            if (result == null)
-                throw new TimeoutException("Failed to get response for the call");
+            var result = await cts.Task.WaitAsync(cancellationToken)
+                ?? throw new TimeoutException("Failed to get response for the call");
 
             _calls.TryRemove(header.CallId, out _);
 
             return result!;
         }
 
-        protected internal virtual async Task WriteMessage<T>(MessageType messageType, T item, Message? callMessage, CancellationToken cancellationToken)
+        protected internal virtual async Task WriteMessage<T>(MessageType messageType, T? item, Message? callMessage, CancellationToken cancellationToken)
         {
             var data = MessagePackSerializer.Serialize(item, cancellationToken: cancellationToken).AsMemory();
             var header = new MessageHeader(messageType, data.Length, callMessage?.Header.CallId ?? Guid.Empty);
@@ -97,7 +108,6 @@ namespace OnecMonitor.Common
 
             await _outputChannel.Writer.WriteAsync(message, cancellationToken);
 
-            //var result = await cts.Task.WaitAsync(TimeSpan.FromSeconds(CALL_TIMEOUT), cancellationToken);
             var result = await cts.Task.WaitAsync(cancellationToken);
 
             if (result == null)
@@ -106,20 +116,6 @@ namespace OnecMonitor.Common
             _calls.TryRemove(header.CallId, out _);
 
             return result!;
-        }
-
-        protected internal async Task WriteMessageToStream(MessageType messageType, CancellationToken cancellationToken)
-        {
-            var header = new MessageHeader(messageType, 0);
-
-            try
-            {
-                await _stream!.WriteAsync(header.ToBytesArray(), cancellationToken);
-            }
-            catch
-            {
-                Disconnected?.Invoke();
-            }
         }
 
         protected internal async Task WriteMessageToStream<T>(MessageType messageType, T item, CancellationToken cancellationToken)
@@ -136,38 +132,38 @@ namespace OnecMonitor.Common
             }
             catch
             {
-                Disconnected?.Invoke();
+                await RaiseDisconnected(cancellationToken);
             }
         }
 
-        protected internal virtual async Task StartWritingToStream(CancellationToken cancellationToken)
+        protected internal async Task StartWritingToStream(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var item = await _outputChannel.Reader.ReadAsync(cancellationToken);
-
                 try
                 {
-                    await _stream!.WriteAsync(item.Header.ToBytesArray(), cancellationToken);
+                    var item = await _outputChannel.Reader.ReadAsync(cancellationToken);
+
+                    await _stream!.WriteAsync(item.Header.AsMemory(), cancellationToken);
 
                     if (item.Data.Length > 0)
                         await _stream!.WriteAsync(item.Data, cancellationToken);
                 }
                 catch
                 {
-                    Disconnected?.Invoke();
+                    await RaiseDisconnected(cancellationToken);
                 }
             }
         }
 
-        protected internal virtual async Task StartReadingFromStream(CancellationToken cancellationToken)
+        protected internal async Task StartReadingFromStream(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
                     var headerbuffer = await ReadBytesFromStream(MessageHeader.HEADER_LENGTH, cancellationToken);
-                    var header = MessageHeader.FromBytesArray(headerbuffer.Span);
+                    var header = MessageHeader.FromSpan(headerbuffer.Span);
 
                     Message message;
 
@@ -192,7 +188,7 @@ namespace OnecMonitor.Common
                 }
                 catch
                 {
-                    Disconnected?.Invoke();
+                    await RaiseDisconnected(cancellationToken);
                 }
             }
         }
@@ -214,10 +210,24 @@ namespace OnecMonitor.Common
             return memory;
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _loopsCts?.Cancel();
+                    _socket?.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
         public void Dispose()
         {
-            _loopsCts?.Cancel();
-            _socket?.Dispose();
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

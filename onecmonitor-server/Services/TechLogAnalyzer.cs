@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using NuGet.Packaging;
+using OnecMonitor.Common.Models;
+using OnecMonitor.Common.Storage;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
 using System.Collections.Generic;
@@ -9,10 +11,10 @@ namespace OnecMonitor.Server.Services
 {
     public class TechLogAnalyzer
     {
-        private readonly IClickHouseContext _clickHouseContext;
+        private readonly ITechLogStorage _clickHouseContext;
         private readonly ILogger<TechLogAnalyzer> _logger;
 
-        public TechLogAnalyzer(IClickHouseContext clickHouseContext, ILogger<TechLogAnalyzer> logger) 
+        public TechLogAnalyzer(ITechLogStorage clickHouseContext, ILogger<TechLogAnalyzer> logger) 
         {
             _clickHouseContext = clickHouseContext;
             _logger = logger;
@@ -22,7 +24,7 @@ namespace OnecMonitor.Server.Services
         {
             var chain = new List<CallGraphMember>();
 
-            var tjEvent = await _clickHouseContext.GetTjEvent($"id = '{id}'", cancellationToken);
+            var tjEvent = await _clickHouseContext.GetTjEvent($"Id = '{id}'", cancellationToken);
 
             if (tjEvent == null)
                 throw new Exception($"Tech log event with id {id} is not found");
@@ -44,10 +46,10 @@ namespace OnecMonitor.Server.Services
 
             var filter =
             $"""
-                event_name = 'CALL'
-                and call_id = {tjEvent.CallId}
-                and t_client_id = {tjEvent.DstClientId}
-                and id != toUUID('{tjEvent.Id}')
+                EventName = 'CALL'
+                and CallId = {tjEvent.CallId}
+                and TClientId = {tjEvent.DstClientId}
+                and Id != toUUID('{tjEvent.Id}')
             """;
 
             var call = await _clickHouseContext.GetTjEvent(filter, cancellationToken);
@@ -65,17 +67,17 @@ namespace OnecMonitor.Server.Services
         {
             var filter =
             $"""
-                t_client_id = {tjEvent.TClientId}
-                and t_computer_name = '{tjEvent.TComputerName}'
-                and date_time > toDateTime64('{ClickHouseHelper.SerializeDateTime(tjEvent.DateTime)}', 6, 'UTC')
+                TClientId = {tjEvent.TClientId}
+                and TComputerName = '{tjEvent.TComputerName}'
+                and DateTime > toDateTime64('{ClickHouseHelper.SerializeDateTime(tjEvent.DateTime)}', 6, 'UTC')
             ORDER BY 
-                date_time
+                DateTime
             """;
 
             var fields = new string[]
             {
-                "event_name as EventName",
-                "props['Context'] as Context"
+                "EventName",
+                "Properties['Context'] as Context"
             };
 
             var c = new
@@ -100,14 +102,14 @@ namespace OnecMonitor.Server.Services
 
             var filter =
                 $"""
-                    event_name = 'SCALL'
-                    and t_client_id = {tjEvent.TClientId}
-                    and start_date_time BETWEEN toDateTime64('{ClickHouseHelper.SerializeDateTime(tjEvent.StartDateTime)}', 6, 'UTC')
+                    EventName = 'SCALL'
+                    and TClientId = {tjEvent.TClientId}
+                    and StartDateTime BETWEEN toDateTime64('{ClickHouseHelper.SerializeDateTime(tjEvent.StartDateTime)}', 6, 'UTC')
                         and toDateTime64('{ClickHouseHelper.SerializeDateTime(tjEvent.DateTime)}', 6, 'UTC')
-                    and id != toUUID('{tjEvent.Id}')
-                    and notEmpty(props['DstClientID'])
+                    and Id != toUUID('{tjEvent.Id}')
+                    and notEmpty(Properties['DstClientID'])
                 ORDER BY 
-                    start_date_time
+                    StartDateTime
                 """;
 
             var items = await _clickHouseContext.GetTjEvents(filter, cancellationToken);
@@ -123,7 +125,7 @@ namespace OnecMonitor.Server.Services
         {
             var graph = new Dictionary<Guid, LockWaitingGraphMember>();
 
-            var tjEvent = await _clickHouseContext.GetTjEvent($"id = '{id}'", cancellationToken);
+            var tjEvent = await _clickHouseContext.GetTjEvent($"Id = '{id}'", cancellationToken);
 
             if (tjEvent == null)
                 graph.Add(id, new LockWaitingGraphMember());
@@ -175,13 +177,13 @@ namespace OnecMonitor.Server.Services
             {
                 var culpritFilter =
                 $"""
-                    event_name = 'TLOCK'
-                    and p_process_name = '{tlock.PProcessName}'
-                    and t_connect_id = {culpritConnectionId}
-                    and hasAny(locks, {uncompatibleLocks})
-                    and date_time <= toDateTime64('{ClickHouseHelper.SerializeDateTime(tlock.DateTime)}', 6, 'UTC')
+                    EventName = 'TLOCK'
+                    and PProcessName = '{tlock.PProcessName}'
+                    and TConnectId = {culpritConnectionId}
+                    and hasAny(Locks, {uncompatibleLocks})
+                    and DateTime <= toDateTime64('{ClickHouseHelper.SerializeDateTime(tlock.DateTime)}', 6, 'UTC')
                 ORDER BY
-                    date_time DESC
+                    DateTime DESC
                 """;
 
                 var culpritTlock = await _clickHouseContext.GetTjEvent(culpritFilter, cancellationToken);
@@ -195,13 +197,13 @@ namespace OnecMonitor.Server.Services
                 {
                     culpritFilter =
                     $"""
-                        event_name = 'TLOCK'
-                        and p_process_name = '{tlock.PProcessName}'
-                        and t_connect_id = {culpritConnectionId}
-                        and hasAny(locks, {uncompatibleLocks})
-                        and date_time >= toDateTime64('{ClickHouseHelper.SerializeDateTime(tlock.DateTime)}', 6, 'UTC')
+                        EventName = 'TLOCK'
+                        and PProcessName = '{tlock.PProcessName}'
+                        and TConnectId = {culpritConnectionId}
+                        and hasAny(Locks, {uncompatibleLocks})
+                        and DateTime >= toDateTime64('{ClickHouseHelper.SerializeDateTime(tlock.DateTime)}', 6, 'UTC')
                     ORDER BY
-                        date_time
+                        DateTime
                     """;
 
                     culpritTlock = await _clickHouseContext.GetTjEvent(culpritFilter, cancellationToken);
@@ -226,13 +228,13 @@ namespace OnecMonitor.Server.Services
             // now try to find indirect culprits by locks' intersections
             var indirectCulpritsFilter =
                 $"""
-                    event_name = 'TLOCK'
-                    and p_process_name = '{tlock.PProcessName}'
-                    and hasAny(locks, {uncompatibleLocks})
-                    and date_time BETWEEN 
+                    EventName = 'TLOCK'
+                    and PProcessName = '{tlock.PProcessName}'
+                    and hasAny(Locks, {uncompatibleLocks})
+                    and DateTime BETWEEN 
                         toDateTime64('{ClickHouseHelper.SerializeDateTime(tlock.StartDateTime)}', 6, 'UTC') 
                         and toDateTime64('{ClickHouseHelper.SerializeDateTime(vertex.LockAffectEndDateTime)}', 6, 'UTC')
-                    and id != '{tlock.Id}'
+                    and Id != '{tlock.Id}'
                 """;
 
             var indirectCulprits = await _clickHouseContext.GetTjEvents(indirectCulpritsFilter, cancellationToken);
@@ -269,14 +271,14 @@ namespace OnecMonitor.Server.Services
         {
             var filter =
                 $"""
-                    event_name = 'SDBL'
-                    and p_process_name = '{tlock.PProcessName}'
-                    and t_client_id = '{tlock.TClientId}'
-                    and t_connect_id = '{tlock.TConnectId}'
-                    and props['Func_1'] in ['CommitTransaction','RollbackTransaction']
-                    and date_time > toDateTime64('{ClickHouseHelper.SerializeDateTime(tlock.DateTime)}', 6, 'UTC')
+                    EventName = 'SDBL'
+                    and PProcessName = '{tlock.PProcessName}'
+                    and TClientId = '{tlock.TClientId}'
+                    and TConnectId = '{tlock.TConnectId}'
+                    and Properties['Func1'] in ['CommitTransaction','RollbackTransaction']
+                    and DateTime > toDateTime64('{ClickHouseHelper.SerializeDateTime(tlock.DateTime)}', 6, 'UTC')
                 ORDER BY 
-                    date_time
+                    DateTime
                 """;
 
             try
@@ -293,11 +295,11 @@ namespace OnecMonitor.Server.Services
         {
             var filter =
                 $"""
-                    event_name = 'TLOCK'
-                    and p_process_name = '{tjEvent.PProcessName}'
-                    and t_connect_id = '{tjEvent.TConnectId}'
-                    and wait_connections = {ClickHouseHelper.SerializeArray(tjEvent.WaitConnections)}
-                    and date_time > toDateTime64('{ClickHouseHelper.SerializeDateTime(tjEvent.DateTime)}', 6, 'UTC')
+                    EventName = 'TLOCK'
+                    and PProcessName = '{tjEvent.PProcessName}'
+                    and TConnectId = '{tjEvent.TConnectId}'
+                    and WaitConnections = {ClickHouseHelper.SerializeArray(tjEvent.WaitConnections)}
+                    and DateTime > toDateTime64('{ClickHouseHelper.SerializeDateTime(tjEvent.DateTime)}', 6, 'UTC')
                 """;
 
             try

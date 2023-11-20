@@ -1,4 +1,6 @@
-﻿namespace OnecMonitor.Server.Models
+﻿using OnecMonitor.Common.Models;
+
+namespace OnecMonitor.Server.Models
 {
     public class CallGraphMember
     {

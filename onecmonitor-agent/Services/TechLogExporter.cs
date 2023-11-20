@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using OnecMonitor.Common.Models;
 using OnecMonitor.Common.TechLog;
+using System.Text;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace OnecMonitor.Agent.Services
@@ -81,34 +82,53 @@ namespace OnecMonitor.Agent.Services
 
             try
             {
-                using var reader = new TechLogReader(path, position);
+                using var reader = new NewTechLogReader(path, position);
 
+                var fileName = Path.GetFileNameWithoutExtension(path);
+                var folder = Path.GetFileName(Path.GetDirectoryName(path)) ?? "";
                 var seanceId = new Guid(Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(path))))!);
                 var templateId = new Guid(Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(path)))!);
 
+                var cacheKey = GetCacheKey(ref seanceId, ref templateId, folder, fileName);
+
                 while (!_cts!.IsCancellationRequested)
                 {
-                    if (reader.MoveNext() && !reader.EndOfStream)
+                    var read = false;
+
+                    try
                     {
+                        _logger.LogTrace("Begin reading the next event item");
+
+                        read = reader.MoveNext();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to read log file");
+                    }
+
+                    if (read)
+                    {
+                        _logger.LogTrace("Event is read");
+
                         var message = new TechLogEventContentDto
                         {
                             SeanceId = seanceId,
                             TemplateId = templateId,
-                            Folder = reader.Folder,
-                            File = reader.FileName,
+                            Folder = folder,
+                            File = fileName,
                             EndPosition = reader.Position,
                             Content = reader.EventContent
                         };
 
                         await _serverConnection.SendTechLogEventContent(message, _cts.Token);
 
-                        CachePosition(ref seanceId, ref templateId, message.Folder, message.File, message.EndPosition);
-
-                        _logger.LogTrace($"Event with content \"{message.Content}\" from {message.Folder}/{message.File} {reader.EventContentStartPosition}-{message.EndPosition} is read");
+                        CachePosition(cacheKey, message.EndPosition);
                     }
                     else
                         break;
                 }
+
+                _logger.LogTrace("Stopping reading the file");
 
                 _techLogWatcher.StartWatchFile(path);
             }
@@ -122,12 +142,22 @@ namespace OnecMonitor.Agent.Services
             => _cts?.Cancel();
 
         private static string GetCacheKey(ref Guid seanceId, ref Guid templateId, string folder, string file)
-            => $"{seanceId}_{templateId}_{folder}_{file}";
-
-        private void CachePosition(ref Guid seanceId, ref Guid templateId, string folder, string file, long newPosition)
         {
-            var cacheKey = GetCacheKey(ref seanceId, ref templateId, folder, file);
+            var builder = new StringBuilder();
 
+            builder.Append(seanceId.ToString());
+            builder.Append('_');
+            builder.Append(templateId.ToString());
+            builder.Append('_');
+            builder.Append(folder);
+            builder.Append('_');
+            builder.Append(file);
+
+            return builder.ToString();
+        }
+
+        private void CachePosition(string cacheKey, long newPosition)
+        {
             if (!TryGetPositionFromCache(cacheKey, out var position) || position < newPosition)
             {
                 if (position < newPosition)

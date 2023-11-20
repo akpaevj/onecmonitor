@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -9,9 +9,34 @@
   </PropertyGroup>
 
   <ItemGroup>
+	  <PackageReference Include="ClickHouse.Client" Version="6.7.5" />
+	  <PackageReference Include="ConfigureAwait.Fody" Version="3.3.2"  PrivateAssets="All"/>
+	  <PackageReference Include="Dapper" Version="2.1.4" />
+	  <PackageReference Include="Fody" Version="6.8.0">
+	    <PrivateAssets>all</PrivateAssets>
+	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  </PackageReference>
+	  <PackageReference Include="Grpc.Net.Client" Version="2.57.0" />
+	  <PackageReference Include="Grpc.Net.ClientFactory" Version="2.57.0" />
+	  <PackageReference Include="Grpc.Tools" Version="2.58.0">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  </PackageReference>
+    <PackageReference Include="Google.Protobuf" Version="3.23.1" />
+    <PackageReference Include="Grpc.Core.Api" Version="2.57.0" />
     <PackageReference Include="MessagePack" Version="2.5.129" />
     <PackageReference Include="MessagePack.Annotations" Version="2.5.129" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="Protos\clickhouse_grpc.proto" GrpcServices="Client" />
+	</ItemGroup>
 
 </Project>

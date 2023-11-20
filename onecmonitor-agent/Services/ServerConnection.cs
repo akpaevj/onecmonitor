@@ -4,47 +4,49 @@ using MessagePack;
 using System.Net.Sockets;
 using System.Net;
 using Microsoft.Extensions.Logging;
+using System.Threading;
+using OnecMonitor.Common.TechLog;
 
 namespace OnecMonitor.Agent.Services
 {
     public class ServerConnection : OnecMonitorConnection
     {
-        private readonly AgentInstance _agentInstance;
         private readonly string _host;
         private readonly int _port;
 
-        private readonly SemaphoreSlim _connectingSemaphore = new(1);
         private readonly ILogger<ServerConnection> _logger;
 
-        public ServerConnection(IServiceProvider serviceProvider) : base(false)
+        public AgentInstance AgentInstance { get; private set; }
+
+        public ServerConnection(IServiceProvider serviceProvider, IHostApplicationLifetime hostApplicationLifetime) : base(false)
         {
             var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
             using var scope = serviceProvider.CreateAsyncScope();
             using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            _agentInstance = appDbContext!.AgentInstance.FirstOrDefault();
+            AgentInstance = appDbContext!.AgentInstance.FirstOrDefault();
 
             var instanceName = configuration.GetValue("Agent:InstanceName", Environment.MachineName);
             if (string.IsNullOrEmpty(instanceName))
                 instanceName = Environment.MachineName;
 
-            if (_agentInstance == null) 
+            if (AgentInstance == null) 
             {
-                _agentInstance = new AgentInstance
+                AgentInstance = new AgentInstance
                 {
                     Id = Guid.NewGuid(),
                     InstanceName = instanceName,
                     UtcOffset = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalSeconds
                 };
 
-                appDbContext!.AgentInstance.Add(_agentInstance);
+                appDbContext!.AgentInstance.Add(AgentInstance);
                 appDbContext.SaveChanges();
             }
-            else if (_agentInstance!.InstanceName != instanceName)
+            else if (AgentInstance!.InstanceName != instanceName)
             {
-                _agentInstance.InstanceName = instanceName;
+                AgentInstance.InstanceName = instanceName;
 
-                appDbContext!.AgentInstance.Update(_agentInstance);
+                appDbContext!.AgentInstance.Update(AgentInstance);
                 appDbContext.SaveChanges();
             }
 
@@ -53,12 +55,30 @@ namespace OnecMonitor.Agent.Services
 
             _logger = serviceProvider.GetRequiredService<ILogger<ServerConnection>>();
 
-            RunSteamLoops();
+            Disconnected += () =>
+            {
+                _logger.LogWarning("Disconnected from the server");
+
+                _ = RunLoops(hostApplicationLifetime.ApplicationStopping);
+            };
+
+            _ = RunLoops(hostApplicationLifetime.ApplicationStopping);
+        }
+
+        protected async Task RunLoops(CancellationToken cancellationToken)
+        {
+            await ConnectInLoop(cancellationToken);
+
+            RunStreamLoops();
+
+            _logger.LogTrace("Stream loops started");
         }
 
         public async Task SubscribeForCommands(CancellationToken cancellationToken)
         {
             await WriteMessage(MessageType.SubscribingForCommands, null, cancellationToken);
+
+            _logger.LogTrace("SubscribingForCommands message is queued");
         }
 
         public async Task<long> GetLastFilePosition(Guid seanceId, Guid templateId, string folder, string file, CancellationToken cancellationToken)
@@ -94,30 +114,25 @@ namespace OnecMonitor.Agent.Services
         }
 
         public async Task SendTechLogEventContent(TechLogEventContentDto item, CancellationToken cancellationToken)
-            => await WriteMessage(MessageType.TechLogEventContent, item, null, cancellationToken);
-
-        protected async override Task StartReadingFromStream(CancellationToken cancellationToken)
         {
-            do
-            {
-                try
-                {
-                    await Reconnect(cancellationToken);
+            //try
+            //{
+            //    if (!TechLogParser.TryParse(AgentInstance, item, out var item2))
+            //    {
+            //        var a = 1;
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    var a = 1;
+            //}
 
-                    _logger.LogTrace("Start reading from network stream");
+            await WriteMessage(MessageType.TechLogEventContent, item, null, cancellationToken);
 
-                    await base.StartReadingFromStream(cancellationToken);
-
-                }
-                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.NotConnected)
-                {
-
-                }
-            }
-            while (!cancellationToken.IsCancellationRequested);
+            _logger.LogTrace("Event content message is queued");
         }
 
-        protected async override Task StartWritingToStream(CancellationToken cancellationToken)
+        private async Task ConnectInLoop(CancellationToken cancellationToken)
         {
             do
             {
@@ -125,25 +140,21 @@ namespace OnecMonitor.Agent.Services
                 {
                     await Reconnect(cancellationToken);
 
-                    _logger.LogTrace("Start writing to network stream");
-
-                    await base.StartWritingToStream(cancellationToken);
+                    _logger.LogTrace("Connection to server is established");
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.NotConnected)
                 {
-                    
+                    _logger.LogTrace("Failed to connect to the server");
                 }
+
+                if (_socket?.Connected == true)
+                    break;
             }
             while (!cancellationToken.IsCancellationRequested);
         }
 
         private async Task Reconnect(CancellationToken cancellationToken)
         {
-            await _connectingSemaphore.WaitAsync(cancellationToken);
-
-            if (_socket?.Connected == true)
-                return;
-
             _logger.LogTrace($"Trying connect to {_host}:{_port}");
 
             _socket?.Dispose();
@@ -157,17 +168,35 @@ namespace OnecMonitor.Agent.Services
 
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
             {
-                NoDelay = true
+                NoDelay = true,
             };
-            await _socket.ConnectAsync(endPoint, cancellationToken);
 
-            _stream = new NetworkStream(_socket);
+            var _cts = new CancellationTokenSource();
 
-            await WriteMessageToStream(MessageType.AgentInfo, _agentInstance, cancellationToken);
+            try
+            {
+                _cts.CancelAfter(10 * 1000);
+                cancellationToken.Register(_cts.Cancel);
 
-            _logger.LogInformation("Connected to the server");
+                var connectAsync = _socket.ConnectAsync(endPoint, cancellationToken);
+                var connectTask = connectAsync.AsTask();
+                await connectTask.WaitAsync(_cts.Token);
+            }
+            catch(Exception)
+            {
 
-            _connectingSemaphore.Release();
+            }
+
+            _cts?.Dispose();
+
+            if (!_socket.Connected)
+                throw new SocketException((int)SocketError.NotConnected);
+            else
+            {
+                _stream = new NetworkStream(_socket);
+                _logger.LogInformation("Connected to the server");
+                await WriteMessageToStream(MessageType.AgentInfo, AgentInstance, cancellationToken);
+            }
         }
     }
 }

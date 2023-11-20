@@ -1,13 +1,15 @@
 ﻿using System.Collections.Concurrent;
+using System.IO;
 
 namespace OnecMonitor.Agent.Services
 {
     public class TechLogFolderWatcher : IDisposable
     {
         private readonly string _logFolder;
+        private readonly ILogger<TechLogFolderWatcher> _logger;
         private readonly FileSystemWatcher _fileSystemWatcher;
         private bool disposedValue;
-        private readonly object _stopListBlocker = new();
+        private readonly object _locker = new();
         private readonly HashSet<string> _stopList = new();
 
         public delegate void NewLogFileHandler(string path);
@@ -16,8 +18,9 @@ namespace OnecMonitor.Agent.Services
         public delegate void LogFileChangedHandler(string path);
         public event LogFileChangedHandler? LogFileChanged;
 
-        public TechLogFolderWatcher(IConfiguration configuration)
+        public TechLogFolderWatcher(IConfiguration configuration, ILogger<TechLogFolderWatcher> logger)
         {
+            _logger = logger;
             _logFolder = configuration.GetValue("Techlog:LogFolder", "")!;
 
             try
@@ -25,7 +28,7 @@ namespace OnecMonitor.Agent.Services
                 if (!Path.Exists(_logFolder))
                     Directory.CreateDirectory(_logFolder);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new Exception("Failed to create tech log folder", ex);
             }
@@ -37,6 +40,7 @@ namespace OnecMonitor.Agent.Services
             };
             _fileSystemWatcher.Created += FileSystemWatcher_Created;
             _fileSystemWatcher.Changed += FileSystemWatcher_Changed;
+            _logger = logger;
         }
 
         public void Start()
@@ -46,8 +50,10 @@ namespace OnecMonitor.Agent.Services
 
         public void StartWatchFile(string path)
         {
-            lock(_stopListBlocker)
+            lock(_locker)
                 _stopList.Remove(path);
+
+            _logger.LogTrace($"{path} is removed from the watching stoplist");
         }
 
         public string[] GetExistFiles()
@@ -62,31 +68,35 @@ namespace OnecMonitor.Agent.Services
 
         public void StopWatchFile(string path)
         {
-            lock (_stopListBlocker)
+            lock (_locker)
                 _stopList.Add(path);
+
+            _logger.LogTrace($"{path} is added to the watching stoplist");
         }
 
         public void Stop()
         {
-            lock (_stopListBlocker)
+            lock (_locker)
                 _stopList.Clear();
+
+            _logger.LogTrace($"Watching stoplist is cleaned");
 
             _fileSystemWatcher.EnableRaisingEvents = false;
         }
 
         private void FileSystemWatcher_Created(object sender, FileSystemEventArgs e)
         {
-            lock (_stopListBlocker)
+            lock (_locker)
                 if (!_stopList.Contains(e.FullPath))
                 {
                     _stopList.Add(e.FullPath);
                     LogFileCreated?.Invoke(e.FullPath);
-                }
+                }  
         }
 
         private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
         {
-            lock (_stopListBlocker)
+            lock (_locker)
                 if (!_stopList.Contains(e.FullPath))
                 {
                     _stopList.Add(e.FullPath);

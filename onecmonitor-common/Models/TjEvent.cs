@@ -1,6 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using OnecMonitor.Common.Converters.Json;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OnecMonitor.Common.Models
 {
@@ -154,9 +157,11 @@ namespace OnecMonitor.Common.Models
         [JsonProperty("props")]
         public Dictionary<string, string> Properties { get; set; } = new Dictionary<string, string>();
         [JsonProperty("_agent_id")]
-        public string AgentId { get; set; } = Guid.Empty.ToString();
+        public Guid AgentId { get; set; } = Guid.Empty;
         [JsonProperty("_seance_id")]
-        public string SeanceId { get; set; } = Guid.Empty.ToString();
+        public Guid SeanceId { get; set; } = Guid.Empty;
+        [JsonProperty("_template_id")]
+        public Guid TemplateId { get; set; } = Guid.Empty;
         [JsonProperty("_file")]
         public string File { get; set; } = string.Empty;
         [JsonProperty("_folder")]

@@ -4,6 +4,8 @@ using Microsoft.CodeAnalysis.Operations;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Common;
 using OnecMonitor.Common.Models;
+using OnecMonitor.Common.Storage;
+using OnecMonitor.Common.TechLog;
 using OnecMonitor.Server.Models;
 using System.Diagnostics;
 using System.Net.Sockets;
@@ -16,7 +18,7 @@ namespace OnecMonitor.Server.Services
     {
         private readonly AsyncServiceScope _agentScope;
         private readonly AppDbContext _appDbContext;
-        private readonly IClickHouseContext _clickHouseContext;
+        private readonly ITechLogStorage _clickHouseContext;
         private readonly TechLogProcessor _techLogProcessor;
         private readonly ILogger<AgentConnection> _logger;
 
@@ -32,11 +34,10 @@ namespace OnecMonitor.Server.Services
         public delegate void AgentDisconnectedHandler(AgentConnection agentConnection);
         public event AgentDisconnectedHandler? AgentDisconnected;
 
-        public AgentConnection(Socket socket, IServiceProvider serviceProvider) : base(true)
+        public AgentConnection(Socket socket, TechLogProcessor techLogProcessor, IServiceProvider serviceProvider) : base(true)
         {
             Disconnected += () =>
             {
-                StopSteamLoops();
                 AgentDisconnected?.Invoke(this);
             };
 
@@ -45,14 +46,14 @@ namespace OnecMonitor.Server.Services
             _stream = new NetworkStream(socket);
             _agentScope = serviceProvider.CreateAsyncScope();
             _appDbContext = _agentScope.ServiceProvider.GetRequiredService<AppDbContext>();
-            _clickHouseContext = _agentScope.ServiceProvider.GetRequiredService<IClickHouseContext>();
-            _techLogProcessor = serviceProvider.GetRequiredService<TechLogProcessor>();
+            _clickHouseContext = serviceProvider.GetRequiredService<ITechLogStorage>();
+            _techLogProcessor = techLogProcessor;
             _logger = _agentScope.ServiceProvider.GetRequiredService<ILogger<AgentConnection>>();
         }
 
         public async Task StartListening(CancellationToken cancellationToken)
         {
-            RunSteamLoops();
+            RunStreamLoops();
 
             // first message must be an init message
             var firstMessage = await ReadMessage(cancellationToken);

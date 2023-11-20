@@ -1,279 +1,176 @@
-﻿using Clickhouse.Grpc;
-using OnecMonitor.Common.Models;
-using static Clickhouse.Grpc.ClickHouse;
-using System.Text;
-using Exception = System.Exception;
-using Google.Protobuf;
-using Newtonsoft.Json;
-using Grpc.Core;
+﻿using ClickHouse.Client.ADO;
+using ClickHouse.Client.Copy;
+using ClickHouse.Client.Utility;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore.Query;
+using Dapper;
+using Newtonsoft.Json;
+using OnecMonitor.Common.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 
 namespace OnecMonitor.Common.Storage
 {
-    public class ClickHouseContext : ClickHouseClient, ITechLogStorage
+    public class ClickHouseContext : IDisposable, ITechLogStorage
     {
         private const string RAW_TJEVENTS_TABLENAME = "raw_tjevents";
 
         private readonly string _database;
         private readonly ILogger<ClickHouseContext> _logger;
+        private readonly ClickHouseConnection _connection;
+        private bool disposedValue;
 
-        public ClickHouseContext(ChannelBase channelBase, IConfiguration configuration, ILogger<ClickHouseContext> logger) : base(channelBase)
+        public ClickHouseContext(ILogger<ClickHouseContext> logger, IConfiguration configuration)
         {
             _logger = logger;
-            _database = configuration.GetValue("ClickHouse:Database", "")!;
-        }
 
-        public ClickHouseContext(CallInvoker callInvoker, IConfiguration configuration, ILogger<ClickHouseContext> logger) : base(callInvoker)
-        {
-            _logger = logger;
-            _database = configuration.GetValue("ClickHouse:Database", "")!;
+            _database = configuration.GetValue("ClickHouse:Database", "default") ?? "default";
+
+            var connectionStringBuilder = new ClickHouseConnectionStringBuilder
+            {
+                Host = configuration.GetValue("ClickHouse:Host", "localhost") ?? "localhost",
+                Port = (ushort)configuration.GetValue("ClickHouse:Port", 8123),
+                Username = configuration.GetValue("ClickHouse:User", "default") ?? "default",
+                Password = configuration.GetValue("ClickHouse:Password", string.Empty) ?? string.Empty
+            };
+
+            var connectionString = connectionStringBuilder.ToString();
+
+            _connection = new ClickHouseConnection(connectionString);
         }
 
         public async Task InitDatabase(CancellationToken cancellationToken = default)
         {
-            // Create database if it doesn't exist
-            await ExecuteNonQuery($"CREATE DATABASE IF NOT EXISTS {_database}", cancellationToken);
-
-            // Create raw tj events table
-            // It's pretty difficult to avoid duplicated items, so let's try to smooth this case with ReplacingMergeTree engine,
-            // agents might write duplicated items but during reading it will read only last version of each item
-            await ExecuteNonQuery(
-                $"""
-                CREATE TABLE IF NOT EXISTS {_database}.{RAW_TJEVENTS_TABLENAME}
-                (
-                    id UUID,
-                    start_date_time DateTime64(6, 'UTC') Codec(Delta, LZ4),
-                    date_time DateTime64(6, 'UTC') Codec(Delta, LZ4),
-                    duration Int64 Codec(DoubleDelta, LZ4),
-                    event_name LowCardinality(String),
-                    level Int8 Codec(DoubleDelta, LZ4),
-                    session_id String,
-                    call_id Int32 Codec(DoubleDelta, LZ4),
-                    t_client_id Int32 Codec(DoubleDelta, LZ4),
-                    dst_client_id Int32 Codec(DoubleDelta, LZ4),
-                    usr String,
-                    t_connect_id Int32 Codec(DoubleDelta, LZ4),
-                    t_computer_name String,
-                    p_process_name LowCardinality(String),
-                    regions Array(String),
-                    locks Array(String),
-                    wait_connections Array(Int32),
-                    props Map(String, String),
-                    _agent_id UUID,
-                    _seance_id UUID,
-                    _template_id UUID,
-                    _folder String,
-                    _file String,
-                    _end_position Int64,
-                    INDEX for_calls_chain(event_name,t_client_id,call_id) TYPE minmax GRANULARITY 3
-                )
-                ENGINE = MergeTree
-                PARTITION BY (toYYYYMMDD(date_time), event_name)
-                ORDER BY (_end_position, event_name)
-                """
-                , cancellationToken);
-        }
-
-        public async Task AddTjEvent(TjEvent item, CancellationToken cancellationToken = default)
-        {
             try
             {
-                var json = JsonConvert.SerializeObject(item);
+                await _connection.OpenAsync(cancellationToken);
+                await _connection.ExecuteScalarAsync($"CREATE DATABASE IF NOT EXISTS {_database}");
+                await _connection.ChangeDatabaseAsync(_database, cancellationToken);
 
-                await ExecuteNonQuery($"INSERT INTO {_database}.{RAW_TJEVENTS_TABLENAME} FORMAT JSONEachRow {json}", cancellationToken);
+                await _connection.ExecuteScalarAsync(
+                    $"""
+                    CREATE TABLE IF NOT EXISTS {RAW_TJEVENTS_TABLENAME}
+                    (
+                        Id UUID,
+                        StartDateTime DateTime64(6, 'UTC') Codec(Delta, LZ4),
+                        DateTime DateTime64(6, 'UTC') Codec(Delta, LZ4),
+                        Duration Int64 Codec(DoubleDelta, LZ4),
+                        EventName LowCardinality(String),
+                        Level Int8 Codec(DoubleDelta, LZ4),
+                        SessionId String,
+                        CallId String,
+                        TClientId Int32 Codec(DoubleDelta, LZ4),
+                        DstClientId Int32 Codec(DoubleDelta, LZ4),
+                        Usr String,
+                        TConnectId String,
+                        TComputerName String,
+                        PProcessName LowCardinality(String),
+                        Locks Array(String),
+                        WaitConnections Array(Int32),
+                        Properties Map(String, String),
+                        AgentId UUID,
+                        SeanceId UUID,
+                        TemplateId UUID,
+                        Folder String,
+                        File String,
+                        EndPosition Int64,
+                        INDEX for_calls_chain(EventName,TClientId,CallId) TYPE minmax GRANULARITY 3
+                    )
+                    ENGINE = MergeTree
+                    PARTITION BY (toYYYYMMDD(DateTime), EventName)
+                    ORDER BY (EndPosition, EventName)
+                    """);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogTrace(ex, "Database init is canceled");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to add new item");
-                throw;
+                _logger.LogError(ex, "Failed to init the database");
             }
         }
 
         public async Task AddTjEvents(TjEvent[] items, CancellationToken cancellationToken = default)
         {
+            await OpenConnection(cancellationToken);
+
+            using var bulk = new ClickHouseBulkCopy(_connection)
+            {
+                DestinationTableName = RAW_TJEVENTS_TABLENAME,
+                BatchSize = items.Length
+            };
+
             try
             {
-                var json = JsonConvert.SerializeObject(items);
-
-                await ExecuteNonQuery($"INSERT INTO {_database}.{RAW_TJEVENTS_TABLENAME} FORMAT JSONEachRow {json}", cancellationToken);
+                await bulk.WriteToServerAsync(items.Select(i => new object[]
+                {
+                    i.Id,
+                    i.StartDateTime,
+                    i.DateTime,
+                    i.Duration,
+                    i.EventName,
+                    i.Level,
+                    i.SessionId,
+                    i.CallId,
+                    i.TClientId,
+                    i.DstClientId,
+                    i.Usr,
+                    i.TConnectId,
+                    i.TComputerName,
+                    i.PProcessName,
+                    i.Locks,
+                    i.WaitConnections,
+                    i.Properties,
+                    i.AgentId,
+                    i.SeanceId,
+                    i.TemplateId,
+                    i.Folder,
+                    i.File,
+                    i.EndPosition
+                }), cancellationToken);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogTrace(ex, "Bulk load operation canceled");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to add new items");
-                throw;
+                _logger.LogError(ex, "Failed to write data to the database");
             }
         }
 
-        public async Task<TjEvent?> GetTjEvent(string filter, CancellationToken cancellationToken = default)
-            => await GetTjEvent(filter, new string[] { "*" }, cancellationToken);
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _connection.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        public Task<TjEvent?> GetTjEvent(string filter, CancellationToken cancellationToken = default)
+            => GetTjEvent(filter, new string[] {"*"}, cancellationToken);
 
         public async Task<TjEvent?> GetTjEvent(string filter, string[] fields, CancellationToken cancellationToken = default)
         {
-            var output = await GetTjEventOutput(filter, fields, cancellationToken);
+            await OpenConnection(cancellationToken);
 
-            if (output.IsEmpty)
-                return default;
-            else
-                return JsonConvert.DeserializeObject<TjEvent>(output.ToStringUtf8());
-        }
-
-        public async Task<T?> GetTjEventProperties<T>(string filter, string[] fields, T anonTypeObject, CancellationToken cancellationToken = default)
-        {
-            var output = await GetTjEventOutput(filter, fields, cancellationToken);
-
-            if (output.IsEmpty)
-                return default;
-            else
-                return JsonConvert.DeserializeAnonymousType(output.ToStringUtf8(), anonTypeObject);
-        }
-
-        public async Task<List<TjEvent>> GetTjEvents(string filter, CancellationToken cancellationToken = default)
-        {
-            var queryText = new StringBuilder(
-                $@"SELECT 
-                    *
-                FROM {_database}.{RAW_TJEVENTS_TABLENAME}");
-
-            if (!string.IsNullOrEmpty(filter))
-            {
-                queryText.Append(" WHERE ");
-                queryText.Append(filter);
-            }
-
-            var result = await ExecuteQueryAsync(new QueryInfo()
-            {
-                Query = queryText.ToString(),
-                OutputFormat = "JSONEachRow"
-            }, cancellationToken: cancellationToken);
-
-            if (result.Exception != null)
-                throw new Exception(result.Exception.DisplayText);
-
-            if (result.Output.IsEmpty)
-                return new();
-
-            return DeserializeObjects<TjEvent>(result.Output);
-        }
-
-        public async Task<List<TjEvent>> GetTjEvents(int count, int offset, string filter = "", CancellationToken cancellationToken = default)
-        {
-            var queryText = new StringBuilder(
-                $"""
-                SELECT 
-                    *
-                FROM {_database}.{RAW_TJEVENTS_TABLENAME}
-                """);
-
-            if (!string.IsNullOrEmpty(filter))
-            {
-                queryText.Append(" WHERE ");
-                queryText.Append(filter);
-            }
-
-            queryText.Append($" ORDER BY date_time DESC LIMIT {count} OFFSET {offset}");
-
-            try
-            {
-                var result = await ExecuteQueryAsync(new QueryInfo()
-                {
-                    Query = queryText.ToString(),
-                    OutputFormat = "JSONEachRow"
-                }, cancellationToken: cancellationToken);
-
-                if (result.Exception != null)
-                    throw new Exception(result.Exception.DisplayText);
-
-                return DeserializeObjects<TjEvent>(result.Output);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to get tj events");
-                throw;
-            }
-        }
-
-        public async Task<int> GetTjEventsCount(string filter = "", CancellationToken cancellationToken = default)
-        {
-            var queryText = new StringBuilder(
-                $"""
-                SELECT 
-                    COUNT(*) 
-                FROM {_database}.{RAW_TJEVENTS_TABLENAME}
-                """);
-
-            if (!string.IsNullOrEmpty(filter))
-            {
-                queryText.Append(" WHERE ");
-                queryText.Append(filter);
-            }
-
-            try
-            {
-                var result = await ExecuteQueryAsync(new QueryInfo()
-                {
-                    Query = queryText.ToString()
-                }, cancellationToken: cancellationToken);
-
-                if (result.Exception != null)
-                    throw new Exception(result.Exception.DisplayText);
-
-                return int.Parse(result.Output.ToStringUtf8());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to get tj events count");
-                throw;
-            }
-        }
-
-        public async Task<long> GetLastFilePosition(string agentId, string seanceId, string templateId, string folder, string file, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                var result = await ExecuteQueryAsync(new QueryInfo()
-                {
-                    Query =
-                    $"""
-                    SELECT 
-                        _end_position 
-                    FROM {_database}.{RAW_TJEVENTS_TABLENAME}
-                    PREWHERE
-                        _agent_id = toUUID('{agentId}')
-                        and _seance_id = toUUID('{seanceId}')
-                        and _template_id = toUUID('{templateId}')
-                        and _folder = '{folder}'
-                        and _file = '{file}'
-                    ORDER BY
-                        date_time DESC
-                    LIMIT 1
-                    """
-                }, cancellationToken: cancellationToken);
-
-                if (result.Exception != null)
-                    throw new Exception(result.Exception.DisplayText);
-
-                if (result.Output.IsEmpty)
-                    return 0;
-                else
-                    return long.Parse(result.Output.ToStringUtf8());
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to get last file position");
-                throw;
-            }
-        }
-
-        public async Task DeleteTechLogSeanceData(string seanceId, CancellationToken cancellationToken = default)
-        {
-            var query = $"ALTER TABLE {_database}.{RAW_TJEVENTS_TABLENAME} DELETE WHERE _seance_id = toUUID('{seanceId}')";
-
-            await ExecuteNonQuery(query, cancellationToken);
-        }
-
-        private async Task<ByteString> GetTjEventOutput(string filter, string[] fields, CancellationToken cancellationToken = default)
-        {
             var queryText = new StringBuilder("SELECT\n");
 
             for (int i = 0; i < fields.Length; i++)
@@ -286,57 +183,158 @@ namespace OnecMonitor.Common.Storage
 
             queryText.AppendLine();
 
-            queryText.AppendLine($"FROM {_database}.{RAW_TJEVENTS_TABLENAME}");
+            queryText.AppendLine($"FROM {RAW_TJEVENTS_TABLENAME}");
 
             if (!string.IsNullOrEmpty(filter))
             {
-                queryText.Append(" WHERE ");
+                queryText.Append("\nWHERE ");
                 queryText.Append(filter);
             }
 
-            queryText.Append(" LIMIT 1");
+            queryText.Append("\nLIMIT 1");
 
-            var result = await ExecuteQueryAsync(new QueryInfo()
-            {
-                Query = queryText.ToString(),
-                OutputFormat = "JSONEachRow"
-            }, cancellationToken: cancellationToken);
-
-            if (result.Exception != null)
-                throw new Exception(result.Exception.DisplayText);
-
-            return result.Output;
+            return await _connection.QueryFirstAsync<TjEvent>(queryText.ToString());
         }
-        
-        private async Task ExecuteNonQuery(string query, CancellationToken cancellationToken = default)
+
+        public async Task<T?> GetTjEventProperties<T>(string filter, string[] fields, T anonTypeObject, CancellationToken cancellationToken = default)
         {
-            var result = await ExecuteQueryAsync(new QueryInfo() { Query = query }, cancellationToken: cancellationToken);
+            await OpenConnection(cancellationToken);
 
-            if (result.Exception != null)
-                throw new Exception(result.Exception.DisplayText);
-        }
-        
-        private static List<T> DeserializeObjects<T>(ByteString bytes)
-            => DeserializeObjects<T>(bytes.ToArray());
+            var queryText = new StringBuilder("SELECT\n");
 
-        private static List<T> DeserializeObjects<T>(byte[] jsonBytes)
-        {
-            var result = new List<T>();
-
-            using var mStream = new MemoryStream(jsonBytes);
-            using var streamReader = new StreamReader(mStream);
-
-            while (!streamReader.EndOfStream)
+            for (int i = 0; i < fields.Length; i++)
             {
-                var line = streamReader.ReadLine();
-                if (line == null)
-                    break;
+                if (i > 0)
+                    queryText.AppendLine(", ");
 
-                var item = JsonConvert.DeserializeObject<T>(line)!;
-                result.Add(item);
+                queryText.Append(fields[i]);
             }
 
-            return result;
+            queryText.AppendLine();
+
+            queryText.AppendLine($"FROM {RAW_TJEVENTS_TABLENAME}");
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                queryText.Append("\nWHERE ");
+                queryText.Append(filter);
+            }
+
+            queryText.Append("\nLIMIT 1");
+
+            return await _connection.QueryFirstAsync<T>(queryText.ToString());
+        }
+
+        public async Task<List<TjEvent>> GetTjEvents(string filter = "", CancellationToken cancellationToken = default)
+        {
+            await OpenConnection(cancellationToken);
+
+            var queryText = new StringBuilder(
+                $@"SELECT 
+                    *
+                FROM {RAW_TJEVENTS_TABLENAME}");
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                queryText.Append("\nWHERE ");
+                queryText.Append(filter);
+            }
+
+            var result = await _connection.QueryAsync<TjEvent>(queryText.ToString());
+
+            return result.ToList();
+        }
+
+        public async Task<List<TjEvent>> GetTjEvents(int count, int offset, string filter = "", CancellationToken cancellationToken = default)
+        {
+            await OpenConnection(cancellationToken);
+
+            var queryText = new StringBuilder(
+                $"""
+                SELECT 
+                    *
+                FROM {RAW_TJEVENTS_TABLENAME}
+                """);
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                queryText.Append("\nWHERE ");
+                queryText.Append(filter);
+            }
+
+            queryText.Append($" ORDER BY DateTime DESC LIMIT {count} OFFSET {offset}");
+
+            var result = await _connection.QueryAsync<TjEvent>(queryText.ToString());
+
+            return result.ToList();
+        }
+
+        public async Task<int> GetTjEventsCount(string filter = "", CancellationToken cancellationToken = default)
+        {
+            await OpenConnection(cancellationToken);
+
+            var queryText = new StringBuilder(
+                $"""
+                SELECT 
+                    COUNT(*) 
+                FROM {RAW_TJEVENTS_TABLENAME}
+                """);
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                queryText.Append("\nWHERE ");
+                queryText.Append(filter);
+            }
+
+            return await _connection.QueryFirstAsync<int>(queryText.ToString());
+        }
+
+        public async Task<long> GetLastFilePosition(string agentId, string seanceId, string templateId, string folder, string file, CancellationToken cancellationToken = default)
+        {
+            await OpenConnection(cancellationToken);
+
+            try
+            {
+                var query =
+                    $"""
+                    SELECT 
+                        EndPosition 
+                    FROM {RAW_TJEVENTS_TABLENAME}
+                    PREWHERE
+                        AgentId = toUUID('{agentId}')
+                        and SeanceId = toUUID('{seanceId}')
+                        and TemplateId = toUUID('{templateId}')
+                        and Folder = '{folder}'
+                        and File = '{file}'
+                    ORDER BY
+                        DateTime DESC
+                    LIMIT 1
+                    """;
+
+                return await _connection.QueryFirstOrDefaultAsync<long>(query);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get last file position");
+                throw;
+            }
+        }
+
+        public async Task DeleteTechLogSeanceData(string seanceId, CancellationToken cancellationToken = default)
+        {
+            await OpenConnection(cancellationToken);
+
+            var query = $"ALTER TABLE {RAW_TJEVENTS_TABLENAME} DELETE WHERE SeanceId = toUUID('{seanceId}')";
+
+            await _connection.ExecuteAsync(query);
+        }
+
+        private async Task OpenConnection(CancellationToken cancellationToken = default)
+        {
+            await _connection.OpenAsync(cancellationToken);
+
+            await _connection.ChangeDatabaseAsync(_database);
         }
     }
 }

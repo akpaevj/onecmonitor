@@ -1,11 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using OnecMonitor.Server.Converters.Json;
-using System.ComponentModel.DataAnnotations;
-using System.Linq.Expressions;
-
-namespace OnecMonitor.Server.Models
+﻿namespace OnecMonitor.Server.Models
 {
     public class Agent
     {
