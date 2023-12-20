@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>dotnet-onecmonitor-047196c4-3fb2-4036-87d3-7523309e7be4</UserSecretsId>
@@ -23,7 +23,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ConfigureAwait.Fody" Version="3.3.2" PrivateAssets="All"/>
+		<PackageReference Include="ConfigureAwait.Fody" Version="3.3.2" PrivateAssets="All" />
 		<PackageReference Include="Fody" Version="6.8.0">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -61,6 +61,11 @@
 	<ItemGroup>
 	  <TypeScriptCompile Include="Scripts\models.ts" />
 	  <TypeScriptCompile Include="Scripts\site.ts" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="wwwroot\css\" />
+	  <Folder Include="wwwroot\dist\" />
 	</ItemGroup>
 
 	<ProjectExtensions>

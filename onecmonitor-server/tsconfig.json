@@ -2,7 +2,7 @@
   "compilerOptions": {
     "outDir": "./dist/",
     "sourceMap": true,
-    "noImplicitUseStrict": true,
+    //"noImplicitUseStrict": true,
     "alwaysStrict": false,
     "noImplicitAny": false,
     "module": "es6",

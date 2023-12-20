@@ -10,7 +10,6 @@ module.exports = {
             './Scripts/site.ts'
         ]
     },
-    mode: 'development',
     devtool: 'inline-source-map',
     optimization: {
         minimize: false,
