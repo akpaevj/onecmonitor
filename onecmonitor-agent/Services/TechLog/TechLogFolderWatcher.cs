@@ -1,7 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.IO;
-
-namespace OnecMonitor.Agent.Services
+﻿namespace OnecMonitor.Agent.Services.TechLog
 {
     public class TechLogFolderWatcher : IDisposable
     {

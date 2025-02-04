@@ -14,7 +14,7 @@ namespace OnecMonitor.Server.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "7.0.11");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.1");
 
             modelBuilder.Entity("AgentTechLogSeance", b =>
                 {
@@ -59,6 +59,39 @@ namespace OnecMonitor.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Agents");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AdminPassword")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AdminUser")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AgentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PublishAddress")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentId");
+
+                    b.ToTable("InfoBases");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.LogTemplate", b =>
@@ -127,6 +160,32 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("TechLogSeances");
                 });
 
+            modelBuilder.Entity("OnecMonitor.Server.Models.V8Configuration", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DataPath")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsExtension")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Configurations");
+                });
+
             modelBuilder.Entity("AgentTechLogSeance", b =>
                 {
                     b.HasOne("OnecMonitor.Server.Models.Agent", null)
@@ -155,6 +214,22 @@ namespace OnecMonitor.Server.Migrations
                         .HasForeignKey("SeancesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.Agent", "Agent")
+                        .WithMany("InfoBases")
+                        .HasForeignKey("AgentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Agent");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.Agent", b =>
+                {
+                    b.Navigation("InfoBases");
                 });
 #pragma warning restore 612, 618
         }

@@ -2,6 +2,7 @@ using Grpc.Net.Client;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Agent;
 using OnecMonitor.Agent.Services;
+using OnecMonitor.Agent.Services.TechLog;
 using OnecMonitor.Common.Storage;
 using OnecMonitor.Common.TechLog;
 
@@ -13,7 +14,7 @@ var host = Host.CreateDefaultBuilder(args)
             options.ServiceName = "OnecMonitorAgent";
         });
         services.AddDbContext<AppDbContext>();
-        services.AddSingleton<ServerConnection>();
+        services.AddSingleton<OnecMonitorConnection>();
         services.AddSingleton<TechLogFolderWatcher>();
         services.AddSingleton<TechLogExporter>();
         services.AddHostedService<TechLogSeancesWatcher>();

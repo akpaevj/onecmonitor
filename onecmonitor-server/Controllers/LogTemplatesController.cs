@@ -40,21 +40,19 @@ namespace OnecMonitor.Server.Controllers
         {
             var viewModel = new LogTemplateEditViewModel();
 
-            if (id != Guid.Empty)
-            {
-                var item = await _appDbContext.LogTemplates.AsNoTracking().SingleAsync(c => c.Id == id, cancellationToken);
-
-                viewModel.Id = copy ? Guid.Empty : item!.Id;
-                viewModel.Name = item.Name + (copy ? " (copy)" : "");
-                viewModel.Content = item!.Content;
-
-                if (copy)
-                    HttpContext.Request.RouteValues.Remove("copy");
-
+            if (id == Guid.Empty) 
                 return View(viewModel);
-            }
-            else
-                return View(viewModel);
+            
+            var item = await _appDbContext.LogTemplates.AsNoTracking().SingleAsync(c => c.Id == id, cancellationToken);
+
+            viewModel.Id = copy ? Guid.Empty : item!.Id;
+            viewModel.Name = item.Name + (copy ? " (copy)" : "");
+            viewModel.Content = item!.Content;
+
+            if (copy)
+                HttpContext.Request.RouteValues.Remove("copy");
+
+            return View(viewModel);
         }
 
         [HttpPost]
@@ -84,7 +82,7 @@ namespace OnecMonitor.Server.Controllers
 
             await _appDbContext.SaveChangesAsync(cancellationToken);
 
-            return Redirect("/LogTemplates");
+            return Redirect($"LogTemplates");
         }
 
         public async Task<IActionResult> Delete(Guid id)

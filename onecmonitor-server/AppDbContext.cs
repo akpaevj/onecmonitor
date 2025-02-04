@@ -14,6 +14,8 @@ namespace OnecMonitor.Server
         public DbSet<LogTemplate> LogTemplates { get; set; }
         public DbSet<TechLogSeance> TechLogSeances { get; set; }
         public DbSet<TechLogFilter> TechLogFilters { get; set; }
+        public DbSet<V8Configuration> Configurations { get; set; }
+        public DbSet<InfoBase> InfoBases { get; set; }
 
         public AppDbContext(IHostEnvironment hostEnvironment)
             => DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-server.db");

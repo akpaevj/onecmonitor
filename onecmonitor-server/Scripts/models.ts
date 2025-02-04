@@ -27,7 +27,7 @@ export interface TjEvent {
     Unknown: boolean;
     real_end_date_time: string;
     real_duration: number;
-};
+}
 
 export interface LockWaitingMember {
     Event: TjEvent;
@@ -36,7 +36,7 @@ export interface LockWaitingMember {
     IndirectCulprits: string[];
     MemberType: LockWaitingMemberType;
     Unknown: boolean;
-};
+}
 
 export interface CallGraphMember {
     Event: TjEvent;
@@ -47,4 +47,4 @@ export interface CallGraphMember {
     CombinedEvents: string[];
     CombinedEventName: string;
     CombinedEventGroup: string;
-};
+}

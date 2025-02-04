@@ -4,16 +4,16 @@
 
 <form class="mb-3" method="get">
 
-    @* <div class="input-group mb-3">
+    <div class="input-group mb-3">
         <input class="form-control" asp-for="Filter" type="text" placeholder="WHERE clause" list="filtersList" aria-describedby="searchBtn">
         <input class="btn btn-primary" type="submit" id="searchBtn" value="Search" />
-    </div> *@
+    </div>
 
-    <div class="input-group  mb-3">
+    @* <div class="input-group mb-3">
         <textarea hidden asp-for="Filter" id="where">@Model.Filter</textarea>
         <div class="form-control" style="min-height: 400px" id="sql_editor"></div>
         <input class="btn btn-primary" type="submit" id="searchBtn" value="Search" />
-    </div>
+    </div> *@
 
     <table id="techlog" class="table">
         <thead class="bg-dark text-white">
@@ -28,21 +28,23 @@
         <tbody>
             @foreach (var item in Model.TjEvents)
             {
-                <tr class="cursor-pointer om-event-row @item.AdditionalCss">
-                    <td scope="row" data-bs-toggle="collapse" data-bs-target="#eventDetails-@item.TjEvent.Id" aria-expanded="false">@item.TjEvent.DateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff")</td>
-                    <td scope="row" data-bs-toggle="collapse" data-bs-target="#eventDetails-@item.TjEvent.Id" aria-expanded="false">@item.TjEvent.Duration</td>
-                    <td scope="row" data-bs-toggle="collapse" data-bs-target="#eventDetails-@item.TjEvent.Id" aria-expanded="false">@item.TjEvent.EventName</td>
-                    <td scope="row" data-bs-toggle="collapse" data-bs-target="#eventDetails-@item.TjEvent.Id" aria-expanded="false">@item.TjEvent.Level</td>
-                    <td scope="row" class="text-center">
+                var detailsId = $"eventDetails-{item.TjEvent.Id}";
+                
+                <tr data-bs-toggle="collapse" data-bs-target="#@detailsId" aria-expanded="false" aria-controls="@detailsId" class="cursor-pointer om-event-row @item.AdditionalCss">
+                    <td>@item.TjEvent.DateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff")</td>
+                    <td>@item.TjEvent.Duration</td>
+                    <td>@item.TjEvent.EventName</td>
+                    <td>@item.TjEvent.Level</td>
+                    <td class="text-center">
                         @foreach (var action in item.AvailableActions)
                         {
                             <a class="btn btn-outline-dark btn-sm" asp-action="@action.Action" asp-route-id="@item.TjEvent.Id">@action.Name</a>
                         }
                     </td>
                 </tr>
-                <tr>
+                <tr class="collapse" id="@detailsId">
                     <td colspan="5" class="m-0 border-0 p-0">
-                        <div class="collapse m-0 border-0 p-0" id="eventDetails-@item.TjEvent.Id">
+                        <div class="m-0 border-0 p-0">
                             <table class="table table-bordered mb-0 @item.AdditionalCss">
                                 <thead>
                                     <tr>
@@ -67,11 +69,12 @@
         </tbody>
     </table>
 
-    <nav om-current-page="@Model.CurrentPage" class="align-self-center" om-pages-count="@Model.PagesCount" om-filter="@Model.Filter" />
+    <nav om-current-page="@Model.CurrentPage" class="align-self-center" om-pages-count="@Model.PagesCount" om-filter="@Model.Filter"></nav>
 
 </form>
 
-@section Scripts {
+@section Scripts
+{
     <script type="text/javascript">
         function init() {
             const editorContainer = document.getElementById('sql_editor');

@@ -1,49 +1,32 @@
-﻿using OnecMonitor.Common.Models;
-using OnecMonitor.Common.TechLog;
+﻿using OnecMonitor.Common.TechLog;
 using OnecMonitor.Server.Models;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 
 namespace OnecMonitor.Server.Services
 {
-    public class AgentsConnectionsManager : BackgroundService
+    public class AgentsConnectionsManager(
+        IConfiguration configuration,
+        IServiceProvider serviceProvider,
+        TechLogProcessor techLogProcessor,
+        ILogger<AgentsConnectionsManager> logger)
+        : BackgroundService
     {
-        private readonly string _host;
-        private readonly int _port;
-        private readonly Socket _socket;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly TechLogProcessor _techLogProcessor;
-        private readonly ILogger<AgentsConnectionsManager> _logger;
+        private readonly string _host = configuration.GetValue("OnecMonitor:Tcp:Host", "0.0.0.0");
+        private readonly int _port = configuration.GetValue("OnecMonitor:Tcp:Port", 7001);
+        private readonly Socket _socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
         // k - agent id, v - connection id
         private readonly ConcurrentDictionary<Guid, Guid> _commandsSubscribers = new();
 
-        public ConcurrentDictionary<Guid, AgentConnection> Connections { get; private set; } = new();
-
-        public AgentsConnectionsManager(
-            IConfiguration configuration, 
-            IServiceProvider serviceProvider,
-            TechLogProcessor techLogProcessor,
-            ILogger<AgentsConnectionsManager> logger) 
-        {
-            _serviceProvider = serviceProvider;
-            _techLogProcessor = techLogProcessor;
-            _logger = logger;
-
-            _host = configuration.GetValue("OnecMonitor:Tcp:Host", "0.0.0.0")!;
-            _port = configuration.GetValue("OnecMonitor:Tcp:Port", 7001);
-
-            _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        }
+        private ConcurrentDictionary<Guid, AgentConnection> Connections { get; } = new();
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _socket.Bind(new IPEndPoint(IPAddress.Parse(_host), _port));
 
-            _logger.LogInformation($"Listening agents on: {_host}:{_port}");
+            logger.LogInformation($"Listening agents on: {_host}:{_port}");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -51,12 +34,12 @@ namespace OnecMonitor.Server.Services
 
                 var client = await _socket.AcceptAsync(stoppingToken);
 
-                var agentConnection = new AgentConnection(client, _techLogProcessor, _serviceProvider);
+                var agentConnection = new AgentConnection(client, techLogProcessor, serviceProvider);
                 agentConnection.AgentConnected += AgentConnection_Connected;
                 agentConnection.AgentDisconnected += AgentConnection_Disconnected;
                 agentConnection.SubscribedForCommands += AgentConnection_SubscribedForCommands;
 
-                _ = agentConnection.StartListening(stoppingToken);
+                _ = agentConnection.Listen(stoppingToken);
             }
 
             _socket.Close();
@@ -66,7 +49,7 @@ namespace OnecMonitor.Server.Services
         {
             Connections.TryAdd(agentConnection.ConnectionId, agentConnection);
 
-            _logger.LogInformation($"Agent connected: {agentConnection.AgentInstance!.InstanceName}");
+            logger.LogInformation($"Agent connected: {agentConnection.AgentInstance!.InstanceName}");
         }
 
         private void AgentConnection_Disconnected(AgentConnection agentConnection)
@@ -81,7 +64,7 @@ namespace OnecMonitor.Server.Services
             if (commandsWatcher.Key != Guid.Empty)
                 _commandsSubscribers.TryRemove(commandsWatcher.Key, out _);
 
-            _logger.LogInformation($"Agent disconnected: {agentConnection.AgentInstance!.InstanceName}");
+            logger.LogInformation($"Agent disconnected: {agentConnection.AgentInstance!.InstanceName}");
         }
 
         private void AgentConnection_SubscribedForCommands(AgentConnection agentConnection)
@@ -92,6 +75,15 @@ namespace OnecMonitor.Server.Services
         public bool IsConnected(Guid agentId)
             => _commandsSubscribers.ContainsKey(agentId);
 
+        public AgentConnection? GetCommandsSubscriberConnection(Guid id)
+        {
+            if (_commandsSubscribers.TryGetValue(id, out var connectionId) &&
+                Connections.TryGetValue(connectionId, out var agentConnection)) 
+                return agentConnection;
+
+            return null;
+        }
+        
         public List<Agent> GetConnectedAgents(List<Agent> agents)
             => agents.Where(c => _commandsSubscribers.ContainsKey(c.Id)).ToList();
 
@@ -99,13 +91,17 @@ namespace OnecMonitor.Server.Services
         {
             foreach(var agent in agents)
             {
-                if (_commandsSubscribers.TryGetValue(agent.Id, out var connectionId) && Connections.TryGetValue(connectionId, out var connection))
+                var connection = GetCommandsSubscriberConnection(agent.Id);
+                if (connection == null)
+                    continue;
+                
+                try
                 {
-                    try
-                    {
-                        await connection.UpdateTechLogSeances(null, cancellationToken);
-                    }
-                    catch { }
+                    await connection.UpdateTechLogSeances(null, cancellationToken);
+                }
+                catch
+                {
+                    // ignored
                 }
             }
         }

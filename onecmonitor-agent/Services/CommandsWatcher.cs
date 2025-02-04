@@ -1,58 +1,62 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing.Text;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Common.Models;
+using OneSTools.Common.Platform;
 
 namespace OnecMonitor.Agent.Services
 {
     internal class CommandsWatcher : BackgroundService
     {
-        private readonly AsyncServiceScope _scope;
-        private readonly ServerConnection _serverConnection;
+        private readonly OnecMonitorConnection _onecMonitorConnection;
         private readonly AppDbContext _appDbContext;
         private readonly ILogger<CommandsWatcher> _logger;
 
         public CommandsWatcher(IServiceProvider serviceProvider, ILogger<CommandsWatcher> logger) 
         {
-            _scope = serviceProvider.CreateAsyncScope();
-            _serverConnection = _scope.ServiceProvider.GetRequiredService<ServerConnection>();
-            _appDbContext = _scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var scope = serviceProvider.CreateAsyncScope();
+            _onecMonitorConnection = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
+            _appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             _logger = logger;
         }
 
-        protected async override Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogTrace("Start watching commands");
 
-            await _serverConnection.SubscribeForCommands(stoppingToken);
+            await _onecMonitorConnection.SubscribeForCommands(stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var message = await _serverConnection.ReadMessage(stoppingToken);
-
-                switch (message.Header.Type)
+                try
                 {
-                    case MessageType.TechLogSeances:
-                        await UpdateTechLogSeances(stoppingToken);
-                        break;
-                    default:
-                        throw new Exception("Received unespected message type");
+                    var message = await _onecMonitorConnection.ReadMessage(stoppingToken);
+
+                    // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+                    switch (message.Header.Type)
+                    {
+                        case MessageType.TechLogSeances:
+                            await UpdateTechLogSeances(stoppingToken);
+                            break;
+                        case MessageType.InstalledPlatformsRequest:
+                            await _onecMonitorConnection.SendInstalledPlatforms(message, stoppingToken);
+                            break;
+                        default:
+                            throw new Exception("Received unexpected message type");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to read message: {ex}");
                 }
             }
         }
 
-        public async Task UpdateTechLogSeances(CancellationToken cancellationToken)
+        private async Task UpdateTechLogSeances(CancellationToken cancellationToken)
         {
             _logger.LogTrace("Updating tech log seances");
 
             try
             {
-                var seances = await _serverConnection.GetTechLogSeances(cancellationToken);
+                var seances = await _onecMonitorConnection.GetTechLogSeances(cancellationToken);
 
                 await _appDbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -94,7 +98,6 @@ namespace OnecMonitor.Agent.Services
             catch (Exception ex)
             {
                 await _appDbContext.Database.RollbackTransactionAsync(cancellationToken);
-
                 _logger.LogError(ex, "Failed to update tech log collecting seances");
             }
 

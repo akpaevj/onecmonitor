@@ -2,12 +2,20 @@
 {
     public enum MessageType
     {
-        AgentInfo = 0,
+        // System messages
+        Error,
+        
+        // Client messages
+        AgentInfo,
         SubscribingForCommands,
-        LastFilePositionRequest,
-        LastFilePosition,
         TechLogSeancesRequest,
+        LastFilePositionRequest,
+        TechLogEventContent,
+        InstalledPlatforms,
+        
+        // Server messages
+        LastFilePosition,
         TechLogSeances,
-        TechLogEventContent
+        InstalledPlatformsRequest
     }
 }

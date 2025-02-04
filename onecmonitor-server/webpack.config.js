@@ -1,56 +1,54 @@
-﻿const path = require('path');
-const webpack = require('webpack');
+﻿import {resolve as _resolve} from 'path';
+import {ContextReplacementPlugin} from 'webpack';
 
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+import {CleanWebpackPlugin} from "clean-webpack-plugin";
+import MiniCssExtractPlugin, {loader as _loader} from "mini-css-extract-plugin";
 
-module.exports = {
-    entry: {
-        script: [
-            './Scripts/site.ts'
-        ]
-    },
-    devtool: 'inline-source-map',
-    optimization: {
-        minimize: false,
-        usedExports: false
-    },
-    module: {
-        rules: [
-            {
-                test: /\.tsx?$/,
-                loader: 'ts-loader',
-                options: {
-                    transpileOnly: true
-                }
-            },
-            {
-                test: /\.css$/i,
-                use: [
-                    MiniCssExtractPlugin.loader,
-                    "css-loader"
-                ]
-            },
-        ],
-    },
-    resolve: {
-        extensions: ['.tsx', '.ts', '.js'],
-    },
-    output: {
-        library: {
-            name: "OM",
-            type: "var"
+export const entry = {
+    script: [
+        './Scripts/site.ts'
+    ]
+};
+export const devtool = 'inline-source-map';
+export const optimization = {
+    minimize: false,
+    usedExports: false
+};
+export const module = {
+    rules: [
+        {
+            test: /\.tsx?$/,
+            loader: 'ts-loader',
+            options: {
+                transpileOnly: true
+            }
         },
-        filename: 'dist/app.js',
-        path: path.resolve(__dirname, 'wwwroot'),
-    },
-    plugins: [
-        new CleanWebpackPlugin({
-            cleanOnceBeforeBuildPatterns: ["dist"]
-        }),
-        new MiniCssExtractPlugin({
-            filename: "css/site.css",
-        }),
-        new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en|ru/)
+        {
+            test: /\.css$/i,
+            use: [
+                _loader,
+                "css-loader"
+            ]
+        },
     ],
 };
+export const resolve = {
+    extensions: ['.tsx', '.ts', '.js'],
+};
+export const output = {
+    library: {
+        name: "OM",
+        type: "var"
+    },
+    filename: 'dist/app.js',
+    path: _resolve(__dirname, 'wwwroot'),
+};
+export const plugins = [
+    new CleanWebpackPlugin({
+        cleanOnceBeforeBuildPatterns: ["dist"]
+    }),
+    new MiniCssExtractPlugin({
+        filename: "css/site.css",
+    }),
+    new ContextReplacementPlugin(/moment[/\\]locale$/, /en|ru/)
+];

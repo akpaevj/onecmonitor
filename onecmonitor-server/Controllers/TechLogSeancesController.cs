@@ -104,7 +104,7 @@ namespace OnecMonitor.Server.Controllers
                 ModelState.AddModelError(nameof(viewModel.Duration), "Duration cannot be less than 1 minute");
 
             if (viewModel.StartMode == TechLogSeanceStartMode.Scheduled && viewModel.StartDateTime < DateTime.UtcNow)
-                ModelState.AddModelError(nameof(viewModel.StartDateTime), "Scheduled seance must happend in the future");
+                ModelState.AddModelError(nameof(viewModel.StartDateTime), "Scheduled seance must happened in the future");
 
             if (viewModel.StartMode != TechLogSeanceStartMode.Monitor && newConnectedAgents.Count == 0)
                 ModelState.AddModelError(nameof(viewModel.ConnectedAgents), "It doesn't make sense to start seance without connected agents=)");

@@ -1,24 +1,17 @@
-﻿using OnecMonitor.Agent.Extensions;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Text;
+using OnecMonitor.Agent.Extensions;
 
-namespace OnecMonitor.Agent.Services
+namespace OnecMonitor.Agent.Services.TechLog
 {
-    internal class NewTechLogReader : ITechLogReader, IDisposable
+    internal sealed class NewTechLogReader : ITechLogReader, IDisposable
     {
         private readonly StreamReader _reader;
         private readonly StringBuilder _eventContentBuffer = new();
         private readonly int _prefixLength;
-        private bool disposedValue;
+        private bool _disposedValue;
 
-        public long Position { get; private set; } = 0;
-        public string FilePath { get; private set; } = string.Empty;
+        public long Position { get; private set; }
+        public string FilePath { get; }
         public string EventContent { get; private set; } = string.Empty;
 
         public NewTechLogReader(string path, long position = 0)
@@ -28,16 +21,16 @@ namespace OnecMonitor.Agent.Services
             var noBomEncoding = new UTF8Encoding(false);
             var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.SequentialScan);
             _reader = new StreamReader(fileStream, noBomEncoding);
-            var peek = _reader.Peek();
+            _reader.Peek();
 
             var fileName = Path.GetFileNameWithoutExtension(path);
-            var prefix = $"20{fileName[0..2]}-{fileName[2..4]}-{fileName[4..6]} {fileName[6..8]}:";
+            var prefix = $"20{fileName[..2]}-{fileName[2..4]}-{fileName[4..6]} {fileName[6..8]}:";
             _prefixLength = prefix.Length;
             _eventContentBuffer.Append(prefix);
 
             if (position > 0)
                 _reader.SetPosition(position);
-            else if (_reader.CurrentEncoding != noBomEncoding)
+            else if (!Equals(_reader.CurrentEncoding, noBomEncoding))
                 _reader.SetPosition(3);
 
             Position = _reader.GetPosition();
@@ -85,7 +78,7 @@ namespace OnecMonitor.Agent.Services
 
         private static bool IsEventBeginning(ReadOnlySpan<char> line)
             => line.Length > 5
-                && char.IsDigit(line![0])
+                && char.IsDigit(line[0])
                 && char.IsDigit(line[1])
                 && line[2] == ':'
                 && char.IsDigit(line[3])
@@ -94,16 +87,16 @@ namespace OnecMonitor.Agent.Services
 
         private bool EventContentBufferHasData() => _eventContentBuffer.Length > _prefixLength;
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                     _reader.Dispose();
 
                 EventContent = string.Empty;
                 _eventContentBuffer.Clear();
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 

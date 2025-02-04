@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="SSH.NET" Version="2024.2.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="MessagePack.Annotations">
+        <HintPath>..\..\..\.nuget\packages\messagepack.annotations\3.1.2\lib\netstandard2.0\MessagePack.Annotations.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+</Project>

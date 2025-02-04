@@ -1,0 +1,28 @@
+@model OnecMonitor.Server.ViewModels.DeleteDialogViewModel
+
+<div class="modal" id="@Model.Id" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Item deleting</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="message">Do you want to delete "{template_name}"?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a class="btn btn-primary" asp-controller="@Model.Controller" asp-action="@Model.Action" asp-route-id="deleting_item_id">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        function setModalContent(name, id) {
+            const modal = document.getElementById('@Model.Id')[0];
+            modal.innerHTML = modal.innerHTML.replace('{template_name}', name).replace('deleting_item_id', id);
+        }
+    </script>
+}

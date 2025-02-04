@@ -24,38 +24,40 @@
 
 	<ItemGroup>
 		<PackageReference Include="ConfigureAwait.Fody" Version="3.3.2" PrivateAssets="All" />
-		<PackageReference Include="Fody" Version="6.8.0">
+		<PackageReference Include="Fody" Version="6.9.1">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Grpc.AspNetCore" Version="2.57.0" />
-		<PackageReference Include="Grpc.AspNetCore.Server" Version="2.57.0" />
-		<PackageReference Include="Grpc.AspNetCore.Web" Version="2.57.0" />
-		<PackageReference Include="Grpc.Net.Client" Version="2.57.0" />
-		<PackageReference Include="Grpc.Net.ClientFactory" Version="2.57.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.58.0">
+		<PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
+		<PackageReference Include="Grpc.AspNetCore.Server" Version="2.67.0" />
+		<PackageReference Include="Grpc.AspNetCore.Web" Version="2.67.0" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.67.0" />
+		<PackageReference Include="Grpc.Net.ClientFactory" Version="2.67.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.69.0">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="7.0.12" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.12">
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="9.0.1" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.1">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.12" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.12">
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.1" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.12" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.1">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.1" />
-		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="7.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.1" />
+		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="System.Threading.Tasks.Dataflow" Version="7.0.0" />
+		<PackageReference Include="System.Threading.Tasks.Dataflow" Version="9.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\onecmonitor-common\onecmonitor-common.csproj" />
+	  <ProjectReference Include="..\OneSTools.Common\OneSTools.Common.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -66,6 +68,10 @@
 	<ItemGroup>
 	  <Folder Include="wwwroot\css\" />
 	  <Folder Include="wwwroot\dist\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <_ContentIncludedByDefault Remove="Views\Home\Index.cshtml" />
 	</ItemGroup>
 
 	<ProjectExtensions>

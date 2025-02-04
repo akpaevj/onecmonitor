@@ -1,14 +1,13 @@
 ﻿using System.Text;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Agent.Models;
-using OnecMonitor.Common.Models;
 
-namespace OnecMonitor.Agent.Services
+namespace OnecMonitor.Agent.Services.TechLog
 {
     public class TechLogSeancesWatcher : BackgroundService
     {
-        private readonly string _logFolder = string.Empty;
-        private readonly string _logCfgPath = string.Empty;
+        private readonly string _logFolder;
+        private readonly string _logCfgPath;
 
         private readonly AsyncServiceScope _scope;
         private readonly AppDbContext _dbContext;
@@ -78,7 +77,10 @@ namespace OnecMonitor.Agent.Services
 
                             deletedCount++;
                         }
-                        catch { }
+                        catch
+                        {
+                            // ignored
+                        }
                     }
 
                     if (deletedCount > 0)

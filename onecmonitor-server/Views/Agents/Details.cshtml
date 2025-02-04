@@ -1,0 +1,35 @@
+@model OnecMonitor.Server.ViewModels.Agents.AgentViewModel
+
+@{
+    ViewData["Title"] = "Agent";
+}
+
+<div class="mb-3">
+    <label asp-for="InstanceName" class="form-label">Instance name</label>
+    <input type="text" class="form-control disabled" asp-for="InstanceName" value="@Model.InstanceName">
+</div>
+
+<div class="mb-3">
+    <label asp-for="IsConnected" class="form-label">Is connected</label>
+    <input type="text" class="form-control disabled" asp-for="IsConnected" value="@Model.IsConnected">
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Architecture</th>
+                <th>Version</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.InstalledPlatforms)
+            {
+                <tr>
+                    <td>@item.Arch</td>
+                    <td>@item.Version</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

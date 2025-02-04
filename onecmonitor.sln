@@ -12,6 +12,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "onecmonitor-agent", "onecmo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "onecmonitor-common", "onecmonitor-common\onecmonitor-common.csproj", "{962697E9-BCC7-451C-A2A7-530D78B066CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneSTools.Common", "OneSTools.Common\OneSTools.Common.csproj", "{4CE235AB-E07C-4A8F-9831-650F23039098}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +32,10 @@ Global
 		{962697E9-BCC7-451C-A2A7-530D78B066CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{962697E9-BCC7-451C-A2A7-530D78B066CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{962697E9-BCC7-451C-A2A7-530D78B066CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CE235AB-E07C-4A8F-9831-650F23039098}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CE235AB-E07C-4A8F-9831-650F23039098}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CE235AB-E07C-4A8F-9831-650F23039098}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CE235AB-E07C-4A8F-9831-650F23039098}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

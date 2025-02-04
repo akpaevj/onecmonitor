@@ -7,45 +7,68 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom box-shadow mb-3">
-        <div class="container-fluid">
-            <a class="navbar-brand" asp-area="" asp-controller="Agents" asp-action="Index">
-                <p class="m-0">
-                    <span class="onec-text-yellow">Onec</span>Mon<span class="onec-text-yellow">i</span>tor
-                </p>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                <ul class="navbar-nav flex-grow-1">
-                    <li class="nav-item">
-                        <a class="nav-link text-white" asp-area="" asp-controller="TechLogSeances" asp-action="Index">TechLog seances</a>
+
+<div class="container-fluid">
+    <div class="row flex-nowrap">
+        <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0 bg-dark">
+            <div class="d-flex flex-column align-items-center align-items-sm-start px-3 pt-2 text-white min-vh-100">
+                <a href="/" class="d-flex align-items-center pb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+                    <a class="navbar-brand" asp-controller="Agents" asp-action="Index">
+                        <p class="fs-2 m-3">
+                            <span class="onec-text-yellow">Onec</span>Mon<span class="onec-text-yellow">i</span>tor
+                        </p>
+                    </a>
+                </a>
+                <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start" id="mainMenu">
+                    
+                    <li>
+                        <a asp-controller="Agents" asp-action="Index" class="nav-link text-white px-0 align-middle">
+                            <i class="fs-4 bi-diagram-3"></i>
+                            <span class="ms-1 d-none d-sm-inline">Agents</span>
+                        </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" asp-area="" asp-controller="LogTemplates" asp-action="Index">Log templates</a>
+                    <li>
+                        <a href="#infoBasesServiceSubMenu" data-bs-toggle="collapse" aria-controls="infoBasesServiceSubMenu" aria-expanded="false" class="nav-link text-white px-0 align-middle">
+                            <i class="fs-4 bi-database"></i>
+                            <span class="ms-1 d-none d-sm-inline">Service</span>
+                        </a>
+                        <ul class="collapse nav flex-column ms-1" id="infoBasesServiceSubMenu" data-bs-parent="#mainMenu">
+                            <li class="w-100">
+                                <a asp-controller="InfoBases" asp-action="Index" class="nav-link text-white px-0"><span class="d-none d-sm-inline">InfoBases</span></a>
+                            </li>
+                            <li>
+                                <a asp-controller="Configurations" asp-action="Index" class="nav-link text-white px-0"><span class="d-none d-sm-inline">Configurations</span></a>
+                            </li>
+                        </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" asp-area="" asp-controller="Agents" asp-action="Index">Agents</a>
+                    <li>
+                        <a href="#techLogSubMenu" data-bs-toggle="collapse" aria-controls="techLogSubMenu" aria-expanded="false" class="nav-link text-white px-0 align-middle">
+                            <i class="fs-4 bi-list-columns"></i>
+                            <span class="ms-1 d-none d-sm-inline">Tech log</span>
+                        </a>
+                        <ul class="collapse nav flex-column ms-1" id="techLogSubMenu" data-bs-parent="#mainMenu">
+                            <li class="w-100">
+                                <a asp-controller="TechLogSeances" asp-action="Index" class="nav-link text-white px-0"><span class="d-none d-sm-inline">Seances</span></a>
+                            </li>
+                            <li>
+                                <a asp-controller="LogTemplates" asp-action="Index" class="nav-link text-white px-0"><span class="d-none d-sm-inline">Templates</span></a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>
         </div>
-    </nav>
-
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2022 - OnecMonitor
+        <div class="col py-3">
+            <div class="container">
+                <main role="main" class="pb-3">
+                    @RenderBody()
+                </main>
+            </div>
         </div>
-    </footer>
-    <script src="~/dist/app.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    </div>
+</div>
+
+<script src="~/dist/app.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -1,8 +1,6 @@
-﻿using System.Diagnostics;
-using System.Text;
-using System.Text.RegularExpressions;
+﻿using System.Text;
 
-namespace OnecMonitor.Agent.Services
+namespace OnecMonitor.Agent.Services.TechLog
 {
     public class TechLogReader : ITechLogReader, IDisposable
     {
@@ -37,8 +35,8 @@ namespace OnecMonitor.Agent.Services
         {
             FilePath = path;
 
-            _buffer = new(new byte[bufferSize]);
-            _eventContentBuffer = new(new byte[bufferSize]);
+            _buffer = new Memory<byte>(new byte[bufferSize]);
+            _eventContentBuffer = new Memory<byte>(new byte[bufferSize]);
 
             _fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, bufferSize * 4, FileOptions.SequentialScan);
             _fileStream.Seek(startPosition, SeekOrigin.Begin);

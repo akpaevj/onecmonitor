@@ -3,16 +3,9 @@ using ClickHouse.Client.Copy;
 using ClickHouse.Client.Utility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore.Query;
 using Dapper;
-using Newtonsoft.Json;
 using OnecMonitor.Common.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.ComponentModel.DataAnnotations;
 
 namespace OnecMonitor.Common.Storage
 {
@@ -105,6 +98,7 @@ namespace OnecMonitor.Common.Storage
                 DestinationTableName = RAW_TJEVENTS_TABLENAME,
                 BatchSize = items.Length
             };
+            await bulk.InitAsync();
 
             try
             {

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using OnecMonitor.Common.Storage;
 using OnecMonitor.Common.TechLog;
 using Grpc.Core;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddWindowsService(options =>
@@ -16,6 +17,8 @@ builder.Services.AddWindowsService(options =>
 });
 builder.WebHost.ConfigureKestrel((context, options) =>
 {
+    options.Limits.MaxRequestBodySize = 2000 * 1024 * 1024;
+    
     // configure http listener
     var host = context.Configuration.GetValue("OnecMonitor:Http:Host", "0.0.0.0")!;
     var port = context.Configuration.GetValue("OnecMonitor:Http:Port", 7002);
@@ -46,7 +49,19 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseDefaultFiles();
+
 app.UseStaticFiles();
+
+var dataPath = Path.Combine(builder.Environment.ContentRootPath, "Data");
+if (!Path.Exists(dataPath))
+    Directory.CreateDirectory(dataPath);
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(dataPath),
+    RequestPath = "/Data"
+});
+
 app.UseRouting();
 
 app.UseCors(options =>
@@ -57,7 +72,7 @@ app.UseCors(options =>
            .Build();
 });
 
-using var scope = app.Services.CreateAsyncScope();
+await using var scope = app.Services.CreateAsyncScope();
 
 var clickHouseContext = scope.ServiceProvider.GetRequiredService<ITechLogStorage>();
 await clickHouseContext.InitDatabase();
@@ -67,6 +82,6 @@ await appDbContext.Database.MigrateAsync();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=TechLogSeances}/{action=Index}/{id?}");
+    pattern: "{controller=Agents}/{action=Index}/{id?}");
 
 app.Run();

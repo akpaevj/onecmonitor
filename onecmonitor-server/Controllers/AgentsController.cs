@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Services;
 using OnecMonitor.Server.ViewModels;
+using OnecMonitor.Server.ViewModels.Agents;
 using OnecMonitor.Server.ViewModels.Agents.Index;
 
 namespace OnecMonitor.Server.Controllers
@@ -58,6 +59,28 @@ namespace OnecMonitor.Server.Controllers
             await _appDbContext.SaveChangesAsync();
 
             return Redirect("/Agents");
+        }
+
+        public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
+        {
+            var agent = await _appDbContext.Agents.FindAsync([id], cancellationToken);
+            if (agent == null)
+                return NotFound();
+
+            var agentConnection = _connectionsManager.GetCommandsSubscriberConnection(agent.Id);
+            var installedPlatforms = agentConnection switch
+            {
+                null => [],
+                _ => await agentConnection.GetInstalledPlatforms(cancellationToken)
+            };
+            
+            return View(new AgentViewModel
+            {
+                Id = agent.Id,
+                InstanceName = agent.InstanceName,
+                IsConnected = agentConnection != null,
+                InstalledPlatforms = installedPlatforms
+            });
         }
     }
 }

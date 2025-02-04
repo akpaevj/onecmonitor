@@ -16,6 +16,15 @@ import { Timeline, DataItem, TimelineOptions, DataGroup } from 'vis-timeline';
 import { CallGraphMember, LockWaitingMember, LockWaitingMemberType, TjEvent } from './models';
 //import { Chart, ChartConfiguration, ChartDataset } from 'chart.js';
 import * as vis from 'visjs-network';
+import {Modal} from "bootstrap";
+
+export function openDeleteDialog(itemId: string, item: string, modalId: string = "deleteDialog") {
+    const elem = document.getElementById(modalId);
+    elem.innerHTML = elem.innerHTML.replace('{template_name}', item).replace('deleting_item_id', itemId);
+    
+    const modal = new Modal(elem);
+    modal.show();
+}
 
 export function initAceEditor(editorContainer: Element, contentContainer: HTMLTextAreaElement, mode: string, heightToContent: Boolean = false) {
     let editor = ace.edit(editorContainer, {
@@ -125,7 +134,7 @@ export function initCallTimeline(chainStr: string) {
         } else {
             let start = new Date(value.Event.start_date_time + "Z");
             let end = new Date(value.Event.date_time + "Z");
-            groupId = value.Event.Properties['process'];
+            groupId = value.Event.props['process'];
 
             item = {
                 id: value.Event.id,

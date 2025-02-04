@@ -11,10 +11,11 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using OneSTools.Common.Platform;
 
 namespace OnecMonitor.Server.Services
 {
-    public class AgentConnection : OnecMonitorConnection
+    public class AgentConnection : ClientConnection
     {
         private readonly AsyncServiceScope _agentScope;
         private readonly AppDbContext _appDbContext;
@@ -22,7 +23,7 @@ namespace OnecMonitor.Server.Services
         private readonly TechLogProcessor _techLogProcessor;
         private readonly ILogger<AgentConnection> _logger;
 
-        public Guid ConnectionId { get; private set; }
+        public Guid ConnectionId { get; }
         public AgentInstance? AgentInstance { get; private set; }
 
         public delegate void AgentConnectedHandler(AgentConnection agentConnection);
@@ -34,16 +35,14 @@ namespace OnecMonitor.Server.Services
         public delegate void AgentDisconnectedHandler(AgentConnection agentConnection);
         public event AgentDisconnectedHandler? AgentDisconnected;
 
-        public AgentConnection(Socket socket, TechLogProcessor techLogProcessor, IServiceProvider serviceProvider) : base(true)
+        public AgentConnection(Socket socket, TechLogProcessor techLogProcessor, IServiceProvider serviceProvider) : base(socket)
         {
-            Disconnected += () =>
+            Disconnected += (_, _) =>
             {
                 AgentDisconnected?.Invoke(this);
             };
 
             ConnectionId = Guid.NewGuid();
-            _socket = socket;
-            _stream = new NetworkStream(socket);
             _agentScope = serviceProvider.CreateAsyncScope();
             _appDbContext = _agentScope.ServiceProvider.GetRequiredService<AppDbContext>();
             _clickHouseContext = serviceProvider.GetRequiredService<ITechLogStorage>();
@@ -51,43 +50,61 @@ namespace OnecMonitor.Server.Services
             _logger = _agentScope.ServiceProvider.GetRequiredService<ILogger<AgentConnection>>();
         }
 
-        public async Task StartListening(CancellationToken cancellationToken)
+        public async Task Listen(CancellationToken cancellationToken)
         {
-            RunStreamLoops();
+            base.Listen();
 
             // first message must be an init message
             var firstMessage = await ReadMessage(cancellationToken);
+            
             if (firstMessage.Header.Type != MessageType.AgentInfo)
             {
-                _socket?.Close();
+                Socket?.Close();
                 throw new Exception("First message must be \"Agent info\" message, connection closed");
             }
-            else
-                await HandleInitMessage(firstMessage.Data, cancellationToken);
+
+            await HandleInitMessage(firstMessage.Data, cancellationToken);
 
             while (!cancellationToken.IsCancellationRequested) 
             {
                 var message = await ReadMessage(cancellationToken);
 
-                switch (message.Header.Type)
+                try
                 {
-                    case MessageType.TechLogEventContent:
-                        await HandleTechLogEventContent(message.Data, cancellationToken);
-                        break;
-                    case MessageType.LastFilePositionRequest:
-                        await HandleLastFilePositionRequest(message, cancellationToken);
-                        break;
-                    case MessageType.TechLogSeancesRequest:
-                        await UpdateTechLogSeances(message, cancellationToken);
-                        break;
-                    case MessageType.SubscribingForCommands:
-                        await HandleSubscribingForCommands(cancellationToken);
-                        break;
-                    default:
-                        throw new Exception("Received unexpected message type");
-                };
+                    switch (message.Header.Type)
+                    {
+                        case MessageType.TechLogEventContent:
+                            await HandleTechLogEventContent(message.Data, cancellationToken);
+                            break;
+                        case MessageType.LastFilePositionRequest:
+                            await HandleLastFilePositionRequest(message, cancellationToken);
+                            break;
+                        case MessageType.TechLogSeancesRequest:
+                            await UpdateTechLogSeances(message, cancellationToken);
+                            break;
+                        case MessageType.SubscribingForCommands:
+                            await HandleSubscribingForCommands(cancellationToken);
+                            break;
+                        case MessageType.Error:
+                        case MessageType.AgentInfo:
+                        case MessageType.LastFilePosition:
+                        case MessageType.TechLogSeances:
+                        default:
+                            throw new Exception("Received unexpected message type");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await WriteMessage(MessageType.Error, new Error { Message = ex.ToString() }, null, cancellationToken);
+                }
             }
         }
+
+        public async Task<List<V8Platform>> GetInstalledPlatforms(CancellationToken cancellationToken)
+            => await WriteMessageAndWaitResult<List<V8Platform>>(
+                MessageType.InstalledPlatformsRequest, 
+                MessageType.InstalledPlatforms,
+                cancellationToken);
 
         public async Task UpdateTechLogSeances(Message? callMessage, CancellationToken cancellationToken)
         {

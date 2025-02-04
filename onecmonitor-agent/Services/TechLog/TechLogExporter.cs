@@ -1,15 +1,13 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using System.Text;
+using Microsoft.Extensions.Caching.Memory;
 using OnecMonitor.Common.Models;
-using OnecMonitor.Common.TechLog;
-using System.Text;
-using static System.Formats.Asn1.AsnWriter;
 
-namespace OnecMonitor.Agent.Services
+namespace OnecMonitor.Agent.Services.TechLog
 {
     public class TechLogExporter : IDisposable
     {
         private readonly AsyncServiceScope _scope;
-        private readonly ServerConnection _serverConnection;
+        private readonly OnecMonitorConnection _onecMonitorConnection;
         private readonly TechLogFolderWatcher _techLogWatcher;
         private readonly ILogger<TechLogExporter> _logger;
         private readonly MemoryCache _filesLastPositionCache;
@@ -21,7 +19,7 @@ namespace OnecMonitor.Agent.Services
             ILogger<TechLogExporter> logger)
         {
             _scope = serviceProvider.CreateAsyncScope();
-            _serverConnection = _scope.ServiceProvider.GetRequiredService<ServerConnection>();
+            _onecMonitorConnection = _scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
             _techLogWatcher = techLogWatcher;
             _logger = logger;
             _filesLastPositionCache = new MemoryCache(new MemoryCacheOptions());
@@ -74,67 +72,74 @@ namespace OnecMonitor.Agent.Services
             _techLogWatcher.Start();
         }
 
-        public async Task StartFileReading(string path)
+        private async Task StartFileReading(string path)
         {
-            var position = await GetLastFilePosition(path, _cts!.Token);
-
-            _logger.LogTrace($"Started reading the new file: {path} from {position} position");
-
             try
             {
-                using var reader = new NewTechLogReader(path, position);
+                var position = await GetLastFilePosition(path, _cts!.Token);
 
-                var fileName = Path.GetFileNameWithoutExtension(path);
-                var folder = Path.GetFileName(Path.GetDirectoryName(path)) ?? "";
-                var seanceId = new Guid(Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(path))))!);
-                var templateId = new Guid(Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(path)))!);
+                _logger.LogTrace($"Started reading the new file: {path} from {position} position");
 
-                var cacheKey = GetCacheKey(ref seanceId, ref templateId, folder, fileName);
-
-                while (!_cts!.IsCancellationRequested)
+                try
                 {
-                    var read = false;
+                    using var reader = new NewTechLogReader(path, position);
 
-                    try
+                    var fileName = Path.GetFileNameWithoutExtension(path);
+                    var folder = Path.GetFileName(Path.GetDirectoryName(path)) ?? "";
+                    var seanceId = new Guid(Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(path))))!);
+                    var templateId = new Guid(Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(path)))!);
+
+                    var cacheKey = GetCacheKey(ref seanceId, ref templateId, folder, fileName);
+
+                    while (!_cts!.IsCancellationRequested)
                     {
-                        _logger.LogTrace("Begin reading the next event item");
+                        var read = false;
 
-                        read = reader.MoveNext();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to read log file");
-                    }
-
-                    if (read)
-                    {
-                        _logger.LogTrace("Event is read");
-
-                        var message = new TechLogEventContentDto
+                        try
                         {
-                            SeanceId = seanceId,
-                            TemplateId = templateId,
-                            Folder = folder,
-                            File = fileName,
-                            EndPosition = reader.Position,
-                            Content = reader.EventContent
-                        };
+                            _logger.LogTrace("Begin reading the next event item");
 
-                        await _serverConnection.SendTechLogEventContent(message, _cts.Token);
+                            read = reader.MoveNext();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to read log file");
+                        }
 
-                        CachePosition(cacheKey, message.EndPosition);
+                        if (read)
+                        {
+                            _logger.LogTrace("Event is read");
+
+                            var message = new TechLogEventContentDto
+                            {
+                                SeanceId = seanceId,
+                                TemplateId = templateId,
+                                Folder = folder,
+                                File = fileName,
+                                EndPosition = reader.Position,
+                                Content = reader.EventContent
+                            };
+
+                            await _onecMonitorConnection.SendTechLogEventContent(message, _cts.Token);
+
+                            CachePosition(cacheKey, message.EndPosition);
+                        }
+                        else
+                            break;
                     }
-                    else
-                        break;
+
+                    _logger.LogTrace("Stopping reading the file");
+
+                    _techLogWatcher.StartWatchFile(path);
                 }
-
-                _logger.LogTrace("Stopping reading the file");
-
-                _techLogWatcher.StartWatchFile(path);
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to read log file");
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to read log file");
+                _logger.LogError(ex, "Failed to get last file position");
             }
         }
 
@@ -199,20 +204,19 @@ namespace OnecMonitor.Agent.Services
 
             try
             {
-                return await _serverConnection.GetLastFilePosition(fileInfo.SeanceId, fileInfo.TemplateId, fileInfo.Folder, fileInfo.File, cancellationToken);
+                return await _onecMonitorConnection.GetLastFilePosition(fileInfo.SeanceId, fileInfo.TemplateId, fileInfo.Folder, fileInfo.File, cancellationToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get last file position");
-
                 throw;
             }
         }
 
         public void Dispose()
         {
-            _serverConnection?.Dispose();
-            _techLogWatcher?.Dispose();
+            _onecMonitorConnection.Dispose();
+            _techLogWatcher.Dispose();
         }
     }
 }

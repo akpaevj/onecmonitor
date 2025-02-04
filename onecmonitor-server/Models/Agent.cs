@@ -6,6 +6,8 @@
         public string InstanceName { get; set; } = string.Empty;
 
         public List<TechLogSeance> Seances { get; set; } = new();
+        
+        public List<InfoBase> InfoBases { get; set; } = new();
 
         public override bool Equals(object? obj)
         {
