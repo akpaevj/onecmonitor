@@ -10,9 +10,9 @@ public class InfoBaseEditViewModel
     public string Name { get; set; } = string.Empty;
     public string InfoBaseName { get; set; } = string.Empty;
     public string PublishAddress { get; set; } = string.Empty;
-    public string AdminUser { get; set; } = string.Empty;
-    public string AdminPassword { get; set; } = string.Empty;
     
+    public Guid CredentialsId { get; set; }
+    [ValidateNever] public SelectList Credentials { get; set; } = null!;
     public Guid ClusterId { get; set; }
     [ValidateNever] public SelectList Clusters { get; set; } = null!;
 }

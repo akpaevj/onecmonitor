@@ -5,5 +5,5 @@ namespace OnecMonitor.Server.ViewModels;
 
 public record SelectItemDialogViewModel(
     string ItemsModelProperty,
-    List<SelectableItem> Items,
-    List<SelectableItem> AvailableItems);
+    List<SelectableItemViewModel> Items,
+    List<SelectableItemViewModel> AvailableItems);

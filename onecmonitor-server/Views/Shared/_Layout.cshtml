@@ -1,7 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using OnecMonitor.Server.Helpers
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,12 +12,12 @@
 
 <div class="container-fluid">
     <div class="row flex-nowrap">
-        <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0 bg-dark">
+        <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0 bg-dark-subtle">
             <div class="d-flex flex-column align-items-center align-items-sm-start px-3 pt-2 text-white min-vh-100">
                 <a href="/" class="d-flex align-items-center pb-3 mb-md-0 me-md-auto text-white text-decoration-none">
                     <a class="navbar-brand" asp-controller="Agents" asp-action="Index">
                         <p class="fs-2 m-3">
-                            <span class="onec-text-yellow">Onec</span>Mon<span class="onec-text-yellow">i</span>tor
+                            <span class="text-primary">Onec</span>Mon<span class="text-primary">i</span>tor
                         </p>
                     </a>
                 </a>
@@ -36,6 +36,11 @@
                         </a>
                         <ul class="collapse nav flex-column ms-1" id="infoBasesServiceSubMenu" data-bs-parent="#mainMenu">
                             <li class="w-100">
+                                <a asp-controller="Credentials" asp-action="Index" class="nav-link text-white px-0">
+                                    <span class="d-none d-sm-inline">Credentials</span>
+                                </a>
+                            </li>
+                            <li class="w-100">
                                 <a asp-controller="Clusters" asp-action="Index" class="nav-link text-white px-0">
                                     <span class="d-none d-sm-inline">Clusters</span>
                                 </a>
@@ -45,12 +50,12 @@
                                     <span class="d-none d-sm-inline">InfoBases</span>
                                 </a>
                             </li>
-                            <li>
+                            <li class="w-100">
                                 <a asp-controller="Configurations" asp-action="Index" class="nav-link text-white px-0">
                                     <span class="d-none d-sm-inline">Configurations</span>
                                 </a>
                             </li>
-                            <li>
+                            <li class="w-100">
                                 <a asp-controller="UpdateInfoBaseTasks" asp-action="Index" class="nav-link text-white px-0">
                                     <span class="d-none d-sm-inline">Update infobase tasks</span>
                                 </a>
@@ -79,7 +84,7 @@
             </div>
         </div>
         <div class="col py-3">
-            <div class="container">
+            <div class="container-fluid">
                 <main role="main" class="pb-3">
                     @RenderBody()
                 </main>

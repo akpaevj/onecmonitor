@@ -2,11 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Services;
 using OnecMonitor.Server.ViewModels;
 using OnecMonitor.Server.ViewModels.Agents;
-using OnecMonitor.Server.ViewModels.Agents.Index;
 
 namespace OnecMonitor.Server.Controllers
 {
@@ -65,7 +65,7 @@ namespace OnecMonitor.Server.Controllers
                 IsConnected = agentConnection != null,
                 InstalledPlatforms = installedPlatforms,
                 Services = services,
-                Clusters = mapper.Map<List<SelectableItem>>(agent.Clusters)
+                Clusters = mapper.Map<List<SelectableItemViewModel>>(agent.Clusters)
             };
             
             return View(await PrepareVewModel(vm, cancellationToken));
@@ -81,24 +81,10 @@ namespace OnecMonitor.Server.Controllers
             if (model == null)
                 return NotFound();
             
-            var clustersIds = vm.Clusters.Select(c => Guid.Parse(c.Id));
-            
-            var newClusters = await appDbContext.Clusters
-                .Where(c => clustersIds.Contains(c.Id))
-                .ToListAsync(cancellationToken);
-        
-            // add new
-            newClusters
-                .Where(c => !model.Clusters.Contains(c))
-                .ToList()
-                .ForEach(model.Clusters.Add);
-            // remove deleted
-            model.Clusters
-                .Where(c => !newClusters.Contains(c))
-                .ToList()
-                .ForEach(c => model.Clusters.Remove(c));
+            await UiHelper.UpdateModelItems(appDbContext.Clusters, vm.Clusters, model.Clusters, cancellationToken);
             
             await appDbContext.SaveChangesAsync(cancellationToken);
+            
             return RedirectToAction("Index");
         }
         
@@ -123,12 +109,12 @@ namespace OnecMonitor.Server.Controllers
         
         private async Task<AgentEditViewModel> PrepareVewModel(AgentEditViewModel vm, CancellationToken cancellationToken)
         {
-            var items = await appDbContext.Clusters.ToListAsync(cancellationToken);
-            var selectList = items
-                .Where(i => vm.Clusters.FirstOrDefault(c => i.Id.ToString() == c.Id) == null).ToList();
-        
-            vm.AvailableClusters = mapper.Map<List<SelectableItem>>(selectList);
-
+            vm.AvailableClusters = await UiHelper.SelectableItemsFrom(
+                appDbContext.Clusters,
+                vm.Clusters,
+                mapper, 
+                cancellationToken);
+            
             return vm;
         }
     }

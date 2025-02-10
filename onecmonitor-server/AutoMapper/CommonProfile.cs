@@ -3,8 +3,8 @@ using OnecMonitor.Server.Models;
 using OnecMonitor.Server.ViewModels.Agents;
 using OnecMonitor.Server.ViewModels.Clusters;
 using OnecMonitor.Server.ViewModels.Configurations;
+using OnecMonitor.Server.ViewModels.Credentials;
 using OnecMonitor.Server.ViewModels.InfoBases;
-using OnecMonitor.Server.ViewModels.InfoBases.Index;
 using OnecMonitor.Server.ViewModels.TechLogSeances;
 using OnecMonitor.Server.ViewModels.UpdateInfoBaseTasks;
 
@@ -14,15 +14,34 @@ public class CommonProfile : Profile
 {
     public CommonProfile()
     {
-        CreateMap<Agent, SelectableItem>()
+        CreateMap<Agent, SelectableItemViewModel>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.InstanceName))
             .ReverseMap();
-        CreateMap<InfoBase, SelectableItem>().ReverseMap();
-        CreateMap<Cluster, SelectableItem>().ReverseMap();
-        CreateMap<LogTemplate, SelectableItem>().ReverseMap();
-        CreateMap<V8Configuration, SelectableItem>()
+        CreateMap<InfoBase, SelectableItemViewModel>().ReverseMap();
+        CreateMap<Cluster, SelectableItemViewModel>().ReverseMap();
+        CreateMap<LogTemplate, SelectableItemViewModel>().ReverseMap();
+        CreateMap<Credentials, SelectableItemViewModel>().ReverseMap();
+        CreateMap<V8Configuration, SelectableItemViewModel>()
             .ForMember(c => c.Name, opt => opt.MapFrom(src => $"{src.Name} ({src.Version})"))
             .ReverseMap();
+        
+        CreateMap<Credentials, CredentialsListItemViewModel>()
+            .ReverseMap()
+            .ForMember(c => c.Id, i => i.Ignore());
+        
+        CreateMap<Credentials, CredentialsEditViewModel>()
+            .ReverseMap()
+            .ForMember(c => c.Id, i => i.Ignore())
+            .ForMember(c => c.InfoBases, i => i.Ignore())
+            .ForMember(c => c.Clusters, i => i.Ignore());
+
+        CreateMap<V8Configuration, ConfigurationListItemViewModel>()
+            .ReverseMap()
+            .ForMember(c => c.Id, i => i.Ignore());
+        
+        CreateMap<V8Configuration, ConfigurationEditViewModel>()
+            .ReverseMap()
+            .ForMember(c => c.Id, i => i.Ignore());
 
         CreateMap<Cluster, ClusterEditViewModel>()
             .ReverseMap()
@@ -45,7 +64,7 @@ public class CommonProfile : Profile
             .ForMember(c => c.Id, i => i.Ignore())
             .ForMember(c => c.Cluster, i => i.Ignore());
 
-        CreateMap<V8Configuration, ConfigurationViewModel>()
+        CreateMap<V8Configuration, ConfigurationEditViewModel>()
             .ReverseMap()
             .ForMember(c => c.Id, i => i.Ignore());
 

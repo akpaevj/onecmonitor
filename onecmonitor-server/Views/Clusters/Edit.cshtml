@@ -34,6 +34,12 @@
     </div>
 
     <div class="mb-3">
+        <label class="form-label" asp-for="CredentialsId">Credentials</label>
+        <select asp-for="CredentialsId" class="form-control" asp-items="Model.Credentials"></select>
+        <span asp-validation-for="CredentialsId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
         <label class="form-label" asp-for="AgentId">Agent</label>
         <select asp-for="AgentId" class="form-control" asp-items="Model.Agents"></select>
         <span asp-validation-for="AgentId" class="text-danger"></span>

@@ -27,21 +27,15 @@
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="AdminUser">Admin user</label>
-        <input type="text" class="form-control" asp-for="AdminUser" value="@Model.AdminUser">
-        <span asp-validation-for="AdminUser" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label" asp-for="AdminPassword">Admin password</label>
-        <input type="password" class="form-control" asp-for="AdminPassword" value="@Model.AdminPassword">
-        <span asp-validation-for="AdminPassword" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
         <label class="form-label" asp-for="PublishAddress">Publish address</label>
         <input type="text" class="form-control" asp-for="PublishAddress" value="@Model.PublishAddress">
         <span asp-validation-for="PublishAddress" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="CredentialsId">Credentials</label>
+        <select asp-for="CredentialsId" class="form-control" asp-items="Model.Credentials"></select>
+        <span asp-validation-for="CredentialsId" class="text-danger"></span>
     </div>
 
     <div class="mb-3">

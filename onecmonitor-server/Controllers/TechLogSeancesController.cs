@@ -6,6 +6,7 @@ using OnecMonitor.Server.Services;
 using OnecMonitor.Server.ViewModels.TechLogSeances;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using OnecMonitor.Server.Helpers;
 
 namespace OnecMonitor.Server.Controllers
 {
@@ -219,19 +220,21 @@ namespace OnecMonitor.Server.Controllers
             return View(new LockWaitingGraphViewModel { Graph = graph });
         }
 
-        private async Task<TechLogSeanceEditViewModel> PrepareViewModel(TechLogSeanceEditViewModel viewModel, CancellationToken cancellationToken)
+        private async Task<TechLogSeanceEditViewModel> PrepareViewModel(TechLogSeanceEditViewModel vm, CancellationToken cancellationToken)
         {
-            var agents = await dbContext.Agents.ToListAsync(cancellationToken);
-            var selectableAgents = agents
-                .Where(i => viewModel.Agents.FirstOrDefault(c => i.Id.ToString() == c.Id) == null).ToList();
-            viewModel.AvailableAgents = mapper.Map<List<SelectableItem>>(selectableAgents);
+            vm.AvailableAgents = await UiHelper.SelectableItemsFrom(
+                dbContext.Agents,
+                vm.Agents,
+                mapper, 
+                cancellationToken);
             
-            var templates = await dbContext.LogTemplates.ToListAsync(cancellationToken);
-            var selectableTemplates = templates
-                .Where(i => viewModel.Templates.FirstOrDefault(c => i.Id.ToString() == c.Id) == null).ToList();
-            viewModel.AvailableTemplates = mapper.Map<List<SelectableItem>>(selectableTemplates);
-
-            return viewModel;
+            vm.AvailableTemplates = await UiHelper.SelectableItemsFrom(
+                dbContext.LogTemplates,
+                vm.Templates,
+                mapper, 
+                cancellationToken);
+            
+            return vm;
         }
     }
 }

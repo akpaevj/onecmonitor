@@ -23,6 +23,22 @@ namespace OnecMonitor.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Credentials",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    User = table.Column<string>(type: "TEXT", nullable: false),
+                    Password = table.Column<string>(type: "TEXT", nullable: false),
+                    DefaultForClusters = table.Column<bool>(type: "INTEGER", nullable: false),
+                    DefaultV8Admin = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Credentials", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "LogTemplates",
                 columns: table => new
                 {
@@ -69,10 +85,12 @@ namespace OnecMonitor.Server.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
+                    ClusterId = table.Column<string>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Host = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Port = table.Column<int>(type: "INTEGER", nullable: false),
-                    AgentId = table.Column<string>(type: "TEXT", nullable: false)
+                    AgentId = table.Column<string>(type: "TEXT", nullable: false),
+                    CredentialsId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -81,6 +99,12 @@ namespace OnecMonitor.Server.Migrations
                         name: "FK_Clusters_Agents_AgentId",
                         column: x => x.AgentId,
                         principalTable: "Agents",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Clusters_Credentials_CredentialsId",
+                        column: x => x.CredentialsId,
+                        principalTable: "Credentials",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -174,11 +198,11 @@ namespace OnecMonitor.Server.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
+                    InfoBaseId = table.Column<string>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
                     InfoBaseName = table.Column<string>(type: "TEXT", nullable: false),
                     PublishAddress = table.Column<string>(type: "TEXT", nullable: false),
-                    AdminUser = table.Column<string>(type: "TEXT", nullable: false),
-                    AdminPassword = table.Column<string>(type: "TEXT", nullable: false),
+                    CredentialsId = table.Column<string>(type: "TEXT", nullable: false),
                     ClusterId = table.Column<string>(type: "TEXT", nullable: false),
                     UpdateInfoBaseTaskId = table.Column<string>(type: "TEXT", nullable: true)
                 },
@@ -189,6 +213,12 @@ namespace OnecMonitor.Server.Migrations
                         name: "FK_InfoBases_Clusters_ClusterId",
                         column: x => x.ClusterId,
                         principalTable: "Clusters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_InfoBases_Credentials_CredentialsId",
+                        column: x => x.CredentialsId,
+                        principalTable: "Credentials",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -237,6 +267,11 @@ namespace OnecMonitor.Server.Migrations
                 column: "AgentId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Clusters_CredentialsId",
+                table: "Clusters",
+                column: "CredentialsId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Configurations_UpdateInfoBaseTaskId",
                 table: "Configurations",
                 column: "UpdateInfoBaseTaskId");
@@ -245,6 +280,11 @@ namespace OnecMonitor.Server.Migrations
                 name: "IX_InfoBases_ClusterId",
                 table: "InfoBases",
                 column: "ClusterId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InfoBases_CredentialsId",
+                table: "InfoBases",
+                column: "CredentialsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_InfoBases_UpdateInfoBaseTaskId",
@@ -314,6 +354,9 @@ namespace OnecMonitor.Server.Migrations
 
             migrationBuilder.DropTable(
                 name: "Agents");
+
+            migrationBuilder.DropTable(
+                name: "Credentials");
 
             migrationBuilder.DropTable(
                 name: "UpdateInfoBaseTasks");

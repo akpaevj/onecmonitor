@@ -1,50 +1,49 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
-using OnecMonitor.Server.Services;
-using OnecMonitor.Server.ViewModels;
 using OnecMonitor.Server.ViewModels.Clusters;
+using OnecMonitor.Server.ViewModels.Credentials;
 
 namespace OnecMonitor.Server.Controllers;
 
-public class ClustersController(AppDbContext appDbContext, AgentsConnectionsManager connectionsManager, IMapper mapper) : Controller
+public class CredentialsController(AppDbContext appDbContext, IMapper mapper) : Controller
 {
     public async Task<IActionResult> Index()
-        => View(await appDbContext.Clusters.Include(c => c.Agent).ToListAsync());
+        => View(await appDbContext.Credentials.ProjectTo<CredentialsListItemViewModel>(mapper.ConfigurationProvider).ToListAsync());
     
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
         var vm = id != Guid.Empty
-            ? await appDbContext.Clusters
+            ? await appDbContext.Credentials
                 .AsNoTracking()
-                .Include(c => c.Agent)
+                .Include(c => c.Clusters)
                 .Include(c => c.InfoBases)
-                .ProjectTo<ClusterEditViewModel>(mapper.ConfigurationProvider)
+                .ProjectTo<CredentialsEditViewModel>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(cancellationToken)
-            : new ClusterEditViewModel();
+            : new CredentialsEditViewModel();
 
         if (vm == null)
             return NotFound();
         
         return View(await PrepareViewModel(vm, cancellationToken));
     }
-
-    public async Task<IActionResult> Save(ClusterEditViewModel vm, CancellationToken cancellationToken)
+    
+    public async Task<IActionResult> Save(CredentialsEditViewModel vm, CancellationToken cancellationToken)
     {
         var isNew = vm.Id == Guid.Empty;
         
         if (!ModelState.IsValid)
             return View("Edit", await PrepareViewModel(vm, cancellationToken));
         
-        var model = isNew ? new Cluster
+        var model = isNew ? new Credentials()
         {
             Id = Guid.NewGuid()
-        } : await appDbContext.Clusters
+        } : await appDbContext.Credentials
             .Include(c => c.InfoBases)
+            .Include(c => c.Clusters)
             .FirstOrDefaultAsync(i => i.Id == vm.Id, cancellationToken);
         
         if (model == null)
@@ -56,24 +55,19 @@ public class ClustersController(AppDbContext appDbContext, AgentsConnectionsMana
         mapper.Map(vm, model);
 
         await UiHelper.UpdateModelItems(appDbContext.InfoBases, vm.InfoBases, model.InfoBases, cancellationToken);
+        await UiHelper.UpdateModelItems(appDbContext.Clusters, vm.Clusters, model.Clusters, cancellationToken);
         
         await appDbContext.SaveChangesAsync(cancellationToken);
 
         return RedirectToAction("Index");
     }
     
-    private async Task<ClusterEditViewModel> PrepareViewModel(ClusterEditViewModel vm, CancellationToken cancellationToken)
+    private async Task<CredentialsEditViewModel> PrepareViewModel(CredentialsEditViewModel vm, CancellationToken cancellationToken)
     {
-        vm.Credentials = await UiHelper.SelectListFrom(
-            appDbContext.Credentials,
-            i => i.Name,
-            vm.CredentialsId,
-            cancellationToken);
-        
-        vm.Agents = await UiHelper.SelectListFrom(
-            appDbContext.Agents,
-            i => i.InstanceName,
-            vm.AgentId,
+        vm.AvailableClusters = await UiHelper.SelectableItemsFrom(
+            appDbContext.Clusters,
+            vm.Clusters,
+            mapper, 
             cancellationToken);
         
         vm.AvailableInfoBases = await UiHelper.SelectableItemsFrom(
@@ -87,7 +81,7 @@ public class ClustersController(AppDbContext appDbContext, AgentsConnectionsMana
     
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var item = await appDbContext.Clusters.FindAsync(
+        var item = await appDbContext.Credentials.FindAsync(
             [id], 
             cancellationToken: cancellationToken);
         
@@ -95,28 +89,5 @@ public class ClustersController(AppDbContext appDbContext, AgentsConnectionsMana
         await appDbContext.SaveChangesAsync(cancellationToken);
 
         return RedirectToAction("Index");
-    }
-    
-    public async Task<IActionResult> UpdateClusters(CancellationToken cancellationToken)
-    {
-        var connectedAgents = connectionsManager.GetConnectedAgents(appDbContext.Agents.ToList());
-
-        foreach (var commandsConnection in connectedAgents.Select(agent => connectionsManager.GetCommandsSubscriberConnection(agent.Id)))
-        {
-            try
-            {
-                var clusters = await commandsConnection.GetV8Clusters(cancellationToken);
-                var a = 1;
-            }
-            catch (Exception e)
-            {
-                return View("Error", new ErrorViewModel()
-                {
-                    Message = e.Message
-                });
-            }
-        }
-            
-        return RedirectToAction("Index", "Clusters");
     }
 }

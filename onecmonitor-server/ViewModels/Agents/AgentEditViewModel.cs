@@ -13,6 +13,6 @@ public class AgentEditViewModel
     public List<V8Platform> InstalledPlatforms { get; set; } = [];
     public List<V8Service> Services { get; set; } = [];
     
-    public List<SelectableItem> Clusters { get; set; } = [];
-    public List<SelectableItem> AvailableClusters { get; set; } = [];
+    public List<SelectableItemViewModel> Clusters { get; set; } = [];
+    public List<SelectableItemViewModel> AvailableClusters { get; set; } = [];
 }

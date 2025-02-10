@@ -14,9 +14,9 @@ public class UpdateInfoBaseTaskEditViewModel
     public Guid ConfigurationId { get; set; }
     [ValidateNever] public SelectList Configurations { get; set; } = null!;
     
-    [ValidateNever] public List<SelectableItem> Extensions { get; set; } = [];
-    [ValidateNever] public List<SelectableItem> AvailableExtensions { get; set; } = [];
+    [ValidateNever] public List<SelectableItemViewModel> Extensions { get; set; } = [];
+    [ValidateNever] public List<SelectableItemViewModel> AvailableExtensions { get; set; } = [];
     
-    public List<SelectableItem> InfoBases { get; set; } = [];
-    [ValidateNever] public List<SelectableItem> AvailableInfoBases { get; set; } = [];
+    public List<SelectableItemViewModel> InfoBases { get; set; } = [];
+    [ValidateNever] public List<SelectableItemViewModel> AvailableInfoBases { get; set; } = [];
 }

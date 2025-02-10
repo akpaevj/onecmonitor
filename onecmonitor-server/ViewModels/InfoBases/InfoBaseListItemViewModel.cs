@@ -1,4 +1,4 @@
-namespace OnecMonitor.Server.ViewModels.InfoBases.Index;
+namespace OnecMonitor.Server.ViewModels.InfoBases;
 
 public class InfoBaseListItemViewModel
 {

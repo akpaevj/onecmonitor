@@ -7,23 +7,26 @@ namespace OnecMonitor.Server.Helpers;
 
 public static class UiHelper
 {
-    public static async Task<SelectList> SelectListFrom<T1, T2>(
+    public static async Task<SelectList> SelectListFrom<T1>(
         IQueryable<T1> items,
         Func<T1, string> textSelector,
-        T2 selectedValue,
-        CancellationToken cancellationToken) where T1 : DatabaseObject where T2 : struct
+        Guid selectedValue,
+        CancellationToken cancellationToken) where T1 : DatabaseObject
     {
         var list = await items.ToListAsync(cancellationToken);
+        var selectListItems = list.Select(i => new { Id = i.Id.ToString(), Name = textSelector(i) }).ToList();
+        selectListItems.Add(new { Id = Guid.Empty.ToString(), Name = "Please choose item" });
+        
         return new SelectList(
-            list.Select(i => new { Id = i.Id.ToString(), Name = textSelector(i) }),
+            selectListItems,
             "Id",
             "Name",
             selectedValue.ToString());
     }
 
-    public static async Task<List<SelectableItem>> SelectableItemsFrom<T1>(
+    public static async Task<List<SelectableItemViewModel>> SelectableItemsFrom<T1>(
         IQueryable<T1> queryable,
-        List<SelectableItem> selectedItems,
+        List<SelectableItemViewModel> selectedItems,
         IMapper mapper,
         CancellationToken cancellationToken) where T1 : DatabaseObject
     {
@@ -31,12 +34,12 @@ public static class UiHelper
         var availableItems = allItems
             .Where(i => selectedItems.FirstOrDefault(c => i.Id.ToString() == c.Id) == null).ToList();
         
-        return mapper.Map<List<SelectableItem>>(availableItems);
+        return mapper.Map<List<SelectableItemViewModel>>(availableItems);
     }
 
     public static async Task UpdateModelItems<T1>(
         IQueryable<T1> queryable,
-        List<SelectableItem> vmItems,
+        List<SelectableItemViewModel> vmItems,
         List<T1> modelItems,
         CancellationToken cancellationToken) where T1 : DatabaseObject
     {

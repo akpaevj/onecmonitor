@@ -3,9 +3,9 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.ViewModels.InfoBases;
-using OnecMonitor.Server.ViewModels.InfoBases.Index;
 
 namespace OnecMonitor.Server.Controllers;
 
@@ -31,7 +31,7 @@ public class InfoBasesController(AppDbContext appDbContext, IMapper mapper) : Co
         if (vm == null)
             return NotFound();
         
-        return View(await InitVewModel(vm, cancellationToken));
+        return View(await PrepareViewModel(vm, cancellationToken));
     }
     
     public async Task<IActionResult> Save(Guid id, InfoBaseEditViewModel vm, CancellationToken cancellationToken)
@@ -39,7 +39,7 @@ public class InfoBasesController(AppDbContext appDbContext, IMapper mapper) : Co
         var isNew = id == Guid.Empty;
         
         if (!ModelState.IsValid)
-            return View("Edit", await InitVewModel(vm, cancellationToken));
+            return View("Edit", await PrepareViewModel(vm, cancellationToken));
         
         var model = isNew ? new InfoBase
         {
@@ -59,14 +59,13 @@ public class InfoBasesController(AppDbContext appDbContext, IMapper mapper) : Co
         return RedirectToAction("Index");
     }
     
-    private async Task<InfoBaseEditViewModel> InitVewModel(InfoBaseEditViewModel vm, CancellationToken cancellationToken)
+    private async Task<InfoBaseEditViewModel> PrepareViewModel(InfoBaseEditViewModel vm, CancellationToken cancellationToken)
     {
-        var clusters = await appDbContext.Clusters.ToListAsync(cancellationToken);
-        vm.Clusters = new SelectList(
-            clusters.Select(c => new { Id = c.Id.ToString(), Name = c.Name }), 
-            nameof(Cluster.Id),
-            nameof(Cluster.Name),
-            vm.ClusterId.ToString());
+        vm.Clusters = await UiHelper.SelectListFrom(
+            appDbContext.Clusters,
+            i => i.Name,
+            vm.ClusterId,
+            cancellationToken);
 
         return vm;
     }

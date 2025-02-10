@@ -15,6 +15,7 @@ namespace OnecMonitor.Server
         public DbSet<TechLogSeance> TechLogSeances { get; set; }
         public DbSet<TechLogFilter> TechLogFilters { get; set; }
         public DbSet<V8Configuration> Configurations { get; set; }
+        public DbSet<Credentials> Credentials { get; set; }
         public DbSet<InfoBase> InfoBases { get; set; }
         public DbSet<Cluster> Clusters { get; set; }
         public DbSet<UpdateInfoBaseTask> UpdateInfoBaseTasks { get; set; }

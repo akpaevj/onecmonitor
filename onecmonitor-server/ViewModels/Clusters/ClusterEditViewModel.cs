@@ -11,9 +11,12 @@ public class ClusterEditViewModel
     public string Host { get; set; } = string.Empty;
     public int Port { get; set; } = 1540;
 
+    public Guid CredentialsId { get; set; }
+    [ValidateNever] public SelectList Credentials { get; set; } = null!;
+    
     public Guid AgentId { get; set; }
     [ValidateNever] public SelectList Agents { get; set; } = null!;
     
-    [ValidateNever] public List<SelectableItem> InfoBases { get; set; } = [];
-    [ValidateNever] public List<SelectableItem> AvailableInfoBases { get; set; } = [];
+    [ValidateNever] public List<SelectableItemViewModel> InfoBases { get; set; } = [];
+    [ValidateNever] public List<SelectableItemViewModel> AvailableInfoBases { get; set; } = [];
 }

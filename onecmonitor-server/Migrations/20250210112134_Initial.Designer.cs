@@ -10,7 +10,7 @@ using OnecMonitor.Server;
 namespace OnecMonitor.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250208192116_Initial")]
+    [Migration("20250210112134_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -75,6 +75,14 @@ namespace OnecMonitor.Server.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ClusterId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CredentialsId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Host")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -92,7 +100,38 @@ namespace OnecMonitor.Server.Migrations
 
                     b.HasIndex("AgentId");
 
+                    b.HasIndex("CredentialsId");
+
                     b.ToTable("Clusters");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.Credentials", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("DefaultForClusters")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("DefaultV8Admin")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("User")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Credentials");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
@@ -101,15 +140,15 @@ namespace OnecMonitor.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("AdminPassword")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("AdminUser")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("ClusterId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CredentialsId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InfoBaseId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -131,6 +170,8 @@ namespace OnecMonitor.Server.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ClusterId");
+
+                    b.HasIndex("CredentialsId");
 
                     b.HasIndex("UpdateInfoBaseTaskId");
 
@@ -332,7 +373,15 @@ namespace OnecMonitor.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("OnecMonitor.Server.Models.Credentials", "Credentials")
+                        .WithMany("Clusters")
+                        .HasForeignKey("CredentialsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Agent");
+
+                    b.Navigation("Credentials");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
@@ -343,11 +392,19 @@ namespace OnecMonitor.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("OnecMonitor.Server.Models.Credentials", "Credentials")
+                        .WithMany("InfoBases")
+                        .HasForeignKey("CredentialsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("OnecMonitor.Server.Models.UpdateInfoBaseTask", null)
                         .WithMany("InfoBases")
                         .HasForeignKey("UpdateInfoBaseTaskId");
 
                     b.Navigation("Cluster");
+
+                    b.Navigation("Credentials");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTask", b =>
@@ -394,6 +451,13 @@ namespace OnecMonitor.Server.Migrations
 
             modelBuilder.Entity("OnecMonitor.Server.Models.Cluster", b =>
                 {
+                    b.Navigation("InfoBases");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.Credentials", b =>
+                {
+                    b.Navigation("Clusters");
+
                     b.Navigation("InfoBases");
                 });
 

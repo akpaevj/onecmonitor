@@ -1,5 +1,7 @@
 using System.Runtime.InteropServices.JavaScript;
 using System.Text.Json;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,42 +13,29 @@ using OnecMonitor.Server.ViewModels.Configurations;
 
 namespace OnecMonitor.Server.Controllers;
 
-public class ConfigurationsController : Controller
+public class ConfigurationsController(AppDbContext appDbContext, IMapper mapper, IWebHostEnvironment webHostEnvironment) : Controller
 {
-    private readonly AppDbContext _appDbContext;
-    private readonly IWebHostEnvironment _env;
-    
-    public ConfigurationsController(AppDbContext appDbContext, IWebHostEnvironment webHostEnvironment)
-    {
-        _appDbContext = appDbContext;
-        _env = webHostEnvironment;
-    }
-    
     public async Task<IActionResult> Index()
     {
         return View(new ConfigurationsIndexViewModel
         {
-            Items = await _appDbContext.Configurations.Select(c => new ConfigurationViewModel
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Version = c.Version,
-                IsExtension = c.IsExtension
-            }).ToListAsync()
+            Items = await appDbContext.Configurations
+                .ProjectTo<ConfigurationListItemViewModel>(mapper.ConfigurationProvider)
+                .ToListAsync()
         });
     }
 
     public async Task<IActionResult> Edit(Guid id)
     {
         if (id == Guid.Empty)
-            return View(new ConfigurationViewModel());
+            return View(new ConfigurationEditViewModel());
         
-        var item = await _appDbContext.Configurations.FindAsync(id);
+        var item = await appDbContext.Configurations.FindAsync(id);
         
         if (item == null)
             return NotFound();
         
-        return View(new ConfigurationViewModel
+        return View(new ConfigurationEditViewModel
         {
             Id = item.Id,
             Name = item.Name,
@@ -60,12 +49,12 @@ public class ConfigurationsController : Controller
         MultipartBodyLengthLimit = int.MaxValue,
         ValueLengthLimit = int.MaxValue)
     ]
-    public async Task<IActionResult> Save(Guid id, ConfigurationViewModel vm, CancellationToken cancellationToken)
+    public async Task<IActionResult> Save(Guid id, ConfigurationEditViewModel vm, CancellationToken cancellationToken)
     {
         var isNew = id == Guid.Empty;
 
         if (!isNew)
-            ModelState.Remove(nameof(ConfigurationViewModel.File));
+            ModelState.Remove(nameof(ConfigurationEditViewModel.File));
         
         if (!ModelState.IsValid)
             return View("Edit", vm);
@@ -73,7 +62,7 @@ public class ConfigurationsController : Controller
         var model = isNew ? new V8Configuration
         {
             Id = Guid.NewGuid()
-        } : await _appDbContext.Configurations.FindAsync([id], cancellationToken);
+        } : await appDbContext.Configurations.FindAsync([id], cancellationToken);
         
         if (model == null)
             return NotFound();
@@ -82,7 +71,7 @@ public class ConfigurationsController : Controller
         {
             // save file
             var fileName = $"{vm.Name}_{vm.Version}{Path.GetExtension(vm.File.FileName)}";
-            var path = Path.Combine(_env.ContentRootPath, "Data", fileName);
+            var path = Path.Combine(webHostEnvironment.ContentRootPath, "Data", fileName);
 
             if (System.IO.File.Exists(path))
                 return View("Error", new ErrorViewModel { Message = $"File {path} already exists." });
@@ -92,29 +81,29 @@ public class ConfigurationsController : Controller
                 
             model.DataPath = path;
             
-            await _appDbContext.Configurations.AddAsync(model, cancellationToken);
+            await appDbContext.Configurations.AddAsync(model, cancellationToken);
         }
 
         model.Name = vm.Name;
         model.Version = vm.Version;
         model.IsExtension = vm.IsExtension;
 
-        await _appDbContext.SaveChangesAsync(cancellationToken);
+        await appDbContext.SaveChangesAsync(cancellationToken);
 
         return RedirectToAction("Index");
     }
     
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var item = await _appDbContext.Configurations.FindAsync(
+        var item = await appDbContext.Configurations.FindAsync(
             [id], 
             cancellationToken: cancellationToken);
 
         if (System.IO.File.Exists(item!.DataPath))
             System.IO.File.Delete(item.DataPath);
         
-        _appDbContext.Configurations.Remove(item!);
-        await _appDbContext.SaveChangesAsync(cancellationToken);
+        appDbContext.Configurations.Remove(item!);
+        await appDbContext.SaveChangesAsync(cancellationToken);
 
         return RedirectToAction("Index");
     }
