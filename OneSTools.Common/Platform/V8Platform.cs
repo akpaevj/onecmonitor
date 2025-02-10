@@ -14,5 +14,9 @@ public record V8Platform
     [Key(3)]
     public string OnecV8Path { get; init; } = string.Empty;
     [Key(4)]
+    public bool HasRac { get; init; }
+    [Key(5)]
+    public string RacPath { get; init; } = string.Empty;
+    [Key(6)]
     public string Version { get; init; } = string.Empty;
 }

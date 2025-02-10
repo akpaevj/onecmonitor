@@ -1,3 +1,5 @@
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -7,46 +9,27 @@ using OnecMonitor.Server.ViewModels.InfoBases.Index;
 
 namespace OnecMonitor.Server.Controllers;
 
-public class InfoBasesController : Controller
+public class InfoBasesController(AppDbContext appDbContext, IMapper mapper) : Controller
 {
-    private readonly AppDbContext _appDbContext;
-    
-    public InfoBasesController(AppDbContext appDbContext)
-    {
-        _appDbContext = appDbContext;
-    }
-    
     // GET
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
-    {
-        return View(new InfoBasesIndexViewModel
+        => View(new InfoBasesIndexViewModel
         {
-            Items = await _appDbContext.InfoBases.Include(c => c.Agent).Select(c => new InfoBaseListItemViewModel
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Agent = c.Agent.InstanceName,
-                PublishAddress = c.PublishAddress,
-                AdminUser = c.AdminUser,
-                AdminPassword = c.AdminPassword
-            }).ToListAsync(cancellationToken),
+            Items = await appDbContext.InfoBases
+                .Include(c => c.Cluster)
+                .ProjectTo<InfoBaseListItemViewModel>(mapper.ConfigurationProvider)
+                .ToListAsync(cancellationToken)
         });
-    }
 
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
-        var vm = new InfoBaseEditViewModel();
-        
-        if (id != Guid.Empty)
-        {
-            var model = await _appDbContext.InfoBases.FindAsync([id], cancellationToken);
-            vm.Id = model!.Id;
-            vm.Name = model.Name;
-            vm.AgentId = model.AgentId;
-            vm.AdminUser = model.AdminUser;
-            vm.AdminPassword = model.AdminPassword;
-            vm.PublishAddress = model.PublishAddress;
-        }
+        var vm = id == Guid.Empty
+            ? new InfoBaseEditViewModel()
+            : await appDbContext.InfoBases.Include(c => c.Cluster).ProjectTo<InfoBaseEditViewModel>(mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+        if (vm == null)
+            return NotFound();
         
         return View(await InitVewModel(vm, cancellationToken));
     }
@@ -61,45 +44,41 @@ public class InfoBasesController : Controller
         var model = isNew ? new InfoBase
         {
             Id = Guid.NewGuid()
-        } : await _appDbContext.InfoBases.FindAsync([id], cancellationToken);
+        } : await appDbContext.InfoBases.FindAsync([id], cancellationToken);
         
         if (model == null)
             return NotFound();
 
         if (isNew)
-            await _appDbContext.InfoBases.AddAsync(model, cancellationToken);
+            await appDbContext.InfoBases.AddAsync(model, cancellationToken);
+        
+        mapper.Map(vm, model);
 
-        model.Name = vm.Name;
-        model.AgentId = vm.AgentId;
-        model.AdminUser = vm.AdminUser;
-        model.AdminPassword = vm.AdminPassword;
-        model.PublishAddress = vm.PublishAddress;
-
-        await _appDbContext.SaveChangesAsync(cancellationToken);
+        await appDbContext.SaveChangesAsync(cancellationToken);
 
         return RedirectToAction("Index");
     }
     
     private async Task<InfoBaseEditViewModel> InitVewModel(InfoBaseEditViewModel vm, CancellationToken cancellationToken)
     {
-        var agents = await _appDbContext.Agents.ToListAsync(cancellationToken);
-        vm.Agents = new SelectList(
-            agents.Select(c => new { Id = c.Id.ToString(), Name = c.InstanceName }), 
-            nameof(InfoBase.Id),
-            nameof(InfoBase.Name),
-            vm.AgentId.ToString());
+        var clusters = await appDbContext.Clusters.ToListAsync(cancellationToken);
+        vm.Clusters = new SelectList(
+            clusters.Select(c => new { Id = c.Id.ToString(), Name = c.Name }), 
+            nameof(Cluster.Id),
+            nameof(Cluster.Name),
+            vm.ClusterId.ToString());
 
         return vm;
     }
     
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var item = await _appDbContext.InfoBases.FindAsync(
+        var item = await appDbContext.InfoBases.FindAsync(
             [id], 
             cancellationToken: cancellationToken);
         
-        _appDbContext.Entry(item!).State = EntityState.Deleted;
-        await _appDbContext.SaveChangesAsync(cancellationToken);
+        appDbContext.Entry(item!).State = EntityState.Deleted;
+        await appDbContext.SaveChangesAsync(cancellationToken);
 
         return RedirectToAction("Index");
     }

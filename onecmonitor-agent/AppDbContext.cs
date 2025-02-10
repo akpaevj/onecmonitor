@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Agent.Converters;
 using OnecMonitor.Agent.Models;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 using System.Collections.Generic;
 using TechLogSeance = OnecMonitor.Agent.Models.TechLogSeance;
 

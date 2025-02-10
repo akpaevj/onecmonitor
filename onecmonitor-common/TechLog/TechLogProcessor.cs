@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 using OnecMonitor.Common.Storage;
 using System.ComponentModel;
 using System.Runtime.InteropServices;

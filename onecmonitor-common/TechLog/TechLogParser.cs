@@ -1,5 +1,5 @@
 ﻿using System;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 
 namespace OnecMonitor.Common.TechLog
 {

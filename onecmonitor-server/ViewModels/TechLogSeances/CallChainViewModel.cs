@@ -4,6 +4,6 @@ namespace OnecMonitor.Server.ViewModels.TechLogSeances
 {
     public class CallChainViewModel
     {
-        public List<CallGraphMember> Chain { get; set; }
+        public List<CallGraphMember> Chain { get; init; } = [];
     }
 }

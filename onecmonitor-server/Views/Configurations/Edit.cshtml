@@ -1,6 +1,12 @@
 ﻿@using OnecMonitor.Server.ViewModels.Configurations;
 @model ConfigurationViewModel
 
+@{
+    ViewData["Title"] = "Configuration";
+}
+
+<h2 class="mb-3">Configuration</h2>
+
 <form method="post" asp-action="Save" enctype="multipart/form-data" style="height: 100%">
     <div class="mb-3">
         <button class="btn btn-primary" type="submit">Save</button>

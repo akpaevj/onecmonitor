@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using NuGet.Packaging;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 using OnecMonitor.Common.Storage;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;

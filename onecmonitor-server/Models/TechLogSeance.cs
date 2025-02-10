@@ -1,10 +1,9 @@
-﻿using OnecMonitor.Common.Models;
+﻿using OnecMonitor.Common.DTO;
 
 namespace OnecMonitor.Server.Models
 {
-    public class TechLogSeance
+    public class TechLogSeance : DatabaseObject
     {
-        public Guid Id { get; set; }
         public string Description { get; set; } = string.Empty;
         public TechLogSeanceStartMode StartMode { get; set; } = TechLogSeanceStartMode.Immediately;
         public DateTime StartDateTime { get; set; } = DateTime.MinValue;
@@ -12,7 +11,7 @@ namespace OnecMonitor.Server.Models
         public bool DirectSending { get; set; } = false;
         public DateTime FinishDateTime => DateTime.SpecifyKind(StartMode == TechLogSeanceStartMode.Monitor ? DateTime.MaxValue : StartDateTime.AddMinutes(Duration), DateTimeKind.Utc);
 
-        public List<LogTemplate> ConnectedTemplates { get; set; } = new();
-        public List<Agent> ConnectedAgents { get; set; } = new();
+        public List<LogTemplate> Templates { get; set; } = new();
+        public List<Agent> Agents { get; set; } = new();
     }
 }

@@ -1,0 +1,50 @@
+@using OnecMonitor.Server.ViewModels
+@model OnecMonitor.Server.ViewModels.Clusters.ClusterEditViewModel
+
+@{
+    ViewData["Title"] = "Cluster";
+}
+
+<h2 class="mb-3">Cluster</h2>
+
+<form method="post" asp-action="Save" enctype="multipart/form-data" style="height: 100%">
+    <div class="mb-3">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Back</button>
+    </div>
+
+    <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="Name">Name</label>
+        <input type="text" class="form-control" asp-for="Name" value="@Model.Name">
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="Host">Host</label>
+        <input type="text" class="form-control" asp-for="Host" value="@Model.Host">
+        <span asp-validation-for="Host" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="Port">Port</label>
+        <input type="number" class="form-control" asp-for="Port" value="@Model.Port">
+        <span asp-validation-for="Port" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="AgentId">Agent</label>
+        <select asp-for="AgentId" class="form-control" asp-items="Model.Agents"></select>
+        <span asp-validation-for="AgentId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        @await Html.PartialAsync("SelectItemDialog", new SelectItemDialogViewModel(
+            nameof(Model.InfoBases),
+            Model.InfoBases,
+            Model.AvailableInfoBases))
+    </div>
+
+</form>
+

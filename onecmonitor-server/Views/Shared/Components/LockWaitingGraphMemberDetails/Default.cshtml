@@ -13,6 +13,8 @@
         </tr>
     </thead>
     <tbody>
+    @if (Model.Event != null)
+    {
         <tr>
             <td>@Model.Event.DateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff")</td>
             <td>@Model.Event.Duration</td>
@@ -25,23 +27,24 @@
                 <div class="m-0 border-0 p-0" id="eventDetails-@Model.Event.Id">
                     <table class="table table-striped mb-0">
                         <thead>
-                            <tr>
-                                <th>Property</th>
-                                <th>Value</th>
-                            </tr>
+                        <tr>
+                            <th>Property</th>
+                            <th>Value</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            @foreach (var property in Model.Event.Properties)
-                            {
-                                <tr>
-                                    <td style="word-break: break-all">@property.Key</td>
-                                    <td style="word-break: break-all">@property.Value</td>
-                                </tr>
-                            }
+                        @foreach (var property in Model.Event.Properties)
+                        {
+                            <tr>
+                                <td style="word-break: break-all">@property.Key</td>
+                                <td style="word-break: break-all">@property.Value</td>
+                            </tr>
+                        }
                         </tbody>
                     </table>
                 </div>
             </td>
         </tr>
+    }
     </tbody>
 </table>

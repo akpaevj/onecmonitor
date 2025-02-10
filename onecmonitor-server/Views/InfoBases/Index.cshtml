@@ -5,7 +5,7 @@
     ViewData["Title"] = "InfoBases";
 }
 
-<h1 class="mb-3">InfoBases</h1>
+<h2 class="mb-3">InfoBases</h2>
 
 <div class="mb-3">
     <a class="btn btn-primary" asp-action="Edit" role="button">Add</a>
@@ -16,7 +16,8 @@
         <thead>
         <tr>
             <th>Name</th>
-            <th>Agent</th>
+            <th>InfoBaseName</th>
+            <th>Cluster</th>
             <th></th>
         </tr>
         </thead>
@@ -25,7 +26,8 @@
         {
             <tr>
                 <td>@item.Name</td>
-                <td>@item.Agent</td>
+                <td>@item.InfoBaseName</td>
+                <td>@item.Cluster</td>
                 <td class="text-center">
                     <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
                     <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Name')">Delete</a>

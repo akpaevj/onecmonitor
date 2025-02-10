@@ -4,7 +4,7 @@ using ClickHouse.Client.Utility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Dapper;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 using System.Text;
 
 namespace OnecMonitor.Common.Storage

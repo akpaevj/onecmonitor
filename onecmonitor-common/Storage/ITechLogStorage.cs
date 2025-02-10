@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 
 namespace OnecMonitor.Common.Storage
 {

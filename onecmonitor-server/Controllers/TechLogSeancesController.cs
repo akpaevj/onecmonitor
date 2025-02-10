@@ -1,40 +1,22 @@
-﻿using Google.Protobuf.WellKnownTypes;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.CodeAnalysis.Host;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Common.Storage;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Services;
-using OnecMonitor.Server.ViewModels.Log;
 using OnecMonitor.Server.ViewModels.TechLogSeances;
-using System.Threading;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 
 namespace OnecMonitor.Server.Controllers
 {
-    public class TechLogSeancesController : Controller
+    public class TechLogSeancesController(
+        AppDbContext dbContext,
+        AgentsConnectionsManager connectionsManager,
+        ITechLogStorage clickHouseContext,
+        TechLogAnalyzer analyzerService,
+        IMapper mapper)
+        : Controller
     {
-        private readonly AppDbContext _dbContext;
-        private readonly AgentsConnectionsManager _connectionsManager;
-        private readonly ITechLogStorage _clickHouseContext;
-        private readonly TechLogAnalyzer _analyzerService;
-        private readonly ILogger<TechLogSeancesController> _logger;
-
-        public TechLogSeancesController(
-            AppDbContext dbContext,
-            AgentsConnectionsManager connectionsManager,
-            ITechLogStorage clickHouseContext,
-            TechLogAnalyzer analyzerService,
-            ILogger<TechLogSeancesController> logger)
-        {
-            _dbContext = dbContext;
-            _connectionsManager = connectionsManager;
-            _clickHouseContext = clickHouseContext;
-            _analyzerService = analyzerService;
-            _logger = logger;
-        }
-
         public async Task<IActionResult> Index(int pageNumber = 1, CancellationToken cancellationToken = default)
         {
             var viewModel = new TechLogSeancesIndexViewModel
@@ -42,23 +24,15 @@ namespace OnecMonitor.Server.Controllers
                 CurrentPage = pageNumber,
             };
 
-            var items = await _dbContext.TechLogSeances
+            viewModel.Seances = await dbContext.TechLogSeances
                 .AsNoTracking()
                 .OrderBy(c => c.StartDateTime)
                 .Skip((viewModel.CurrentPage - 1) * viewModel.PageSize)
                 .Take(viewModel.PageSize)
+                .ProjectTo<TechLogSeancesListItemViewModel>(mapper.ConfigurationProvider)
                 .ToListAsync(cancellationToken);
 
-            viewModel.Seances = items.Select(c => new TechLogSeancesListItemViewModel()
-            {
-                Id = c.Id,
-                Description = c.Description,
-                StartMode = c.StartMode,
-                StartDateTime= c.StartDateTime,
-                Duration = c.Duration
-            }).ToList();
-
-            var eventsCount = await _dbContext.TechLogSeances.CountAsync(cancellationToken);
+            var eventsCount = await dbContext.TechLogSeances.CountAsync(cancellationToken);
             var pagesCount = eventsCount / viewModel.PageSize;
             if (eventsCount % viewModel.PageSize != 0)
                 pagesCount++;
@@ -69,11 +43,27 @@ namespace OnecMonitor.Server.Controllers
         }
 
         public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
-            => View(await GetViewModel(id, cancellationToken));
+        {
+            var vm = id != Guid.Empty
+                ? await dbContext.TechLogSeances
+                    .AsNoTracking()
+                    .Include(c => c.Templates)
+                    .Include(c => c.Agents)
+                    .ProjectTo<TechLogSeanceEditViewModel>(mapper.ConfigurationProvider)
+                    .FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
+                : new TechLogSeanceEditViewModel();
+
+            if (vm == null)
+                return NotFound();
+        
+            return View(await PrepareViewModel(vm, cancellationToken));
+        }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(TechLogSeanceEditViewModel viewModel, Guid[] connectedAgents, Guid[] connectedTemplates, CancellationToken cancellationToken)
+        public async Task<IActionResult> Edit(TechLogSeanceEditViewModel viewModel, CancellationToken cancellationToken)
         {
+            var isNew = viewModel.Id == Guid.Empty;
+            
             ModelState[nameof(TechLogSeanceEditViewModel.StartDateTime)]?.Errors.Clear();
 
             viewModel.StartDateTime = viewModel.StartMode switch
@@ -90,108 +80,93 @@ namespace OnecMonitor.Server.Controllers
                 _ => viewModel.Duration
             };
 
-            var newConnectedAgents = await _dbContext.Agents
-                .Where(c => connectedAgents
-                    .Contains(c.Id))
-                .ToListAsync(cancellationToken);
-
-            var newConnectedTemplates = await _dbContext.LogTemplates
-                .Where(c => connectedTemplates
-                    .Contains(c.Id))
-                .ToListAsync(cancellationToken);
-
-            if ((viewModel.StartMode == TechLogSeanceStartMode.Immediately || viewModel.StartMode == TechLogSeanceStartMode.Scheduled) && viewModel.Duration <= 0)
+            if (viewModel.StartMode is TechLogSeanceStartMode.Immediately or TechLogSeanceStartMode.Scheduled && viewModel.Duration <= 0)
                 ModelState.AddModelError(nameof(viewModel.Duration), "Duration cannot be less than 1 minute");
 
             if (viewModel.StartMode == TechLogSeanceStartMode.Scheduled && viewModel.StartDateTime < DateTime.UtcNow)
                 ModelState.AddModelError(nameof(viewModel.StartDateTime), "Scheduled seance must happened in the future");
+            
+            var connectedAgents = viewModel.Agents.Select(c => Guid.Parse(c.Id));
+            var newConnectedAgents = await dbContext.Agents
+                .Where(c => connectedAgents
+                    .Contains(c.Id))
+                .ToListAsync(cancellationToken);
+
+            var connectedTemplates = viewModel.Templates.Select(c => Guid.Parse(c.Id));
+            var newConnectedTemplates = await dbContext.LogTemplates
+                .Where(c => connectedTemplates
+                    .Contains(c.Id))
+                .ToListAsync(cancellationToken);
 
             if (viewModel.StartMode != TechLogSeanceStartMode.Monitor && newConnectedAgents.Count == 0)
-                ModelState.AddModelError(nameof(viewModel.ConnectedAgents), "It doesn't make sense to start seance without connected agents=)");
+                ModelState.AddModelError(nameof(viewModel.Agents), "It doesn't make sense to start seance without connected agents=)");
 
             if (newConnectedTemplates.Count == 0)
-                ModelState.AddModelError(nameof(viewModel.ConnectedTemplates), "You must connect templates");
+                ModelState.AddModelError(nameof(viewModel.Templates), "You must connect templates");
 
             if (!ModelState.IsValid)
-                return View(await GetViewModel(viewModel, cancellationToken));
-
-            var affectedAgents = new List<Agent>();
-
-            if (viewModel.Id == Guid.Empty)
+                return View(await PrepareViewModel(viewModel, cancellationToken));
+            
+            var model = isNew ? new TechLogSeance()
             {
-                var item = new TechLogSeance()
-                {
-                    Id = Guid.NewGuid(),
-                    Description = viewModel.Description,
-                    StartMode = viewModel.StartMode,
-                    StartDateTime = viewModel.StartDateTime,
-                    Duration = viewModel.Duration,
-                    ConnectedTemplates = newConnectedTemplates,
-                    ConnectedAgents = newConnectedAgents
-                };
+                Id = Guid.NewGuid()
+            } : await dbContext.TechLogSeances
+                .Include(c => c.Agents)
+                .Include(c => c.Templates)
+                .FirstOrDefaultAsync(i => i.Id == viewModel.Id, cancellationToken);
+        
+            if (model == null)
+                return NotFound();
+            
+            if (isNew)
+                dbContext.Entry(model).State = EntityState.Added;
+            
+            mapper.Map(viewModel, model);
 
-                affectedAgents.AddRange(item.ConnectedAgents);
+            // add new items
+            newConnectedTemplates.Where(c => !model.Templates.Contains(c)).ToList().ForEach(model.Templates.Add);
+            // remove deleted items
+            model.Templates.Where(c => !newConnectedTemplates.Contains(c)).ToList().ForEach(c => model.Templates.Remove(c));
 
-                await _dbContext.AddAsync(item, cancellationToken);
-            }
-            else
-            {
-                var item = await _dbContext.TechLogSeances
-                    .Include(c => c.ConnectedTemplates)
-                    .Include(c => c.ConnectedAgents)
-                    .SingleAsync(c => c.Id == viewModel.Id, cancellationToken);
+            // add new items
+            newConnectedAgents.Where(c => !model.Agents.Contains(c)).ToList().ForEach(model.Agents.Add);
+            // fix affected agents to send notify
+            var affectedAgents = model.Agents.ToList();
+            // remove deleted items
+            model.Agents.Where(c => !newConnectedAgents.Contains(c)).ToList().ForEach(c => model.Agents.Remove(c));
 
-                item.Description = viewModel.Description;
-                item.StartMode = viewModel.StartMode;
-                item.StartDateTime = viewModel.StartDateTime;
-                item.Duration = viewModel.Duration;
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await connectionsManager.UpdateTechLogSeances(affectedAgents, cancellationToken);
 
-                // add new items
-                newConnectedTemplates.Where(c => !item.ConnectedTemplates.Contains(c)).ToList().ForEach(item.ConnectedTemplates.Add);
-                // remove deleted items
-                item.ConnectedTemplates.Where(c => !newConnectedTemplates.Contains(c)).ToList().ForEach(c => item.ConnectedTemplates.Remove(c));
-
-                // add new items
-                newConnectedAgents.Where(c => !item.ConnectedAgents.Contains(c)).ToList().ForEach(item.ConnectedAgents.Add);
-                // fix affected agents to send notify
-                affectedAgents.AddRange(item.ConnectedAgents);
-                // remove deleted items
-                item.ConnectedAgents.Where(c => !newConnectedAgents.Contains(c)).ToList().ForEach(c => item.ConnectedAgents.Remove(c));
-            }
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            await _connectionsManager.UpdateTechLogSeances(affectedAgents, cancellationToken);
-
-            return Redirect("/TechLogSeances");
+            return RedirectToAction("Index");
         }
 
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
-            await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
-                var item = await _dbContext.TechLogSeances.Include(c => c.ConnectedAgents).AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+                var item = await dbContext.TechLogSeances.Include(c => c.Agents).AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
                 if (item == null)
                     throw new Exception($"Failed to find item with id {id}");
 
-                _dbContext.Entry(item).State = EntityState.Deleted;
+                dbContext.Entry(item).State = EntityState.Deleted;
 
-                await _clickHouseContext.DeleteTechLogSeanceData(id.ToString(), cancellationToken);
+                await clickHouseContext.DeleteTechLogSeanceData(id.ToString(), cancellationToken);
 
-                await _dbContext.Database.CommitTransactionAsync(cancellationToken);
+                await dbContext.Database.CommitTransactionAsync(cancellationToken);
 
-                await _dbContext.SaveChangesAsync(cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
 
-                await _connectionsManager.UpdateTechLogSeances(item.ConnectedAgents, cancellationToken);
+                await connectionsManager.UpdateTechLogSeances(item.Agents, cancellationToken);
 
-                return Redirect("/TechLogSeances");
+                return RedirectToAction("Index");
             }
             catch
             {
-                await _dbContext.Database.RollbackTransactionAsync(cancellationToken);
+                await dbContext.Database.RollbackTransactionAsync(cancellationToken);
                 throw;
             }
         }
@@ -203,20 +178,17 @@ namespace OnecMonitor.Server.Controllers
                 SeanceId = id,
                 CurrentPage = pageNumber,
                 Filter = filter,
-                TechLogFilters = await _dbContext.TechLogFilters.ToListAsync(cancellationToken)
+                TechLogFilters = await dbContext.TechLogFilters.ToListAsync(cancellationToken)
             };
 
             filter = filter.Trim();
 
-            if (string.IsNullOrEmpty(filter))
-                filter = $"SeanceId = toUUID('{id}')";
-            else
-                filter = $"SeanceId = toUUID('{id}') and {filter}";
+            filter = string.IsNullOrEmpty(filter) ? $"SeanceId = toUUID('{id}')" : $"SeanceId = toUUID('{id}') and {filter}";
 
-            var items = await _clickHouseContext.GetTjEvents(viewModel.PageSize, (viewModel.CurrentPage - 1) * viewModel.PageSize, filter, cancellationToken);
+            var items = await clickHouseContext.GetTjEvents(viewModel.PageSize, (viewModel.CurrentPage - 1) * viewModel.PageSize, filter, cancellationToken);
             viewModel.TjEvents = items.Select(c => new TechLogListItemViewModel(c)).ToList();
 
-            var eventsCount = await _clickHouseContext.GetTjEventsCount(filter, cancellationToken);
+            var eventsCount = await clickHouseContext.GetTjEventsCount(filter, cancellationToken);
             var pagesCount = eventsCount / viewModel.PageSize;
             if (eventsCount % viewModel.PageSize != 0)
                 pagesCount++;
@@ -228,64 +200,36 @@ namespace OnecMonitor.Server.Controllers
 
         public async Task<IActionResult> CallTimeline(Guid id, CancellationToken cancellationToken)
         {
-            var chain = await _analyzerService.GetCallEventsChain(id, cancellationToken);
+            var chain = await analyzerService.GetCallEventsChain(id, cancellationToken);
 
             return View(new CallChainViewModel { Chain = chain });
         }
 
         public async Task<IActionResult> LockWaitingTimeline(Guid id, CancellationToken cancellationToken)
         {
-            var graph = await _analyzerService.GetLockWaitingGraph(id, cancellationToken);
+            var graph = await analyzerService.GetLockWaitingGraph(id, cancellationToken);
 
             return View(new LockWaitingTimelineViewModel { Graph = graph });
         }
 
         public async Task<IActionResult> LockWaitingGraph(Guid id, CancellationToken cancellationToken)
         {
-            var graph = await _analyzerService.GetLockWaitingGraph(id, cancellationToken);
+            var graph = await analyzerService.GetLockWaitingGraph(id, cancellationToken);
 
             return View(new LockWaitingGraphViewModel { Graph = graph });
         }
 
-        private async Task<TechLogSeanceEditViewModel> GetViewModel(Guid id, CancellationToken cancellationToken)
+        private async Task<TechLogSeanceEditViewModel> PrepareViewModel(TechLogSeanceEditViewModel viewModel, CancellationToken cancellationToken)
         {
-            var viewModel = new TechLogSeanceEditViewModel();
-
-            if (id != Guid.Empty)
-            {
-                var item = await _dbContext.TechLogSeances
-                    .AsNoTracking()
-                    .Include(c => c.ConnectedTemplates)
-                    .Include(c => c.ConnectedAgents)
-                    .SingleAsync(c => c.Id == id, cancellationToken);
-
-                viewModel.Id = item!.Id;
-                viewModel.Description = item.Description;
-                viewModel.StartMode = item.StartMode;
-                viewModel.StartDateTime = item.StartDateTime;
-                viewModel.Duration = item.Duration;
-                viewModel.ConnectedTemplates = item.ConnectedTemplates.Select(c => (c.Id, c.Name)).ToList();
-                viewModel.ConnectedAgents = item.ConnectedAgents.Select(c => (c.Id, c.InstanceName)).ToList();
-            }
-            else
-            {
-                viewModel.StartMode =  TechLogSeanceStartMode.Immediately;
-                viewModel.StartDateTime = DateTime.UtcNow;
-                viewModel.Duration = 6;
-                viewModel.ConnectedAgents = new List<(Guid Id, string Name)>();
-                viewModel.ConnectedTemplates = new List<(Guid Id, string Name)>();
-            }
-
-            return await GetViewModel(viewModel, cancellationToken);
-        }
-
-        private async Task<TechLogSeanceEditViewModel> GetViewModel(TechLogSeanceEditViewModel viewModel, CancellationToken cancellationToken)
-        {
-            viewModel.AllAgents = new SelectList(await _dbContext.Agents.OrderBy(c => c.InstanceName)
-                .ToListAsync(cancellationToken), nameof(Agent.Id), nameof(Agent.InstanceName));
-
-            viewModel.AllTemplates = new SelectList(await _dbContext.LogTemplates.OrderBy(c => c.Name)
-                .ToListAsync(cancellationToken), nameof(LogTemplate.Id), nameof(LogTemplate.Name));
+            var agents = await dbContext.Agents.ToListAsync(cancellationToken);
+            var selectableAgents = agents
+                .Where(i => viewModel.Agents.FirstOrDefault(c => i.Id.ToString() == c.Id) == null).ToList();
+            viewModel.AvailableAgents = mapper.Map<List<SelectableItem>>(selectableAgents);
+            
+            var templates = await dbContext.LogTemplates.ToListAsync(cancellationToken);
+            var selectableTemplates = templates
+                .Where(i => viewModel.Templates.FirstOrDefault(c => i.Id.ToString() == c.Id) == null).ToList();
+            viewModel.AvailableTemplates = mapper.Map<List<SelectableItem>>(selectableTemplates);
 
             return viewModel;
         }

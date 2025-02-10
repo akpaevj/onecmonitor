@@ -1,6 +1,6 @@
 ﻿using System.Text;
 using Microsoft.Extensions.Caching.Memory;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 
 namespace OnecMonitor.Agent.Services.TechLog
 {

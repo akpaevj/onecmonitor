@@ -3,7 +3,7 @@ using OnecMonitor.Server.Models;
 
 namespace OnecMonitor.Server.Migrations
 {
-    public class MigrationsHelper
+    public static class MigrationsHelper
     {
         public static void MigrateBuiltInData(MigrationBuilder migrationBuilder)
         {

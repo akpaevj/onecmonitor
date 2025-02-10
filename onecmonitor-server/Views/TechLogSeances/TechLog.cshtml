@@ -1,6 +1,9 @@
 ﻿@using OnecMonitor.Server.ViewModels.TechLogSeances;
-
 @model TechLogViewModel
+
+@{
+    ViewData["Title"] = "Tech log seance";
+}
 
 <form class="mb-3" method="get">
 
@@ -15,8 +18,9 @@
         <input class="btn btn-primary" type="submit" id="searchBtn" value="Search" />
     </div> *@
 
-    <table id="techlog" class="table">
-        <thead class="bg-dark text-white">
+    <div class="table-responsive">
+        <table id="techlog" class="table table-striped table-bordered">
+            <thead class="bg-dark text-white">
             <tr>
                 <th scope="col" class="col-3">Timestamp</th>
                 <th scope="col" class="col-2">Duration</th>
@@ -24,12 +28,12 @@
                 <th scope="col">Level</th>
                 <th scope="col"></th>
             </tr>
-        </thead>
-        <tbody>
+            </thead>
+            <tbody>
             @foreach (var item in Model.TjEvents)
             {
                 var detailsId = $"eventDetails-{item.TjEvent.Id}";
-                
+
                 <tr data-bs-toggle="collapse" data-bs-target="#@detailsId" aria-expanded="false" aria-controls="@detailsId" class="cursor-pointer om-event-row @item.AdditionalCss">
                     <td>@item.TjEvent.DateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff")</td>
                     <td>@item.TjEvent.Duration</td>
@@ -47,27 +51,28 @@
                         <div class="m-0 border-0 p-0">
                             <table class="table table-bordered mb-0 @item.AdditionalCss">
                                 <thead>
-                                    <tr>
-                                        <th>Property</th>
-                                        <th>Value</th>
-                                    </tr>
+                                <tr>
+                                    <th>Property</th>
+                                    <th>Value</th>
+                                </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var property in item.TjEvent.Properties)
-                                    {
-                                        <tr>
-                                            <td style="word-break: break-all">@property.Key</td>
-                                            <td style="word-break: break-all">@property.Value</td>
-                                        </tr>
-                                    }
+                                @foreach (var property in item.TjEvent.Properties)
+                                {
+                                    <tr>
+                                        <td style="word-break: break-all">@property.Key</td>
+                                        <td style="word-break: break-all">@property.Value</td>
+                                    </tr>
+                                }
                                 </tbody>
                             </table>
                         </div>
                     </td>
                 </tr>
             }
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 
     <nav om-current-page="@Model.CurrentPage" class="align-self-center" om-pages-count="@Model.PagesCount" om-filter="@Model.Filter"></nav>
 

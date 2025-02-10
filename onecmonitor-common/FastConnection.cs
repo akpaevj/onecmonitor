@@ -1,5 +1,5 @@
 ﻿using MessagePack;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.SymbolStore;
@@ -214,7 +214,7 @@ namespace OnecMonitor.Common
             if (message.Header.Type != MessageType.Error) 
                 return;
             
-            var error = MessagePackSerializer.Deserialize<Error>(message.Data, null, cancellationToken);
+            var error = MessagePackSerializer.Deserialize<ErrorDto>(message.Data, null, cancellationToken);
             throw new Exception(error.Message);
         }
         

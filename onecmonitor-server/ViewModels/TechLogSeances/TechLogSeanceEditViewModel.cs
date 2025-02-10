@@ -13,12 +13,13 @@ namespace OnecMonitor.Server.ViewModels.TechLogSeances
         public DateTime StartDateTime { get; set; } = DateTime.MinValue;
         public int Duration { get; set; } = 15;
 
-        public List<(Guid Id, string Name)> ConnectedTemplates { get; set; } = new();
+        public List<SelectableItem> Templates { get; set; } = [];
         [ValidateNever]
-        public List<(Guid Id, string Name)> ConnectedAgents { get; set; } = new();
+        public List<SelectableItem> Agents { get; set; } = [];
+
+        [ValidateNever] 
+        public List<SelectableItem> AvailableTemplates { get; set; } = [];
         [ValidateNever]
-        public SelectList AllTemplates { get; set; }
-        [ValidateNever]
-        public SelectList AllAgents { get; set; }
+        public List<SelectableItem> AvailableAgents { get; set; } = [];
     }
 }

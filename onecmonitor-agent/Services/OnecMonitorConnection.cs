@@ -1,5 +1,5 @@
 ﻿using OnecMonitor.Common;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 using MessagePack;
 using System.Net.Sockets;
 using System.Net;
@@ -69,10 +69,10 @@ namespace OnecMonitor.Agent.Services
         {
             _logger.LogTrace("Last position in file requested");
             
-            return await WriteMessageAndWaitResult<LastFilePositionRequest, long>(
+            return await WriteMessageAndWaitResult<LastFilePositionRequestDto, long>(
                 MessageType.LastFilePositionRequest, 
                 MessageType.LastFilePosition,
-                new LastFilePositionRequest()
+                new LastFilePositionRequestDto()
                 {
                     SeanceId = seanceId,
                     TemplateId = templateId,
@@ -92,9 +92,27 @@ namespace OnecMonitor.Agent.Services
                 cancellationToken);
         }
         
-        public async Task SendInstalledPlatforms(Message message, CancellationToken cancellationToken)
+        public async Task SendInstalledPlatforms(Message message, List<V8Platform> platforms, CancellationToken cancellationToken)
         {
-            await WriteMessage(MessageType.InstalledPlatforms, V8Platforms.GetInstalledPlatforms(), message,
+            await WriteMessage(MessageType.InstalledPlatforms, platforms, message,
+                cancellationToken);
+        }
+        
+        public async Task SendV8Services(Message message, List<V8Service> services, CancellationToken cancellationToken)
+        {
+            await WriteMessage(MessageType.V8Services, services, message,
+                cancellationToken);
+        }
+        
+        public async Task SendV8Clusters(Message message, List<V8Cluster> clusters, CancellationToken cancellationToken)
+        {
+            await WriteMessage(MessageType.ClustersResponse, clusters, message,
+                cancellationToken);
+        }
+        
+        public async Task SendV8InfoBases(Message message, List<V8InfoBaseSummary> infoBases, CancellationToken cancellationToken)
+        {
+            await WriteMessage(MessageType.InfoBasesResponse, infoBases, message,
                 cancellationToken);
         }
 

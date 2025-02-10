@@ -13,9 +13,8 @@ using System.Threading.Tasks;
 
 namespace OnecMonitor.Server.Models
 {
-    public class LogTemplate
+    public class LogTemplate : DatabaseObject
     {
-        public Guid Id { get; init; }
         public string Name { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
 
@@ -153,8 +152,8 @@ namespace OnecMonitor.Server.Models
                 <property name="all"/>
             </log>
             """;
-        public static Guid[] BuiltInTemplatesIds => new[]
-        {
+        public static Guid[] BuiltInTemplatesIds =>
+        [
             ServerMonitoringId,
             WaitingsOnManagedLocksId,
             TimeoutsOnManagedLocksId,
@@ -162,6 +161,6 @@ namespace OnecMonitor.Server.Models
             CallScallsId,
             VrsId,
             FullId
-        };
+        ];
     }
 }

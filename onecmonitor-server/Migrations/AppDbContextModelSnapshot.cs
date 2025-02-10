@@ -18,13 +18,13 @@ namespace OnecMonitor.Server.Migrations
 
             modelBuilder.Entity("AgentTechLogSeance", b =>
                 {
-                    b.Property<string>("ConnectedAgentsId")
+                    b.Property<string>("AgentsId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SeancesId")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("ConnectedAgentsId", "SeancesId");
+                    b.HasKey("AgentsId", "SeancesId");
 
                     b.HasIndex("SeancesId");
 
@@ -33,15 +33,15 @@ namespace OnecMonitor.Server.Migrations
 
             modelBuilder.Entity("LogTemplateTechLogSeance", b =>
                 {
-                    b.Property<string>("ConnectedTemplatesId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("SeancesId")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("ConnectedTemplatesId", "SeancesId");
+                    b.Property<string>("TemplatesId")
+                        .HasColumnType("TEXT");
 
-                    b.HasIndex("SeancesId");
+                    b.HasKey("SeancesId", "TemplatesId");
+
+                    b.HasIndex("TemplatesId");
 
                     b.ToTable("LogTemplateTechLogSeance");
                 });
@@ -54,11 +54,42 @@ namespace OnecMonitor.Server.Migrations
 
                     b.Property<string>("InstanceName")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.ToTable("Agents");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.Cluster", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AgentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentId");
+
+                    b.ToTable("Clusters");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
@@ -75,7 +106,11 @@ namespace OnecMonitor.Server.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("AgentId")
+                    b.Property<string>("ClusterId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InfoBaseName")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -87,9 +122,14 @@ namespace OnecMonitor.Server.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("UpdateInfoBaseTaskId")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("AgentId");
+                    b.HasIndex("ClusterId");
+
+                    b.HasIndex("UpdateInfoBaseTaskId");
 
                     b.ToTable("InfoBases");
                 });
@@ -160,6 +200,66 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("TechLogSeances");
                 });
 
+            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTask", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConfigurationId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StartDateTime")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConfigurationId");
+
+                    b.ToTable("UpdateInfoBaseTasks");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskResult", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FinishDateTime")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InfoBaseId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsFaulted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Log")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdateInfoBaseTaskId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InfoBaseId");
+
+                    b.HasIndex("UpdateInfoBaseTaskId");
+
+                    b.ToTable("UpdateInfoBaseTaskResults");
+                });
+
             modelBuilder.Entity("OnecMonitor.Server.Models.V8Configuration", b =>
                 {
                     b.Property<string>("Id")
@@ -177,11 +277,16 @@ namespace OnecMonitor.Server.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("UpdateInfoBaseTaskId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Version")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UpdateInfoBaseTaskId");
 
                     b.ToTable("Configurations");
                 });
@@ -190,7 +295,7 @@ namespace OnecMonitor.Server.Migrations
                 {
                     b.HasOne("OnecMonitor.Server.Models.Agent", null)
                         .WithMany()
-                        .HasForeignKey("ConnectedAgentsId")
+                        .HasForeignKey("AgentsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -203,23 +308,23 @@ namespace OnecMonitor.Server.Migrations
 
             modelBuilder.Entity("LogTemplateTechLogSeance", b =>
                 {
-                    b.HasOne("OnecMonitor.Server.Models.LogTemplate", null)
-                        .WithMany()
-                        .HasForeignKey("ConnectedTemplatesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("OnecMonitor.Server.Models.TechLogSeance", null)
                         .WithMany()
                         .HasForeignKey("SeancesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("OnecMonitor.Server.Models.LogTemplate", null)
+                        .WithMany()
+                        .HasForeignKey("TemplatesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
+            modelBuilder.Entity("OnecMonitor.Server.Models.Cluster", b =>
                 {
                     b.HasOne("OnecMonitor.Server.Models.Agent", "Agent")
-                        .WithMany("InfoBases")
+                        .WithMany("Clusters")
                         .HasForeignKey("AgentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -227,9 +332,75 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Agent");
                 });
 
+            modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.Cluster", "Cluster")
+                        .WithMany("InfoBases")
+                        .HasForeignKey("ClusterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnecMonitor.Server.Models.UpdateInfoBaseTask", null)
+                        .WithMany("InfoBases")
+                        .HasForeignKey("UpdateInfoBaseTaskId");
+
+                    b.Navigation("Cluster");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTask", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.V8Configuration", "Configuration")
+                        .WithMany()
+                        .HasForeignKey("ConfigurationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Configuration");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskResult", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.InfoBase", "InfoBase")
+                        .WithMany()
+                        .HasForeignKey("InfoBaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnecMonitor.Server.Models.UpdateInfoBaseTask", "Task")
+                        .WithMany("Results")
+                        .HasForeignKey("UpdateInfoBaseTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InfoBase");
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.V8Configuration", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.UpdateInfoBaseTask", null)
+                        .WithMany("Extensions")
+                        .HasForeignKey("UpdateInfoBaseTaskId");
+                });
+
             modelBuilder.Entity("OnecMonitor.Server.Models.Agent", b =>
                 {
+                    b.Navigation("Clusters");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.Cluster", b =>
+                {
                     b.Navigation("InfoBases");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTask", b =>
+                {
+                    b.Navigation("Extensions");
+
+                    b.Navigation("InfoBases");
+
+                    b.Navigation("Results");
                 });
 #pragma warning restore 612, 618
         }

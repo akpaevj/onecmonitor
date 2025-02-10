@@ -3,7 +3,7 @@ using MessagePack;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Common;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 using OnecMonitor.Common.Storage;
 using OnecMonitor.Common.TechLog;
 using OnecMonitor.Server.Models;
@@ -95,7 +95,7 @@ namespace OnecMonitor.Server.Services
                 }
                 catch (Exception ex)
                 {
-                    await WriteMessage(MessageType.Error, new Error { Message = ex.ToString() }, null, cancellationToken);
+                    await WriteMessage(MessageType.Error, new ErrorDto { Message = ex.ToString() }, null, cancellationToken);
                 }
             }
         }
@@ -105,6 +105,18 @@ namespace OnecMonitor.Server.Services
                 MessageType.InstalledPlatformsRequest, 
                 MessageType.InstalledPlatforms,
                 cancellationToken);
+        
+        public async Task<List<V8Cluster>> GetV8Clusters(CancellationToken cancellationToken)
+            => await WriteMessageAndWaitResult<List<V8Cluster>>(
+                MessageType.ClustersRequest, 
+                MessageType.ClustersResponse,
+                cancellationToken);
+        
+        public async Task<List<V8Service>> GetV8Services(CancellationToken cancellationToken)
+            => await WriteMessageAndWaitResult<List<V8Service>>(
+                MessageType.V8ServicesRequest, 
+                MessageType.V8Services,
+                cancellationToken);
 
         public async Task UpdateTechLogSeances(Message? callMessage, CancellationToken cancellationToken)
         {
@@ -112,9 +124,9 @@ namespace OnecMonitor.Server.Services
 
             var agentSeances = await _appDbContext.TechLogSeances
                 .AsNoTracking()
-                .Include(c => c.ConnectedAgents)
-                .Where(c => c.ConnectedAgents.Contains(agent!))
-                .Include(c => c.ConnectedTemplates)
+                .Include(c => c.Agents)
+                .Where(c => c.Agents.Contains(agent!))
+                .Include(c => c.Templates)
                 .ToListAsync(cancellationToken);
 
             var seances = new List<TechLogSeanceDto>();
@@ -123,7 +135,7 @@ namespace OnecMonitor.Server.Services
             {
                 StringBuilder templateBuilder = new();
 
-                c.ConnectedTemplates.ForEach(c =>
+                c.Templates.ForEach(c =>
                 {
                     // add template id and combine templates
                     templateBuilder.AppendLine(c.Content.Replace("{LOG_PATH}", $"{{LOG_PATH}}{c.Id}"));
@@ -191,7 +203,7 @@ namespace OnecMonitor.Server.Services
 
         private async Task HandleLastFilePositionRequest(Message requestMessage, CancellationToken cancellationToken)
         {
-            var request = ParseMessageData<LastFilePositionRequest>(requestMessage.Data, cancellationToken);
+            var request = ParseMessageData<LastFilePositionRequestDto>(requestMessage.Data, cancellationToken);
 
             var response = await _clickHouseContext.GetLastFilePosition(
                 AgentInstance!.Id.ToString(),

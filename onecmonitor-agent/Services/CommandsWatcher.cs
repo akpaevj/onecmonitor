@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.Models;
+﻿using MessagePack;
+using Microsoft.EntityFrameworkCore;
+using OnecMonitor.Common.DTO;
 using OneSTools.Common.Platform;
 
 namespace OnecMonitor.Agent.Services
@@ -37,7 +38,16 @@ namespace OnecMonitor.Agent.Services
                             await UpdateTechLogSeances(stoppingToken);
                             break;
                         case MessageType.InstalledPlatformsRequest:
-                            await _onecMonitorConnection.SendInstalledPlatforms(message, stoppingToken);
+                            await SendInstalledPlatforms(message, stoppingToken);
+                            break;
+                        case MessageType.ClustersRequest:
+                            await SendV8Clusters(message, stoppingToken);
+                            break;
+                        case MessageType.InfoBasesRequest:
+                            await SendV8InfoBases(message, stoppingToken);
+                            break;
+                        case MessageType.V8ServicesRequest:
+                            await SendV8Services(message, stoppingToken);
                             break;
                         default:
                             throw new Exception("Received unexpected message type");
@@ -48,6 +58,46 @@ namespace OnecMonitor.Agent.Services
                     _logger.LogError(ex, $"Failed to read message: {ex}");
                 }
             }
+        }
+
+        private async Task SendInstalledPlatforms(Message message, CancellationToken cancellationToken)
+        {
+            _logger.LogTrace("Send installed platforms");
+            
+            var platforms = V8Platforms.GetInstalledPlatforms();
+            await _onecMonitorConnection.SendInstalledPlatforms(message, platforms.ToList(), cancellationToken);
+        }
+        
+        private async Task SendV8Clusters(Message message, CancellationToken cancellationToken)
+        {
+            _logger.LogTrace("Send clusters");
+            
+            var platform = V8Platforms.GetInstalledPlatforms()[0];
+            var rac = new Rac(platform);
+            var clusters = rac.GetClusters();
+            
+            await _onecMonitorConnection.SendV8Clusters(message, clusters, cancellationToken);
+        }
+        
+        private async Task SendV8Services(Message message, CancellationToken cancellationToken)
+        {
+            _logger.LogTrace("Send services");
+            
+            var services = V8Services.GetV8Services();
+            await _onecMonitorConnection.SendV8Services(message, services, cancellationToken);
+        }
+        
+        private async Task SendV8InfoBases(Message message, CancellationToken cancellationToken)
+        {
+            _logger.LogTrace("Send infobases");
+            
+            var request = MessagePackSerializer.Deserialize<InfoBasesRequestDto>(message.Data, cancellationToken: cancellationToken);
+            
+            var platform = V8Platforms.GetInstalledPlatforms()[0];
+            var rac = new Rac(platform);
+            var infoBases = rac.GetInfoBasesSummaries(request.ClusterId);
+            
+            await _onecMonitorConnection.SendV8InfoBases(message, infoBases, cancellationToken);
         }
 
         private async Task UpdateTechLogSeances(CancellationToken cancellationToken)
@@ -67,13 +117,12 @@ namespace OnecMonitor.Agent.Services
                 {
                     var gotSeance = seances.FirstOrDefault(e => e.Id == c.Id);
 
-                    if (gotSeance != null && c.Template != gotSeance.Template)
-                    {
-                        c.Template = gotSeance.Template;
-                        return true;
-                    }
-                    else
+                    if (gotSeance == null || c.Template == gotSeance.Template) 
                         return false;
+                    
+                    c.Template = gotSeance.Template;
+                    return true;
+
                 }).ToList();
 
                 removedSeances.ForEach(c => c.Status = Models.TechLogSeanceStatus.Deleted);

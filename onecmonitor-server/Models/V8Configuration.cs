@@ -1,8 +1,7 @@
 namespace OnecMonitor.Server.Models;
 
-public class V8Configuration
+public class V8Configuration : DatabaseObject
 {
-    public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Version { get; set; } = string.Empty;
     public bool IsExtension { get; set; } = false;

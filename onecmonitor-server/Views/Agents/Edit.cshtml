@@ -1,0 +1,86 @@
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using OnecMonitor.Server.ViewModels
+@model OnecMonitor.Server.ViewModels.Agents.AgentEditViewModel
+
+@{
+    ViewData["Title"] = "Agent";
+}
+
+<h2 class="mb-3">Agent</h2>
+
+<form method="post" asp-action="Save" style="height: 100%">
+    <div class="mb-3">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Back</button>
+    </div>
+
+    <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
+
+    <div class="mb-3">
+        <label asp-for="InstanceName" class="form-label">Instance name</label>
+        <label type="text" class="form-control" asp-for="InstanceName">@Model.InstanceName</label>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="IsConnected" class="form-label">Is connected</label>
+        <label type="text" class="form-control" asp-for="IsConnected">@Model.IsConnected</label>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Platforms</label>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Architecture</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.InstalledPlatforms)
+                {
+                    <tr>
+                        <td>@item.Version</td>
+                        <td>@item.Arch</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Services</label>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Port</th>
+                    <th>IsActive</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Services)
+                {
+                    <tr>
+                        <td>@item.Name</td>
+                        <td>@item.Type</td>
+                        <td>@item.Port</td>
+                        <td>@item.IsActive</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        @await Html.PartialAsync("SelectItemDialog", new SelectItemDialogViewModel(
+            nameof(Model.Clusters),
+            Model.Clusters,
+            Model.AvailableClusters))
+    </div>
+    
+</form>

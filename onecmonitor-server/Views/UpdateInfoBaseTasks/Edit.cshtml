@@ -1,0 +1,73 @@
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using OnecMonitor.Server.ViewModels
+@model OnecMonitor.Server.ViewModels.UpdateInfoBaseTasks.UpdateInfoBaseTaskEditViewModel
+
+@{
+    ViewData["Title"] = "Update infobase task";
+}
+
+<h2 class="mb-3">Update infobase task</h2>
+
+<form method="post" asp-action="Save" style="height: 100%">
+    <div class="mb-3">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Back</button>
+    </div>
+
+    <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="Description">Description</label>
+        <input type="text" class="form-control" asp-for="Description" value="@Model.Description">
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div id="needUpdateContainer" class="mb-3">
+        <label class="form-check-label" asp-for="NeedUpdateConfiguration">Need update configuration</label>
+        <input class="form-check-input" type="checkbox" asp-for="NeedUpdateConfiguration" checked="@Model.NeedUpdateConfiguration">
+    </div>
+
+    <div id="configurationContainer" class="mb-3">
+        <label class="form-label" asp-for="ConfigurationId">Configuration</label>
+        <select asp-for="ConfigurationId" class="form-control" asp-items="Model.Configurations"></select>
+        <span asp-validation-for="ConfigurationId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        @await Html.PartialAsync("SelectItemDialog", new SelectItemDialogViewModel(
+            nameof(Model.Extensions),
+            Model.Extensions,
+            Model.AvailableExtensions))
+    </div>
+
+    <div class="mb-3">
+        @await Html.PartialAsync("SelectItemDialog", new SelectItemDialogViewModel(
+            nameof(Model.InfoBases),
+            Model.InfoBases,
+            Model.AvailableInfoBases))
+    </div>
+
+</form>
+
+@section Scripts
+{
+    <script type="text/javascript">
+        const containerElem = document.getElementById('configurationContainer');
+        const needUpdateElem = document.querySelector('#needUpdateContainer input');
+        
+        function showHideConfiguration() {
+            if (needUpdateElem.checked)
+                containerElem.removeAttribute('hidden');
+            else
+                containerElem.setAttribute('hidden', '');
+        }
+        
+        needUpdateElem.addEventListener('change', () => {
+            showHideConfiguration();
+        });
+        
+        window.addEventListener('load', () => {
+            showHideConfiguration();
+        });
+    </script>
+}

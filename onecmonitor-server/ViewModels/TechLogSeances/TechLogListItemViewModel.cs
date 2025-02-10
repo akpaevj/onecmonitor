@@ -1,4 +1,4 @@
-﻿using OnecMonitor.Common.Models;
+﻿using OnecMonitor.Common.DTO;
 using OnecMonitor.Server.Models;
 using System.Security.Policy;
 

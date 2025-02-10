@@ -1,4 +1,5 @@
 using System.Net;
+using AutoMapper;
 using OnecMonitor.Server.Services;
 using OnecMonitor.Server;
 using Grpc.Net.Client;
@@ -9,6 +10,8 @@ using OnecMonitor.Common.Storage;
 using OnecMonitor.Common.TechLog;
 using Grpc.Core;
 using Microsoft.Extensions.FileProviders;
+using OnecMonitor.Server.AutoMapper;
+using OnecMonitor.Server.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddWindowsService(options =>
@@ -28,6 +31,8 @@ builder.WebHost.ConfigureKestrel((context, options) =>
         options.Protocols = HttpProtocols.Http1;
     });
 });
+
+builder.Services.AddAutoMapper(typeof(CommonProfile));
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<TechLogAnalyzer>();

@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Migrations;
 using OnecMonitor.Server.Converters.Sqlite;
 using OnecMonitor.Server.Models;
-using OnecMonitor.Common.Models;
+using OnecMonitor.Common.DTO;
 
 namespace OnecMonitor.Server
 {
@@ -16,6 +16,9 @@ namespace OnecMonitor.Server
         public DbSet<TechLogFilter> TechLogFilters { get; set; }
         public DbSet<V8Configuration> Configurations { get; set; }
         public DbSet<InfoBase> InfoBases { get; set; }
+        public DbSet<Cluster> Clusters { get; set; }
+        public DbSet<UpdateInfoBaseTask> UpdateInfoBaseTasks { get; set; }
+        public DbSet<UpdateInfoBaseTaskResult> UpdateInfoBaseTaskResults { get; set; }
 
         public AppDbContext(IHostEnvironment hostEnvironment)
             => DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-server.db");

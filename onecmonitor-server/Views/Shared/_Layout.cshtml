@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using OnecMonitor.Server.Helpers
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -34,10 +36,24 @@
                         </a>
                         <ul class="collapse nav flex-column ms-1" id="infoBasesServiceSubMenu" data-bs-parent="#mainMenu">
                             <li class="w-100">
-                                <a asp-controller="InfoBases" asp-action="Index" class="nav-link text-white px-0"><span class="d-none d-sm-inline">InfoBases</span></a>
+                                <a asp-controller="Clusters" asp-action="Index" class="nav-link text-white px-0">
+                                    <span class="d-none d-sm-inline">Clusters</span>
+                                </a>
+                            </li>
+                            <li class="w-100">
+                                <a asp-controller="InfoBases" asp-action="Index" class="nav-link text-white px-0">
+                                    <span class="d-none d-sm-inline">InfoBases</span>
+                                </a>
                             </li>
                             <li>
-                                <a asp-controller="Configurations" asp-action="Index" class="nav-link text-white px-0"><span class="d-none d-sm-inline">Configurations</span></a>
+                                <a asp-controller="Configurations" asp-action="Index" class="nav-link text-white px-0">
+                                    <span class="d-none d-sm-inline">Configurations</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a asp-controller="UpdateInfoBaseTasks" asp-action="Index" class="nav-link text-white px-0">
+                                    <span class="d-none d-sm-inline">Update infobase tasks</span>
+                                </a>
                             </li>
                         </ul>
                     </li>
@@ -48,10 +64,14 @@
                         </a>
                         <ul class="collapse nav flex-column ms-1" id="techLogSubMenu" data-bs-parent="#mainMenu">
                             <li class="w-100">
-                                <a asp-controller="TechLogSeances" asp-action="Index" class="nav-link text-white px-0"><span class="d-none d-sm-inline">Seances</span></a>
+                                <a asp-controller="TechLogSeances" asp-action="Index" class="nav-link text-white px-0">
+                                    <span class="d-none d-sm-inline">Seances</span>
+                                </a>
                             </li>
                             <li>
-                                <a asp-controller="LogTemplates" asp-action="Index" class="nav-link text-white px-0"><span class="d-none d-sm-inline">Templates</span></a>
+                                <a asp-controller="LogTemplates" asp-action="Index" class="nav-link text-white px-0">
+                                    <span class="d-none d-sm-inline">Templates</span>
+                                </a>
                             </li>
                         </ul>
                     </li>
@@ -72,3 +92,4 @@
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+

@@ -1,23 +1,19 @@
-﻿namespace OnecMonitor.Server.Models
-{
-    public class Agent
-    {
-        public Guid Id { get; init; }
-        public string InstanceName { get; set; } = string.Empty;
+﻿using System.ComponentModel.DataAnnotations;
 
-        public List<TechLogSeance> Seances { get; set; } = new();
-        
-        public List<InfoBase> InfoBases { get; set; } = new();
+namespace OnecMonitor.Server.Models
+{
+    public class Agent : DatabaseObject
+    {
+        [MaxLength(100)]
+        public string InstanceName { get; set; } = string.Empty;
+        public List<TechLogSeance> Seances { get; set; } = [];
+        public List<Cluster> Clusters { get; set; } = [];
 
         public override bool Equals(object? obj)
-        {
-            return obj is Agent agent &&
-                   Id.Equals(agent.Id);
-        }
+            => obj is Agent agent &&
+               Id.Equals(agent.Id);
 
         public override int GetHashCode()
-        {
-            return HashCode.Combine(Id);
-        }
+            => HashCode.Combine(Id);
     }
 }

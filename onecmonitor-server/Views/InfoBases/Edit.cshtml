@@ -1,8 +1,10 @@
 @model OnecMonitor.Server.ViewModels.InfoBases.InfoBaseEditViewModel
 
 @{
-    ViewData["Title"] = "Edit infobase";
+    ViewData["Title"] = "InfoBase";
 }
+
+<h2 class="mb-3">InfoBase</h2>
 
 <form method="post" asp-action="Save" style="height: 100%">
     <div class="mb-3">
@@ -15,26 +17,37 @@
     <div class="mb-3">
         <label class="form-label" asp-for="Name">Name</label>
         <input type="text" class="form-control" asp-for="Name" value="@Model.Name">
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="InfoBaseName">InfoBase name</label>
+        <input type="text" class="form-control" asp-for="InfoBaseName" value="@Model.InfoBaseName">
+        <span asp-validation-for="InfoBaseName" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
         <label class="form-label" asp-for="AdminUser">Admin user</label>
         <input type="text" class="form-control" asp-for="AdminUser" value="@Model.AdminUser">
+        <span asp-validation-for="AdminUser" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
         <label class="form-label" asp-for="AdminPassword">Admin password</label>
         <input type="password" class="form-control" asp-for="AdminPassword" value="@Model.AdminPassword">
+        <span asp-validation-for="AdminPassword" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
         <label class="form-label" asp-for="PublishAddress">Publish address</label>
         <input type="text" class="form-control" asp-for="PublishAddress" value="@Model.PublishAddress">
+        <span asp-validation-for="PublishAddress" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="AgentId">Agent</label>
-        <select asp-for="AgentId" class="form-control" asp-items="Model.Agents"></select>
+        <label class="form-label" asp-for="ClusterId">Cluster</label>
+        <select asp-for="ClusterId" class="form-control" asp-items="Model.Clusters"></select>
+        <span asp-validation-for="ClusterId" class="text-danger"></span>
     </div>
 
 </form>

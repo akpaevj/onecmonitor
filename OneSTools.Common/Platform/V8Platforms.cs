@@ -25,14 +25,17 @@ public static partial class V8Platforms
                     .Select(directory =>
                     {
                         var onecV8 = ExecutableExists(directory, "1cv8");
+                        var rac = ExecutableExists(directory, "rac");
                         
                         return new V8Platform
                         {
                             Arch = arch,
                             PlatformPath = directory,
-                            Version = Path.GetFileName(path),
+                            Version = Path.GetFileName(directory),
                             HasOnecV8 = onecV8.Exists,
-                            OnecV8Path = onecV8.Path
+                            OnecV8Path = onecV8.Path,
+                            HasRac = rac.Exists,
+                            RacPath = rac.Path
                         };
                     })
                 );
