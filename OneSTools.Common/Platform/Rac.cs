@@ -2,15 +2,26 @@ using System.Diagnostics;
 
 namespace OneSTools.Common.Platform;
 
-public class Rac
+public class Rac(V8Platform platform, string host = "localhost", int port = 1545)
 {
-    private readonly V8Platform _platform;
-    
-    public Rac(V8Platform platform, string host = "localhost", int port = 1545)
+    public static Rac? CreateRacForLaunchedAgent()
     {
-        _platform = platform;
+        var agentService = V8Services.GetLaunchedV8Servers().FirstOrDefault();
+        if (agentService == null)
+            return null;
+            
+        var ras = V8Services.GetLaunchedRas()
+            .FirstOrDefault(c => c is { Type: V8ServiceType.RAS, IsActive: true } && c.PlatformPath == agentService.PlatformPath);
+        if (ras == null)
+            return null;
+            
+        var platform = V8Platforms
+            .GetInstalledPlatforms()
+            .FirstOrDefault(c => c.PlatformPath == ras.PlatformPath);
+        
+        return platform == null ? null : new Rac(platform, "localhost", ras.Port);
     }
-
+    
     public List<V8Cluster> GetClusters()
         => GetOutputItems("cluster list")
             .Select(c => new V8Cluster
@@ -39,7 +50,7 @@ public class Rac
     
     public V8InfoBase GetInfoBase(string clusterId, string infoBaseId, string user, string password)
         => GetOutputItems($"infobase --cluster={clusterId} info --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}")
-            .Select(c => new V8InfoBase()
+            .Select(c => new V8InfoBase
             {
                 Id = c["infobase"], 
                 Name = c["name"], 
@@ -100,16 +111,16 @@ public class Rac
 
     private string StartRacAndGetOutput(string command)
     {
-        if (!_platform.HasRac)
-            throw new Exception($"{_platform.PlatformPath} doesn't contain 1cv8 executable");
+        if (!platform.HasRac)
+            throw new Exception($"{platform.PlatformPath} doesn't contain 1cv8 executable");
         
         var psi = new ProcessStartInfo
         {
-            FileName = _platform.RacPath,
+            FileName = platform.RacPath,
             RedirectStandardOutput = true,
             RedirectStandardInput = true,
             RedirectStandardError = true,
-            Arguments = command
+            Arguments = $"{host}:{port} {command}"
         };
 
         using var process = new Process();

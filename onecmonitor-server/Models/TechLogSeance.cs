@@ -11,7 +11,7 @@ namespace OnecMonitor.Server.Models
         public bool DirectSending { get; set; } = false;
         public DateTime FinishDateTime => DateTime.SpecifyKind(StartMode == TechLogSeanceStartMode.Monitor ? DateTime.MaxValue : StartDateTime.AddMinutes(Duration), DateTimeKind.Utc);
 
-        public List<LogTemplate> Templates { get; set; } = new();
-        public List<Agent> Agents { get; set; } = new();
+        public virtual List<LogTemplate> Templates { get; set; } = new();
+        public virtual List<Agent> Agents { get; set; } = new();
     }
 }

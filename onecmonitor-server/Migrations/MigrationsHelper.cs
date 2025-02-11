@@ -10,43 +10,43 @@ namespace OnecMonitor.Server.Migrations
             AppDbContext.AddBuiltInLogTemplate(
                 migrationBuilder,
                 LogTemplate.ServerMonitoringId,
-                "Server monitoring",
+                "Мониторинг сервера",
                 LogTemplate.ServerMonitoringTemplate);
 
             AppDbContext.AddBuiltInLogTemplate(
                 migrationBuilder,
                 LogTemplate.WaitingsOnManagedLocksId,
-                "Waitings on managed locks",
+                "Ожидания на управляемых блокировках",
                 LogTemplate.WaitingsOnManagedLocksTemplate);
 
             AppDbContext.AddBuiltInLogTemplate(
                 migrationBuilder,
                 LogTemplate.TimeoutsOnManagedLocksId,
-                "Timeouts on managed locks",
+                "Таймауты на управляемых блокировках",
                 LogTemplate.TimeoutsOnManagedLocksTemplate);
 
             AppDbContext.AddBuiltInLogTemplate(
                 migrationBuilder,
                 LogTemplate.DeadlocksOnManagedLocksId,
-                "Deadlocks on managed locks",
+                "Взаимоблокировки на управляемых блокировках",
                 LogTemplate.DeadlocksOnManagedLocksTemplate);
 
             AppDbContext.AddBuiltInLogTemplate(
                 migrationBuilder,
                 LogTemplate.CallScallsId,
-                "Calls and scalls",
+                "CALL и SCALL",
                 LogTemplate.CallsScallTemplate);
 
             AppDbContext.AddBuiltInLogTemplate(
                 migrationBuilder,
                 LogTemplate.VrsId,
-                "VRS responses and requestes",
+                "VRSREQUEST и VRSRESPONSE",
                 LogTemplate.VrsTemplate);
 
             AppDbContext.AddBuiltInLogTemplate(
                 migrationBuilder,
                 LogTemplate.FullId,
-                "Full",
+                "Полный",
                 LogTemplate.FullTemplate);
         }
 

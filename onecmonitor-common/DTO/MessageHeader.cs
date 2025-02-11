@@ -6,7 +6,7 @@ namespace OnecMonitor.Common.DTO
 {
     public struct MessageHeader
     {
-        public const int HEADER_LENGTH = 21;
+        public const int HeaderLength = 21;
 
         public MessageType Type { get; set; }
         public int Length { get; set; } = 0;
@@ -27,7 +27,7 @@ namespace OnecMonitor.Common.DTO
 
         public readonly ReadOnlyMemory<byte> AsMemory()
         {
-            var memory = new Memory<byte>(new byte[HEADER_LENGTH]);
+            var memory = new Memory<byte>(new byte[HeaderLength]);
 
             memory.Span[0] = (byte)Type;
             BitConverter.TryWriteBytes(memory[1..].Span, Length);
@@ -38,7 +38,7 @@ namespace OnecMonitor.Common.DTO
 
         public readonly byte[] ToBytesArray()
         {
-            var memory = new byte[HEADER_LENGTH];
+            var memory = new byte[HeaderLength];
 
             memory[0] = (byte)Type;
             BitConverter.TryWriteBytes(memory.AsSpan()[1..], Length);

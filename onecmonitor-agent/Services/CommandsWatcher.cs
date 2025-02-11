@@ -1,5 +1,6 @@
 ﻿using MessagePack;
 using Microsoft.EntityFrameworkCore;
+using OnecMonitor.Agent.Services.InfoBases;
 using OnecMonitor.Common.DTO;
 using OneSTools.Common.Platform;
 
@@ -7,15 +8,17 @@ namespace OnecMonitor.Agent.Services
 {
     internal class CommandsWatcher : BackgroundService
     {
-        private readonly OnecMonitorConnection _onecMonitorConnection;
+        private readonly OnecMonitorConnection _server;
         private readonly AppDbContext _appDbContext;
+        private readonly InfoBasesUpdater _infoBasesUpdater;
         private readonly ILogger<CommandsWatcher> _logger;
 
-        public CommandsWatcher(IServiceProvider serviceProvider, ILogger<CommandsWatcher> logger) 
+        public CommandsWatcher(IServiceProvider serviceProvider, InfoBasesUpdater infoBasesUpdater, ILogger<CommandsWatcher> logger) 
         {
             var scope = serviceProvider.CreateAsyncScope();
-            _onecMonitorConnection = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
+            _server = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
             _appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            _infoBasesUpdater = infoBasesUpdater;
             _logger = logger;
         }
 
@@ -23,34 +26,46 @@ namespace OnecMonitor.Agent.Services
         {
             _logger.LogTrace("Start watching commands");
 
-            await _onecMonitorConnection.SubscribeForCommands(stoppingToken);
+            await _server.Send(MessageType.SubscribingForCommands, stoppingToken);
+            
+            await UpdateTechLogSeances(stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    var message = await _onecMonitorConnection.ReadMessage(stoppingToken);
+                    var message = await _server.ReadMessage(stoppingToken);
 
-                    // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
-                    switch (message.Header.Type)
+                    try
                     {
-                        case MessageType.TechLogSeances:
-                            await UpdateTechLogSeances(stoppingToken);
-                            break;
-                        case MessageType.InstalledPlatformsRequest:
-                            await SendInstalledPlatforms(message, stoppingToken);
-                            break;
-                        case MessageType.ClustersRequest:
-                            await SendV8Clusters(message, stoppingToken);
-                            break;
-                        case MessageType.InfoBasesRequest:
-                            await SendV8InfoBases(message, stoppingToken);
-                            break;
-                        case MessageType.V8ServicesRequest:
-                            await SendV8Services(message, stoppingToken);
-                            break;
-                        default:
-                            throw new Exception("Received unexpected message type");
+                        // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+                        switch (message.Header.Type)
+                        {
+                            case MessageType.UpdateTechLogSeancesRequest:
+                                await UpdateTechLogSeancesByRequest(message, stoppingToken);
+                                break;
+                            case MessageType.InstalledPlatformsRequest:
+                                await SendInstalledPlatforms(message, stoppingToken);
+                                break;
+                            case MessageType.ClustersRequest:
+                                await SendV8Clusters(message, stoppingToken);
+                                break;
+                            case MessageType.InfoBasesRequest:
+                                await SendV8InfoBases(message, stoppingToken);
+                                break;
+                            case MessageType.V8ServicesRequest:
+                                await SendV8Services(message, stoppingToken);
+                                break;
+                            case MessageType.UpdateInfoBasesRequest:
+                                await HandleUpdateInfoBasesRequest(message, stoppingToken);
+                                break;
+                            default:
+                                throw new Exception("Received unexpected message type");
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        await _server.SendError(message, e.Message, stoppingToken);
                     }
                 }
                 catch (Exception ex)
@@ -65,18 +80,24 @@ namespace OnecMonitor.Agent.Services
             _logger.LogTrace("Send installed platforms");
             
             var platforms = V8Platforms.GetInstalledPlatforms();
-            await _onecMonitorConnection.SendInstalledPlatforms(message, platforms.ToList(), cancellationToken);
+            await _server.Send(MessageType.InstalledPlatforms, platforms, message, cancellationToken);
+        }
+
+        private async Task HandleUpdateInfoBasesRequest(Message message, CancellationToken cancellationToken)
+        {
+            await _server.SendOk(message, cancellationToken);
+            _infoBasesUpdater.RequestInfoBasesUpdateTask();
         }
         
         private async Task SendV8Clusters(Message message, CancellationToken cancellationToken)
         {
             _logger.LogTrace("Send clusters");
             
-            var platform = V8Platforms.GetInstalledPlatforms()[0];
-            var rac = new Rac(platform);
-            var clusters = rac.GetClusters();
+            var rac = Rac.CreateRacForLaunchedAgent();
+            if (rac == null)
+                throw new Exception("Failed to get RAC for launched agent");
             
-            await _onecMonitorConnection.SendV8Clusters(message, clusters, cancellationToken);
+            await _server.Send(MessageType.ClustersResponse, rac.GetClusters(), message, cancellationToken);
         }
         
         private async Task SendV8Services(Message message, CancellationToken cancellationToken)
@@ -84,7 +105,7 @@ namespace OnecMonitor.Agent.Services
             _logger.LogTrace("Send services");
             
             var services = V8Services.GetV8Services();
-            await _onecMonitorConnection.SendV8Services(message, services, cancellationToken);
+            await _server.Send(MessageType.V8Services, services, message, cancellationToken);
         }
         
         private async Task SendV8InfoBases(Message message, CancellationToken cancellationToken)
@@ -93,11 +114,22 @@ namespace OnecMonitor.Agent.Services
             
             var request = MessagePackSerializer.Deserialize<InfoBasesRequestDto>(message.Data, cancellationToken: cancellationToken);
             
-            var platform = V8Platforms.GetInstalledPlatforms()[0];
-            var rac = new Rac(platform);
-            var infoBases = rac.GetInfoBasesSummaries(request.ClusterId);
+            var rac = Rac.CreateRacForLaunchedAgent();
+            if (rac == null)
+                throw new Exception("Failed to get RAC for launched agent");
             
-            await _onecMonitorConnection.SendV8InfoBases(message, infoBases, cancellationToken);
+            var infoBases = rac.GetInfoBasesSummaries(request.Cluster.Id);
+            
+            await _server.Send(MessageType.InfoBasesResponse, infoBases, message,
+                cancellationToken);
+        }
+
+        private async Task UpdateTechLogSeancesByRequest(Message message, CancellationToken cancellationToken)
+        {
+            _logger.LogTrace("Updating tech log seances by server request");
+            await _server.SendOk(message, cancellationToken);
+
+            await UpdateTechLogSeances(cancellationToken);
         }
 
         private async Task UpdateTechLogSeances(CancellationToken cancellationToken)
@@ -106,7 +138,10 @@ namespace OnecMonitor.Agent.Services
 
             try
             {
-                var seances = await _onecMonitorConnection.GetTechLogSeances(cancellationToken);
+                var seances = await _server.Get<List<TechLogSeanceDto>>(
+                    MessageType.TechLogSeancesRequest, 
+                    MessageType.TechLogSeances, 
+                    cancellationToken);;
 
                 await _appDbContext.Database.BeginTransactionAsync(cancellationToken);
 

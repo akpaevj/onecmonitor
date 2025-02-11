@@ -6,22 +6,22 @@
 @model TechLogSeanceEditViewModel
 
 @{
-    ViewData["Title"] = "Tech log seance";
+    ViewData["Title"] = "Сеанс сбора тех. журнала";
 }
 
-<h2 class="mb-3">Tech log seance</h2>
+<h2 class="mb-3">Сеанс сбора тех. журнала</h2>
 
 <form method="post" asp-action="Edit" style="height: 100%">
 
     <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
     
     <div class="mb-3">
-        <button class="btn btn-primary" type="submit">Save</button>
-        <button class="btn btn-secondary" onclick="history.back()" type="button">Back</button>
+        <button class="btn btn-primary" type="submit">Сохранить</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Назад</button>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="Description">Description:</label>
+        <label class="form-label" asp-for="Description">Описание</label>
         <input type="text" class="form-control" asp-for="Description" value="@Model.Description">
         <span asp-validation-for="Description" class="text-danger"></span>
     </div>
@@ -29,26 +29,26 @@
     <div class="mb-3">
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" onchange="updateAvailability()" asp-for="StartMode" id="immediately" value="@TechLogSeanceStartMode.Immediately">
-            <label class="form-check-label" for="immediately">Immediately</label>
+            <label class="form-check-label" for="immediately">Начать при создании</label>
         </div>
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" onchange="updateAvailability()" asp-for="StartMode" id="monitor" value="@TechLogSeanceStartMode.Monitor">
-            <label class="form-check-label" for="monitor">Monitor</label>
+            <label class="form-check-label" for="monitor">Мониторинг</label>
         </div>
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" onchange="updateAvailability()" asp-for="StartMode" id="scheduled" value="@TechLogSeanceStartMode.Scheduled">
-            <label class="form-check-label" for="scheduled">Scheduled</label>
+            <label class="form-check-label" for="scheduled">Запланировать</label>
         </div>
     </div>
 
     <div id="AllPropertiesContainer" class="row mb-3">
         <div id="StartDateTimeContainer" class="col">
-            <label class="form-label" asp-for="StartDateTime">Start:</label>
+            <label class="form-label" asp-for="StartDateTime">Начало</label>
             <input type="datetime-local" class="form-control" asp-for=StartDateTime asp-format="dd-MM-yyyy HH:mm:ss" value="@HtmlConvertHelper.DateTimeToString(Model.StartDateTime)">
             <span asp-validation-for="StartDateTime" class="text-danger"></span>
         </div>
         <div id="DurationContainer" class="col">
-            <label class="form-label" asp-for="Duration">Duration (minutes):</label>
+            <label class="form-label" asp-for="Duration">Длительность (мин.):</label>
             <input type="number" class="form-control" asp-for=Duration>
             <span asp-validation-for="Duration" class="text-danger"></span>
         </div>

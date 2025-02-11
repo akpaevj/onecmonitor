@@ -7,13 +7,13 @@
 @model TechLogSeancesIndexViewModel
 
 @{
-    ViewData["Title"] = "Tech log seances";
+    ViewData["Title"] = "Сеансы сбора тех. журнала";
 }
 
-<h2 class="mb-3">Tech log seances</h2>
+<h2 class="mb-3">Сеансы сбора тех. журнала</h2>
 
 <div class="mb-3">
-    <a class="btn btn-primary" asp-action="Edit" role="button">Add</a>
+    <a class="btn btn-primary" asp-action="Edit" role="button">Добавить</a>
 </div>
 
 <form method="get">
@@ -21,10 +21,10 @@
         <table class="table table-bordered table-striped text-center">
             <thead class="bg-dark text-white">
                 <tr>
-                    <th>Description</th>
-                    <th>Mode</th>
-                    <th>StartTime</th>
-                    <th>Duration</th>
+                    <th>Описание</th>
+                    <th>Режим</th>
+                    <th>Начало</th>
+                    <th>Длительность</th>
                     <th></th>
                 </tr>
             </thead>
@@ -44,9 +44,9 @@
                             <td>@item.Duration</td>
                         }
                         <td class="text-center">
-                            <a class="btn btn-outline-info btn-sm" asp-action="TechLog" asp-route-id="@item.Id">Log</a>
-                            <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
-                            <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Description')">Delete</a>
+                            <a class="btn btn-outline-info btn-sm" asp-action="TechLog" asp-route-id="@item.Id">Лог</a>
+                            <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
+                            <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Description')">Удалить</a>
                         </td>
                     </tr>
                 }

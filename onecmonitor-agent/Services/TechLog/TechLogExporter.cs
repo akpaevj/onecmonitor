@@ -120,7 +120,7 @@ namespace OnecMonitor.Agent.Services.TechLog
                                 Content = reader.EventContent
                             };
 
-                            await _onecMonitorConnection.SendTechLogEventContent(message, _cts.Token);
+                            await _onecMonitorConnection.Send(MessageType.TechLogEventContent, message, null, _cts.Token);
 
                             CachePosition(cacheKey, message.EndPosition);
                         }
@@ -204,7 +204,19 @@ namespace OnecMonitor.Agent.Services.TechLog
 
             try
             {
-                return await _onecMonitorConnection.GetLastFilePosition(fileInfo.SeanceId, fileInfo.TemplateId, fileInfo.Folder, fileInfo.File, cancellationToken);
+                _logger.LogTrace("Last position in file requested");
+            
+                return await _onecMonitorConnection.Get<LastFilePositionRequestDto, long>(
+                    MessageType.LastFilePositionRequest, 
+                    MessageType.LastFilePosition,
+                    new LastFilePositionRequestDto
+                    {
+                        SeanceId = fileInfo.SeanceId,
+                        TemplateId = fileInfo.TemplateId,
+                        Folder = fileInfo.Folder,
+                        File = fileInfo.File
+                    }, 
+                    cancellationToken);
             }
             catch (Exception ex)
             {
@@ -217,6 +229,7 @@ namespace OnecMonitor.Agent.Services.TechLog
         {
             _onecMonitorConnection.Dispose();
             _techLogWatcher.Dispose();
+            _scope.Dispose();
         }
     }
 }

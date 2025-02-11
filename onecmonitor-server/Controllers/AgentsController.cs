@@ -15,7 +15,7 @@ namespace OnecMonitor.Server.Controllers
     {
         public async Task<IActionResult> Index()
         {
-            var viewModel = new AgentsIndexViewModel();
+            var viewModel = new List<AgentsListItemViewModel>();
 
             var savedAgents = await appDbContext.Agents.ToListAsync();
             var connectedAgents = connectionsManager.GetConnectedAgents(savedAgents);
@@ -24,7 +24,7 @@ namespace OnecMonitor.Server.Controllers
             {
                 var connectedAgent = connectedAgents.FirstOrDefault(c => Equals(c, agent));
 
-                viewModel.Agents.Add(new AgentsListItemViewModel()
+                viewModel.Add(new AgentsListItemViewModel()
                 {
                     Id = agent.Id,
                     InstanceName = agent.InstanceName,
@@ -92,10 +92,7 @@ namespace OnecMonitor.Server.Controllers
         {
             if (connectionsManager.IsConnected(id))
             {
-                return View("Error", new ErrorViewModel()
-                {
-                    Message = "Connected agent cannot be deleted"
-                });
+                return View("Error", new ErrorViewModel("Connected agent cannot be deleted"));
             }
 
             var item = appDbContext.Agents.FirstOrDefault(c => c.Id == id);

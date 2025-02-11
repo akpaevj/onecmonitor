@@ -23,8 +23,9 @@ public class ClustersController(AppDbContext appDbContext, AgentsConnectionsMana
                 .AsNoTracking()
                 .Include(c => c.Agent)
                 .Include(c => c.InfoBases)
+                .Include(c => c.Credentials)
                 .ProjectTo<ClusterEditViewModel>(mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(cancellationToken)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
             : new ClusterEditViewModel();
 
         if (vm == null)
@@ -50,9 +51,8 @@ public class ClustersController(AppDbContext appDbContext, AgentsConnectionsMana
         if (model == null)
             return NotFound();
 
-        if (isNew)
-            appDbContext.Entry(model).State = EntityState.Added;
-
+        appDbContext.Entry(model).State = isNew ? EntityState.Added : EntityState.Modified;
+        
         mapper.Map(vm, model);
 
         await UiHelper.UpdateModelItems(appDbContext.InfoBases, vm.InfoBases, model.InfoBases, cancellationToken);
@@ -99,24 +99,50 @@ public class ClustersController(AppDbContext appDbContext, AgentsConnectionsMana
     
     public async Task<IActionResult> UpdateClusters(CancellationToken cancellationToken)
     {
-        var connectedAgents = connectionsManager.GetConnectedAgents(appDbContext.Agents.ToList());
+        await appDbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        foreach (var commandsConnection in connectedAgents.Select(agent => connectionsManager.GetCommandsSubscriberConnection(agent.Id)))
+        var defaultCredentials = await appDbContext.Credentials
+            .FirstOrDefaultAsync(c => c.DefaultForClusters, cancellationToken);
+        
+        try
         {
-            try
+            var connectedAgents = connectionsManager.GetConnectedAgents(appDbContext.Agents.ToList());
+            foreach (var agent in connectedAgents)
             {
-                var clusters = await commandsConnection.GetV8Clusters(cancellationToken);
-                var a = 1;
-            }
-            catch (Exception e)
-            {
-                return View("Error", new ErrorViewModel()
+                var commandsConnection = connectionsManager.GetCommandsSubscriberConnection(agent.Id);
+                
+                if (commandsConnection == null)
+                    continue;
+
+                var clusters = await commandsConnection!.GetV8Clusters(cancellationToken);
+                var currentIds = await appDbContext.Clusters.Select(c => c.ClusterInternalId).ToListAsync(cancellationToken);
+                var newClusters = clusters.Where(c => !currentIds.Contains(c.Id)).ToList();
+
+                foreach (var cluster in newClusters)
                 {
-                    Message = e.Message
-                });
+                    await appDbContext.Clusters.AddAsync(new Cluster
+                    {
+                        Id = Guid.NewGuid(),
+                        AgentId = agent.Id,
+                        ClusterInternalId = cluster.Id,
+                        CredentialsId = defaultCredentials?.Id,
+                        Name = cluster.Name,
+                        Host = cluster.Host,
+                        Port = cluster.Port
+                    }, cancellationToken);
+                }
             }
+
+            await appDbContext.Database.CommitTransactionAsync(cancellationToken);
+            await appDbContext.SaveChangesAsync(cancellationToken);
+
+            return RedirectToAction("Index");
         }
-            
-        return RedirectToAction("Index", "Clusters");
+        catch (Exception e)
+        {
+            await appDbContext.Database.RollbackTransactionAsync(cancellationToken);
+
+            return View("Error", new ErrorViewModel(e.Message));
+        }
     }
 }

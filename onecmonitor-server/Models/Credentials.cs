@@ -10,6 +10,6 @@ public class Credentials : DatabaseObject
     public bool DefaultForClusters { get; set; } = false;
     public bool DefaultV8Admin { get; set; } = false;
     
-    public List<Cluster> Clusters { get; set; } = [];
-    public List<InfoBase> InfoBases { get; set; } = [];
+    public virtual List<Cluster> Clusters { get; set; } = [];
+    public virtual List<InfoBase> InfoBases { get; set; } = [];
 }

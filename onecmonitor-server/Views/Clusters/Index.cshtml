@@ -3,21 +3,23 @@
 @model List<Cluster>
 
 @{
-    ViewData["Title"] = "Clusters";
+    ViewData["Title"] = "Кластеры";
 }
 
-<h2 class="mb-3">Clusters</h2>
+<h2 class="mb-3">Кластеры</h2>
 
 <div class="mb-3">
-    <a class="btn btn-secondary" asp-action="UpdateClusters" role="button">Update clusters</a>
+    <a class="btn btn-secondary" asp-action="UpdateClusters" role="button">Обновить</a>
 </div>
 
 <div class="table-responsive">
     <table class="table table-striped table-bordered">
         <thead>
         <tr>
-            <th class="col">Name</th>
-            <th class="col">Agent</th>
+            <th class="col">Имя</th>
+            <th class="col">Хост</th>
+            <th class="col">Порт</th>
+            <th class="col">Агент</th>
             <th></th>
         </tr>
         </thead>
@@ -26,10 +28,12 @@
         {
             <tr>
                 <td>@item.Name</td>
+                <td>@item.Host</td>
+                <td>@item.Port</td>
                 <td>@item.Agent.InstanceName</td>
                 <td class="text-center">
-                    <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
-                    <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Name')">Delete</a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
+                    <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Name')">Удалить</a>
                 </td>
             </tr>
         }

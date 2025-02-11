@@ -1,11 +1,10 @@
-@using OnecMonitor.Server.Helpers
 @model OnecMonitor.Server.ViewModels.SelectItemDialogViewModel
 
 <div class="card">
     <div class="card-header">
         <div class="col">
             <span class="align-middle">@Model.ItemsModelProperty</span>
-            <button type="button" class="btn btn-outline-secondary align-middle" data-bs-toggle="modal" data-bs-target="#@Model.ItemsModelProperty-dialog">Add</button>
+            <button type="button" class="btn btn-sm ms-2 btn-outline-secondary align-middle" data-bs-toggle="modal" data-bs-target="#@Model.ItemsModelProperty-dialog">Добавить</button>
         </div>
     </div>
     <div class="card-body">
@@ -27,7 +26,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Select item</h5>
+                <h5 class="modal-title">Выберите элемент</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">

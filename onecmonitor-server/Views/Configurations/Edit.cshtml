@@ -2,40 +2,35 @@
 @model ConfigurationEditViewModel
 
 @{
-    ViewData["Title"] = "Configuration";
+    ViewData["Title"] = "Конфигурация";
 }
 
-<h2 class="mb-3">Configuration</h2>
+<h2 class="mb-3">Конфигурация</h2>
 
 <form method="post" asp-action="Save" enctype="multipart/form-data" style="height: 100%">
     <div class="mb-3">
-        <button class="btn btn-primary" type="submit">Save</button>
-        <button class="btn btn-secondary" onclick="history.back()" type="button">Back</button>
+        <button class="btn btn-primary" type="submit">Сохранить</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Назад</button>
     </div>
 
     <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
 
     <div class="mb-3">
-        <label class="form-label" asp-for="Name">Name</label>
+        <label class="form-label" asp-for="Name">Имя</label>
         <input type="text" class="form-control" asp-for="Name" value="@Model.Name">
         <span asp-validation-for="Name" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="Version">Version</label>
+        <label class="form-label" asp-for="Version">Версия</label>
         <input type="text" class="form-control" asp-for="Version" value="@Model.Version">
         <span asp-validation-for="Version" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-check-label" asp-for="IsExtension">Is extension</label>
-        <input class="form-check-input" type="checkbox" asp-for="IsExtension" checked="@Model.IsExtension">
     </div>
 
     @if (Model.Id == Guid.Empty)
     {
         <div>
-            <input class="form-control" accept=".cf,.cfe" type="file" asp-for="File">
+            <input class="form-control" accept=".cf,.cfu,.cfe" type="file" asp-for="File">
             <span asp-validation-for="File" class="text-danger" disabled></span>
         </div>
     }

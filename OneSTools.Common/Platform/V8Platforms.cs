@@ -4,6 +4,21 @@ namespace OneSTools.Common.Platform;
 
 public static partial class V8Platforms
 {
+    public static V8Platform? GetPlatformForLaunchedAgent()
+    {
+        var agentService = V8Services.GetLaunchedV8Servers().FirstOrDefault();
+        if (agentService == null)
+            return null;
+            
+        var ras = V8Services.GetLaunchedRas()
+            .FirstOrDefault(c => c is { Type: V8ServiceType.RAS, IsActive: true } && c.PlatformPath == agentService.PlatformPath);
+        if (ras == null)
+            return null;
+            
+        return GetInstalledPlatforms()
+            .FirstOrDefault(c => c.PlatformPath == ras.PlatformPath);
+    }
+    
     public static IReadOnlyList<V8Platform> GetInstalledPlatforms()
         => GetInstalledPlatforms(GetDefaultInstallationPaths());
 

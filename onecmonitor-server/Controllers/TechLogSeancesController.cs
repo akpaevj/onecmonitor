@@ -158,7 +158,6 @@ namespace OnecMonitor.Server.Controllers
                 await clickHouseContext.DeleteTechLogSeanceData(id.ToString(), cancellationToken);
 
                 await dbContext.Database.CommitTransactionAsync(cancellationToken);
-
                 await dbContext.SaveChangesAsync(cancellationToken);
 
                 await connectionsManager.UpdateTechLogSeances(item.Agents, cancellationToken);

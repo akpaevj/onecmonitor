@@ -17,65 +17,65 @@
                 <a href="/" class="d-flex align-items-center pb-3 mb-md-0 me-md-auto text-white text-decoration-none">
                     <a class="navbar-brand" asp-controller="Agents" asp-action="Index">
                         <p class="fs-2 m-3">
-                            <span class="text-primary">Onec</span>Mon<span class="text-primary">i</span>tor
+                            <span class="text-primary">OneС</span>Mon<span class="text-primary">i</span>tor
                         </p>
                     </a>
                 </a>
                 <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start" id="mainMenu">
                     
                     <li>
-                        <a asp-controller="Agents" asp-action="Index" class="nav-link text-white px-0 align-middle">
+                        <a asp-controller="Agents" asp-action="Index" class="text-primary nav-link text-white px-0 align-middle">
                             <i class="fs-4 bi-diagram-3"></i>
-                            <span class="ms-1 d-none d-sm-inline">Agents</span>
+                            <span class="ms-1 d-none d-sm-inline">Агенты монитора</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#infoBasesServiceSubMenu" data-bs-toggle="collapse" aria-controls="infoBasesServiceSubMenu" aria-expanded="false" class="nav-link text-white px-0 align-middle">
+                        <a href="#infoBasesServiceSubMenu" data-bs-toggle="collapse" aria-controls="infoBasesServiceSubMenu" aria-expanded="false" class="text-primary nav-link text-white px-0 align-middle">
                             <i class="fs-4 bi-database"></i>
-                            <span class="ms-1 d-none d-sm-inline">Service</span>
+                            <span class="ms-1 d-none d-sm-inline">Обслуживание</span>
                         </a>
-                        <ul class="collapse nav flex-column ms-1" id="infoBasesServiceSubMenu" data-bs-parent="#mainMenu">
+                        <ul class="collapse show nav flex-column ms-1" id="infoBasesServiceSubMenu" data-bs-parent="#mainMenu">
                             <li class="w-100">
                                 <a asp-controller="Credentials" asp-action="Index" class="nav-link text-white px-0">
-                                    <span class="d-none d-sm-inline">Credentials</span>
+                                    <small class="d-none d-sm-inline">Учетные данные</small>
                                 </a>
                             </li>
                             <li class="w-100">
                                 <a asp-controller="Clusters" asp-action="Index" class="nav-link text-white px-0">
-                                    <span class="d-none d-sm-inline">Clusters</span>
+                                    <small class="d-none d-sm-inline">Кластеры</small>
                                 </a>
                             </li>
                             <li class="w-100">
                                 <a asp-controller="InfoBases" asp-action="Index" class="nav-link text-white px-0">
-                                    <span class="d-none d-sm-inline">InfoBases</span>
+                                    <small class="d-none d-sm-inline">Информационные базы</small>
                                 </a>
                             </li>
                             <li class="w-100">
                                 <a asp-controller="Configurations" asp-action="Index" class="nav-link text-white px-0">
-                                    <span class="d-none d-sm-inline">Configurations</span>
+                                    <small class="d-none d-sm-inline">Конфигурации</small>
                                 </a>
                             </li>
                             <li class="w-100">
                                 <a asp-controller="UpdateInfoBaseTasks" asp-action="Index" class="nav-link text-white px-0">
-                                    <span class="d-none d-sm-inline">Update infobase tasks</span>
+                                    <small class="d-none d-sm-inline">Задачи обновления</small>
                                 </a>
                             </li>
                         </ul>
                     </li>
                     <li>
-                        <a href="#techLogSubMenu" data-bs-toggle="collapse" aria-controls="techLogSubMenu" aria-expanded="false" class="nav-link text-white px-0 align-middle">
+                        <a href="#techLogSubMenu" data-bs-toggle="collapse" aria-controls="techLogSubMenu" aria-expanded="false" class="text-primary nav-link text-white px-0 align-middle">
                             <i class="fs-4 bi-list-columns"></i>
-                            <span class="ms-1 d-none d-sm-inline">Tech log</span>
+                            <span class="ms-1 d-none d-sm-inline">Тех. журнал</span>
                         </a>
-                        <ul class="collapse nav flex-column ms-1" id="techLogSubMenu" data-bs-parent="#mainMenu">
+                        <ul class="collapse show nav flex-column ms-1" id="techLogSubMenu" data-bs-parent="#mainMenu">
                             <li class="w-100">
                                 <a asp-controller="TechLogSeances" asp-action="Index" class="nav-link text-white px-0">
-                                    <span class="d-none d-sm-inline">Seances</span>
+                                    <small class="d-none d-sm-inline">Сеансы сбора</small>
                                 </a>
                             </li>
                             <li>
                                 <a asp-controller="LogTemplates" asp-action="Index" class="nav-link text-white px-0">
-                                    <span class="d-none d-sm-inline">Templates</span>
+                                    <small class="d-none d-sm-inline">Шаблоны</small>
                                 </a>
                             </li>
                         </ul>

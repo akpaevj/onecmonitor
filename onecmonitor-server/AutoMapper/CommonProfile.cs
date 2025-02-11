@@ -22,7 +22,7 @@ public class CommonProfile : Profile
         CreateMap<LogTemplate, SelectableItemViewModel>().ReverseMap();
         CreateMap<Credentials, SelectableItemViewModel>().ReverseMap();
         CreateMap<V8Configuration, SelectableItemViewModel>()
-            .ForMember(c => c.Name, opt => opt.MapFrom(src => $"{src.Name} ({src.Version})"))
+            .ForMember(c => c.Name, opt => opt.MapFrom(src => src.ToString()))
             .ReverseMap();
         
         CreateMap<Credentials, CredentialsListItemViewModel>()
@@ -44,6 +44,7 @@ public class CommonProfile : Profile
             .ForMember(c => c.Id, i => i.Ignore());
 
         CreateMap<Cluster, ClusterEditViewModel>()
+            .ForMember(c => c.Credentials, i => i.Ignore())
             .ReverseMap()
             .ForMember(c => c.Id, i => i.Ignore())
             .ForMember(c => c.InfoBases, i => i.Ignore());
@@ -60,6 +61,7 @@ public class CommonProfile : Profile
             .ForMember(c => c.Cluster, i => i.MapFrom(a => a.Cluster.Name));
         
         CreateMap<InfoBase, InfoBaseEditViewModel>()
+            .ForMember(c => c.Credentials, i => i.Ignore())
             .ReverseMap()
             .ForMember(c => c.Id, i => i.Ignore())
             .ForMember(c => c.Cluster, i => i.Ignore());
@@ -74,11 +76,9 @@ public class CommonProfile : Profile
             .ForMember(dest => dest.IsFinished, i => i.MapFrom(src => src.Results.Count > 0 && src.Results.All(result => result.FinishDateTime != DateTime.MinValue)));
 
         CreateMap<UpdateInfoBaseTask, UpdateInfoBaseTaskEditViewModel>()
-            .ForMember(c => c.NeedUpdateConfiguration, i => i.MapFrom(src => src.ConfigurationId != Guid.Empty))
             .ReverseMap()
             .ForMember(c => c.Id, i => i.Ignore())
-            .ForMember(c => c.Configuration, i => i.Ignore())
-            .ForMember(c => c.Extensions, i => i.Ignore())
+            .ForMember(c => c.Configurations, i => i.Ignore())
             .ForMember(c => c.InfoBases, i => i.Ignore())
             .ForMember(c => c.Results, i => i.Ignore());
     }

@@ -3,7 +3,7 @@ using OneSTools.Common.Platform;
 
 namespace OneSTools.Common.Designer.Batch;
 
-public class DesignerBatchMode : IDisposable
+public sealed class DesignerBatchMode : IDisposable
 {
     private readonly List<string> _arguments = [];
     private string _outFilePath = string.Empty;
@@ -25,7 +25,7 @@ public class DesignerBatchMode : IDisposable
         _arguments.Add($"/IBName \"{ibName}\"");
     }
 
-    public void StartSshAgent(string baseDirectoryPath = "", bool visible = false)
+    public void StartSshAgent(string baseDirectoryPath = "", bool visible = false, bool waitForExit = false)
     {
         _arguments.Add("/AgentMode");
         _arguments.Add("/AgentSSHHostKeyAuto");
@@ -36,38 +36,44 @@ public class DesignerBatchMode : IDisposable
         if (visible)
             _arguments.Add("/Visible");
         
-        Start();
+        Start(waitForExit);
     }
     
-    public void LoadConfiguration(string cfPath, string user, string password, string accessCode = "")
+    public void LoadConfiguration(string cfPath, string user, string password, string accessCode = "", bool waitForExit = false)
     {
         AddBatchModeCommonArgs(user, password, accessCode);
         
         _arguments.Add($"/LoadCfg\"{cfPath}\"");
-        _arguments.Add("/UpdateDBCfg -Dynamic- -Server -SessionTerminate force");
         
-        Start();
+        Start(waitForExit);
     }
     
-    public void UpdateConfiguration(string cfuPath, string user, string password, string accessCode = "")
+    public void UpdateConfiguration(string cfuPath, string user, string password, string accessCode = "", bool waitForExit = false)
     {
         AddBatchModeCommonArgs(user, password, accessCode);
         
         _arguments.Add($"/UpdateCfg\"{cfuPath}\"");
-        _arguments.Add("/UpdateDBCfg -Dynamic- -Server -SessionTerminate force");
         
-        Start();
+        Start(waitForExit);
     }
     
-    public void LoadExtension(string extensionName, string cfePath, string user, string password, string accessCode = "")
+    public void LoadExtension(string extensionName, string cfePath, string user, string password, string accessCode = "", bool waitForExit = false)
     {
         AddBatchModeCommonArgs(user, password, accessCode);
         
         _arguments.Add($"/LoadCfg\"{cfePath}\"");
         _arguments.Add($"-Extension\"{extensionName}\"");
+        
+        Start(waitForExit);
+    }
+    
+    public void UpdateDatabaseConfiguration(string user, string password, string accessCode = "", bool waitForExit = false)
+    {
+        AddBatchModeCommonArgs(user, password, accessCode);
+        
         _arguments.Add("/UpdateDBCfg -Dynamic- -Server -SessionTerminate force");
         
-        Start();
+        Start(waitForExit);
     }
     
     /// <summary>
@@ -78,23 +84,29 @@ public class DesignerBatchMode : IDisposable
         _needRaiseEvent = false;
         Dispose();
     }
-
-    public async Task WaitForExit(CancellationToken cancellationToken)
-    {
-        if (_process != null)
-            await _process.WaitForExitAsync(cancellationToken);
-    }
     
-    private void Start()
+    private void Start(bool waitForExit = false)
     {
         _processStartInfo.Arguments = string.Join(" ", _arguments);
         
         _process = new Process();
         _process.StartInfo = _processStartInfo;
 
-        _process.Exited += Exited;
+        if (!waitForExit)
+            _process.Exited += Exited;
+        
         if (!_process.Start())
             throw new Exception($"Failed to start {_processStartInfo.FileName} {_processStartInfo.Arguments}");
+
+        if (!waitForExit) 
+            return;
+        
+        _process.WaitForExit();
+            
+        var outFileContent = GetOutFileContent();
+            
+        if (_process.ExitCode != 0)
+            throw new Exception(outFileContent);
     }
     
     private ProcessStartInfo InitProcessStartInfo(V8Platform platform)
@@ -130,11 +142,18 @@ public class DesignerBatchMode : IDisposable
         if (!_needRaiseEvent) 
             return;
 
-        var outFilContent = string.Empty;
-        if (!string.IsNullOrEmpty(_outFilePath) && File.Exists(_outFilePath))
-            File.ReadAllText(outFilContent);
+        var outFileContent = GetOutFileContent();
         
-        ProcessExited?.Invoke(this, (_process?.ExitCode ?? 0, outFilContent));
+        ProcessExited?.Invoke(this, (_process?.ExitCode ?? 0, outFileContent));
+    }
+
+    private string GetOutFileContent()
+    {
+        var outFileContent = string.Empty;
+        if (!string.IsNullOrEmpty(_outFilePath) && File.Exists(_outFilePath))
+            File.ReadAllText(outFileContent);
+
+        return outFileContent;
     }
 
     public void Dispose()
@@ -143,7 +162,7 @@ public class DesignerBatchMode : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!disposing) return;
         

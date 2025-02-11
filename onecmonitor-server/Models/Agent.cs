@@ -6,8 +6,9 @@ namespace OnecMonitor.Server.Models
     {
         [MaxLength(100)]
         public string InstanceName { get; set; } = string.Empty;
-        public List<TechLogSeance> Seances { get; set; } = [];
-        public List<Cluster> Clusters { get; set; } = [];
+        
+        public virtual List<TechLogSeance> Seances { get; set; } = [];
+        public virtual List<Cluster> Clusters { get; set; } = [];
 
         public override bool Equals(object? obj)
             => obj is Agent agent &&

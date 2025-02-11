@@ -2,10 +2,12 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Services;
+using OnecMonitor.Server.ViewModels;
 using OnecMonitor.Server.ViewModels.UpdateInfoBaseTasks;
 
 namespace OnecMonitor.Server.Controllers;
@@ -24,9 +26,8 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
         var vm = id != Guid.Empty
             ? await appDbContext.UpdateInfoBaseTasks
                 .AsNoTracking()
-                .Include(c => c.Extensions)
+                .Include(c => c.Configurations)
                 .Include(c => c.InfoBases)
-                .Include(c => c.Configuration)
                 .ProjectTo<UpdateInfoBaseTaskEditViewModel>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(cancellationToken)
             : new UpdateInfoBaseTaskEditViewModel();
@@ -40,6 +41,18 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
     public async Task<IActionResult> Save(UpdateInfoBaseTaskEditViewModel vm, CancellationToken cancellationToken)
     {
         var isNew = vm.Id == Guid.Empty;
+
+        var configIds = vm.Configurations.Select(c => c.Id).ToList();
+        var configs = appDbContext.Configurations
+            .AsNoTracking()
+            .Where(c => configIds.Contains(c.Id.ToString()))
+            .ToList();
+        
+        var countOfUpdatesAndConfigs = configs.Count(c => c.IsUpdate || c.IsConfiguration);
+        if (countOfUpdatesAndConfigs > 0)
+            ModelState.AddModelError(
+                nameof(UpdateInfoBaseTaskEditViewModel.Configurations),
+                "Список конфигураций может содержать только одну конфигурацию или обновление конфигурации");
         
         if (!ModelState.IsValid)
             return View("Edit", await PrepareViewModel(vm, cancellationToken));
@@ -49,7 +62,7 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
             Id = Guid.NewGuid()
         } : await appDbContext.UpdateInfoBaseTasks
             .Include(c => c.InfoBases)
-            .Include(c => c.Extensions)
+            .Include(c => c.Configurations)
             .Include(c => c.Results)
             .FirstOrDefaultAsync(i => i.Id == vm.Id, cancellationToken);
                 
@@ -62,24 +75,63 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
         mapper.Map(vm, model);
 
         await UiHelper.UpdateModelItems(appDbContext.InfoBases, vm.InfoBases, model.InfoBases, cancellationToken);
-        await UiHelper.UpdateModelItems(appDbContext.Configurations, vm.Extensions, model.Extensions, cancellationToken);
+        await UiHelper.UpdateModelItems(appDbContext.Configurations, vm.Configurations, model.Configurations, cancellationToken);
         
         await appDbContext.SaveChangesAsync(cancellationToken);
 
         return RedirectToAction("Index");
     }
+
+    public async Task<IActionResult> Start(Guid id, CancellationToken cancellationToken)
+    {
+        var task = await appDbContext.UpdateInfoBaseTasks
+            .AsNoTracking()
+            .Include(c => c.InfoBases)
+            .ThenInclude(c => c.Cluster)
+            .ThenInclude(c => c.Agent)
+            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+        
+        if (task == null)
+            return NotFound();
+        
+        var affectedAgents = task.InfoBases.Select(c => c.Cluster.Agent).Distinct().ToList();
+        var connectedAgents = connectionsManager.GetConnectedAgents(affectedAgents);
+
+        foreach (var agent in connectedAgents)
+        {
+            var commandsConnection = connectionsManager.GetCommandsSubscriberConnection(agent.Id)!;
+            await commandsConnection.RequestInfoBasesUpdating(cancellationToken);
+        }
+        
+        var taskToUpdate = await appDbContext.UpdateInfoBaseTasks.FindAsync([id], cancellationToken);
+        taskToUpdate!.StartDateTime = DateTime.Now;
+        await appDbContext.SaveChangesAsync(cancellationToken);
+        
+        return RedirectToAction("Index");
+    }
+    
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var item = await appDbContext.UpdateInfoBaseTasks.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+            appDbContext.UpdateInfoBaseTasks.Remove(item!);
+            
+            await appDbContext.SaveChangesAsync(cancellationToken);
+            
+            return RedirectToAction("Index");
+        }
+        catch (Exception ex)
+        {
+            return View("Error", new ErrorViewModel(ex.ToString()));
+        }
+    }
     
     private async Task<UpdateInfoBaseTaskEditViewModel> PrepareViewModel(UpdateInfoBaseTaskEditViewModel vm, CancellationToken cancellationToken)
     {
-        vm.Configurations = await UiHelper.SelectListFrom(
-            appDbContext.Configurations.Where(c => !c.IsExtension),
-            i => $"{i.Name} ({i.Version})",
-            vm.ConfigurationId,
-            cancellationToken);
-
-        vm.AvailableExtensions = await UiHelper.SelectableItemsFrom(
-            appDbContext.Configurations.Where(c => c.IsExtension),
-            vm.Extensions,
+        vm.AvailableConfigurations = await UiHelper.SelectableItemsFrom(
+            appDbContext.Configurations,
+            vm.Configurations,
             mapper,
             cancellationToken);
         
@@ -91,6 +143,4 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
         
         return vm;
     }
-    
-    
 }

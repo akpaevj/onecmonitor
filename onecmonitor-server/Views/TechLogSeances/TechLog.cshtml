@@ -2,7 +2,7 @@
 @model TechLogViewModel
 
 @{
-    ViewData["Title"] = "Tech log seance";
+    ViewData["Title"] = "Записи сеанса сбора тех. журнала";
 }
 
 <form class="mb-3" method="get">
@@ -22,10 +22,10 @@
         <table id="techlog" class="table table-striped table-bordered">
             <thead class="bg-dark text-white">
             <tr>
-                <th scope="col" class="col-3">Timestamp</th>
-                <th scope="col" class="col-2">Duration</th>
-                <th scope="col">Event</th>
-                <th scope="col">Level</th>
+                <th scope="col" class="col-3">Время</th>
+                <th scope="col" class="col-2">Длительность</th>
+                <th scope="col">Событие</th>
+                <th scope="col">Уровень</th>
                 <th scope="col"></th>
             </tr>
             </thead>
@@ -52,8 +52,8 @@
                             <table class="table table-bordered mb-0 @item.AdditionalCss">
                                 <thead>
                                 <tr>
-                                    <th>Property</th>
-                                    <th>Value</th>
+                                    <th>Свойство</th>
+                                    <th>Значение</th>
                                 </tr>
                                 </thead>
                                 <tbody>

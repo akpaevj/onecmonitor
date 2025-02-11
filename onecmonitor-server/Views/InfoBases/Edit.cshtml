@@ -1,45 +1,46 @@
 @model OnecMonitor.Server.ViewModels.InfoBases.InfoBaseEditViewModel
 
 @{
-    ViewData["Title"] = "InfoBase";
+    ViewData["Title"] = "Информационная база";
 }
 
-<h2 class="mb-3">InfoBase</h2>
+<h2 class="mb-3">Информационная база</h2>
 
 <form method="post" asp-action="Save" style="height: 100%">
     <div class="mb-3">
-        <button class="btn btn-primary" type="submit">Save</button>
-        <button class="btn btn-secondary" onclick="history.back()" type="button">Back</button>
+        <button class="btn btn-primary" type="submit">Сохранить</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Назад</button>
     </div>
 
     <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
+    <input type="text" hidden class="form-control" asp-for="InfoBaseInternalId" value="@Model.InfoBaseInternalId">
 
     <div class="mb-3">
-        <label class="form-label" asp-for="Name">Name</label>
+        <label class="form-label" asp-for="Name">Имя</label>
         <input type="text" class="form-control" asp-for="Name" value="@Model.Name">
         <span asp-validation-for="Name" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="InfoBaseName">InfoBase name</label>
+        <label class="form-label" asp-for="InfoBaseName">Наименование информационной базы</label>
         <input type="text" class="form-control" asp-for="InfoBaseName" value="@Model.InfoBaseName">
         <span asp-validation-for="InfoBaseName" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="PublishAddress">Publish address</label>
+        <label class="form-label" asp-for="PublishAddress">Адрес публикации</label>
         <input type="text" class="form-control" asp-for="PublishAddress" value="@Model.PublishAddress">
         <span asp-validation-for="PublishAddress" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="CredentialsId">Credentials</label>
+        <label class="form-label" asp-for="CredentialsId">Учетные данные</label>
         <select asp-for="CredentialsId" class="form-control" asp-items="Model.Credentials"></select>
         <span asp-validation-for="CredentialsId" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="ClusterId">Cluster</label>
+        <label class="form-label" asp-for="ClusterId">Кластер</label>
         <select asp-for="ClusterId" class="form-control" asp-items="Model.Clusters"></select>
         <span asp-validation-for="ClusterId" class="text-danger"></span>
     </div>

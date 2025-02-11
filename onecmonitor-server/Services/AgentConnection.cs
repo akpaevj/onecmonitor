@@ -83,42 +83,71 @@ namespace OnecMonitor.Server.Services
                             await UpdateTechLogSeances(message, cancellationToken);
                             break;
                         case MessageType.SubscribingForCommands:
-                            await HandleSubscribingForCommands(cancellationToken);
+                            await HandleSubscribingForCommands(message, cancellationToken);
                             break;
-                        case MessageType.Error:
-                        case MessageType.AgentInfo:
-                        case MessageType.LastFilePosition:
-                        case MessageType.TechLogSeances:
+                        case MessageType.UpdateInfoBasesTaskRequest:
+                            await HandleUpdateInfoBasesTaskRequest(message, cancellationToken);
+                            break;
                         default:
                             throw new Exception("Received unexpected message type");
                     }
                 }
                 catch (Exception ex)
                 {
-                    await WriteMessage(MessageType.Error, new ErrorDto { Message = ex.ToString() }, null, cancellationToken);
+                    await Send(MessageType.Error, new ErrorDto { Message = ex.ToString() }, null, cancellationToken);
                 }
             }
         }
 
         public async Task<List<V8Platform>> GetInstalledPlatforms(CancellationToken cancellationToken)
-            => await WriteMessageAndWaitResult<List<V8Platform>>(
+            => await Get<List<V8Platform>>(
                 MessageType.InstalledPlatformsRequest, 
                 MessageType.InstalledPlatforms,
                 cancellationToken);
         
         public async Task<List<V8Cluster>> GetV8Clusters(CancellationToken cancellationToken)
-            => await WriteMessageAndWaitResult<List<V8Cluster>>(
+            => await Get<List<V8Cluster>>(
                 MessageType.ClustersRequest, 
                 MessageType.ClustersResponse,
                 cancellationToken);
         
         public async Task<List<V8Service>> GetV8Services(CancellationToken cancellationToken)
-            => await WriteMessageAndWaitResult<List<V8Service>>(
+            => await Get<List<V8Service>>(
                 MessageType.V8ServicesRequest, 
                 MessageType.V8Services,
                 cancellationToken);
+        
+        public async Task<List<V8InfoBaseSummary>> GetV8InfoBasesSummaries(Cluster cluster, CancellationToken cancellationToken)
+            => await Get<InfoBasesRequestDto, List<V8InfoBaseSummary>>(
+                MessageType.InfoBasesRequest, 
+                MessageType.InfoBasesResponse,
+                new InfoBasesRequestDto
+                {
+                    Cluster = new ClusterDto
+                    {
+                        Id = cluster.ClusterInternalId,
+                        Host = cluster.Host,
+                        Port = cluster.Port
+                    },
+                    Credentials = cluster.Credentials switch
+                    {
+                        null => null,
+                        _ => new CredentialsDto
+                        {
+                            User = cluster.Credentials.User,
+                            Password = cluster.Credentials.Password
+                        }
+                    }
+                },
+                cancellationToken);
+        
+        public async Task RequestTechLogSeancesUpdating(CancellationToken cancellationToken)
+            => await Send(MessageType.UpdateTechLogSeancesRequest, cancellationToken);
+        
+        public async Task RequestInfoBasesUpdating(CancellationToken cancellationToken)
+            => await Send(MessageType.UpdateInfoBasesRequest, cancellationToken);
 
-        public async Task UpdateTechLogSeances(Message? callMessage, CancellationToken cancellationToken)
+        public async Task UpdateTechLogSeances(Message callMessage, CancellationToken cancellationToken)
         {
             var agent = await _appDbContext.Agents.FirstOrDefaultAsync(c => c.Id == AgentInstance!.Id, cancellationToken);
 
@@ -150,7 +179,7 @@ namespace OnecMonitor.Server.Services
                 });
             });
 
-            await WriteMessage(MessageType.TechLogSeances, seances, callMessage, cancellationToken);
+            await Send(MessageType.TechLogSeances, seances, callMessage, cancellationToken);
         }
 
         private async Task HandleInitMessage(ReadOnlyMemory<byte> messageData, CancellationToken cancellationToken)
@@ -195,10 +224,10 @@ namespace OnecMonitor.Server.Services
             }
         }
 
-        private async Task HandleSubscribingForCommands(CancellationToken cancellationToken)
+        private async Task HandleSubscribingForCommands(Message requestMessage, CancellationToken cancellationToken)
         {
             SubscribedForCommands?.Invoke(this);
-            await UpdateTechLogSeances(null, cancellationToken);
+            await SendOk(requestMessage, cancellationToken);
         }
 
         private async Task HandleLastFilePositionRequest(Message requestMessage, CancellationToken cancellationToken)
@@ -213,7 +242,20 @@ namespace OnecMonitor.Server.Services
                 request.File,
                 cancellationToken);
 
-            await WriteMessage(MessageType.LastFilePosition, response, requestMessage, cancellationToken);
+            await Send(MessageType.LastFilePosition, response, requestMessage, cancellationToken);
+        }
+        
+        private async Task HandleUpdateInfoBasesTaskRequest(Message requestMessage, CancellationToken cancellationToken)
+        {
+            var task = _appDbContext.UpdateInfoBaseTasks
+                .Include(c => c.Configurations)
+                .Include(c => c.InfoBases)
+                .ThenInclude(c => c.Cluster)
+                .ThenInclude(c => c.Agent)
+                .Where(c => c.InfoBases.Any(i => i.Cluster.Agent.Id == AgentInstance!.Id))
+                .FirstOrDefaultAsync(cancellationToken);
+                
+            await Send(MessageType.UpdateInfoBasesTask, task, requestMessage, cancellationToken);
         }
 
         private async Task HandleTechLogEventContent(ReadOnlyMemory<byte> messageData, CancellationToken cancellationToken)

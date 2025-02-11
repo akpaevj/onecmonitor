@@ -39,8 +39,7 @@ public class ConfigurationsController(AppDbContext appDbContext, IMapper mapper,
         {
             Id = item.Id,
             Name = item.Name,
-            Version = item.Version,
-            IsExtension = item.IsExtension
+            Version = item.Version
         });
     }
 
@@ -70,11 +69,12 @@ public class ConfigurationsController(AppDbContext appDbContext, IMapper mapper,
         if (isNew)
         {
             // save file
-            var fileName = $"{vm.Name}_{vm.Version}{Path.GetExtension(vm.File.FileName)}";
+            var extension = Path.GetExtension(vm.File.FileName);
+            var fileName = $"{vm.Name}_{vm.Version}{extension}";
             var path = Path.Combine(webHostEnvironment.ContentRootPath, "Data", fileName);
 
             if (System.IO.File.Exists(path))
-                return View("Error", new ErrorViewModel { Message = $"File {path} already exists." });
+                return View("Error", new ErrorViewModel($"File {path} already exists."));
                 
             await using var stream = new FileStream(path, FileMode.Create);
             await vm.File.CopyToAsync(stream, cancellationToken);
@@ -82,11 +82,17 @@ public class ConfigurationsController(AppDbContext appDbContext, IMapper mapper,
             model.DataPath = path;
             
             await appDbContext.Configurations.AddAsync(model, cancellationToken);
+
+            if (extension.Equals(".CF", StringComparison.InvariantCultureIgnoreCase))
+                model.IsConfiguration = true;
+            else if (extension.Equals(".CFE", StringComparison.InvariantCultureIgnoreCase))
+                model.IsExtension = true;
+            else if (extension.Equals(".CFU", StringComparison.InvariantCultureIgnoreCase))
+                model.IsUpdate = true;
         }
 
         model.Name = vm.Name;
         model.Version = vm.Version;
-        model.IsExtension = vm.IsExtension;
 
         await appDbContext.SaveChangesAsync(cancellationToken);
 

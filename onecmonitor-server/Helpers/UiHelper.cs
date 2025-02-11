@@ -10,18 +10,18 @@ public static class UiHelper
     public static async Task<SelectList> SelectListFrom<T1>(
         IQueryable<T1> items,
         Func<T1, string> textSelector,
-        Guid selectedValue,
+        Guid? selectedValue,
         CancellationToken cancellationToken) where T1 : DatabaseObject
     {
         var list = await items.ToListAsync(cancellationToken);
         var selectListItems = list.Select(i => new { Id = i.Id.ToString(), Name = textSelector(i) }).ToList();
-        selectListItems.Add(new { Id = Guid.Empty.ToString(), Name = "Please choose item" });
+        selectListItems.Add(new { Id = "", Name = "Выберите элемент" });
         
         return new SelectList(
             selectListItems,
             "Id",
             "Name",
-            selectedValue.ToString());
+            selectedValue?.ToString() ?? "");
     }
 
     public static async Task<List<SelectableItemViewModel>> SelectableItemsFrom<T1>(

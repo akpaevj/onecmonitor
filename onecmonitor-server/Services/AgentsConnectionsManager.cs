@@ -89,15 +89,11 @@ namespace OnecMonitor.Server.Services
 
         public async Task UpdateTechLogSeances(List<Agent> agents, CancellationToken cancellationToken)
         {
-            foreach(var agent in agents)
+            foreach (var connection in agents.Select(agent => GetCommandsSubscriberConnection(agent.Id)).OfType<AgentConnection>())
             {
-                var connection = GetCommandsSubscriberConnection(agent.Id);
-                if (connection == null)
-                    continue;
-                
                 try
                 {
-                    await connection.UpdateTechLogSeances(null, cancellationToken);
+                    await connection.RequestTechLogSeancesUpdating(cancellationToken);
                 }
                 catch
                 {

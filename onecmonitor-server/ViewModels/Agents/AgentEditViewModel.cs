@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using OnecMonitor.Server.Models;
 using OneSTools.Common.Platform;
@@ -5,14 +6,20 @@ using OneSTools.Common.Platform;
 namespace OnecMonitor.Server.ViewModels.Agents;
 
 [ValidateNever]
+[DisplayName("Агент монитора")]
 public class AgentEditViewModel
 {
     public Guid Id { get; set; }
+    [DisplayName("Имя экземпляра")]
     public string InstanceName { get; set; } = string.Empty;
+    [DisplayName("Подключен")]
     public bool IsConnected { get; set; }
+    [DisplayName("Установленные платформы")]
     public List<V8Platform> InstalledPlatforms { get; set; } = [];
+    [DisplayName("Службы 1С")]
     public List<V8Service> Services { get; set; } = [];
     
+    [DisplayName("Кластеры")]
     public List<SelectableItemViewModel> Clusters { get; set; } = [];
     public List<SelectableItemViewModel> AvailableClusters { get; set; } = [];
 }

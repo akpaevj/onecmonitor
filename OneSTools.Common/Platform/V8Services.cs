@@ -20,6 +20,22 @@ public static class V8Services
             return GetLinuxDaemons(); 
     }
 
+    public static List<V8Service> GetLaunchedV8Servers()
+        => GetV8Services().Where(c => c is { Type: V8ServiceType.Agent, IsActive: true }).ToList();
+    
+    public static List<V8Service> GetLaunchedRas()
+        => GetV8Services().Where(c => c is { Type: V8ServiceType.RAS, IsActive: true }).ToList();
+    
+    public static V8Service? GetRasForLaunchedAgent()
+    {
+        var agentService = GetLaunchedV8Servers().FirstOrDefault();
+        if (agentService == null)
+            return null;
+            
+        return GetLaunchedRas()
+            .FirstOrDefault(c => c is { Type: V8ServiceType.RAS, IsActive: true } && c.PlatformPath == agentService.PlatformPath);
+    }
+    
     private static List<V8Service> GetLinuxDaemons()
     {
         var items = new List<V8Service>();
@@ -40,6 +56,7 @@ public static class V8Services
             var execStart = RunCommandWithBash($"systemctl show {name} -p ExecStart");
             var executablePath = Regex.Match(execStart, "(?<=path=).*?(?=;)", RegexOptions.ExplicitCapture).Value.Trim();
             var executable = Path.GetFileName(executablePath);
+            var platformPath = Path.GetDirectoryName(executablePath);
             var description = RunCommandWithBash($"systemctl show {name} -p Description").Replace("Description=", "").Trim();
             
             var isActive = RunCommandWithBash($"systemctl status {name}").Contains("active (running)");
@@ -53,7 +70,8 @@ public static class V8Services
                     "ragent" => V8ServiceType.Agent,
                     "ras" => V8ServiceType.RAS,
                     _ => V8ServiceType.Unknown
-                }
+                },
+                PlatformPath = platformPath!
             };
 
             if (service.Type == V8ServiceType.Agent)

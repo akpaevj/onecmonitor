@@ -67,8 +67,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="ViewModels\Agents\Index\" />
-	  <Folder Include="ViewModels\InfoBases\Index\" />
+	  <Folder Include="Data\" />
 	  <Folder Include="wwwroot\css\" />
 	  <Folder Include="wwwroot\dist\" />
 	</ItemGroup>

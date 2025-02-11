@@ -4,6 +4,7 @@
     {
         // System messages
         Error,
+        Ok,
         
         // Client messages
         AgentInfo,
@@ -15,13 +16,18 @@
         V8Services,
         ClustersResponse,
         InfoBasesResponse,
+        UpdateInfoBaseTaskResult,
+        UpdateInfoBasesTaskRequest,
         
         // Server messages
         LastFilePosition,
         TechLogSeances,
+        UpdateTechLogSeancesRequest,
         InstalledPlatformsRequest,
         V8ServicesRequest,
         ClustersRequest,
-        InfoBasesRequest
+        InfoBasesRequest,
+        UpdateInfoBasesRequest,
+        UpdateInfoBasesTask
     }
 }

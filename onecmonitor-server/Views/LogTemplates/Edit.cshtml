@@ -2,26 +2,26 @@
 @model LogTemplateEditViewModel
 
 @{
-    ViewData["Title"] = "Tech log template";
+    ViewData["Title"] = "Шаблон сбора тех. журнала";
 }
 
-<h2 class="mb-3">Tech log template</h2>
+<h2 class="mb-3">Шаблон сбора тех. журнала</h2>
 
 <form method="post" style="height: 100%">
     <div class="mb-3">
-        <button class="btn btn-primary" type="submit">Save</button>
-        <button class="btn btn-secondary" onclick="history.back()" type="button">Back</button>
+        <button class="btn btn-primary" type="submit">Сохранить</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Назад</button>
     </div>
 
     <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
 
     <div class="mb-3">
-        <label class="form-label" asp-for="Name">Name:</label>
+        <label class="form-label" asp-for="Name">Имя</label>
         <input type="text" class="form-control" asp-for="Name" value="@Model.Name">
     </div>
 
     <div class="mb-3">
-        <label class="form-label" for="content">Content:</label>
+        <label class="form-label" for="content">Содержимое</label>
         <textarea hidden asp-for="Content" id="content">@Model.Content</textarea>
         <div class="form-control" style="min-height: 400px" id="xml_editor"></div>
     </div>

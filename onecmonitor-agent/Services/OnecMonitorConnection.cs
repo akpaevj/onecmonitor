@@ -9,8 +9,6 @@ namespace OnecMonitor.Agent.Services
 {
     public class OnecMonitorConnection : ServerConnection
     {
-        private readonly ILogger<OnecMonitorConnection> _logger;
-
         public OnecMonitorConnection(IServiceProvider serviceProvider, IHostApplicationLifetime hostApplicationLifetime)
         {
             var configuration = serviceProvider.GetRequiredService<IConfiguration>();
@@ -45,7 +43,7 @@ namespace OnecMonitor.Agent.Services
             
             var agentInstance1 = agentInstance;
             
-            Connected += async (s, e) =>
+            Connected += async (_, _) =>
             {
                 await WriteMessageToStream(MessageType.AgentInfo, agentInstance1, hostApplicationLifetime.ApplicationStopping);
             };
@@ -53,73 +51,8 @@ namespace OnecMonitor.Agent.Services
             var host = configuration.GetValue("OnecMonitor:Host", "0.0.0.0");
             var port = configuration.GetValue("OnecMonitor:Port", 7001);
 
-            _logger = serviceProvider.GetRequiredService<ILogger<OnecMonitorConnection>>();
-            
-            Start(host, port, _logger, hostApplicationLifetime.ApplicationStopping);
-        }
-
-        public async Task SubscribeForCommands(CancellationToken cancellationToken)
-        {
-            await WriteMessage(MessageType.SubscribingForCommands, cancellationToken);
-
-            _logger.LogTrace("SubscribingForCommands message is queued");
-        }
-
-        public async Task<long> GetLastFilePosition(Guid seanceId, Guid templateId, string folder, string file, CancellationToken cancellationToken)
-        {
-            _logger.LogTrace("Last position in file requested");
-            
-            return await WriteMessageAndWaitResult<LastFilePositionRequestDto, long>(
-                MessageType.LastFilePositionRequest, 
-                MessageType.LastFilePosition,
-                new LastFilePositionRequestDto()
-                {
-                    SeanceId = seanceId,
-                    TemplateId = templateId,
-                    Folder = folder,
-                    File = file
-                }, 
-                cancellationToken);
-        }
-
-        public async Task<List<TechLogSeanceDto>> GetTechLogSeances(CancellationToken cancellationToken)
-        {
-            _logger.LogTrace("Tech log seances requested");
-
-            return await WriteMessageAndWaitResult<List<TechLogSeanceDto>>(
-                MessageType.TechLogSeancesRequest, 
-                MessageType.TechLogSeances, 
-                cancellationToken);
-        }
-        
-        public async Task SendInstalledPlatforms(Message message, List<V8Platform> platforms, CancellationToken cancellationToken)
-        {
-            await WriteMessage(MessageType.InstalledPlatforms, platforms, message,
-                cancellationToken);
-        }
-        
-        public async Task SendV8Services(Message message, List<V8Service> services, CancellationToken cancellationToken)
-        {
-            await WriteMessage(MessageType.V8Services, services, message,
-                cancellationToken);
-        }
-        
-        public async Task SendV8Clusters(Message message, List<V8Cluster> clusters, CancellationToken cancellationToken)
-        {
-            await WriteMessage(MessageType.ClustersResponse, clusters, message,
-                cancellationToken);
-        }
-        
-        public async Task SendV8InfoBases(Message message, List<V8InfoBaseSummary> infoBases, CancellationToken cancellationToken)
-        {
-            await WriteMessage(MessageType.InfoBasesResponse, infoBases, message,
-                cancellationToken);
-        }
-
-        public async Task SendTechLogEventContent(TechLogEventContentDto item, CancellationToken cancellationToken)
-        {
-            await WriteMessage(MessageType.TechLogEventContent, item, null, cancellationToken);
-            _logger.LogTrace("Event content message is queued");
+            var logger = serviceProvider.GetRequiredService<ILogger<OnecMonitorConnection>>();
+            Start(host, port, logger, hostApplicationLifetime.ApplicationStopping);
         }
     }
 }

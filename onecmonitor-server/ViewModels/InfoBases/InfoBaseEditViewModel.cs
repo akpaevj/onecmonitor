@@ -7,6 +7,7 @@ namespace OnecMonitor.Server.ViewModels.InfoBases;
 public class InfoBaseEditViewModel
 {
     public Guid Id { get; set; }
+    public string InfoBaseInternalId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string InfoBaseName { get; set; } = string.Empty;
     public string PublishAddress { get; set; } = string.Empty;

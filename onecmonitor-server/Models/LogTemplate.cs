@@ -18,7 +18,7 @@ namespace OnecMonitor.Server.Models
         public string Name { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
 
-        public List<TechLogSeance> Seances { get; set; } = new();
+        public virtual List<TechLogSeance> Seances { get; set; } = new();
 
         public override bool Equals(object? obj)
         {
