@@ -84,30 +84,37 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
 
     public async Task<IActionResult> Start(Guid id, CancellationToken cancellationToken)
     {
-        var task = await appDbContext.UpdateInfoBaseTasks
-            .AsNoTracking()
-            .Include(c => c.InfoBases)
-            .ThenInclude(c => c.Cluster)
-            .ThenInclude(c => c.Agent)
-            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
-        
-        if (task == null)
-            return NotFound();
-        
-        var affectedAgents = task.InfoBases.Select(c => c.Cluster.Agent).Distinct().ToList();
-        var connectedAgents = connectionsManager.GetConnectedAgents(affectedAgents);
-
-        foreach (var agent in connectedAgents)
+        try
         {
-            var commandsConnection = connectionsManager.GetCommandsSubscriberConnection(agent.Id)!;
-            await commandsConnection.RequestInfoBasesUpdating(cancellationToken);
+            var task = await appDbContext.UpdateInfoBaseTasks
+                .AsNoTracking()
+                .Include(c => c.InfoBases)
+                .ThenInclude(c => c.Cluster)
+                .ThenInclude(c => c.Agent)
+                .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+        
+            if (task == null)
+                return NotFound();
+        
+            var affectedAgents = task.InfoBases.Select(c => c.Cluster.Agent).Distinct().ToList();
+            var connectedAgents = connectionsManager.GetConnectedAgents(affectedAgents);
+
+            foreach (var agent in connectedAgents)
+            {
+                var commandsConnection = connectionsManager.GetCommandsSubscriberConnection(agent.Id)!;
+                await commandsConnection.RequestInfoBasesUpdating(cancellationToken);
+            }
+        
+            var taskToUpdate = await appDbContext.UpdateInfoBaseTasks.FindAsync([id], cancellationToken);
+            taskToUpdate!.StartDateTime = DateTime.Now;
+            await appDbContext.SaveChangesAsync(cancellationToken);
+        
+            return RedirectToAction("Index");
         }
-        
-        var taskToUpdate = await appDbContext.UpdateInfoBaseTasks.FindAsync([id], cancellationToken);
-        taskToUpdate!.StartDateTime = DateTime.Now;
-        await appDbContext.SaveChangesAsync(cancellationToken);
-        
-        return RedirectToAction("Index");
+        catch (Exception e)
+        {
+            return View("Error", new ErrorViewModel(e.Message));
+        }
     }
     
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
@@ -125,6 +132,17 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
         {
             return View("Error", new ErrorViewModel(ex.ToString()));
         }
+    }
+
+    public async Task<IActionResult> Log(Guid id, CancellationToken cancellationToken)
+    {
+        var results = await appDbContext.UpdateInfoBaseTaskResults
+            .Where(c => c.UpdateInfoBaseTaskId == id)
+            .Include(c => c.InfoBase)
+            .Include(c => c.Log)
+            .ToListAsync(cancellationToken);
+
+        return View(results);
     }
     
     private async Task<UpdateInfoBaseTaskEditViewModel> PrepareViewModel(UpdateInfoBaseTaskEditViewModel vm, CancellationToken cancellationToken)

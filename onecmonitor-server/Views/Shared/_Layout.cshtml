@@ -69,11 +69,16 @@
                         </a>
                         <ul class="collapse show nav flex-column ms-1" id="techLogSubMenu" data-bs-parent="#mainMenu">
                             <li class="w-100">
+                                <a asp-controller="TechLogSettings" asp-action="Index" class="nav-link text-white px-0">
+                                    <small class="d-none d-sm-inline">Настройки</small>
+                                </a>
+                            </li>
+                            <li class="w-100">
                                 <a asp-controller="TechLogSeances" asp-action="Index" class="nav-link text-white px-0">
                                     <small class="d-none d-sm-inline">Сеансы сбора</small>
                                 </a>
                             </li>
-                            <li>
+                            <li class="w-100">
                                 <a asp-controller="LogTemplates" asp-action="Index" class="nav-link text-white px-0">
                                     <small class="d-none d-sm-inline">Шаблоны</small>
                                 </a>

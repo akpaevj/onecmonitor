@@ -12,9 +12,12 @@
 
 <h2 class="mb-3">Сеансы сбора тех. журнала</h2>
 
-<div class="mb-3">
-    <a class="btn btn-primary" asp-action="Edit" role="button">Добавить</a>
-</div>
+@if (Model.Enabled)
+{
+    <div class="mb-3">
+        <a class="btn btn-primary" asp-action="Edit" role="button">Добавить</a>
+    </div>
+}
 
 <form method="get">
     <div class="table-responsive">
@@ -45,7 +48,10 @@
                         }
                         <td class="text-center">
                             <a class="btn btn-outline-info btn-sm" asp-action="TechLog" asp-route-id="@item.Id">Лог</a>
-                            <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
+                            @if (Model.Enabled)
+                            {
+                                <a class="btn btn-outline-warning btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
+                            }
                             <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Description')">Удалить</a>
                         </td>
                     </tr>

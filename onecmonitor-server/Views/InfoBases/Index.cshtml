@@ -8,7 +8,7 @@
 <h2 class="mb-3">Информационные базы</h2>
 
 <div class="mb-3">
-    <a class="btn btn-secondary" asp-action="UpdateInfoBases" role="button">Обновить</a>
+    <a class="btn btn-primary" asp-action="UpdateInfoBases" role="button">Обновить</a>
 </div>
 
 <div class="table-responsive">
@@ -29,7 +29,7 @@
                 <td>@item.InfoBaseName</td>
                 <td>@item.Cluster</td>
                 <td class="text-center">
-                    <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
+                    <a class="btn btn-outline-warning btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
                     <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Name')">Удалить</a>
                 </td>
             </tr>

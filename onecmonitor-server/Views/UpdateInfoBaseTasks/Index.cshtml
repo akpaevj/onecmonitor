@@ -30,7 +30,14 @@
             <tr>
                 <td>@item.Description</td>
                 <td>@item.IsStarted</td>
-                <td>@item.IsFaulted</td>
+                @if (item.IsFaulted)
+                {
+                    <td class="text-danger">@item.IsFaulted</td>
+                }
+                else
+                {
+                    <td class="text-success">@item.IsFaulted</td>
+                }
                 <td>@item.IsFinished</td>
                 <td class="text-center">
                     @if (item.IsStarted)
@@ -40,9 +47,12 @@
                     else
                     {
                         <a class="btn btn-outline-primary btn-sm" asp-action="Start" asp-route-id="@item.Id">Запустить</a>
+                        <a class="btn btn-outline-warning btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
                     }
-                    <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
-                    <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Description')">Удалить</a>
+                    @if (!item.IsStarted || item.IsFinished)
+                    {
+                        <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Description')">Удалить</a>
+                    }
                 </td>
             </tr>
         }

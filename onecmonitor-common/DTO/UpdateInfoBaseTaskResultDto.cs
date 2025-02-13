@@ -8,7 +8,7 @@ public class UpdateInfoBaseTaskResultDto
     [Key(0)]
     public bool IsFaulted { get; set; } = false;
     [Key(1)]
-    public Guid TaskId { get; set; }
+    public Guid UpdateInfoBaseTaskId { get; set; }
     [Key(2)]
     public Guid InfoBaseId { get; set; }
     [Key(3)] 

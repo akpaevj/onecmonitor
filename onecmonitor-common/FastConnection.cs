@@ -11,44 +11,32 @@ namespace OnecMonitor.Common;
 
 public abstract class FastConnection : IDisposable
 {
-    private CancellationTokenSource? _loopsCts;
-        
     protected Socket? Socket;
-    protected NetworkStream? Stream;
 
     private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Message>> _calls = new();
     private readonly Channel<Message> _inputChannel = Channel.CreateBounded<Message>(1000);
     private readonly Channel<Message> _outputChannel = Channel.CreateBounded<Message>(1000);
-    private readonly SemaphoreSlim _disconnectingEventSemaphore = new(1);
+    private readonly SemaphoreSlim _disconnectingEventSemaphore = new(0);
     private bool _disposedValue;
         
     protected internal event EventHandler? Disconnected;
 
-    private async Task RaiseDisconnected(CancellationToken cancellationToken)
+    private void RaiseDisconnected()
     {
-        await _disconnectingEventSemaphore.WaitAsync(cancellationToken);
-
-        if (_loopsCts?.IsCancellationRequested == false)
-        {
-            StopStreamLoops();
-            Disconnected?.Invoke(this, EventArgs.Empty);
-            _disconnectingEventSemaphore.Release();
-        }
+        if (_disconnectingEventSemaphore.CurrentCount == 0)
+            return;
+        
+        _disconnectingEventSemaphore.Wait();
+        
+        Disconnected?.Invoke(this, EventArgs.Empty);
     }
 
-    protected void RunStreamLoops()
+    protected void RunStreamLoops(CancellationToken cancellationToken)
     {
+        _ = StartWritingToStream(cancellationToken);
+        _ = StartReadingFromStream(cancellationToken);
+        
         _disconnectingEventSemaphore.Release();
-
-        _loopsCts = new CancellationTokenSource();
-
-        _ = StartWritingToStream(_loopsCts.Token);
-        _ = StartReadingFromStream(_loopsCts.Token);
-    }
-
-    private void StopStreamLoops()
-    {
-        _loopsCts?.Cancel();
     }
 
     public async Task<Message> ReadMessage(CancellationToken cancellationToken)
@@ -131,7 +119,7 @@ public abstract class FastConnection : IDisposable
         var result = await cts.Task.WaitAsync(cancellationToken);
 
         if (result == null)
-            throw new TimeoutException("Failed to get response for the call");
+            throw new TimeoutException("Ошибка получения ответа на вызов");
             
         ThrowIfError(result, cancellationToken);
 
@@ -140,7 +128,7 @@ public abstract class FastConnection : IDisposable
         if (result.Header.Type == responseMessageType) 
             return MessagePackSerializer.Deserialize<TResult>(result.Data, null, cancellationToken);
             
-        throw new Exception("Received unexpected message type");
+        throw new Exception($"Получено неожиданное сообщение. Ожидаемый тип: {responseMessageType}");
     }
     
     private async Task WriteMessage(Message message, bool needWait, CancellationToken cancellationToken)
@@ -157,14 +145,14 @@ public abstract class FastConnection : IDisposable
             var result = await cts.Task.WaitAsync(cancellationToken);
 
             if (result == null)
-                throw new TimeoutException("Failed to get response for the call");
+                throw new TimeoutException("Ошибка получения ответа на вызов");
             
             ThrowIfError(result, cancellationToken);
 
             _calls.TryRemove(message.Header.CallId, out _);
             
             if (result.Header.Type != MessageType.Ok)
-                throw new Exception("Received unexpected message type. Expected is Ok message");
+                throw new Exception($"Получено неожиданное сообщение. Ожидаемый тип: {MessageType.Ok}");
         }
     }
 
@@ -175,42 +163,42 @@ public abstract class FastConnection : IDisposable
 
         try
         {
-            await Stream!.WriteAsync(header.ToBytesArray(), cancellationToken);
+            await Socket!.SendAsync(header.ToBytesArray(), cancellationToken);
 
             if (header.Length > 0)
-                await Stream!.WriteAsync(data, cancellationToken);
+                await Socket!.SendAsync(data, cancellationToken);
         }
         catch
         {
-            await RaiseDisconnected(cancellationToken);
+            RaiseDisconnected();
         }
     }
         
     private async Task StartWritingToStream(CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
+        try
         {
-            try
+            while (!cancellationToken.IsCancellationRequested)
             {
                 var item = await _outputChannel.Reader.ReadAsync(cancellationToken);
-
-                await Stream!.WriteAsync(item.Header.AsMemory(), cancellationToken);
+                
+                await Socket!.SendAsync(item.Header.AsMemory(), cancellationToken);
 
                 if (item.Data.Length > 0)
-                    await Stream!.WriteAsync(item.Data, cancellationToken);
+                    await Socket!.SendAsync(item.Data, cancellationToken);
             }
-            catch
-            {
-                await RaiseDisconnected(cancellationToken);
-            }
+        }
+        catch
+        {
+            RaiseDisconnected();
         }
     }
 
     private async Task StartReadingFromStream(CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
+        try
         {
-            try
+            while (!cancellationToken.IsCancellationRequested)
             {
                 var headerBuffer = await ReadBytesFromStream(MessageHeader.HeaderLength, cancellationToken);
                 var header = MessageHeader.FromSpan(headerBuffer.Span);
@@ -230,10 +218,10 @@ public abstract class FastConnection : IDisposable
                 else
                     await _inputChannel.Writer.WriteAsync(message, cancellationToken);
             }
-            catch
-            {
-                await RaiseDisconnected(cancellationToken);
-            }
+        }
+        catch
+        {
+            RaiseDisconnected();
         }
     }
 
@@ -245,7 +233,10 @@ public abstract class FastConnection : IDisposable
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            read += await Stream!.ReadAsync(memory[read..], cancellationToken);
+            if (Socket!.Poll(0, SelectMode.SelectRead) && Socket.Available == 0)
+                throw new Exception("Disconnected");
+            
+            read += await Socket!.ReceiveAsync(memory[read..], cancellationToken);
 
             if (count == read)
                 break;
@@ -270,7 +261,6 @@ public abstract class FastConnection : IDisposable
             
         if (disposing)
         {
-            _loopsCts?.Cancel();
             Socket?.Dispose();
         }
 

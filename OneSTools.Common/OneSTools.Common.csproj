@@ -14,6 +14,9 @@
       <Reference Include="MessagePack.Annotations">
         <HintPath>..\..\..\.nuget\packages\messagepack.annotations\3.1.2\lib\netstandard2.0\MessagePack.Annotations.dll</HintPath>
       </Reference>
+      <Reference Include="System.ServiceProcess.ServiceController">
+        <HintPath>..\..\..\.nuget\packages\system.serviceprocess.servicecontroller\9.0.1\lib\net8.0\System.ServiceProcess.ServiceController.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

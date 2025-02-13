@@ -26,7 +26,7 @@ namespace OnecMonitor.Server.Services
         {
             _socket.Bind(new IPEndPoint(IPAddress.Parse(_host), _port));
 
-            logger.LogInformation($"Listening agents on: {_host}:{_port}");
+            logger.LogInformation($"Прослушивание агентов: {_host}:{_port}");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -49,7 +49,7 @@ namespace OnecMonitor.Server.Services
         {
             Connections.TryAdd(agentConnection.ConnectionId, agentConnection);
 
-            logger.LogInformation($"Agent connected: {agentConnection.AgentInstance!.InstanceName}");
+            logger.LogInformation($"Агент подключился: {agentConnection.AgentInstance!.InstanceName}");
         }
 
         private void AgentConnection_Disconnected(AgentConnection agentConnection)
@@ -64,7 +64,7 @@ namespace OnecMonitor.Server.Services
             if (commandsWatcher.Key != Guid.Empty)
                 _commandsSubscribers.TryRemove(commandsWatcher.Key, out _);
 
-            logger.LogInformation($"Agent disconnected: {agentConnection.AgentInstance!.InstanceName}");
+            logger.LogInformation($"Агент отключиться: {agentConnection.AgentInstance!.InstanceName}");
         }
 
         private void AgentConnection_SubscribedForCommands(AgentConnection agentConnection)

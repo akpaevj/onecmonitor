@@ -14,15 +14,12 @@ namespace OnecMonitor.Common.TechLog
     {
         private readonly ILogger<TechLogProcessor> _logger;
 
-        private readonly ITechLogStorage _techLogStorage;
         private readonly ActionBlock<(AgentInstance, TechLogEventContentDto)> _parseblock;
         private readonly BatchBlock<TjEvent> _batchBlock;
         private readonly ActionBlock<TjEvent[]> _sendBlock;
 
         public TechLogProcessor(ITechLogStorage techLogStorage, ILogger<TechLogProcessor> logger)
         {
-            _techLogStorage = techLogStorage;
-
             _logger = logger;
 
             var sendBlockOptions = new ExecutionDataflowBlockOptions()
@@ -35,7 +32,7 @@ namespace OnecMonitor.Common.TechLog
             {
                 try
                 {
-                    await _techLogStorage.AddTjEvents(tjEvents);
+                    await techLogStorage.AddTjEvents(tjEvents);
 
                     _logger.LogTrace("Tj events batch has been sent to the database");
                 }
@@ -76,12 +73,12 @@ namespace OnecMonitor.Common.TechLog
         {
             stoppingToken.Register(_parseblock.Complete);
 
-            _ = _parseblock.Completion.ContinueWith(c => _batchBlock.Complete(), stoppingToken);
-            _batchBlock.LinkTo(_sendBlock, new DataflowLinkOptions() { PropagateCompletion = true });
+            _ = _parseblock.Completion.ContinueWith(_ => _batchBlock.Complete(), stoppingToken);
+            _batchBlock.LinkTo(_sendBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
             while (!stoppingToken.IsCancellationRequested) 
             {
-                _batchBlock!.TriggerBatch();
+                _batchBlock.TriggerBatch();
                 await Task.Delay(1000, stoppingToken);
             }
         }

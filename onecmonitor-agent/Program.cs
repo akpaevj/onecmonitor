@@ -8,12 +8,13 @@ using OnecMonitor.Common.Storage;
 using OnecMonitor.Common.TechLog;
 
 var host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices((hostContext, services) =>
+    .ConfigureServices((_, services) =>
     {
         services.AddWindowsService(options =>
         {
             options.ServiceName = "OnecMonitorAgent";
         });
+        services.AddSingleton<RasHolder>();
         services.AddSingleton<InfoBasesUpdater>();
         services.AddDbContext<AppDbContext>();
         services.AddSingleton<OnecMonitorConnection>();
@@ -24,16 +25,12 @@ var host = Host.CreateDefaultBuilder(args)
     })
 .Build();
 
-using var scope = host.Services.CreateAsyncScope();
-using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+await using var scope = host.Services.CreateAsyncScope();
+await using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 await appDbContext.Database.MigrateAsync();
 
 var appLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 var techLogeExporter = host.Services.GetRequiredService<TechLogExporter>();
-appLifetime.ApplicationStarted.Register(() =>
-{
-    techLogeExporter.Start();
-});
 appLifetime.ApplicationStopping.Register(() =>
 {
     techLogeExporter.Stop();

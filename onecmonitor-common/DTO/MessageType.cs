@@ -13,7 +13,8 @@
         LastFilePositionRequest,
         TechLogEventContent,
         InstalledPlatforms,
-        V8Services,
+        RagentServices,
+        RasServices,
         ClustersResponse,
         InfoBasesResponse,
         UpdateInfoBaseTaskResult,
@@ -24,10 +25,12 @@
         TechLogSeances,
         UpdateTechLogSeancesRequest,
         InstalledPlatformsRequest,
-        V8ServicesRequest,
+        RagentServicesRequest,
+        RasServicesRequest,
         ClustersRequest,
         InfoBasesRequest,
         UpdateInfoBasesRequest,
-        UpdateInfoBasesTask
+        UpdateInfoBasesTask,
+        UpdateSettingsRequest
     }
 }

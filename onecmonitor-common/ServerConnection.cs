@@ -20,8 +20,10 @@ public class ServerConnection : FastConnection
         
         Disconnected += (_, _) =>
         {
-            logger.LogWarning("Disconnected from the server");
-            _ = TryConnectInLoop(token);
+            logger.LogWarning("Отключен от сервера");
+            
+            if (!token.IsCancellationRequested)
+                _ = TryConnectInLoop(token);
         };
 
         _ = TryConnectInLoop(token);
@@ -31,9 +33,9 @@ public class ServerConnection : FastConnection
     {
         await ConnectInLoop(cancellationToken);
 
-        RunStreamLoops();
+        RunStreamLoops(cancellationToken);
 
-        _logger.LogTrace("Stream loops started");
+        _logger.LogTrace("Циклы потоков чтения/записи запущены");
     }
 
     private async Task ConnectInLoop(CancellationToken cancellationToken)
@@ -44,11 +46,11 @@ public class ServerConnection : FastConnection
             {
                 await Reconnect(cancellationToken);
 
-                _logger.LogTrace("Connection to server is established");
+                _logger.LogTrace("Установлено соединение с сервером");
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.NotConnected)
             {
-                _logger.LogTrace("Failed to connect to the server");
+                _logger.LogTrace("Ошибка установки соединения с сервером");
             }
 
             if (Socket?.Connected == true)
@@ -59,45 +61,38 @@ public class ServerConnection : FastConnection
 
     private async Task Reconnect(CancellationToken cancellationToken)
     {
-        _logger.LogTrace($"Trying connect to {_host}:{_port}");
+        _logger.LogTrace($"Попытка подключения к {_host}:{_port}");
 
         Socket?.Dispose();
 
         var addresses = await Dns.GetHostAddressesAsync(_host, AddressFamily.InterNetwork, cancellationToken);
         if (addresses.Length == 0)
-            throw new Exception("Couldn't resolve server address");
+            throw new Exception("Не удалось определить адрес сервера");
         var endPoint = new IPEndPoint(addresses[0], _port);
 
-        _logger.LogTrace($"Server's resolved address: {endPoint.Address}");
+        _logger.LogTrace($"Адрес сервера: {endPoint.Address}");
 
         Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
         {
-            NoDelay = true,
+            NoDelay = true
         };
-
-        var cts = new CancellationTokenSource();
+        
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(10));
 
         try
         {
-            cts.CancelAfter(10 * 1000);
-            cancellationToken.Register(cts.Cancel);
-
-            var connectAsync = Socket.ConnectAsync(endPoint, cancellationToken);
-            var connectTask = connectAsync.AsTask();
-            await connectTask.WaitAsync(cts.Token);
+            await Socket.ConnectAsync(endPoint, cts.Token);
         }
-        catch (Exception)
+        catch
         {
-            // ignored
+            // ignore
         }
-
-        cts.Dispose();
 
         if (!Socket.Connected)
             throw new SocketException((int)SocketError.NotConnected);
-            
-        Stream = new NetworkStream(Socket);
-        _logger.LogInformation("Connected to the server");
+        
+        _logger.LogInformation("Подключен к серверу");
             
         Connected?.Invoke(this, EventArgs.Empty);
     }

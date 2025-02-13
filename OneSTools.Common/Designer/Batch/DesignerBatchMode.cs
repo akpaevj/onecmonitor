@@ -11,6 +11,7 @@ public sealed class DesignerBatchMode : IDisposable
     private Process? _process;
     private bool _needRaiseEvent = true;
     
+    public string OutFileContent { get; private set; } = string.Empty;
     public event EventHandler<(int ExitCode, string OutFileContent)>? ProcessExited;
     
     public DesignerBatchMode(V8Platform platform, string server, string infoBase)
@@ -43,7 +44,7 @@ public sealed class DesignerBatchMode : IDisposable
     {
         AddBatchModeCommonArgs(user, password, accessCode);
         
-        _arguments.Add($"/LoadCfg\"{cfPath}\"");
+        _arguments.Add($"/LoadCfg\"{cfPath}\" /UpdateDBCfg -Dynamic- -Server -SessionTerminate force");
         
         Start(waitForExit);
     }
@@ -52,7 +53,7 @@ public sealed class DesignerBatchMode : IDisposable
     {
         AddBatchModeCommonArgs(user, password, accessCode);
         
-        _arguments.Add($"/UpdateCfg\"{cfuPath}\"");
+        _arguments.Add($"/UpdateCfg\"{cfuPath}\" /UpdateDBCfg -Dynamic- -Server -SessionTerminate force");
         
         Start(waitForExit);
     }
@@ -61,17 +62,7 @@ public sealed class DesignerBatchMode : IDisposable
     {
         AddBatchModeCommonArgs(user, password, accessCode);
         
-        _arguments.Add($"/LoadCfg\"{cfePath}\"");
-        _arguments.Add($"-Extension\"{extensionName}\"");
-        
-        Start(waitForExit);
-    }
-    
-    public void UpdateDatabaseConfiguration(string user, string password, string accessCode = "", bool waitForExit = false)
-    {
-        AddBatchModeCommonArgs(user, password, accessCode);
-        
-        _arguments.Add("/UpdateDBCfg -Dynamic- -Server -SessionTerminate force");
+        _arguments.Add($"/LoadCfg\"{cfePath}\" -Extension\"{extensionName}\" /UpdateDBCfg");
         
         Start(waitForExit);
     }
@@ -103,10 +94,10 @@ public sealed class DesignerBatchMode : IDisposable
         
         _process.WaitForExit();
             
-        var outFileContent = GetOutFileContent();
+        SetOutFileContent();
             
         if (_process.ExitCode != 0)
-            throw new Exception(outFileContent);
+            throw new Exception(OutFileContent);
     }
     
     private ProcessStartInfo InitProcessStartInfo(V8Platform platform)
@@ -142,18 +133,15 @@ public sealed class DesignerBatchMode : IDisposable
         if (!_needRaiseEvent) 
             return;
 
-        var outFileContent = GetOutFileContent();
-        
-        ProcessExited?.Invoke(this, (_process?.ExitCode ?? 0, outFileContent));
+        SetOutFileContent();
+        ProcessExited?.Invoke(this, (_process?.ExitCode ?? 0, OutFileContent));
     }
 
-    private string GetOutFileContent()
+    private void SetOutFileContent()
     {
-        var outFileContent = string.Empty;
+        OutFileContent = string.Empty;
         if (!string.IsNullOrEmpty(_outFilePath) && File.Exists(_outFilePath))
-            File.ReadAllText(outFileContent);
-
-        return outFileContent;
+            OutFileContent = File.ReadAllText(_outFilePath);
     }
 
     public void Dispose()

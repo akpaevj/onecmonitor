@@ -41,17 +41,16 @@ namespace OnecMonitor.Agent.Services
                 appDbContext.SaveChanges();
             }
             
-            var agentInstance1 = agentInstance;
-            
             Connected += async (_, _) =>
             {
-                await WriteMessageToStream(MessageType.AgentInfo, agentInstance1, hostApplicationLifetime.ApplicationStopping);
+                await WriteMessageToStream(MessageType.AgentInfo, agentInstance, hostApplicationLifetime.ApplicationStopping);
             };
 
             var host = configuration.GetValue("OnecMonitor:Host", "0.0.0.0");
             var port = configuration.GetValue("OnecMonitor:Port", 7001);
 
             var logger = serviceProvider.GetRequiredService<ILogger<OnecMonitorConnection>>();
+            
             Start(host, port, logger, hostApplicationLifetime.ApplicationStopping);
         }
     }

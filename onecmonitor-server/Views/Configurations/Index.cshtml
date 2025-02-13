@@ -29,7 +29,7 @@
                 <td>@item.Version</td>
                 <td>@item.Type</td>
                 <td class="text-center">
-                    <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
+                    <a class="btn btn-outline-warning btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
                     <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Name')">Удалить</a>
                 </td>
             </tr>

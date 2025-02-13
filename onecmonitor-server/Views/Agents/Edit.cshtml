@@ -27,52 +27,94 @@
     </div>
 
     <div class="mb-3">
-        <label class="form-label">@Html.DisplayNameFor(c => c.InstalledPlatforms)</label>
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered">
-                <thead>
-                <tr>
-                    <th>@Html.DisplayNameFor(c => c.InstalledPlatforms[0].Version)</th>
-                    <th>@Html.DisplayNameFor(c => c.InstalledPlatforms[0].Arch)</th>
-                </tr>
-                </thead>
-                <tbody>
-                @foreach (var item in Model.InstalledPlatforms)
-                {
-                    <tr>
-                        <td>@item.Version</td>
-                        <td>@item.Arch</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+        <div class="card">
+            <div class="card-header">@Html.DisplayNameFor(c => c.InstalledPlatforms)</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                        <tr>
+                            <th>@Html.DisplayNameFor(c => c.InstalledPlatforms[0].Version)</th>
+                            <th>@Html.DisplayNameFor(c => c.InstalledPlatforms[0].Arch)</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.InstalledPlatforms)
+                        {
+                            <tr>
+                                <td>@item.Version</td>
+                                <td>@item.Arch</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="mb-3">
-        <label class="form-label">@Html.DisplayNameFor(c => c.Services)</label>
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered">
-                <thead>
-                <tr>
-                    <th>@Html.DisplayNameFor(c => c.Services[0].Name)</th>
-                    <th>@Html.DisplayNameFor(c => c.Services[0].Type)</th>
-                    <th>@Html.DisplayNameFor(c => c.Services[0].Port)</th>
-                    <th>@Html.DisplayNameFor(c => c.Services[0].IsActive)</th>
-                </tr>
-                </thead>
-                <tbody>
-                @foreach (var item in Model.Services)
-                {
-                    <tr>
-                        <td>@item.Name</td>
-                        <td>@item.Type</td>
-                        <td>@item.Port</td>
-                        <td>@item.IsActive</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">@Html.DisplayNameFor(c => c.RagentServices)</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead>
+                                <tr>
+                                    <th>@Html.DisplayNameFor(c => c.RagentServices[0].Name)</th>
+                                    <th>@Html.DisplayNameFor(c => c.RagentServices[0].IsActive)</th>
+                                    <th>@Html.DisplayNameFor(c => c.RagentServices[0].Port)</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var item in Model.RagentServices)
+                                {
+                                    <tr>
+                                        <td>@item.Name</td>
+                                        <td>@item.IsActive</td>
+                                        <td>@item.Port</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">@Html.DisplayNameFor(c => c.RasServices)</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead>
+                                <tr>
+                                    <th>@Html.DisplayNameFor(c => c.RasServices[0].Name)</th>
+                                    <th>@Html.DisplayNameFor(c => c.RasServices[0].IsActive)</th>
+                                    <th>@Html.DisplayNameFor(c => c.RasServices[0].RagentHost)</th>
+                                    <th>@Html.DisplayNameFor(c => c.RasServices[0].RagentPort)</th>
+                                    <th>@Html.DisplayNameFor(c => c.RasServices[0].Port)</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var item in Model.RasServices)
+                                {
+                                    <tr>
+                                        <td>@item.Name</td>
+                                        <td>@item.IsActive</td>
+                                        <td>@item.RagentHost</td>
+                                        <td>@item.RagentPort</td>
+                                        <td>@item.Port</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

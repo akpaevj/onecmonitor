@@ -1,25 +1,16 @@
 using System.Diagnostics;
+using OneSTools.Common.Extensions;
 
 namespace OneSTools.Common.Platform;
 
 public class Rac(V8Platform platform, string host = "localhost", int port = 1545)
 {
-    public static Rac? CreateRacForLaunchedAgent()
+    public static Rac GetRacForRasService(RasService rasService)
     {
-        var agentService = V8Services.GetLaunchedV8Servers().FirstOrDefault();
-        if (agentService == null)
-            return null;
-            
-        var ras = V8Services.GetLaunchedRas()
-            .FirstOrDefault(c => c is { Type: V8ServiceType.RAS, IsActive: true } && c.PlatformPath == agentService.PlatformPath);
-        if (ras == null)
-            return null;
-            
-        var platform = V8Platforms
-            .GetInstalledPlatforms()
-            .FirstOrDefault(c => c.PlatformPath == ras.PlatformPath);
-        
-        return platform == null ? null : new Rac(platform, "localhost", ras.Port);
+        if (!rasService.Platform.HasRac)
+            throw new Exception($"Для платформы {rasService.Platform} не установлена утилита RAC");
+
+        return new Rac(rasService.Platform, "localhost", rasService.Port);
     }
     
     public List<V8Cluster> GetClusters()
@@ -101,9 +92,9 @@ public class Rac(V8Platform platform, string host = "localhost", int port = 1545
     {
         var output = StartRacAndGetOutput(command);
         
-        var outputItems = output.Split("\n\n", StringSplitOptions.RemoveEmptyEntries).ToList();
+        var outputItems = output.Split($"{Environment.NewLine}{Environment.NewLine}", StringSplitOptions.RemoveEmptyEntries).ToList();
 
-        return outputItems.Select(outputItem => outputItem.Split("\n", StringSplitOptions.RemoveEmptyEntries)
+        return outputItems.Select(outputItem => outputItem.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
                 .Select(c => c.Split(':', 2))
                 .ToDictionary(i => i[0].Trim(), i => i.Length > 1 ? i[1].Trim() : ""))
             .ToList();

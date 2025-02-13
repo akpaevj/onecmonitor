@@ -11,11 +11,13 @@ namespace OnecMonitor.Agent.Services
         private readonly OnecMonitorConnection _server;
         private readonly AppDbContext _appDbContext;
         private readonly InfoBasesUpdater _infoBasesUpdater;
+        private readonly RasHolder _rasHolder;
         private readonly ILogger<CommandsWatcher> _logger;
 
-        public CommandsWatcher(IServiceProvider serviceProvider, InfoBasesUpdater infoBasesUpdater, ILogger<CommandsWatcher> logger) 
+        public CommandsWatcher(IServiceProvider serviceProvider, InfoBasesUpdater infoBasesUpdater, RasHolder rasHolder, ILogger<CommandsWatcher> logger) 
         {
             var scope = serviceProvider.CreateAsyncScope();
+            _rasHolder = rasHolder;
             _server = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
             _appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             _infoBasesUpdater = infoBasesUpdater;
@@ -53,25 +55,30 @@ namespace OnecMonitor.Agent.Services
                             case MessageType.InfoBasesRequest:
                                 await SendV8InfoBases(message, stoppingToken);
                                 break;
-                            case MessageType.V8ServicesRequest:
-                                await SendV8Services(message, stoppingToken);
+                            case MessageType.RagentServicesRequest:
+                                await SendRagentServices(message, stoppingToken);
+                                break;
+                            case MessageType.RasServicesRequest:
+                                await SendRasServices(message, stoppingToken);
                                 break;
                             case MessageType.UpdateInfoBasesRequest:
                                 await HandleUpdateInfoBasesRequest(message, stoppingToken);
                                 break;
+                            case MessageType.UpdateSettingsRequest:
+                                await HandleUpdateSettingsRequest(message, stoppingToken);
+                                break;
                             default:
-                                throw new Exception("Received unexpected message type");
+                                throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
                         }
                     }
-                    catch (Exception e)
+                    catch (OperationCanceledException) {}
+                    catch (Exception ex)
                     {
-                        await _server.SendError(message, e.Message, stoppingToken);
+                        _logger.LogTrace(ex, "Ошибка обработки сообщения");
+                        await _server.SendError(message, ex.Message, stoppingToken);
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Failed to read message: {ex}");
-                }
+                catch (OperationCanceledException) {}
             }
         }
 
@@ -89,23 +96,23 @@ namespace OnecMonitor.Agent.Services
             _infoBasesUpdater.RequestInfoBasesUpdateTask();
         }
         
+        private async Task HandleUpdateSettingsRequest(Message message, CancellationToken cancellationToken)
+        {
+            var request = MessagePackSerializer.Deserialize<UpdateSettingsRequestDto>(message.Data, cancellationToken: cancellationToken);
+            await _server.SendOk(message, cancellationToken);
+        }
+        
         private async Task SendV8Clusters(Message message, CancellationToken cancellationToken)
         {
             _logger.LogTrace("Send clusters");
+
+            var ragents = V8Services.GetActiveRagentServices();
+            var clusters = new List<V8Cluster>();
+
+            foreach (var rac in ragents.Select(_rasHolder.GetActiveRasForRagent).Select(Rac.GetRacForRasService))
+                clusters.AddRange(rac.GetClusters());
             
-            var rac = Rac.CreateRacForLaunchedAgent();
-            if (rac == null)
-                throw new Exception("Failed to get RAC for launched agent");
-            
-            await _server.Send(MessageType.ClustersResponse, rac.GetClusters(), message, cancellationToken);
-        }
-        
-        private async Task SendV8Services(Message message, CancellationToken cancellationToken)
-        {
-            _logger.LogTrace("Send services");
-            
-            var services = V8Services.GetV8Services();
-            await _server.Send(MessageType.V8Services, services, message, cancellationToken);
+            await _server.Send(MessageType.ClustersResponse, clusters, message, cancellationToken);
         }
         
         private async Task SendV8InfoBases(Message message, CancellationToken cancellationToken)
@@ -113,15 +120,31 @@ namespace OnecMonitor.Agent.Services
             _logger.LogTrace("Send infobases");
             
             var request = MessagePackSerializer.Deserialize<InfoBasesRequestDto>(message.Data, cancellationToken: cancellationToken);
-            
-            var rac = Rac.CreateRacForLaunchedAgent();
-            if (rac == null)
-                throw new Exception("Failed to get RAC for launched agent");
+
+            var ragent = V8Services.GetActiveRagentForClusterPort(request.Cluster.Port);
+            var ras = _rasHolder.GetActiveRasForRagent(ragent);
+            var rac = Rac.GetRacForRasService(ras);
             
             var infoBases = rac.GetInfoBasesSummaries(request.Cluster.Id);
             
             await _server.Send(MessageType.InfoBasesResponse, infoBases, message,
                 cancellationToken);
+        }
+        
+        private async Task SendRagentServices(Message message, CancellationToken cancellationToken)
+        {
+            _logger.LogTrace("Send ragent services");
+            
+            var services = V8Services.GetRagentServices();
+            await _server.Send(MessageType.RagentServices, services, message, cancellationToken);
+        }
+        
+        private async Task SendRasServices(Message message, CancellationToken cancellationToken)
+        {
+            _logger.LogTrace("Send ras services");
+            
+            var services = _rasHolder.GetRasServices();
+            await _server.Send(MessageType.RasServices, services, message, cancellationToken);
         }
 
         private async Task UpdateTechLogSeancesByRequest(Message message, CancellationToken cancellationToken)

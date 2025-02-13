@@ -250,6 +250,43 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("TechLogSeances");
                 });
 
+            modelBuilder.Entity("OnecMonitor.Server.Models.TechLogSettings", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClickHouseDatabase")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClickHouseHost")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClickHousePassword")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ClickHousePort")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ClickHouseUser")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TechLogSettings");
+                });
+
             modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTask", b =>
                 {
                     b.Property<string>("Id")

@@ -16,8 +16,10 @@ public class AgentEditViewModel
     public bool IsConnected { get; set; }
     [DisplayName("Установленные платформы")]
     public List<V8Platform> InstalledPlatforms { get; set; } = [];
-    [DisplayName("Службы 1С")]
-    public List<V8Service> Services { get; set; } = [];
+    [DisplayName("Службы агентов сервера 1С")]
+    public List<RagentService> RagentServices { get; set; } = [];
+    [DisplayName("Службы сервера администрирования 1С")]
+    public List<RasService> RasServices { get; set; } = [];
     
     [DisplayName("Кластеры")]
     public List<SelectableItemViewModel> Clusters { get; set; } = [];

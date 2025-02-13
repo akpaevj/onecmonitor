@@ -1,23 +1,13 @@
 ﻿using System.Text.RegularExpressions;
+using OneSTools.Common.Extensions;
 
 namespace OneSTools.Common.Platform;
 
 public static partial class V8Platforms
 {
-    public static V8Platform? GetPlatformForLaunchedAgent()
-    {
-        var agentService = V8Services.GetLaunchedV8Servers().FirstOrDefault();
-        if (agentService == null)
-            return null;
-            
-        var ras = V8Services.GetLaunchedRas()
-            .FirstOrDefault(c => c is { Type: V8ServiceType.RAS, IsActive: true } && c.PlatformPath == agentService.PlatformPath);
-        if (ras == null)
-            return null;
-            
-        return GetInstalledPlatforms()
-            .FirstOrDefault(c => c.PlatformPath == ras.PlatformPath);
-    }
+    public static V8Platform? GetInstalledPlatformByPath(string platformPath)
+        => GetInstalledPlatforms()
+            .FirstOrDefault(c => c.PlatformPath.Equals(platformPath, StringComparison.OrdinalIgnoreCase));
     
     public static IReadOnlyList<V8Platform> GetInstalledPlatforms()
         => GetInstalledPlatforms(GetDefaultInstallationPaths());
@@ -40,6 +30,7 @@ public static partial class V8Platforms
                     .Select(directory =>
                     {
                         var onecV8 = ExecutableExists(directory, "1cv8");
+                        var ras = ExecutableExists(directory, "ras");
                         var rac = ExecutableExists(directory, "rac");
                         
                         return new V8Platform
@@ -50,7 +41,9 @@ public static partial class V8Platforms
                             HasOnecV8 = onecV8.Exists,
                             OnecV8Path = onecV8.Path,
                             HasRac = rac.Exists,
-                            RacPath = rac.Path
+                            RacPath = rac.Path,
+                            HasRas = ras.Exists,
+                            RasPath = ras.Path
                         };
                     })
                 );
@@ -61,7 +54,11 @@ public static partial class V8Platforms
     
     private static (bool Exists, string Path) ExecutableExists(string platformPath, string name)
     {
-        var path = Path.Join(platformPath, name + (Environment.OSVersion.Platform == PlatformID.Win32NT ? ".exe" : ""));
+        var binPath = Environment.OSVersion.Platform == PlatformID.Win32NT
+            ? Path.Join(platformPath, "bin")
+            : platformPath;
+        
+        var path = Path.Join(binPath, name + (Environment.OSVersion.Platform == PlatformID.Win32NT ? ".exe" : ""));
         return (File.Exists(path), path);
     }
 

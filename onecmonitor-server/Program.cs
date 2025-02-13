@@ -32,6 +32,7 @@ builder.WebHost.ConfigureKestrel((context, options) =>
     });
 });
 
+builder.Services.AddAutoMapper(typeof(DtoProfile));
 builder.Services.AddAutoMapper(typeof(CommonProfile));
 
 builder.Services.AddControllersWithViews();
@@ -79,11 +80,16 @@ app.UseCors(options =>
 
 await using var scope = app.Services.CreateAsyncScope();
 
-var clickHouseContext = scope.ServiceProvider.GetRequiredService<ITechLogStorage>();
-await clickHouseContext.InitDatabase();
-
 var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 await appDbContext.Database.MigrateAsync();
+
+var settings = await appDbContext.TechLogSettings.FirstOrDefaultAsync();
+
+if (settings?.Enabled ?? false)
+{
+    var clickHouseContext = scope.ServiceProvider.GetRequiredService<ITechLogStorage>();
+    await clickHouseContext.InitDatabase();
+}
 
 app.MapControllerRoute(
     name: "default",

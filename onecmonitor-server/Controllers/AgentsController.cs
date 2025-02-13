@@ -37,38 +37,38 @@ namespace OnecMonitor.Server.Controllers
 
         public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
         {
-            var agent = await appDbContext.Agents
-                .Include(c => c.Clusters)
-                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+            try
+            {
+                var agent = await appDbContext.Agents
+                    .Include(c => c.Clusters)
+                    .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
             
-            if (agent == null)
-                return NotFound();
+                if (agent == null)
+                    return NotFound();
 
-            var agentConnection = connectionsManager.GetCommandsSubscriberConnection(agent.Id);
+                var agentConnection = connectionsManager.GetCommandsSubscriberConnection(agent.Id);
             
-            var installedPlatforms = agentConnection switch
-            {
-                null => [],
-                _ => await agentConnection.GetInstalledPlatforms(cancellationToken)
-            };
-            
-            var services = agentConnection switch
-            {
-                null => [],
-                _ => await agentConnection.GetV8Services(cancellationToken)
-            };
+                var installedPlatforms = agentConnection == null ? [] : await agentConnection.GetInstalledPlatforms(cancellationToken);
+                var ragents = agentConnection == null ? [] : await agentConnection.GetRagentServices(cancellationToken);
+                var rases = agentConnection == null ? [] : await agentConnection.GetRasServices(cancellationToken);
 
-            var vm = new AgentEditViewModel
-            {
-                Id = agent.Id,
-                InstanceName = agent.InstanceName,
-                IsConnected = agentConnection != null,
-                InstalledPlatforms = installedPlatforms,
-                Services = services,
-                Clusters = mapper.Map<List<SelectableItemViewModel>>(agent.Clusters)
-            };
+                var vm = new AgentEditViewModel
+                {
+                    Id = agent.Id,
+                    InstanceName = agent.InstanceName,
+                    IsConnected = agentConnection != null,
+                    InstalledPlatforms = installedPlatforms,
+                    RagentServices = ragents,
+                    RasServices = rases,
+                    Clusters = mapper.Map<List<SelectableItemViewModel>>(agent.Clusters)
+                };
             
-            return View(await PrepareVewModel(vm, cancellationToken));
+                return View(await PrepareVewModel(vm, cancellationToken));
+            }
+            catch (Exception e)
+            {
+                return View("Error", new ErrorViewModel(e.Message));
+            }
         }
 
         [HttpPost]

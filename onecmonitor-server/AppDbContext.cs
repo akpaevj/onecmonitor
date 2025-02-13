@@ -20,6 +20,7 @@ namespace OnecMonitor.Server
         public DbSet<Cluster> Clusters { get; set; }
         public DbSet<UpdateInfoBaseTask> UpdateInfoBaseTasks { get; set; }
         public DbSet<UpdateInfoBaseTaskResult> UpdateInfoBaseTaskResults { get; set; }
+        public DbSet<TechLogSettings> TechLogSettings { get; set; }
 
         public AppDbContext(IHostEnvironment hostEnvironment)
             => DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-server.db");

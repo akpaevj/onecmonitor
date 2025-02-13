@@ -120,7 +120,7 @@ namespace OnecMonitor.Agent.Services.TechLog
                                 Content = reader.EventContent
                             };
 
-                            await _onecMonitorConnection.Send(MessageType.TechLogEventContent, message, null, _cts.Token);
+                            await _onecMonitorConnection.Send(MessageType.TechLogEventContent, message, _cts.Token);
 
                             CachePosition(cacheKey, message.EndPosition);
                         }

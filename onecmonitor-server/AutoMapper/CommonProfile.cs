@@ -6,6 +6,7 @@ using OnecMonitor.Server.ViewModels.Configurations;
 using OnecMonitor.Server.ViewModels.Credentials;
 using OnecMonitor.Server.ViewModels.InfoBases;
 using OnecMonitor.Server.ViewModels.TechLogSeances;
+using OnecMonitor.Server.ViewModels.TechLogSettings;
 using OnecMonitor.Server.ViewModels.UpdateInfoBaseTasks;
 
 namespace OnecMonitor.Server.AutoMapper;
@@ -81,5 +82,9 @@ public class CommonProfile : Profile
             .ForMember(c => c.Configurations, i => i.Ignore())
             .ForMember(c => c.InfoBases, i => i.Ignore())
             .ForMember(c => c.Results, i => i.Ignore());
+
+        CreateMap<TechLogSettings, TechLogSettingsEditViewModel>()
+            .ReverseMap()
+            .ForMember(c => c.Id, i => i.Ignore());
     }
 }

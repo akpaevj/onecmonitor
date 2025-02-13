@@ -98,6 +98,23 @@ namespace OnecMonitor.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "TechLogSettings",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Enabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    ClickHouseHost = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    ClickHousePort = table.Column<int>(type: "INTEGER", nullable: false),
+                    ClickHouseDatabase = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    ClickHouseUser = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    ClickHousePassword = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TechLogSettings", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "UpdateInfoBaseTasks",
                 columns: table => new
                 {
@@ -383,6 +400,9 @@ namespace OnecMonitor.Server.Migrations
 
             migrationBuilder.DropTable(
                 name: "TechLogFilters");
+
+            migrationBuilder.DropTable(
+                name: "TechLogSettings");
 
             migrationBuilder.DropTable(
                 name: "UpdateInfoBaseTaskResultLogItem");
