@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using OnecMonitor.Server.Models;
 
@@ -12,9 +13,15 @@ public class CredentialsEditViewModel
     public bool DefaultForClusters { get; set; } = false;
     public bool DefaultV8Admin { get; set; } = false;
     
-    [ValidateNever] public List<SelectableItemViewModel> InfoBases { get; set; } = [];
-    [ValidateNever] public List<SelectableItemViewModel> AvailableInfoBases { get; set; } = [];
+    [ValidateNever] 
+    [DisplayName("Информационные базы")]
+    public List<SelectableItemViewModel> InfoBases { get; set; } = [];
+    [ValidateNever] 
+    public List<SelectableItemViewModel> AvailableInfoBases { get; set; } = [];
     
-    [ValidateNever] public List<SelectableItemViewModel> Clusters { get; set; } = [];
-    [ValidateNever] public List<SelectableItemViewModel> AvailableClusters { get; set; } = [];
+    [DisplayName("Кластеры")]
+    [ValidateNever] 
+    public List<SelectableItemViewModel> Clusters { get; set; } = [];
+    [ValidateNever] 
+    public List<SelectableItemViewModel> AvailableClusters { get; set; } = [];
 }

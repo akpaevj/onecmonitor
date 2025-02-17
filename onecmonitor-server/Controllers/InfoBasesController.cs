@@ -102,7 +102,7 @@ public class InfoBasesController(AppDbContext appDbContext, AgentsConnectionsMan
         if (defaultCredentials == null)
         {
             await appDbContext.Database.RollbackTransactionAsync(cancellationToken);
-            return View("Error", new ErrorViewModel("Before updating you must specified default infobases admin credentials"));
+            return View("Error", new ErrorViewModel("Перед обновлением необходимо создать учетную запись администратора информационных баз по умолчанию"));
         }
         
         try

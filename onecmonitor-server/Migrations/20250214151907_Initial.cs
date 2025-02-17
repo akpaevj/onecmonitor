@@ -88,7 +88,7 @@ namespace OnecMonitor.Server.Migrations
                     Id = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: false),
                     StartMode = table.Column<int>(type: "INTEGER", nullable: false),
-                    StartDateTime = table.Column<string>(type: "TEXT", nullable: false),
+                    StartDateTime = table.Column<long>(type: "INTEGER", nullable: false),
                     Duration = table.Column<int>(type: "INTEGER", nullable: false),
                     DirectSending = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
@@ -120,7 +120,7 @@ namespace OnecMonitor.Server.Migrations
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 150, nullable: false),
-                    StartDateTime = table.Column<string>(type: "TEXT", nullable: false)
+                    StartDateTime = table.Column<long>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -281,49 +281,30 @@ namespace OnecMonitor.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UpdateInfoBaseTaskResults",
+                name: "UpdateInfoBaseTaskLogItems",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
-                    FinishDateTime = table.Column<string>(type: "TEXT", nullable: false),
-                    IsFaulted = table.Column<bool>(type: "INTEGER", nullable: false),
-                    UpdateInfoBaseTaskId = table.Column<string>(type: "TEXT", nullable: false),
-                    InfoBaseId = table.Column<string>(type: "TEXT", nullable: false)
+                    TimeStamp = table.Column<long>(type: "INTEGER", nullable: false),
+                    IsError = table.Column<bool>(type: "INTEGER", nullable: false),
+                    IsFinish = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Message = table.Column<string>(type: "TEXT", nullable: false),
+                    InfoBaseId = table.Column<string>(type: "TEXT", nullable: false),
+                    TaskId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UpdateInfoBaseTaskResults", x => x.Id);
+                    table.PrimaryKey("PK_UpdateInfoBaseTaskLogItems", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_UpdateInfoBaseTaskResults_InfoBases_InfoBaseId",
+                        name: "FK_UpdateInfoBaseTaskLogItems_InfoBases_InfoBaseId",
                         column: x => x.InfoBaseId,
                         principalTable: "InfoBases",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_UpdateInfoBaseTaskResults_UpdateInfoBaseTasks_UpdateInfoBaseTaskId",
-                        column: x => x.UpdateInfoBaseTaskId,
+                        name: "FK_UpdateInfoBaseTaskLogItems_UpdateInfoBaseTasks_TaskId",
+                        column: x => x.TaskId,
                         principalTable: "UpdateInfoBaseTasks",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "UpdateInfoBaseTaskResultLogItem",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    TimeStamp = table.Column<string>(type: "TEXT", nullable: false),
-                    IsError = table.Column<bool>(type: "INTEGER", nullable: false),
-                    Message = table.Column<string>(type: "TEXT", nullable: false),
-                    UpdateInfoBaseTaskResultId = table.Column<string>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UpdateInfoBaseTaskResultLogItem", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_UpdateInfoBaseTaskResultLogItem_UpdateInfoBaseTaskResults_UpdateInfoBaseTaskResultId",
-                        column: x => x.UpdateInfoBaseTaskResultId,
-                        principalTable: "UpdateInfoBaseTaskResults",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -364,26 +345,19 @@ namespace OnecMonitor.Server.Migrations
                 column: "TemplatesId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UpdateInfoBaseTaskResultLogItem_UpdateInfoBaseTaskResultId",
-                table: "UpdateInfoBaseTaskResultLogItem",
-                column: "UpdateInfoBaseTaskResultId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UpdateInfoBaseTaskResults_InfoBaseId",
-                table: "UpdateInfoBaseTaskResults",
+                name: "IX_UpdateInfoBaseTaskLogItems_InfoBaseId",
+                table: "UpdateInfoBaseTaskLogItems",
                 column: "InfoBaseId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UpdateInfoBaseTaskResults_UpdateInfoBaseTaskId",
-                table: "UpdateInfoBaseTaskResults",
-                column: "UpdateInfoBaseTaskId");
+                name: "IX_UpdateInfoBaseTaskLogItems_TaskId",
+                table: "UpdateInfoBaseTaskLogItems",
+                column: "TaskId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UpdateInfoBaseTaskV8Configuration_UpdateTasksId",
                 table: "UpdateInfoBaseTaskV8Configuration",
                 column: "UpdateTasksId");
-            
-            MigrationsHelper.MigrateBuiltInData(migrationBuilder);
         }
 
         /// <inheritdoc />
@@ -405,7 +379,7 @@ namespace OnecMonitor.Server.Migrations
                 name: "TechLogSettings");
 
             migrationBuilder.DropTable(
-                name: "UpdateInfoBaseTaskResultLogItem");
+                name: "UpdateInfoBaseTaskLogItems");
 
             migrationBuilder.DropTable(
                 name: "UpdateInfoBaseTaskV8Configuration");
@@ -417,13 +391,10 @@ namespace OnecMonitor.Server.Migrations
                 name: "TechLogSeances");
 
             migrationBuilder.DropTable(
-                name: "UpdateInfoBaseTaskResults");
+                name: "InfoBases");
 
             migrationBuilder.DropTable(
                 name: "Configurations");
-
-            migrationBuilder.DropTable(
-                name: "InfoBases");
 
             migrationBuilder.DropTable(
                 name: "UpdateInfoBaseTasks");

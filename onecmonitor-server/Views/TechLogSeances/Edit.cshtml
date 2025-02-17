@@ -57,12 +57,14 @@
     <div class="row mb-3">
         <div class="col">
             @await Html.PartialAsync("SelectItemDialog", new SelectItemDialogViewModel(
+                Html.DisplayNameFor(c => c.Agents),
                 nameof(Model.Agents),
                 Model.Agents,
                 Model.AvailableAgents))
         </div>
         <div class="col">
             @await Html.PartialAsync("SelectItemDialog", new SelectItemDialogViewModel(
+                Html.DisplayNameFor(c => c.Templates),
                 nameof(Model.Templates),
                 Model.Templates,
                 Model.AvailableTemplates))

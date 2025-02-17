@@ -3,6 +3,7 @@ using OnecMonitor.Server.Models;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using Microsoft.EntityFrameworkCore;
 
 namespace OnecMonitor.Server.Services
 {
@@ -83,6 +84,9 @@ namespace OnecMonitor.Server.Services
 
             return null;
         }
+        
+        public List<AgentConnection> GetCommandSubscribers(List<Agent> agents)
+            => agents.Select(c => GetCommandsSubscriberConnection(c.Id)).Where(c => c != null).ToList()!;
         
         public List<Agent> GetConnectedAgents(List<Agent> agents)
             => agents.Where(c => _commandsSubscribers.ContainsKey(c.Id)).ToList();

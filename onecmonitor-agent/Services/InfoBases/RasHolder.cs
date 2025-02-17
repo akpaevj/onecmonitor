@@ -40,6 +40,7 @@ public class RasHolder : IDisposable
             FileName = ragent.Platform.RasPath,
             CreateNoWindow = true,
             UseShellExecute = false,
+            WindowStyle = ProcessWindowStyle.Hidden,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             Arguments = $"cluster --port={port} localhost:{ragent.Port}"

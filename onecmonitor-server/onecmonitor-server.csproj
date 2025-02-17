@@ -63,17 +63,21 @@
 
 	<ItemGroup>
 	  <TypeScriptCompile Include="Scripts\models.ts" />
-	  <TypeScriptCompile Include="Scripts\site.ts" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <Folder Include="Data\" />
-	  <Folder Include="wwwroot\css\" />
-	  <Folder Include="wwwroot\dist\" />
+	  <Folder Include="wwwroot\" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <_ContentIncludedByDefault Remove="Views\Home\Index.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\MaintenanceTasks\Edit.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\MaintenanceTasks\Index.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\MaintenanceTasks\Steps\LoadConfiguration.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\MaintenanceTasks\Steps\LoadExtension.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\MaintenanceTasks\Steps\LockConnections.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\MaintenanceTasks\Steps\UpdateConfiguration.cshtml" />
 	</ItemGroup>
 
 	<ProjectExtensions>

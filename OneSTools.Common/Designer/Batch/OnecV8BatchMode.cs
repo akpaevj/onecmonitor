@@ -3,9 +3,10 @@ using OneSTools.Common.Platform;
 
 namespace OneSTools.Common.Designer.Batch;
 
-public sealed class DesignerBatchMode : IDisposable
+public sealed class OnecV8BatchMode : IDisposable
 {
     private readonly List<string> _arguments = [];
+    private readonly bool _designerMode;
     private string _outFilePath = string.Empty;
     private readonly ProcessStartInfo _processStartInfo;
     private Process? _process;
@@ -14,14 +15,16 @@ public sealed class DesignerBatchMode : IDisposable
     public string OutFileContent { get; private set; } = string.Empty;
     public event EventHandler<(int ExitCode, string OutFileContent)>? ProcessExited;
     
-    public DesignerBatchMode(V8Platform platform, string server, string infoBase)
+    public OnecV8BatchMode(V8Platform platform, string server, string infoBase, bool designerMode = true)
     {
+        _designerMode = designerMode;
         _processStartInfo = InitProcessStartInfo(platform);
         _arguments.Add($"/S{server}\\{infoBase}");
     }
     
-    public DesignerBatchMode(V8Platform platform, string ibName)
+    public OnecV8BatchMode(V8Platform platform, string ibName, bool designerMode = true)
     {
+        _designerMode = designerMode;
         _processStartInfo = InitProcessStartInfo(platform);
         _arguments.Add($"/IBName \"{ibName}\"");
     }
@@ -36,6 +39,15 @@ public sealed class DesignerBatchMode : IDisposable
         
         if (visible)
             _arguments.Add("/Visible");
+        
+        Start(waitForExit);
+    }
+
+    public void ExecuteExternalDataProcessor(string path, string user, string password, string accessCode = "", bool waitForExit = false)
+    {
+        AddBatchModeCommonArgs(user, password, accessCode);
+        
+        _arguments.Add($"/Execute\"{path}\"");
         
         Start(waitForExit);
     }
@@ -107,9 +119,11 @@ public sealed class DesignerBatchMode : IDisposable
         
         var psi = new ProcessStartInfo
         {
-            FileName = platform.OnecV8Path
+            FileName = platform.OnecV8Path,
+            CreateNoWindow = true,
+            UseShellExecute = false
         };
-        _arguments.Add("DESIGNER");
+        _arguments.Add(_designerMode ? "DESIGNER" : "ENTERPRISE");
 
         return psi;
     }

@@ -1,6 +1,7 @@
 ﻿using MessagePack;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Agent.Services.InfoBases;
+using OnecMonitor.Agent.Services.TechLog;
 using OnecMonitor.Common.DTO;
 using OneSTools.Common.Platform;
 
@@ -12,14 +13,21 @@ namespace OnecMonitor.Agent.Services
         private readonly AppDbContext _appDbContext;
         private readonly InfoBasesUpdater _infoBasesUpdater;
         private readonly RasHolder _rasHolder;
+        private readonly TechLogExporter _techLogExporter;
         private readonly ILogger<CommandsWatcher> _logger;
 
-        public CommandsWatcher(IServiceProvider serviceProvider, InfoBasesUpdater infoBasesUpdater, RasHolder rasHolder, ILogger<CommandsWatcher> logger) 
+        public CommandsWatcher(
+            IServiceProvider serviceProvider, 
+            InfoBasesUpdater infoBasesUpdater,
+            TechLogExporter techLogExporter,
+            RasHolder rasHolder, 
+            ILogger<CommandsWatcher> logger) 
         {
             var scope = serviceProvider.CreateAsyncScope();
             _rasHolder = rasHolder;
             _server = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
             _appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            _techLogExporter = techLogExporter;
             _infoBasesUpdater = infoBasesUpdater;
             _logger = logger;
         }
@@ -30,13 +38,13 @@ namespace OnecMonitor.Agent.Services
 
             await _server.Send(MessageType.SubscribingForCommands, stoppingToken);
             
-            await UpdateTechLogSeances(stoppingToken);
-
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
                     var message = await _server.ReadMessage(stoppingToken);
+
+                    await UpdateSettings(stoppingToken);
 
                     try
                     {
@@ -98,8 +106,23 @@ namespace OnecMonitor.Agent.Services
         
         private async Task HandleUpdateSettingsRequest(Message message, CancellationToken cancellationToken)
         {
-            var request = MessagePackSerializer.Deserialize<UpdateSettingsRequestDto>(message.Data, cancellationToken: cancellationToken);
             await _server.SendOk(message, cancellationToken);
+            
+            await UpdateSettings(cancellationToken);
+        }
+
+        private async Task UpdateSettings(CancellationToken cancellationToken)
+        {
+            var response =
+                await _server.Get<SettingsDto>(MessageType.SettingsRequest, MessageType.Settings, cancellationToken);
+            
+            if (response.TechLogEnabled)
+            {
+                await UpdateTechLogSeances(cancellationToken);
+                _techLogExporter.Start();
+            }
+            else
+                _techLogExporter.Stop();
         }
         
         private async Task SendV8Clusters(Message message, CancellationToken cancellationToken)
@@ -152,7 +175,8 @@ namespace OnecMonitor.Agent.Services
             _logger.LogTrace("Updating tech log seances by server request");
             await _server.SendOk(message, cancellationToken);
 
-            await UpdateTechLogSeances(cancellationToken);
+            if (_techLogExporter.Enabled)
+                await UpdateTechLogSeances(cancellationToken);
         }
 
         private async Task UpdateTechLogSeances(CancellationToken cancellationToken)

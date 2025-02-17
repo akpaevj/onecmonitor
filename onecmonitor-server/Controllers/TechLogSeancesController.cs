@@ -20,9 +20,12 @@ namespace OnecMonitor.Server.Controllers
     {
         public async Task<IActionResult> Index(int pageNumber = 1, CancellationToken cancellationToken = default)
         {
+            var settings = await dbContext.TechLogSettings.FirstOrDefaultAsync(cancellationToken);
+            
             var viewModel = new TechLogSeancesIndexViewModel
             {
                 CurrentPage = pageNumber,
+                Enabled = settings?.Enabled ?? false
             };
 
             viewModel.Seances = await dbContext.TechLogSeances

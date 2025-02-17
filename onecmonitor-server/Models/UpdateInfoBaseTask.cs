@@ -14,5 +14,5 @@ public class UpdateInfoBaseTask : DatabaseObject
     
     public virtual List<V8Configuration> Configurations { get; set; } = [];
     public virtual List<InfoBase> InfoBases { get; set; } = [];
-    public virtual List<UpdateInfoBaseTaskResult> Results { get; set; } = [];
+    public virtual List<UpdateInfoBaseTaskLogItem> Log { get; set; } = [];
 }

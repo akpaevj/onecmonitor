@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using OnecMonitor.Server.Models;
@@ -16,8 +17,13 @@ public class ClusterEditViewModel
     [ValidateNever] public SelectList Credentials { get; set; } = null!;
     
     public Guid AgentId { get; set; }
-    [ValidateNever] public SelectList Agents { get; set; } = null!;
+    [DisplayName("Агенты")]
+    [ValidateNever] 
+    public SelectList Agents { get; set; } = null!;
     
-    [ValidateNever] public List<SelectableItemViewModel> InfoBases { get; set; } = [];
+    
+    [ValidateNever] 
+    [DisplayName("Информационные базы")]
+    public List<SelectableItemViewModel> InfoBases { get; set; } = [];
     [ValidateNever] public List<SelectableItemViewModel> AvailableInfoBases { get; set; } = [];
 }

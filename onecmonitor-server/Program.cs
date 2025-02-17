@@ -32,6 +32,8 @@ builder.WebHost.ConfigureKestrel((context, options) =>
     });
 });
 
+builder.Services.AddSignalR();
+
 builder.Services.AddAutoMapper(typeof(DtoProfile));
 builder.Services.AddAutoMapper(typeof(CommonProfile));
 

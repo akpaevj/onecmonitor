@@ -1,15 +1,12 @@
 {
   "compilerOptions": {
-    "outDir": "./dist/",
-    "sourceMap": true,
-    //"noImplicitUseStrict": true,
     "alwaysStrict": false,
     "noImplicitAny": false,
-    "module": "es6",
-    "target": "es5",
+    "module": "esnext",
+    "target": "ES2017",
     "allowJs": true,
     "skipLibCheck": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
   },
   "exclude": [
     "node_modules",

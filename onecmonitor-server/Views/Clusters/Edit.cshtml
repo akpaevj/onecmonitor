@@ -48,6 +48,7 @@
 
     <div class="mb-3">
         @await Html.PartialAsync("SelectItemDialog", new SelectItemDialogViewModel(
+            Html.DisplayNameFor(c => c.InfoBases),
             nameof(Model.InfoBases),
             Model.InfoBases,
             Model.AvailableInfoBases))

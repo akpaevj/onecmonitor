@@ -1,3 +1,4 @@
+using System.Globalization;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
@@ -17,7 +18,7 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
 {
     public async Task<IActionResult> Index()
         => View(await appDbContext.UpdateInfoBaseTasks
-            .Include(c => c.Results)
+            .Include(c => c.Log)
             .ProjectTo<UpdateInfoBaseTaskListItemViewModel>(mapper.ConfigurationProvider)
             .ToListAsync());
     
@@ -49,7 +50,7 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
             .ToList();
         
         var countOfUpdatesAndConfigs = configs.Count(c => c.IsUpdate || c.IsConfiguration);
-        if (countOfUpdatesAndConfigs > 0)
+        if (countOfUpdatesAndConfigs > 1)
             ModelState.AddModelError(
                 nameof(UpdateInfoBaseTaskEditViewModel.Configurations),
                 "Список конфигураций может содержать только одну конфигурацию или обновление конфигурации");
@@ -63,7 +64,7 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
         } : await appDbContext.UpdateInfoBaseTasks
             .Include(c => c.InfoBases)
             .Include(c => c.Configurations)
-            .Include(c => c.Results)
+            .Include(c => c.Log)
             .FirstOrDefaultAsync(i => i.Id == vm.Id, cancellationToken);
                 
         if (model == null)
@@ -136,13 +137,55 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
 
     public async Task<IActionResult> Log(Guid id, CancellationToken cancellationToken)
     {
-        var results = await appDbContext.UpdateInfoBaseTaskResults
-            .Where(c => c.UpdateInfoBaseTaskId == id)
-            .Include(c => c.InfoBase)
+        var task = await appDbContext.UpdateInfoBaseTasks
             .Include(c => c.Log)
-            .ToListAsync(cancellationToken);
+            .ThenInclude(c => c.InfoBase)
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
-        return View(results);
+        if (task == null)
+            return NotFound();
+
+        return View(new UpdateInfoBaseTaskLogViewModel
+        {
+            TaskId = task.Id,
+            Log = task.Log,
+            InfoBases = task.Log
+                .Select(c => c.InfoBase)
+                .Distinct()
+                .ToList()
+                .Select(i =>
+                {
+                    return (i, task.Log.Any(c => c.InfoBaseId == i.Id), task.Log.Any(c => c.InfoBaseId == i.Id && c.IsFinish));
+                }).ToList()
+        });
+    }
+    
+    public async Task<IActionResult> LogState(Guid id, [FromQuery]Guid infoBaseId, CancellationToken cancellationToken)
+    {
+        var task = await appDbContext.UpdateInfoBaseTasks
+            .Include(c => c.InfoBases)
+            .Include(c => c.Log)
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+        if (task == null)
+            return NotFound();
+        
+        return Json(new
+        {
+            InfoBases = task.InfoBases.Select(ib => new
+            {
+                ib.Id,
+                Started = task.Log.Any(c => c.InfoBaseId == ib.Id),
+                Finished = task.Log.Any(c => c.InfoBaseId == ib.Id && c.IsFinish)
+            }),
+            Log = task.Log.Where(c => c.InfoBaseId == infoBaseId).Select(log => new
+            {
+                log.Id,
+                TimeStamp = log.TimeStamp.ToString(CultureInfo.CurrentCulture),
+                log.IsError,
+                log.Message
+            })
+        });
     }
     
     private async Task<UpdateInfoBaseTaskEditViewModel> PrepareViewModel(UpdateInfoBaseTaskEditViewModel vm, CancellationToken cancellationToken)

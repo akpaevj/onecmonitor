@@ -22,9 +22,6 @@ public class DtoProfile : Profile
 
         CreateMap<UpdateInfoBaseTask, UpdateInfoBaseTaskDto>().ReverseMap();
 
-        CreateMap<UpdateInfoBaseTaskResultLogItemDto, UpdateInfoBaseTaskResultLogItem>();
-
-        CreateMap<UpdateInfoBaseTaskResultDto, UpdateInfoBaseTaskResult>();
-
+        CreateMap<UpdateInfoBaseTaskLogItemDto, UpdateInfoBaseTaskLogItem>();
     }
 }

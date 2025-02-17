@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using OnecMonitor.Server.Helpers;
 using OneSTools.Common.Platform;
 
 namespace OnecMonitor.Server.Services
@@ -97,8 +98,11 @@ namespace OnecMonitor.Server.Services
                             case MessageType.UpdateInfoBasesTaskRequest:
                                 await HandleUpdateInfoBasesTaskRequest(message, cancellationToken);
                                 break;
-                            case MessageType.UpdateInfoBaseTaskResult:
-                                await HandleUpdateInfoBasesTaskResult(message, cancellationToken);
+                            case MessageType.UpdateInfoBaseTaskLog:
+                                await HandleUpdateInfoBasesTaskLog(message, cancellationToken);
+                                break;
+                            case MessageType.SettingsRequest:
+                                await HandleSettingsRequest(message, cancellationToken);
                                 break;
                             default:
                                 throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
@@ -114,18 +118,21 @@ namespace OnecMonitor.Server.Services
                 catch (OperationCanceledException) {}
             }
         }
-
-        private async Task SendUpdateSettingsRequest(CancellationToken cancellationToken)
+        
+        public async Task HandleSettingsRequest(Message message, CancellationToken cancellationToken)
         {
             var tjSettings = await _appDbContext.TechLogSettings.FirstOrDefaultAsync(cancellationToken);
 
-            var settings = new UpdateSettingsRequestDto
+            var settings = new SettingsDto
             {
                 TechLogEnabled = tjSettings?.Enabled ?? false
             };
             
-            await Send(MessageType.UpdateSettingsRequest, settings, cancellationToken);
+            await Send(MessageType.Settings, settings, message, cancellationToken);
         }
+
+        public async Task SendUpdateSettingsRequest(CancellationToken cancellationToken)
+            => await Send(MessageType.UpdateSettingsRequest, cancellationToken);
 
         public async Task<List<V8Platform>> GetInstalledPlatforms(CancellationToken cancellationToken)
             => await Get<List<V8Platform>>(
@@ -262,9 +269,6 @@ namespace OnecMonitor.Server.Services
         {
             SubscribedForCommands?.Invoke(this);
             await SendOk(requestMessage, cancellationToken);
-            
-            // Send settings just after it subscribed for commands
-            await SendUpdateSettingsRequest(cancellationToken);
         }
 
         private async Task HandleLastFilePositionRequest(Message requestMessage, CancellationToken cancellationToken)
@@ -282,14 +286,27 @@ namespace OnecMonitor.Server.Services
             await Send(MessageType.LastFilePosition, response, requestMessage, cancellationToken);
         }
 
-        private async Task HandleUpdateInfoBasesTaskResult(Message requestMessage, CancellationToken cancellationToken)
+        private async Task HandleUpdateInfoBasesTaskLog(Message requestMessage, CancellationToken cancellationToken)
         {
-            var result = ParseMessageData<UpdateInfoBaseTaskResultDto>(requestMessage.Data, cancellationToken);
-            var item = _mapper.Map<UpdateInfoBaseTaskResult>(result);
-            item.FinishDateTime = DateTime.Now;
+            var result = ParseMessageData<List<UpdateInfoBaseTaskLogItemDto>>(requestMessage.Data, cancellationToken);
+            
+            var log = _mapper.Map<List<UpdateInfoBaseTaskLogItem>>(result);
 
-            await _appDbContext.UpdateInfoBaseTaskResults.AddAsync(item, cancellationToken);
-            await _appDbContext.SaveChangesAsync(cancellationToken);
+            if (log.Count > 0)
+            {
+                var oldIds = await _appDbContext.UpdateInfoBaseTaskLogItems
+                    .Where(c => c.TaskId == log[0].TaskId && c.InfoBaseId == log[0].InfoBaseId)
+                    .Select(c => c.Id)
+                    .ToListAsync(cancellationToken);
+                
+                var logIds = log.Select(c => c.Id).ToList();
+                var newIds = logIds.Except(oldIds).ToList();
+                
+                var newLogItems = log.Where(c => newIds.Contains(c.Id)).ToList();
+                
+                await _appDbContext.UpdateInfoBaseTaskLogItems.AddRangeAsync(newLogItems, cancellationToken);
+                await _appDbContext.SaveChangesAsync(cancellationToken);
+            }
             
             await SendOk(requestMessage, cancellationToken);
         }

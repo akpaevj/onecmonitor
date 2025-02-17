@@ -13,6 +13,8 @@ namespace OnecMonitor.Agent.Services.TechLog
         private readonly MemoryCache _filesLastPositionCache;
         private CancellationTokenSource? _cts;
 
+        public bool Enabled => _cts?.IsCancellationRequested == false;
+
         public TechLogExporter(
             IServiceProvider serviceProvider,
             TechLogFolderWatcher techLogWatcher,
@@ -71,6 +73,9 @@ namespace OnecMonitor.Agent.Services.TechLog
 
             _techLogWatcher.Start();
         }
+        
+        public void Stop()
+            => _cts?.Cancel();
 
         private async Task StartFileReading(string path)
         {
@@ -142,9 +147,6 @@ namespace OnecMonitor.Agent.Services.TechLog
                 _logger.LogError(ex, "Failed to get last file position");
             }
         }
-
-        public void Stop()
-            => _cts?.Cancel();
 
         private static string GetCacheKey(ref Guid seanceId, ref Guid templateId, string folder, string file)
         {

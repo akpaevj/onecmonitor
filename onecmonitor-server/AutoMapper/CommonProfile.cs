@@ -73,15 +73,15 @@ public class CommonProfile : Profile
 
         CreateMap<UpdateInfoBaseTask, UpdateInfoBaseTaskListItemViewModel>()
             .ForMember(dest => dest.IsStarted, i => i.MapFrom(src => src.StartDateTime != DateTime.MinValue))
-            .ForMember(dest => dest.IsFaulted, i => i.MapFrom(src => src.Results.Any(result => result.IsFaulted)))
-            .ForMember(dest => dest.IsFinished, i => i.MapFrom(src => src.Results.Count > 0 && src.Results.All(result => result.FinishDateTime != DateTime.MinValue)));
+            .ForMember(dest => dest.IsFaulted, i => i.MapFrom(src => src.Log.Any(result => result.IsError)))
+            .ForMember(dest => dest.IsFinished, i => i.MapFrom(src => src.Log.Any(result => result.IsFinish)));
 
         CreateMap<UpdateInfoBaseTask, UpdateInfoBaseTaskEditViewModel>()
             .ReverseMap()
             .ForMember(c => c.Id, i => i.Ignore())
             .ForMember(c => c.Configurations, i => i.Ignore())
             .ForMember(c => c.InfoBases, i => i.Ignore())
-            .ForMember(c => c.Results, i => i.Ignore());
+            .ForMember(c => c.Log, i => i.Ignore());
 
         CreateMap<TechLogSettings, TechLogSettingsEditViewModel>()
             .ReverseMap()

@@ -9,32 +9,38 @@ using System.Text;
 
 namespace OnecMonitor.Common.Storage
 {
-    public class ClickHouseContext : IDisposable, ITechLogStorage
+    public sealed class ClickHouseContext : IDisposable, ITechLogStorage
     {
-        private const string RAW_TJEVENTS_TABLENAME = "raw_tjevents";
+        private const string RawTechLogEventsTableName = "raw_tjevents";
 
         private readonly string _database;
         private readonly ILogger<ClickHouseContext> _logger;
         private readonly ClickHouseConnection _connection;
-        private bool disposedValue;
+        private bool _disposedValue;
 
         public ClickHouseContext(ILogger<ClickHouseContext> logger, IConfiguration configuration)
         {
             _logger = logger;
 
-            _database = configuration.GetValue("ClickHouse:Database", "default") ?? "default";
+            _database = configuration.GetValue("ClickHouse:Database", "default");
 
             var connectionStringBuilder = new ClickHouseConnectionStringBuilder
             {
-                Host = configuration.GetValue("ClickHouse:Host", "localhost") ?? "localhost",
+                Host = configuration.GetValue("ClickHouse:Host", "localhost"),
                 Port = (ushort)configuration.GetValue("ClickHouse:Port", 8123),
-                Username = configuration.GetValue("ClickHouse:User", "default") ?? "default",
-                Password = configuration.GetValue("ClickHouse:Password", string.Empty) ?? string.Empty
+                Username = configuration.GetValue("ClickHouse:User", "default"),
+                Password = configuration.GetValue("ClickHouse:Password", string.Empty)
             };
 
             var connectionString = connectionStringBuilder.ToString();
 
             _connection = new ClickHouseConnection(connectionString);
+        }
+
+        public async Task CheckConnection(CancellationToken cancellationToken = default)
+        {
+            await _connection.OpenAsync(cancellationToken);
+            await _connection.CloseAsync();
         }
 
         public async Task InitDatabase(CancellationToken cancellationToken = default)
@@ -47,7 +53,7 @@ namespace OnecMonitor.Common.Storage
 
                 await _connection.ExecuteScalarAsync(
                     $"""
-                    CREATE TABLE IF NOT EXISTS {RAW_TJEVENTS_TABLENAME}
+                    CREATE TABLE IF NOT EXISTS {RawTechLogEventsTableName}
                     (
                         Id UUID,
                         StartDateTime DateTime64(6, 'UTC') Codec(Delta, LZ4),
@@ -95,7 +101,7 @@ namespace OnecMonitor.Common.Storage
 
             using var bulk = new ClickHouseBulkCopy(_connection)
             {
-                DestinationTableName = RAW_TJEVENTS_TABLENAME,
+                DestinationTableName = RawTechLogEventsTableName,
                 BatchSize = items.Length
             };
             await bulk.InitAsync();
@@ -139,16 +145,16 @@ namespace OnecMonitor.Common.Storage
             }
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                 {
                     _connection.Dispose();
                 }
 
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 
@@ -177,7 +183,7 @@ namespace OnecMonitor.Common.Storage
 
             queryText.AppendLine();
 
-            queryText.AppendLine($"FROM {RAW_TJEVENTS_TABLENAME}");
+            queryText.AppendLine($"FROM {RawTechLogEventsTableName}");
 
             if (!string.IsNullOrEmpty(filter))
             {
@@ -206,7 +212,7 @@ namespace OnecMonitor.Common.Storage
 
             queryText.AppendLine();
 
-            queryText.AppendLine($"FROM {RAW_TJEVENTS_TABLENAME}");
+            queryText.AppendLine($"FROM {RawTechLogEventsTableName}");
 
             if (!string.IsNullOrEmpty(filter))
             {
@@ -226,7 +232,7 @@ namespace OnecMonitor.Common.Storage
             var queryText = new StringBuilder(
                 $@"SELECT 
                     *
-                FROM {RAW_TJEVENTS_TABLENAME}");
+                FROM {RawTechLogEventsTableName}");
 
             if (!string.IsNullOrEmpty(filter))
             {
@@ -247,7 +253,7 @@ namespace OnecMonitor.Common.Storage
                 $"""
                 SELECT 
                     *
-                FROM {RAW_TJEVENTS_TABLENAME}
+                FROM {RawTechLogEventsTableName}
                 """);
 
             if (!string.IsNullOrEmpty(filter))
@@ -271,7 +277,7 @@ namespace OnecMonitor.Common.Storage
                 $"""
                 SELECT 
                     COUNT(*) 
-                FROM {RAW_TJEVENTS_TABLENAME}
+                FROM {RawTechLogEventsTableName}
                 """);
 
             if (!string.IsNullOrEmpty(filter))
@@ -293,7 +299,7 @@ namespace OnecMonitor.Common.Storage
                     $"""
                     SELECT 
                         EndPosition 
-                    FROM {RAW_TJEVENTS_TABLENAME}
+                    FROM {RawTechLogEventsTableName}
                     PREWHERE
                         AgentId = toUUID('{agentId}')
                         and SeanceId = toUUID('{seanceId}')
@@ -319,7 +325,7 @@ namespace OnecMonitor.Common.Storage
         {
             await OpenConnection(cancellationToken);
 
-            var query = $"ALTER TABLE {RAW_TJEVENTS_TABLENAME} DELETE WHERE SeanceId = toUUID('{seanceId}')";
+            var query = $"ALTER TABLE {RawTechLogEventsTableName} DELETE WHERE SeanceId = toUUID('{seanceId}')";
 
             await _connection.ExecuteAsync(query);
         }

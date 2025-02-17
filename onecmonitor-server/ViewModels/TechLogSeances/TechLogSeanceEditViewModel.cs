@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+﻿using System.ComponentModel;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using OnecMonitor.Server.Models;
 using System.ComponentModel.DataAnnotations;
@@ -13,8 +14,10 @@ namespace OnecMonitor.Server.ViewModels.TechLogSeances
         public DateTime StartDateTime { get; set; } = DateTime.MinValue;
         public int Duration { get; set; } = 15;
 
+        [DisplayName("Шаблоны")]
         public List<SelectableItemViewModel> Templates { get; set; } = [];
         [ValidateNever]
+        [DisplayName("Агенты")]
         public List<SelectableItemViewModel> Agents { get; set; } = [];
 
         [ValidateNever] 

@@ -10,7 +10,7 @@ using OnecMonitor.Server;
 namespace OnecMonitor.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250213212324_Initial")]
+    [Migration("20250214151907_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -241,9 +241,8 @@ namespace OnecMonitor.Server.Migrations
                     b.Property<int>("Duration")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("StartDateTime")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<long>("StartDateTime")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("StartMode")
                         .HasColumnType("INTEGER");
@@ -301,71 +300,48 @@ namespace OnecMonitor.Server.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("StartDateTime")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<long>("StartDateTime")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
                     b.ToTable("UpdateInfoBaseTasks");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskResult", b =>
+            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskLogItem", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FinishDateTime")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("InfoBaseId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsFaulted")
+                    b.Property<bool>("IsError")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("UpdateInfoBaseTaskId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InfoBaseId");
-
-                    b.HasIndex("UpdateInfoBaseTaskId");
-
-                    b.ToTable("UpdateInfoBaseTaskResults");
-                });
-
-            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskResultLogItem", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsError")
+                    b.Property<bool>("IsFinish")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("TimeStamp")
+                    b.Property<string>("TaskId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("UpdateInfoBaseTaskResultId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<long>("TimeStamp")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UpdateInfoBaseTaskResultId");
+                    b.HasIndex("InfoBaseId");
 
-                    b.ToTable("UpdateInfoBaseTaskResultLogItem");
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("UpdateInfoBaseTaskLogItems");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.V8Configuration", b =>
@@ -496,7 +472,7 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Credentials");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskResult", b =>
+            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskLogItem", b =>
                 {
                     b.HasOne("OnecMonitor.Server.Models.InfoBase", "InfoBase")
                         .WithMany()
@@ -504,26 +480,15 @@ namespace OnecMonitor.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("OnecMonitor.Server.Models.UpdateInfoBaseTask", "UpdateInfoBaseTask")
-                        .WithMany("Results")
-                        .HasForeignKey("UpdateInfoBaseTaskId")
+                    b.HasOne("OnecMonitor.Server.Models.UpdateInfoBaseTask", "Task")
+                        .WithMany("Log")
+                        .HasForeignKey("TaskId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("InfoBase");
 
-                    b.Navigation("UpdateInfoBaseTask");
-                });
-
-            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskResultLogItem", b =>
-                {
-                    b.HasOne("OnecMonitor.Server.Models.UpdateInfoBaseTaskResult", "UpdateInfoBaseTaskResult")
-                        .WithMany("Log")
-                        .HasForeignKey("UpdateInfoBaseTaskResultId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("UpdateInfoBaseTaskResult");
+                    b.Navigation("Task");
                 });
 
             modelBuilder.Entity("UpdateInfoBaseTaskV8Configuration", b =>
@@ -559,11 +524,6 @@ namespace OnecMonitor.Server.Migrations
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTask", b =>
-                {
-                    b.Navigation("Results");
-                });
-
-            modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskResult", b =>
                 {
                     b.Navigation("Log");
                 });

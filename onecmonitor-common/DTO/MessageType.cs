@@ -17,8 +17,9 @@
         RasServices,
         ClustersResponse,
         InfoBasesResponse,
-        UpdateInfoBaseTaskResult,
+        UpdateInfoBaseTaskLog,
         UpdateInfoBasesTaskRequest,
+        SettingsRequest,
         
         // Server messages
         LastFilePosition,
@@ -31,6 +32,7 @@
         InfoBasesRequest,
         UpdateInfoBasesRequest,
         UpdateInfoBasesTask,
-        UpdateSettingsRequest
+        UpdateSettingsRequest,
+        Settings
     }
 }

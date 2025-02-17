@@ -1,13 +1,11 @@
 ﻿const path = require('path');
 const webpack = require('webpack');
 
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = {
     entry: {
         script: [
-            './Scripts/site.ts'
+            './Scripts/index.ts'
         ]
     },
     devtool: 'inline-source-map',
@@ -26,10 +24,7 @@ module.exports = {
             },
             {
                 test: /\.css$/i,
-                use: [
-                    MiniCssExtractPlugin.loader,
-                    "css-loader"
-                ]
+                use: ['style-loader', 'css-loader']
             },
         ],
     },
@@ -37,20 +32,10 @@ module.exports = {
         extensions: ['.tsx', '.ts', '.js'],
     },
     output: {
-        library: {
-            name: "OM",
-            type: "var"
-        },
-        filename: 'dist/app.js',
         path: path.resolve(__dirname, 'wwwroot'),
+        filename: 'dist/app.js',
+        library: {
+            
+        }
     },
-    plugins: [
-        new CleanWebpackPlugin({
-            cleanOnceBeforeBuildPatterns: ["dist"]
-        }),
-        new MiniCssExtractPlugin({
-            filename: "css/site.css",
-        }),
-        new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en|ru/)
-    ],
 };

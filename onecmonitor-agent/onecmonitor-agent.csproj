@@ -14,6 +14,9 @@
     <None Remove="om-agent.db" />
     <None Remove="om-agent.db-shm" />
     <None Remove="om-agent.db-wal" />
+    <None Update="Asserts\ПодтверждениеЛегальности.epf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -37,6 +40,10 @@
   <ItemGroup>
     <ProjectReference Include="..\onecmonitor-common\onecmonitor-common.csproj" />
     <ProjectReference Include="..\OneSTools.Common\OneSTools.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Asserts\" />
   </ItemGroup>
 	
 </Project>

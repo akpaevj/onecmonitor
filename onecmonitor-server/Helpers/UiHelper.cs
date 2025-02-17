@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +9,18 @@ namespace OnecMonitor.Server.Helpers;
 
 public static class UiHelper
 {
+    public static SelectList SelectListFromEnum<T1>() where T1 : struct, Enum
+    {
+        var values = Enum.GetValues<T1>().ToList();
+        var selectListItems = values.Select(i => new { Id = i.ToString(), Name = i.GetAttributeOfType<DisplayAttribute>()?.Name ?? i.ToString() }).ToList();
+        selectListItems.Insert(0, new { Id = "", Name = "Выберите элемент" });
+        
+        return new SelectList(
+            selectListItems,
+            "Id",
+            "Name");
+    }
+    
     public static async Task<SelectList> SelectListFrom<T1>(
         IQueryable<T1> items,
         Func<T1, string> textSelector,
@@ -60,5 +74,13 @@ public static class UiHelper
             .Where(c => !newItems.Contains(c))
             .ToList()
             .ForEach(c => modelItems.Remove(c));
+    }
+
+    private static T? GetAttributeOfType<T>(this Enum enumVal) where T : Attribute
+    {
+        var type = enumVal.GetType();
+        var memInfo = type.GetMember(enumVal.ToString());
+        var attributes = memInfo[0].GetCustomAttributes(typeof(T), false);
+        return (attributes.Length > 0) ? (T)attributes[0] : null;
     }
 }

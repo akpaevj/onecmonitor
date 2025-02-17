@@ -5,6 +5,7 @@ namespace OnecMonitor.Common.Storage
 {
     public interface ITechLogStorage
     {
+        Task CheckConnection(CancellationToken cancellationToken = default);
         Task InitDatabase(CancellationToken cancellationToken = default);
         Task AddTjEvents(TjEvent[] items, CancellationToken cancellationToken = default);
         Task<TjEvent?> GetTjEvent(string filter, CancellationToken cancellationToken = default);

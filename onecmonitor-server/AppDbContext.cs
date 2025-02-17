@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OnecMonitor.Server.Converters.Sqlite;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Common.DTO;
@@ -19,7 +20,7 @@ namespace OnecMonitor.Server
         public DbSet<InfoBase> InfoBases { get; set; }
         public DbSet<Cluster> Clusters { get; set; }
         public DbSet<UpdateInfoBaseTask> UpdateInfoBaseTasks { get; set; }
-        public DbSet<UpdateInfoBaseTaskResult> UpdateInfoBaseTaskResults { get; set; }
+        public DbSet<UpdateInfoBaseTaskLogItem> UpdateInfoBaseTaskLogItems { get; set; }
         public DbSet<TechLogSettings> TechLogSettings { get; set; }
 
         public AppDbContext(IHostEnvironment hostEnvironment)
@@ -36,7 +37,7 @@ namespace OnecMonitor.Server
                 .HaveConversion<GuidStringConverter>();
 
             configurationBuilder.Properties<DateTime>()
-                .HaveConversion<DateTimeStringConverter>();
+                .HaveConversion<DateTimeToBinaryConverter>();
         }
 
         public static void AddBuiltInLogTemplate(MigrationBuilder migrationBuilder, Guid id, string name, string content)
