@@ -1,4 +1,7 @@
 @using Microsoft.AspNetCore.Mvc.TagHelpers
+@using OnecMonitor.Server.Extensions
+@using OnecMonitor.Server.Helpers
+@using OnecMonitor.Server.Models.MaintenanceTasks
 @using OnecMonitor.Server.ViewModels
 @model OnecMonitor.Server.ViewModels.UpdateInfoBaseTasks.UpdateInfoBaseTaskEditViewModel
 
@@ -24,10 +27,10 @@
 
     <div class="mb-3">
         @await Html.PartialAsync("SelectItemDialog", new SelectItemDialogViewModel(
-            Html.DisplayNameFor(c => c.Configurations),
-            nameof(Model.Configurations),
-            Model.Configurations,
-            Model.AvailableConfigurations))
+            Html.DisplayNameFor(c => c.Files),
+            nameof(Model.Files),
+            Model.Files,
+            Model.AvailableFiles))
     </div>
 
     <div class="mb-3">

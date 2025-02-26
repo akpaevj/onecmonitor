@@ -6,13 +6,15 @@ using System.Diagnostics.SymbolStore;
 using System.Net.Sockets;
 using System.Reflection.PortableExecutable;
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
 
 namespace OnecMonitor.Common;
 
-public abstract class FastConnection : IDisposable
+public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposable
 {
     protected Socket? Socket;
-
+    private CancellationToken _cancellationToken;
+    
     private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Message>> _calls = new();
     private readonly Channel<Message> _inputChannel = Channel.CreateBounded<Message>(1000);
     private readonly Channel<Message> _outputChannel = Channel.CreateBounded<Message>(1000);
@@ -33,8 +35,10 @@ public abstract class FastConnection : IDisposable
 
     protected void RunStreamLoops(CancellationToken cancellationToken)
     {
-        _ = StartWritingToStream(cancellationToken);
-        _ = StartReadingFromStream(cancellationToken);
+        _cancellationToken = cancellationToken;
+        
+        Task.Factory.StartNew(StartWritingToStream, TaskCreationOptions.LongRunning);
+        Task.Factory.StartNew(StartReadingFromStream, TaskCreationOptions.LongRunning);
         
         _disconnectingEventSemaphore.Release();
     }
@@ -113,11 +117,14 @@ public abstract class FastConnection : IDisposable
     {
         var cts = new TaskCompletionSource<Message>();
         _calls.TryAdd(message.Header.CallId, cts);
-
+        
+        logger.LogTrace($"Постановка сообщения в очередь отправки. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
         await _outputChannel.Writer.WriteAsync(message, cancellationToken);
-
+        
+        logger.LogTrace($"Ожидание подтверждения на сообщение. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
         var result = await cts.Task.WaitAsync(cancellationToken);
-
+        
+        logger.LogTrace($"Подтверждение сообщения получено. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
         if (result == null)
             throw new TimeoutException("Ошибка получения ответа на вызов");
             
@@ -139,11 +146,14 @@ public abstract class FastConnection : IDisposable
         {
             var cts = new TaskCompletionSource<Message>();
             _calls.TryAdd(message.Header.CallId, cts);
-
+            
+            logger.LogTrace($"Постановка сообщения в очередь отправки. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
             await _outputChannel.Writer.WriteAsync(message, cancellationToken);
-
+            
+            logger.LogTrace($"Ожидание подтверждения на сообщение. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
             var result = await cts.Task.WaitAsync(cancellationToken);
-
+            
+            logger.LogTrace($"Подтверждение сообщения получено. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
             if (result == null)
                 throw new TimeoutException("Ошибка получения ответа на вызов");
             
@@ -167,6 +177,8 @@ public abstract class FastConnection : IDisposable
 
             if (header.Length > 0)
                 await Socket!.SendAsync(data, cancellationToken);
+            
+            logger.LogTrace($"Отправлено сообщение в поток. Тип: {header.Type}. Идентификатор: {header.CallId}");
         }
         catch
         {
@@ -174,18 +186,20 @@ public abstract class FastConnection : IDisposable
         }
     }
         
-    private async Task StartWritingToStream(CancellationToken cancellationToken)
+    private async Task StartWritingToStream()
     {
         try
         {
-            while (!cancellationToken.IsCancellationRequested)
+            while (!_cancellationToken.IsCancellationRequested)
             {
-                var item = await _outputChannel.Reader.ReadAsync(cancellationToken);
+                var message = await _outputChannel.Reader.ReadAsync(_cancellationToken);
                 
-                await Socket!.SendAsync(item.Header.AsMemory(), cancellationToken);
+                await Socket!.SendAsync(message.Header.AsMemory(), _cancellationToken);
 
-                if (item.Data.Length > 0)
-                    await Socket!.SendAsync(item.Data, cancellationToken);
+                if (message.Data.Length > 0)
+                    await Socket!.SendAsync(message.Data, _cancellationToken);
+                
+                logger.LogTrace($"Отправлено сообщение в поток. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
             }
         }
         catch
@@ -194,29 +208,31 @@ public abstract class FastConnection : IDisposable
         }
     }
 
-    private async Task StartReadingFromStream(CancellationToken cancellationToken)
+    private async Task StartReadingFromStream()
     {
         try
         {
-            while (!cancellationToken.IsCancellationRequested)
+            while (!_cancellationToken.IsCancellationRequested)
             {
-                var headerBuffer = await ReadBytesFromStream(MessageHeader.HeaderLength, cancellationToken);
+                var headerBuffer = await ReadBytesFromStream(MessageHeader.HeaderLength, _cancellationToken);
                 var header = MessageHeader.FromSpan(headerBuffer.Span);
 
                 Message message;
 
                 if (header.Length > 0)
                 {
-                    var dataBuffer = await ReadBytesFromStream(header.Length, cancellationToken);
+                    var dataBuffer = await ReadBytesFromStream(header.Length, _cancellationToken);
                     message = new Message(header, dataBuffer);
                 }
                 else
                     message = new Message(header);
+                
+                logger.LogTrace($"Получено сообщение из потока. Тип: {header.Type}. Идентификатор: {header.CallId}");
                     
                 if (_calls.TryGetValue(message.Header.CallId, out var cts))
                     cts.TrySetResult(message);
                 else
-                    await _inputChannel.Writer.WriteAsync(message, cancellationToken);
+                    await _inputChannel.Writer.WriteAsync(message, _cancellationToken);
             }
         }
         catch

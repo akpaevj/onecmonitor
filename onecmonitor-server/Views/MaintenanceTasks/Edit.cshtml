@@ -1,0 +1,101 @@
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using NuGet.Protocol
+@using OnecMonitor.Server.Extensions
+@using OnecMonitor.Server.Helpers
+@using OnecMonitor.Server.Models.MaintenanceTasks
+@using OnecMonitor.Server.ViewModels
+@model OnecMonitor.Server.ViewModels.MaintenanceTasks.MaintenanceTaskEditViewModel
+
+@{
+    ViewData["Title"] = "Задача обслуживания";
+}
+
+<h2 class="mb-3">Задача обслуживания</h2>
+
+<form method="post" asp-action="Save" style="height: 100%">
+    <div class="mb-3">
+        <button class="btn btn-primary" type="submit">Сохранить</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Назад</button>
+    </div>
+
+    <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="Description">Описание</label>
+        <input type="text" class="form-control" asp-for="Description" value="@Model.Description">
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        @await Html.PartialAsync("SelectItemDialog", new SelectItemDialogViewModel(
+            Html.DisplayNameFor(c => c.InfoBases),
+            nameof(Model.InfoBases),
+            Model.InfoBases,
+            Model.AvailableInfoBases))
+    </div>
+
+    <div class="mb-3">
+        <div class="card">
+            <div class="card-header">Схема</div>
+            <input id="schema-nodes" type="text" hidden class="form-control" name="SerializedStepNode" value="@Model.SerializedStepNode">
+            <div id="graphBody" class="card-body" style="min-height: 200px"></div>
+        </div>
+    </div>
+
+</form>
+
+<div class="modal" id="select-step-kind-dialog" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Выберите тип шага</h5>
+            </div>
+            <div class="modal-body">
+                <div class="list-group">
+                    @foreach (var item in Enum.GetValues<MaintenanceStepKind>())
+                    {
+                        <button type="button" data-kind="@((int)item)" class="list-group-item list-group-item-action">@item.GetDisplay()</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="edit-step-dialog" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Изменение шага обслуживания</h5>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer">
+                <button id="save-btn" type="button" class="btn btn-primary">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="node-actions" popover class="border-0 bg-transparent position-fixed">
+    <div class="card">
+        <div class="card-header">Выберите действие</div>
+        <div class="card-body">
+            <div class="list-group">
+                <button id="delete-step-btn" type="button" class="list-group-item list-group-item-action">Удалить</button>
+                <button id="edit-step-btn" type="button" class="list-group-item list-group-item-action">Изменить</button>
+                <button id="add-step-btn" type="button" class="list-group-item list-group-item-action">Добавить шаг</button>
+                <button id="add-error-step-btn" type="button" class="list-group-item list-group-item-action">Добавить шаг исключения</button>
+                <button id="add-binary-step-btn" type="button" class="list-group-item list-group-item-action">Добавить шаг c обработкой исключения</button>
+                <button id="add-error-binary-step-btn" type="button" class="list-group-item list-group-item-action">Добавить шаг исключения c обработкой исключения</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts
+{
+    <script type="text/javascript">
+        OM.initStepsEditor();
+    </script>
+}

@@ -14,7 +14,7 @@ public class DtoProfile : Profile
             .ForMember(c => c.Id, opt => opt.MapFrom(src => src.ClusterInternalId))
             .ReverseMap();
         
-        CreateMap<V8Configuration, ConfigurationDto>()
+        CreateMap<V8File, V8FileDto>()
             .ForMember(c => c.Data, opt => opt.MapFrom(src => File.ReadAllBytes(src.DataPath)))
             .ReverseMap();
 

@@ -15,13 +15,20 @@ var host = Host.CreateDefaultBuilder(args)
         {
             options.ServiceName = "OnecMonitorAgent";
         });
+        services.AddSystemd();
         services.AddSingleton<RasHolder>();
-        services.AddSingleton<InfoBasesUpdater>();
         services.AddDbContext<AppDbContext>();
+        
+        // Commands watcher connection
         services.AddSingleton<OnecMonitorConnection>();
+        
         services.AddSingleton<TechLogFolderWatcher>();
         services.AddSingleton<TechLogExporter>();
         services.AddHostedService<TechLogSeancesWatcher>();
+
+        services.AddSingleton<InfoBasesUpdateTasksQueue>();
+        services.AddHostedService<InfoBasesUpdater>();
+        
         services.AddHostedService<CommandsWatcher>();
     })
 .Build();

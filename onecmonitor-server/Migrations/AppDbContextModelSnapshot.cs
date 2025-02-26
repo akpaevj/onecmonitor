@@ -167,6 +167,9 @@ namespace OnecMonitor.Server.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("MaintenanceTaskId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -180,6 +183,8 @@ namespace OnecMonitor.Server.Migrations
                     b.HasIndex("ClusterId");
 
                     b.HasIndex("CredentialsId");
+
+                    b.HasIndex("MaintenanceTaskId");
 
                     b.ToTable("InfoBases");
                 });
@@ -201,6 +206,87 @@ namespace OnecMonitor.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("LogTemplates");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AccessCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileId");
+
+                    b.ToTable("MaintenanceStep");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LeftNodeId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RightNodeId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StepId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeftNodeId");
+
+                    b.HasIndex("RightNodeId");
+
+                    b.HasIndex("StepId");
+
+                    b.ToTable("MaintenanceStepNodes");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RootNodeId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RootNodeId");
+
+                    b.ToTable("MaintenanceTasks");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.TechLogFilter", b =>
@@ -341,7 +427,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("UpdateInfoBaseTaskLogItems");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.V8Configuration", b =>
+            modelBuilder.Entity("OnecMonitor.Server.Models.V8File", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -357,6 +443,9 @@ namespace OnecMonitor.Server.Migrations
                     b.Property<bool>("IsExtension")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsExternalDataProcessor")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsUpdate")
                         .HasColumnType("INTEGER");
 
@@ -370,22 +459,22 @@ namespace OnecMonitor.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Configurations");
+                    b.ToTable("V8Files");
                 });
 
-            modelBuilder.Entity("UpdateInfoBaseTaskV8Configuration", b =>
+            modelBuilder.Entity("UpdateInfoBaseTaskV8File", b =>
                 {
-                    b.Property<string>("ConfigurationsId")
+                    b.Property<string>("FilesId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UpdateTasksId")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("ConfigurationsId", "UpdateTasksId");
+                    b.HasKey("FilesId", "UpdateTasksId");
 
                     b.HasIndex("UpdateTasksId");
 
-                    b.ToTable("UpdateInfoBaseTaskV8Configuration");
+                    b.ToTable("UpdateInfoBaseTaskV8File");
                 });
 
             modelBuilder.Entity("AgentTechLogSeance", b =>
@@ -464,9 +553,56 @@ namespace OnecMonitor.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", null)
+                        .WithMany("InfoBases")
+                        .HasForeignKey("MaintenanceTaskId");
+
                     b.Navigation("Cluster");
 
                     b.Navigation("Credentials");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.V8File", "File")
+                        .WithMany()
+                        .HasForeignKey("FileId");
+
+                    b.Navigation("File");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", "LeftNode")
+                        .WithMany()
+                        .HasForeignKey("LeftNodeId");
+
+                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", "RightNode")
+                        .WithMany()
+                        .HasForeignKey("RightNodeId");
+
+                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStep", "Step")
+                        .WithMany()
+                        .HasForeignKey("StepId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LeftNode");
+
+                    b.Navigation("RightNode");
+
+                    b.Navigation("Step");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", "RootNode")
+                        .WithMany()
+                        .HasForeignKey("RootNodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RootNode");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskLogItem", b =>
@@ -488,11 +624,11 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Task");
                 });
 
-            modelBuilder.Entity("UpdateInfoBaseTaskV8Configuration", b =>
+            modelBuilder.Entity("UpdateInfoBaseTaskV8File", b =>
                 {
-                    b.HasOne("OnecMonitor.Server.Models.V8Configuration", null)
+                    b.HasOne("OnecMonitor.Server.Models.V8File", null)
                         .WithMany()
-                        .HasForeignKey("ConfigurationsId")
+                        .HasForeignKey("FilesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -517,6 +653,11 @@ namespace OnecMonitor.Server.Migrations
                 {
                     b.Navigation("Clusters");
 
+                    b.Navigation("InfoBases");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
+                {
                     b.Navigation("InfoBases");
                 });
 

@@ -9,6 +9,6 @@ public class UpdateInfoBaseTaskDto
     public Guid Id { get; set; }
     [Key(1)] 
     public List<InfoBaseDto> InfoBases { get; set; } = [];
-    [Key(4)] 
-    public List<ConfigurationDto> Configurations { get; set; } = [];
+    [Key(2)] 
+    public List<V8FileDto> Files { get; set; } = [];
 }

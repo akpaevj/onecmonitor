@@ -13,7 +13,9 @@
     "chart.js": "4.4.1",
     "signalr": "^2.4.3",
     "vis-timeline": "7.7.3",
-    "visjs-network": "4.25.0"
+    "visjs-network": "4.25.0",
+    "mermaid": "^11.4.1",
+    "uuid": "^11.0.5"
   },
   "devDependencies": {
     "@types/ace": "^0.0.52",

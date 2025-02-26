@@ -50,6 +50,7 @@
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.1" />
 		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
@@ -78,6 +79,14 @@
 	  <_ContentIncludedByDefault Remove="Views\MaintenanceTasks\Steps\LoadExtension.cshtml" />
 	  <_ContentIncludedByDefault Remove="Views\MaintenanceTasks\Steps\LockConnections.cshtml" />
 	  <_ContentIncludedByDefault Remove="Views\MaintenanceTasks\Steps\UpdateConfiguration.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Steps\LockConnections.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Steps\UpdateConfiguration.cshtml" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Models\MaintenanceTasks\LoadConfigurationStep.cs" />
+	  <Compile Remove="Migrations\20250225154747_Initial.cs" />
+	  <Compile Remove="Migrations\20250225154747_Initial.Designer.cs" />
 	</ItemGroup>
 
 	<ProjectExtensions>

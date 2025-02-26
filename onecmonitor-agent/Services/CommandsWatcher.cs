@@ -4,6 +4,8 @@ using OnecMonitor.Agent.Services.InfoBases;
 using OnecMonitor.Agent.Services.TechLog;
 using OnecMonitor.Common.DTO;
 using OneSTools.Common.Platform;
+using OneSTools.Common.Platform.RemoteAdministration;
+using OneSTools.Common.Platform.Services;
 
 namespace OnecMonitor.Agent.Services
 {
@@ -11,14 +13,14 @@ namespace OnecMonitor.Agent.Services
     {
         private readonly OnecMonitorConnection _server;
         private readonly AppDbContext _appDbContext;
-        private readonly InfoBasesUpdater _infoBasesUpdater;
+        private readonly InfoBasesUpdateTasksQueue _updateTasksQueue;
         private readonly RasHolder _rasHolder;
         private readonly TechLogExporter _techLogExporter;
         private readonly ILogger<CommandsWatcher> _logger;
 
         public CommandsWatcher(
             IServiceProvider serviceProvider, 
-            InfoBasesUpdater infoBasesUpdater,
+            InfoBasesUpdateTasksQueue updateTasksQueue,
             TechLogExporter techLogExporter,
             RasHolder rasHolder, 
             ILogger<CommandsWatcher> logger) 
@@ -28,7 +30,7 @@ namespace OnecMonitor.Agent.Services
             _server = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
             _appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             _techLogExporter = techLogExporter;
-            _infoBasesUpdater = infoBasesUpdater;
+            _updateTasksQueue = updateTasksQueue;
             _logger = logger;
         }
 
@@ -92,22 +94,19 @@ namespace OnecMonitor.Agent.Services
 
         private async Task SendInstalledPlatforms(Message message, CancellationToken cancellationToken)
         {
-            _logger.LogTrace("Send installed platforms");
-            
             var platforms = V8Platforms.GetInstalledPlatforms();
             await _server.Send(MessageType.InstalledPlatforms, platforms, message, cancellationToken);
         }
 
         private async Task HandleUpdateInfoBasesRequest(Message message, CancellationToken cancellationToken)
         {
+            await _updateTasksQueue.QueueAsync(message, cancellationToken);
             await _server.SendOk(message, cancellationToken);
-            _infoBasesUpdater.RequestInfoBasesUpdateTask();
         }
         
         private async Task HandleUpdateSettingsRequest(Message message, CancellationToken cancellationToken)
         {
             await _server.SendOk(message, cancellationToken);
-            
             await UpdateSettings(cancellationToken);
         }
 
@@ -127,8 +126,6 @@ namespace OnecMonitor.Agent.Services
         
         private async Task SendV8Clusters(Message message, CancellationToken cancellationToken)
         {
-            _logger.LogTrace("Send clusters");
-
             var ragents = V8Services.GetActiveRagentServices();
             var clusters = new List<V8Cluster>();
 
@@ -140,8 +137,6 @@ namespace OnecMonitor.Agent.Services
         
         private async Task SendV8InfoBases(Message message, CancellationToken cancellationToken)
         {
-            _logger.LogTrace("Send infobases");
-            
             var request = MessagePackSerializer.Deserialize<InfoBasesRequestDto>(message.Data, cancellationToken: cancellationToken);
 
             var ragent = V8Services.GetActiveRagentForClusterPort(request.Cluster.Port);
@@ -156,23 +151,18 @@ namespace OnecMonitor.Agent.Services
         
         private async Task SendRagentServices(Message message, CancellationToken cancellationToken)
         {
-            _logger.LogTrace("Send ragent services");
-            
             var services = V8Services.GetRagentServices();
             await _server.Send(MessageType.RagentServices, services, message, cancellationToken);
         }
         
         private async Task SendRasServices(Message message, CancellationToken cancellationToken)
         {
-            _logger.LogTrace("Send ras services");
-            
             var services = _rasHolder.GetRasServices();
             await _server.Send(MessageType.RasServices, services, message, cancellationToken);
         }
 
         private async Task UpdateTechLogSeancesByRequest(Message message, CancellationToken cancellationToken)
         {
-            _logger.LogTrace("Updating tech log seances by server request");
             await _server.SendOk(message, cancellationToken);
 
             if (_techLogExporter.Enabled)
@@ -181,14 +171,12 @@ namespace OnecMonitor.Agent.Services
 
         private async Task UpdateTechLogSeances(CancellationToken cancellationToken)
         {
-            _logger.LogTrace("Updating tech log seances");
-
             try
             {
                 var seances = await _server.Get<List<TechLogSeanceDto>>(
                     MessageType.TechLogSeancesRequest, 
                     MessageType.TechLogSeances, 
-                    cancellationToken);;
+                    cancellationToken);
 
                 await _appDbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -223,8 +211,6 @@ namespace OnecMonitor.Agent.Services
                 await _appDbContext.Database.CommitTransactionAsync(cancellationToken);
 
                 await _appDbContext.SaveChangesAsync(cancellationToken);
-
-                _logger.LogTrace("Tech log seances updated");
             }
             catch (Exception ex)
             {

@@ -38,7 +38,7 @@ public class CredentialsController(AppDbContext appDbContext, IMapper mapper) : 
         if (!ModelState.IsValid)
             return View("Edit", await PrepareViewModel(vm, cancellationToken));
         
-        var model = isNew ? new Credentials()
+        var model = isNew ? new Credentials
         {
             Id = Guid.NewGuid()
         } : await appDbContext.Credentials

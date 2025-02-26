@@ -6,14 +6,21 @@ import '../node_modules/bootstrap-icons/font/bootstrap-icons.css';
 
 //modules
 import '../node_modules/bootstrap/dist/js/bootstrap.bundle.min'
-require('../Scripts/itemSelectionDialog')
-require('../Scripts/deleteDialog')
-require('../Scripts/techLog')
-require('../Scripts/infoBasesUpdatingTaskLog')
-require('./maintenanceTasks')
+require('./itemSelectionDialog')
+require('./deleteDialog')
+require('./techLog')
+require('./infoBasesUpdatingTaskLog')
+require('./infoBasesUpdateTask')
 
-export * from '../Scripts/itemSelectionDialog'
-export * from '../Scripts/deleteDialog'
-export * from '../Scripts/techLog'
-export * from '../Scripts/infoBasesUpdatingTaskLog'
-export * from './maintenanceTasks'
+export * from './itemSelectionDialog'
+export * from './deleteDialog'
+export * from './techLog'
+export * from './infoBasesUpdatingTaskLog'
+export * from './infoBasesUpdateTask'
+export {EditStepDialog} from "./MaintenanceTask/editStepDialog";
+export {StepValidationResult} from "./MaintenanceTask/stepValidationResult";
+export {MaintenanceStepNodeKind} from "./MaintenanceTask/maintenanceStepNodeKind";
+export {NodesGraphOptions} from "./MaintenanceTask/nodesGraphOptions";
+export {NodesGraph} from "./MaintenanceTask/nodesGraph";
+export {NodesGraphActionsDialog} from "./MaintenanceTask/nodesGraphActionsDialog";
+export {StepsEditorHelper} from "./MaintenanceTask/stepsEditorHelper";

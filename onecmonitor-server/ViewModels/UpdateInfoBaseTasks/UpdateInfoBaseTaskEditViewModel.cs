@@ -12,9 +12,9 @@ public class UpdateInfoBaseTaskEditViewModel
     
     [ValidateNever] 
     [DisplayName("Конфигурации")]
-    public List<SelectableItemViewModel> Configurations { get; set; } = [];
+    public List<SelectableItemViewModel> Files { get; set; } = [];
     [ValidateNever] 
-    public List<SelectableItemViewModel> AvailableConfigurations { get; set; } = [];
+    public List<SelectableItemViewModel> AvailableFiles { get; set; } = [];
     
     [DisplayName("Информационные базы")]
     public List<SelectableItemViewModel> InfoBases { get; set; } = [];

@@ -33,6 +33,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.1" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.1" />
   </ItemGroup>

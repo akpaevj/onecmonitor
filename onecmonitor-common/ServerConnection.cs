@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace OnecMonitor.Common;
 
-public class ServerConnection : FastConnection
+public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection(logger)
 {
     private ILogger<ServerConnection> _logger = null!;
     private string _host = null!;

@@ -12,7 +12,7 @@ public class UpdateInfoBaseTask : DatabaseObject
     public string Description { get; set; } = string.Empty;
     public DateTime StartDateTime { get; set; } = DateTime.MinValue;
     
-    public virtual List<V8Configuration> Configurations { get; set; } = [];
+    public virtual List<V8File> Files { get; set; } = [];
     public virtual List<InfoBase> InfoBases { get; set; } = [];
     public virtual List<UpdateInfoBaseTaskLogItem> Log { get; set; } = [];
 }

@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using OneSTools.Common.Extensions;
 using OneSTools.Common.Platform;
+using OneSTools.Common.Platform.Services;
 
 namespace OnecMonitor.Agent.Services.InfoBases;
 
@@ -63,7 +64,7 @@ public class RasHolder : IDisposable
             _processes.Remove(process);
         };
         
-        _processes.Add(process!);
+        _processes.Add(process);
 
         var serviceModel = new RasService
         {

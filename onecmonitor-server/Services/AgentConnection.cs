@@ -15,6 +15,8 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using OnecMonitor.Server.Helpers;
 using OneSTools.Common.Platform;
+using OneSTools.Common.Platform.RemoteAdministration;
+using OneSTools.Common.Platform.Services;
 
 namespace OnecMonitor.Server.Services
 {
@@ -40,6 +42,7 @@ namespace OnecMonitor.Server.Services
         public event AgentDisconnectedHandler? AgentDisconnected;
 
         public AgentConnection(Socket socket, TechLogProcessor techLogProcessor, IServiceProvider serviceProvider)
+            : base(serviceProvider.GetRequiredService<ILogger<AgentConnection>>())
         {
             Socket = socket;
             
@@ -315,7 +318,7 @@ namespace OnecMonitor.Server.Services
         {
             var task = await _appDbContext.UpdateInfoBaseTasks
                 .Where(c => c.InfoBases.Any(i => i.Cluster.Agent.Id == AgentInstance!.Id))
-                .Include(c => c.Configurations)
+                .Include(c => c.Files)
                 .Include(c => c.InfoBases)
                 .ThenInclude(c => c.Credentials)
                 .Include(c => c.InfoBases)

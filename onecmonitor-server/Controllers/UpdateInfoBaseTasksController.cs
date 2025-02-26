@@ -27,7 +27,7 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
         var vm = id != Guid.Empty
             ? await appDbContext.UpdateInfoBaseTasks
                 .AsNoTracking()
-                .Include(c => c.Configurations)
+                .Include(c => c.Files)
                 .Include(c => c.InfoBases)
                 .ProjectTo<UpdateInfoBaseTaskEditViewModel>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(cancellationToken)
@@ -43,8 +43,8 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
     {
         var isNew = vm.Id == Guid.Empty;
 
-        var configIds = vm.Configurations.Select(c => c.Id).ToList();
-        var configs = appDbContext.Configurations
+        var configIds = vm.Files.Select(c => c.Id).ToList();
+        var configs = appDbContext.V8Files
             .AsNoTracking()
             .Where(c => configIds.Contains(c.Id.ToString()))
             .ToList();
@@ -52,7 +52,7 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
         var countOfUpdatesAndConfigs = configs.Count(c => c.IsUpdate || c.IsConfiguration);
         if (countOfUpdatesAndConfigs > 1)
             ModelState.AddModelError(
-                nameof(UpdateInfoBaseTaskEditViewModel.Configurations),
+                nameof(UpdateInfoBaseTaskEditViewModel.Files),
                 "Список конфигураций может содержать только одну конфигурацию или обновление конфигурации");
         
         if (!ModelState.IsValid)
@@ -63,7 +63,7 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
             Id = Guid.NewGuid()
         } : await appDbContext.UpdateInfoBaseTasks
             .Include(c => c.InfoBases)
-            .Include(c => c.Configurations)
+            .Include(c => c.Files)
             .Include(c => c.Log)
             .FirstOrDefaultAsync(i => i.Id == vm.Id, cancellationToken);
                 
@@ -76,7 +76,7 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
         mapper.Map(vm, model);
 
         await UiHelper.UpdateModelItems(appDbContext.InfoBases, vm.InfoBases, model.InfoBases, cancellationToken);
-        await UiHelper.UpdateModelItems(appDbContext.Configurations, vm.Configurations, model.Configurations, cancellationToken);
+        await UiHelper.UpdateModelItems(appDbContext.V8Files, vm.Files, model.Files, cancellationToken);
         
         await appDbContext.SaveChangesAsync(cancellationToken);
 
@@ -190,9 +190,9 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
     
     private async Task<UpdateInfoBaseTaskEditViewModel> PrepareViewModel(UpdateInfoBaseTaskEditViewModel vm, CancellationToken cancellationToken)
     {
-        vm.AvailableConfigurations = await UiHelper.SelectableItemsFrom(
-            appDbContext.Configurations,
-            vm.Configurations,
+        vm.AvailableFiles = await UiHelper.SelectableItemsFrom(
+            appDbContext.V8Files,
+            vm.Files,
             mapper,
             cancellationToken);
         

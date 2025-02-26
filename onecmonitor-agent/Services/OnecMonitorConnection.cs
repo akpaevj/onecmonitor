@@ -9,7 +9,8 @@ namespace OnecMonitor.Agent.Services
 {
     public class OnecMonitorConnection : ServerConnection
     {
-        public OnecMonitorConnection(IServiceProvider serviceProvider, IHostApplicationLifetime hostApplicationLifetime)
+        public OnecMonitorConnection(IServiceProvider serviceProvider, IHostApplicationLifetime hostApplicationLifetime) 
+            : base(serviceProvider.GetRequiredService<ILogger<OnecMonitorConnection>>())
         {
             var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 

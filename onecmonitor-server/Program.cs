@@ -14,10 +14,13 @@ using OnecMonitor.Server.AutoMapper;
 using OnecMonitor.Server.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Services.AddWindowsService(options =>
 {
     options.ServiceName = "OnecMonitor";
 });
+builder.Services.AddSystemd();
+
 builder.WebHost.ConfigureKestrel((context, options) =>
 {
     options.Limits.MaxRequestBodySize = 2000 * 1024 * 1024;

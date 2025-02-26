@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option csharp_namespace = "OnecMonitor.Common";
+
+service OnecMonitorService {
+  
+}
+
+message AgentInstanceDto {
+  string id = 1;
+  string instanceName = 2;
+  double UtcOffset = 3;
+}
+
+message ClusterDto {
+  string id = 1;
+  string host = 2;
+  int32 port = 3;
+}
+
+message CredentialsDto {
+  string user = 1;
+  string password = 2;
+}
+
+message InfoBaseDto {
+  string id = 1;
+  string internalId = 2;
+  string infoBaseName = 3;
+  CredentialsDto credentials = 4;
+  string publishAddress = 5;
+  ClusterDto cluster = 6;
+}
+

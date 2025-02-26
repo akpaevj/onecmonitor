@@ -1,0 +1,48 @@
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using OnecMonitor.Server.Extensions
+@using OnecMonitor.Server.Models.MaintenanceTasks
+@using OnecMonitor.Server.ViewModels
+@model OnecMonitor.Server.ViewModels.MaintenanceTasks.MaintenanceStepViewModel
+
+<form method="post" style="height: 100%">
+
+    <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
+    
+    <div class="mb-3">
+        <label class="form-label" asp-for="Kind">Тип шага</label>
+        <select asp-for="Kind" class="form-control" asp-items="Model.Kinds"></select>
+        <span asp-validation-for="Kind" class="text-danger"></span>
+    </div>
+    
+    @if (Model.Kind == MaintenanceStepKind.LockConnections)
+    {
+        <div class="mb-3">
+            <label class="form-label" asp-for="AccessCode">Код доступа</label>
+            <input type="text" class="form-control" asp-for="AccessCode" value="@Model.AccessCode">
+            <span asp-validation-for="AccessCode" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" asp-for="Message">Сообщение</label>
+            <input type="text" class="form-control" asp-for="Message" value="@Model.Message">
+            <span asp-validation-for="Message" class="text-danger"></span>
+        </div>
+    }
+    
+    @if (Model is
+         {
+             Kind: MaintenanceStepKind.LoadConfiguration or 
+             MaintenanceStepKind.UpdateConfiguration or 
+             MaintenanceStepKind.LoadExtension or 
+             MaintenanceStepKind.StartExternalDataProcessor
+         })
+    {
+        <div class="mb-3">
+            <label class="form-label" asp-for="FileId">Файл</label>
+            <select asp-for="FileId" class="form-control" asp-items="Model.Files"></select>
+            <span asp-validation-for="FileId" class="text-danger"></span>
+        </div>
+    }
+    
+</form>
+

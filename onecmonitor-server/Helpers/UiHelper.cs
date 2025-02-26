@@ -9,7 +9,7 @@ namespace OnecMonitor.Server.Helpers;
 
 public static class UiHelper
 {
-    public static SelectList SelectListFromEnum<T1>() where T1 : struct, Enum
+    public static SelectList SelectListFromEnum<T1>(T1? selectedValue = null) where T1 : struct, Enum
     {
         var values = Enum.GetValues<T1>().ToList();
         var selectListItems = values.Select(i => new { Id = i.ToString(), Name = i.GetAttributeOfType<DisplayAttribute>()?.Name ?? i.ToString() }).ToList();
@@ -18,7 +18,8 @@ public static class UiHelper
         return new SelectList(
             selectListItems,
             "Id",
-            "Name");
+            "Name",
+            selectedValue == null ? "" : selectedValue);
     }
     
     public static async Task<SelectList> SelectListFrom<T1>(
