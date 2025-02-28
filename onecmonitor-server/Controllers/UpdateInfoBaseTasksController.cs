@@ -102,7 +102,7 @@ public class UpdateInfoBaseTasksController(AppDbContext appDbContext, AgentsConn
 
             foreach (var agent in connectedAgents)
             {
-                var commandsConnection = connectionsManager.GetCommandsSubscriberConnection(agent.Id)!;
+                var commandsConnection = connectionsManager.GetAgentConnection(agent.Id)!;
                 await commandsConnection.RequestInfoBasesUpdating(cancellationToken);
             }
         

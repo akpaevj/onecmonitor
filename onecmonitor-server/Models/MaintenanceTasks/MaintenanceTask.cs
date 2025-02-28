@@ -5,6 +5,9 @@ namespace OnecMonitor.Server.Models.MaintenanceTasks;
 
 public class MaintenanceTask : DatabaseObject
 {
+    public DateTime StartDateTime { get; set; } = DateTime.MinValue;
+    public bool IsFaulted { get; set; } = false;
+    public DateTime FinishDateTime { get; set; } = DateTime.MinValue;
     [MaxLength(200)]
     public string Description { get; set; } = string.Empty;
     public Guid RootNodeId { get; set; }

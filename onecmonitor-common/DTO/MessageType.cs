@@ -8,7 +8,6 @@
         
         // Client messages
         AgentInfo,
-        SubscribingForCommands,
         TechLogSeancesRequest,
         LastFilePositionRequest,
         TechLogEventContent,
@@ -20,6 +19,8 @@
         UpdateInfoBaseTaskLog,
         UpdateInfoBasesTaskRequest,
         SettingsRequest,
+        
+        MaintenanceStepNodeLog,
         
         // Server messages
         LastFilePosition,
@@ -33,6 +34,8 @@
         UpdateInfoBasesRequest,
         UpdateInfoBasesTask,
         UpdateSettingsRequest,
-        Settings
+        Settings,
+        
+        MaintenanceTask,
     }
 }

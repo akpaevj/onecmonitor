@@ -50,6 +50,8 @@ namespace OnecMonitor.Agent.Services.TechLog
             {
                 _techLogWatcher.Stop();
             });
+            
+            _onecMonitorConnection.Start();
 
             try
             {

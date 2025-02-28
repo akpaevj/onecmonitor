@@ -1,28 +1,34 @@
 ﻿using MessagePack;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Agent.Services.InfoBases;
+using OnecMonitor.Agent.Services.MaintenanceTasks;
 using OnecMonitor.Agent.Services.TechLog;
 using OnecMonitor.Common.DTO;
+using OnecMonitor.Common.DTO.MaintenanceTasks;
 using OneSTools.Common.Platform;
 using OneSTools.Common.Platform.RemoteAdministration;
 using OneSTools.Common.Platform.Services;
 
 namespace OnecMonitor.Agent.Services
 {
-    internal class CommandsWatcher : BackgroundService
+    internal class CommandsWatcher
     {
         private readonly OnecMonitorConnection _server;
         private readonly AppDbContext _appDbContext;
         private readonly InfoBasesUpdateTasksQueue _updateTasksQueue;
+        private readonly MaintenanceTaskExecutorQueue _maintenanceTasksQueue;
         private readonly RasHolder _rasHolder;
         private readonly TechLogExporter _techLogExporter;
+        private readonly IHostApplicationLifetime _applicationLifetime;
         private readonly ILogger<CommandsWatcher> _logger;
 
         public CommandsWatcher(
             IServiceProvider serviceProvider, 
             InfoBasesUpdateTasksQueue updateTasksQueue,
+            MaintenanceTaskExecutorQueue maintenanceTasksQueue,
             TechLogExporter techLogExporter,
-            RasHolder rasHolder, 
+            RasHolder rasHolder,
+            IHostApplicationLifetime appLifetime,
             ILogger<CommandsWatcher> logger) 
         {
             var scope = serviceProvider.CreateAsyncScope();
@@ -31,65 +37,74 @@ namespace OnecMonitor.Agent.Services
             _appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             _techLogExporter = techLogExporter;
             _updateTasksQueue = updateTasksQueue;
+            _maintenanceTasksQueue = maintenanceTasksQueue;
+            _applicationLifetime = appLifetime;
             _logger = logger;
+
+            _server.MessageReceived += MessageReceived;
+            _applicationLifetime.ApplicationStopping.Register(() =>
+            {
+                _server.MessageReceived -= MessageReceived;
+            });
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        private async void MessageReceived(object? sender, Message message)
         {
-            _logger.LogTrace("Start watching commands");
-
-            await _server.Send(MessageType.SubscribingForCommands, stoppingToken);
-            
-            while (!stoppingToken.IsCancellationRequested)
+            try
             {
-                try
+                // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+                switch (message.Header.Type)
                 {
-                    var message = await _server.ReadMessage(stoppingToken);
-
-                    await UpdateSettings(stoppingToken);
-
-                    try
-                    {
-                        // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
-                        switch (message.Header.Type)
-                        {
-                            case MessageType.UpdateTechLogSeancesRequest:
-                                await UpdateTechLogSeancesByRequest(message, stoppingToken);
-                                break;
-                            case MessageType.InstalledPlatformsRequest:
-                                await SendInstalledPlatforms(message, stoppingToken);
-                                break;
-                            case MessageType.ClustersRequest:
-                                await SendV8Clusters(message, stoppingToken);
-                                break;
-                            case MessageType.InfoBasesRequest:
-                                await SendV8InfoBases(message, stoppingToken);
-                                break;
-                            case MessageType.RagentServicesRequest:
-                                await SendRagentServices(message, stoppingToken);
-                                break;
-                            case MessageType.RasServicesRequest:
-                                await SendRasServices(message, stoppingToken);
-                                break;
-                            case MessageType.UpdateInfoBasesRequest:
-                                await HandleUpdateInfoBasesRequest(message, stoppingToken);
-                                break;
-                            case MessageType.UpdateSettingsRequest:
-                                await HandleUpdateSettingsRequest(message, stoppingToken);
-                                break;
-                            default:
-                                throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
-                        }
-                    }
-                    catch (OperationCanceledException) {}
-                    catch (Exception ex)
-                    {
-                        _logger.LogTrace(ex, "Ошибка обработки сообщения");
-                        await _server.SendError(message, ex.Message, stoppingToken);
-                    }
+                    case MessageType.UpdateTechLogSeancesRequest:
+                        await UpdateTechLogSeancesByRequest(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.InstalledPlatformsRequest:
+                        await SendInstalledPlatforms(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.ClustersRequest:
+                        await SendV8Clusters(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.InfoBasesRequest:
+                        await SendV8InfoBases(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.RagentServicesRequest:
+                        await SendRagentServices(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.RasServicesRequest:
+                        await SendRasServices(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.UpdateInfoBasesRequest:
+                        await HandleUpdateInfoBasesRequest(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.UpdateSettingsRequest:
+                        await HandleUpdateSettingsRequest(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.MaintenanceTask:
+                        await HandleMaintenanceTask(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    default:
+                        throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
                 }
-                catch (OperationCanceledException) {}
             }
+            catch (OperationCanceledException) {}
+            catch (Exception ex)
+            {
+                _logger.LogTrace(ex, "Ошибка обработки сообщения");
+                await _server.SendError(message, ex.Message, _applicationLifetime.ApplicationStopping);
+            }
+        }
+
+        private async Task HandleMaintenanceTask(Message message, CancellationToken cancellationToken)
+        {
+            var task = MessagePackSerializer.Deserialize<MaintenanceTaskDto>(message.Data, cancellationToken: cancellationToken);
+            await _maintenanceTasksQueue.QueueAsync(task, cancellationToken);
+
+            await _server.SendOk(message, cancellationToken);
+        }
+
+        public async Task Start(CancellationToken token)
+        {
+            await _server.Start(true);
         }
 
         private async Task SendInstalledPlatforms(Message message, CancellationToken cancellationToken)
@@ -106,8 +121,9 @@ namespace OnecMonitor.Agent.Services
         
         private async Task HandleUpdateSettingsRequest(Message message, CancellationToken cancellationToken)
         {
-            await _server.SendOk(message, cancellationToken);
             await UpdateSettings(cancellationToken);
+            
+            await _server.SendOk(message, cancellationToken);
         }
 
         private async Task UpdateSettings(CancellationToken cancellationToken)

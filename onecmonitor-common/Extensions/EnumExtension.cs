@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace OnecMonitor.Server.Extensions;
+namespace OnecMonitor.Common.Extensions;
 
 public static class EnumExtension
 {

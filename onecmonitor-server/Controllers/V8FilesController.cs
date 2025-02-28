@@ -1,18 +1,10 @@
-using System.Net.Http.Headers;
-using System.Runtime.InteropServices.JavaScript;
-using System.Text.Json;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using OnecMonitor.Server;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.ViewModels;
 using OnecMonitor.Server.ViewModels.V8Files;
-using OneSTools.Common.Platform.Unpack;
 
 namespace OnecMonitor.Server.Controllers;
 

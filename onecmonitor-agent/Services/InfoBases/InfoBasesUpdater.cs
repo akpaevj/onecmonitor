@@ -12,12 +12,10 @@ public sealed class InfoBasesUpdater : BackgroundService
     private readonly InfoBasesUpdateTasksQueue _queue;
     
     private readonly AsyncServiceScope _scope;
-    private readonly OnecMonitorConnection _server;
+    private readonly OnecMonitorConnection _serverConnection;
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly RasHolder _rasHolder;
     private readonly ILogger<InfoBasesUpdater> _logger;
-    private bool _disposed;
-    private readonly object _racLocker = new();
     
     public InfoBasesUpdater(
         IServiceProvider serviceProvider, 
@@ -28,7 +26,7 @@ public sealed class InfoBasesUpdater : BackgroundService
     {
         _scope = serviceProvider.CreateAsyncScope();
         _queue = tasksQueue;
-        _server = _scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
+        _serverConnection = _scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
         _applicationLifetime = applicationLifetime;
         _rasHolder = rasHolder;
         _logger = logger;
@@ -36,6 +34,8 @@ public sealed class InfoBasesUpdater : BackgroundService
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await _serverConnection.Start();
+        
         while (!stoppingToken.IsCancellationRequested)
         {
             await _queue.DequeueAsync(stoppingToken);
@@ -58,7 +58,7 @@ public sealed class InfoBasesUpdater : BackgroundService
             const string accessCode = "12345";
             const string message = "Технические работы";
                 
-            var task = await _server.Get<UpdateInfoBaseTaskDto>(
+            var task = await _serverConnection.Get<UpdateInfoBaseTaskDto>(
                 MessageType.UpdateInfoBasesTaskRequest,
                 MessageType.UpdateInfoBasesTask,
                 _applicationLifetime.ApplicationStopping);
@@ -69,7 +69,7 @@ public sealed class InfoBasesUpdater : BackgroundService
             var configurationsPaths = new Dictionary<string, string>();
             task.Files.ForEach(i =>
             {
-                var path = Path.Join(Path.GetTempPath(), $"{i.Id}.cfu") ;
+                var path = Path.Join(Path.GetTempPath(), $"{i.Id}{i.FileExtension}") ;
 
                 if (!File.Exists(path))
                 {
@@ -108,35 +108,31 @@ public sealed class InfoBasesUpdater : BackgroundService
 
                         await AddLogItemAndSend(task, infoBase, log, "Блокировка соединений и регламентных заданий", cancellationToken);
                             
-                        lock (_racLocker)
-                            rac.BlockConnections(
-                                infoBase.Cluster.Id, 
-                                infoBase.InfoBaseInternalId,
-                                infoBase.Credentials.User,
-                                infoBase.Credentials.Password,
-                                accessCode,
-                                message);
+                        rac.BlockConnections(
+                            infoBase.Cluster.Id, 
+                            infoBase.InfoBaseInternalId,
+                            infoBase.Credentials.User,
+                            infoBase.Credentials.Password,
+                            accessCode,
+                            message);
                             
                         await AddLogItemAndSend(task, infoBase, log, "Завершение сессий", cancellationToken);
 
-                        lock (_racLocker)
-                        {
-                            var sessions = rac.GetInfoBaseSessions(infoBase.Cluster.Id, infoBase.InfoBaseInternalId);
-                            sessions
-                                .Where(c => !c.AppId.Contains("RAS", StringComparison.CurrentCultureIgnoreCase))
-                                .ToList()
-                                .ForEach(s =>
+                        var sessions = rac.GetInfoBaseSessions(infoBase.Cluster.Id, infoBase.InfoBaseInternalId);
+                        sessions
+                            .Where(c => !c.AppId.Contains("RAS", StringComparison.CurrentCultureIgnoreCase))
+                            .ToList()
+                            .ForEach(s =>
+                            {
+                                try
                                 {
-                                    try
-                                    {
-                                        rac.TerminateSession(infoBase.Cluster.Id, s.Id);
-                                    }
-                                    catch
-                                    {
-                                        // Игнорируем, т.к. сеанс уже мог быть закрыт, мог быть повисшим и т.п.
-                                    }
-                                });
-                        }
+                                    rac.TerminateSession(infoBase.Cluster.Id, s.Id);
+                                }
+                                catch
+                                {
+                                    // Игнорируем, т.к. сеанс уже мог быть закрыт, мог быть повисшим и т.п.
+                                }
+                            });
 
                         if (config != null)
                         {
@@ -189,7 +185,7 @@ public sealed class InfoBasesUpdater : BackgroundService
                             await AddLogItemAndSend(task, infoBase, log, loadExtBatch.OutFileContent, cancellationToken);
                         }
 
-                        var needAcceptLegalUsing = config != null;
+                        var needAcceptLegalUsing = config is { IsConfiguration: true };
                         if (needAcceptLegalUsing)
                         {
                             await AddLogItemAndSend(task, infoBase, log, "Подтверждение легальности получения и запуск обработчиков обновления", cancellationToken);
@@ -206,12 +202,11 @@ public sealed class InfoBasesUpdater : BackgroundService
                             
                         await AddLogItemAndSend(task, infoBase, log, "Разблокировка соединений и регламентных заданий", cancellationToken);
                             
-                        lock (_racLocker)
-                            rac.UnblockConnections(
-                                infoBase.Cluster.Id, 
-                                infoBase.InfoBaseInternalId,
-                                infoBase.Credentials.User,
-                                infoBase.Credentials.Password);
+                        rac.UnblockConnections(
+                            infoBase.Cluster.Id, 
+                            infoBase.InfoBaseInternalId,
+                            infoBase.Credentials.User,
+                            infoBase.Credentials.Password);
                             
                         await AddLogItemAndSend(task, infoBase, log, "Обновление завершено", _applicationLifetime.ApplicationStopping, false, true);
                     }
@@ -256,30 +251,14 @@ public sealed class InfoBasesUpdater : BackgroundService
     }
     
     private async Task SendLog(List<UpdateInfoBaseTaskLogItemDto> log, CancellationToken cancellationToken)
-        => await _server.Send(MessageType.UpdateInfoBaseTaskLog, log, cancellationToken);
+        => await _serverConnection.Send(MessageType.UpdateInfoBaseTaskLog, log, cancellationToken);
 
     private static string GetExternalDataProcessorPath(string fileName)
         => Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Asserts", fileName);
 
-    private void Dispose(bool disposing)
-    {
-        if (_disposed) 
-            return;
-        
-        if (disposing)
-        {
-            _scope.Dispose();
-            _server.Dispose();
-        }
-            
-        _disposed = true;
-    }
-
     public override Task StopAsync(CancellationToken cancellationToken)
     {
         _scope.Dispose();
-        _server.Dispose();
-        
         return base.StopAsync(cancellationToken);
     }
 }

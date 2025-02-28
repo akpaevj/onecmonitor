@@ -110,7 +110,7 @@ public class InfoBasesController(AppDbContext appDbContext, AgentsConnectionsMan
             var connectedAgents = connectionsManager.GetConnectedAgents(appDbContext.Agents.ToList());
             foreach (var agent in connectedAgents)
             {
-                var commandsConnection = connectionsManager.GetCommandsSubscriberConnection(agent.Id);
+                var commandsConnection = connectionsManager.GetAgentConnection(agent.Id);
                 
                 if (commandsConnection == null)
                     continue;

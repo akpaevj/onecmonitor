@@ -1,20 +1,17 @@
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
+using OnecMonitor.Common.DTO;
 
 namespace OnecMonitor.Common;
 
 public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection(logger)
 {
-    private ILogger<ServerConnection> _logger = null!;
     private string _host = null!;
     private int _port;
-    
-    public event EventHandler? Connected;
 
-    protected void Start(string host, int port, ILogger<ServerConnection> logger, CancellationToken token)
+    protected async Task Start(string host, int port, Func<Task> afterConnectCallback, CancellationToken token)
     {
-        _logger = logger;
         _host = host;
         _port = port;
         
@@ -23,22 +20,22 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
             logger.LogWarning("Отключен от сервера");
             
             if (!token.IsCancellationRequested)
-                _ = TryConnectInLoop(token);
+                _ = TryConnectInLoop(afterConnectCallback, token);
         };
 
-        _ = TryConnectInLoop(token);
+        await TryConnectInLoop(afterConnectCallback, token);
     }
         
-    private async Task TryConnectInLoop(CancellationToken cancellationToken)
+    private async Task TryConnectInLoop(Func<Task> afterConnectCallback, CancellationToken cancellationToken)
     {
-        await ConnectInLoop(cancellationToken);
-
+        await ConnectInLoop(afterConnectCallback, cancellationToken);
+        
         RunStreamLoops(cancellationToken);
 
-        _logger.LogTrace("Циклы потоков чтения/записи запущены");
+        logger.LogTrace("Циклы потоков чтения/записи запущены");
     }
 
-    private async Task ConnectInLoop(CancellationToken cancellationToken)
+    private async Task ConnectInLoop(Func<Task> afterConnectCallback, CancellationToken cancellationToken)
     {
         do
         {
@@ -46,11 +43,13 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
             {
                 await Reconnect(cancellationToken);
 
-                _logger.LogTrace("Установлено соединение с сервером");
+                logger.LogTrace("Установлено соединение с сервером");
+                
+                await afterConnectCallback();
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.NotConnected)
             {
-                _logger.LogTrace("Ошибка установки соединения с сервером");
+                logger.LogTrace("Ошибка установки соединения с сервером");
             }
 
             if (Socket?.Connected == true)
@@ -61,16 +60,17 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
 
     private async Task Reconnect(CancellationToken cancellationToken)
     {
-        _logger.LogTrace($"Попытка подключения к {_host}:{_port}");
+        logger.LogTrace($"Попытка подключения к {_host}:{_port}");
 
         Socket?.Dispose();
+        Socket = null;
 
         var addresses = await Dns.GetHostAddressesAsync(_host, AddressFamily.InterNetwork, cancellationToken);
         if (addresses.Length == 0)
             throw new Exception("Не удалось определить адрес сервера");
         var endPoint = new IPEndPoint(addresses[0], _port);
 
-        _logger.LogTrace($"Адрес сервера: {endPoint.Address}");
+        logger.LogTrace($"Адрес сервера: {endPoint.Address}");
 
         Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
         {
@@ -91,9 +91,5 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
 
         if (!Socket.Connected)
             throw new SocketException((int)SocketError.NotConnected);
-        
-        _logger.LogInformation("Подключен к серверу");
-            
-        Connected?.Invoke(this, EventArgs.Empty);
     }
 }

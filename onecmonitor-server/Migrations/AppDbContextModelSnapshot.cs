@@ -234,7 +234,7 @@ namespace OnecMonitor.Server.Migrations
 
                     b.HasIndex("FileId");
 
-                    b.ToTable("MaintenanceStep");
+                    b.ToTable("MaintenanceSteps");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", b =>
@@ -267,6 +267,42 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("MaintenanceStepNodes");
                 });
 
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNodeLogItem", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InfoBaseId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsError")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsFinish")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StepNodeId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("TimeStamp")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InfoBaseId");
+
+                    b.HasIndex("StepNodeId");
+
+                    b.ToTable("MaintenanceStepNodeLogs");
+                });
+
             modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
                 {
                     b.Property<string>("Id")
@@ -278,9 +314,18 @@ namespace OnecMonitor.Server.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<long>("FinishDateTime")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsFaulted")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("RootNodeId")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<long>("StartDateTime")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -594,6 +639,25 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Step");
                 });
 
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNodeLogItem", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.InfoBase", "InfoBase")
+                        .WithMany()
+                        .HasForeignKey("InfoBaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", "StepNode")
+                        .WithMany("Logs")
+                        .HasForeignKey("StepNodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InfoBase");
+
+                    b.Navigation("StepNode");
+                });
+
             modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
                 {
                     b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", "RootNode")
@@ -654,6 +718,11 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Clusters");
 
                     b.Navigation("InfoBases");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", b =>
+                {
+                    b.Navigation("Logs");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>

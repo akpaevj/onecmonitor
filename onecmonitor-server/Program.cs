@@ -29,9 +29,9 @@ builder.WebHost.ConfigureKestrel((context, options) =>
     var host = context.Configuration.GetValue("OnecMonitor:Http:Host", "0.0.0.0")!;
     var port = context.Configuration.GetValue("OnecMonitor:Http:Port", 7002);
 
-    options.Listen(IPAddress.Parse(host), port, options =>
+    options.Listen(IPAddress.Parse(host), port, configure =>
     {
-        options.Protocols = HttpProtocols.Http1;
+        configure.Protocols = HttpProtocols.Http1;
     });
 });
 

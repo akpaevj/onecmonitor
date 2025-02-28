@@ -14,7 +14,7 @@ namespace OnecMonitor.Common.TechLog
     {
         private readonly ILogger<TechLogProcessor> _logger;
 
-        private readonly ActionBlock<(AgentInstance, TechLogEventContentDto)> _parseblock;
+        private readonly ActionBlock<(AgentInstanceDto, TechLogEventContentDto)> _parseblock;
         private readonly BatchBlock<TjEvent> _batchBlock;
         private readonly ActionBlock<TjEvent[]> _sendBlock;
 
@@ -53,7 +53,7 @@ namespace OnecMonitor.Common.TechLog
                 MaxDegreeOfParallelism = Environment.ProcessorCount,
                 BoundedCapacity = 10000
             };
-            _parseblock = new ActionBlock<(AgentInstance AgentInstance, TechLogEventContentDto Item)>(async i =>
+            _parseblock = new ActionBlock<(AgentInstanceDto AgentInstance, TechLogEventContentDto Item)>(async i =>
             {
                 try
                 {
@@ -83,9 +83,9 @@ namespace OnecMonitor.Common.TechLog
             }
         }
 
-        public async Task ProcessTjEventContent(AgentInstance agentInstance, TechLogEventContentDto tjEventContent, CancellationToken cancellationToken = default)
+        public async Task ProcessTjEventContent(AgentInstanceDto agentInstanceDto, TechLogEventContentDto tjEventContent, CancellationToken cancellationToken = default)
         {
-            await _parseblock.SendAsync((agentInstance, tjEventContent), cancellationToken);
+            await _parseblock.SendAsync((agentInstance: agentInstanceDto, tjEventContent), cancellationToken);
 
             _logger.LogTrace("Tj event content has been sent to the parsing block");
         }

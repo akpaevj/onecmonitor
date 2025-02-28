@@ -1,7 +1,8 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using OnecMonitor.Server.Extensions;
+using OnecMonitor.Common.Extensions;
+using OnecMonitor.Common.Models.MaintenanceTasks;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Models.MaintenanceTasks;

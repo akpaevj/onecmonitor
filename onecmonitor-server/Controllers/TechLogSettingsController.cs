@@ -66,7 +66,7 @@ public class TechLogSettingsController(AppDbContext appDbContext, ITechLogStorag
             await appDbContext.Database.CommitTransactionAsync(cancellationToken);
 
             var agents = connectionsManager.GetConnectedAgents(await appDbContext.Agents.ToListAsync(cancellationToken));
-            var subscribers = connectionsManager.GetCommandSubscribers(agents);
+            var subscribers = connectionsManager.GetAgentsConnections(agents);
             foreach (var subscriber in subscribers)
                 await subscriber.SendUpdateSettingsRequest(cancellationToken);
 

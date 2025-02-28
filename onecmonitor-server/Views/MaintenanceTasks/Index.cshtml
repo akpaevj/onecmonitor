@@ -1,3 +1,4 @@
+@using System.Globalization
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @using OnecMonitor.Server.ViewModels
 @using OnecMonitor.Server.ViewModels.Agents;
@@ -18,17 +19,44 @@
         <thead>
         <tr>
             <th class="col">Описание</th>
+            <th class="col">Запущена</th>
+            <th class="col">Есть ошибки</th>
+            <th class="col">Завершена</th>
             <th></th>
         </tr>
         </thead>
         <tbody>
         @foreach (var item in Model.Items)
         {
+            var started = item.StartDateTime != DateTime.MinValue;
+            var finished = item.FinishDateTime != DateTime.MinValue;
+            
             <tr>
                 <td>@item.Description</td>
+                <td>@(started ? item.StartDateTime.ToString(CultureInfo.InvariantCulture) : "")</td>
+                @if (item.IsFaulted)
+                {
+                    <td class="text-danger">@item.IsFaulted</td>
+                }
+                else
+                {
+                    <td class="text-success">@item.IsFaulted</td>
+                }
+                <td>@(finished ? item.FinishDateTime.ToString(CultureInfo.InvariantCulture) : "")</td>
                 <td class="text-center">
-                    <a class="btn btn-outline-warning btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
-                    <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Description')">Удалить</a>
+                    @if (started)
+                    {
+                        <a class="btn btn-outline-info btn-sm" asp-action="Log" asp-route-id="@item.Id">Лог</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-outline-primary btn-sm" asp-action="Start" asp-route-id="@item.Id">Запустить</a>
+                        <a class="btn btn-outline-warning btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
+                    }
+                    @if (!started || finished)
+                    {
+                        <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Description')">Удалить</a>
+                    }
                 </td>
             </tr>
         }

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace OnecMonitor.Server.Models.MaintenanceTasks;
+namespace OnecMonitor.Common.Models.MaintenanceTasks;
 
 public enum MaintenanceStepNodeKind
 {

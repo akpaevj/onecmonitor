@@ -4,30 +4,39 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OnecMonitor.Common.Models.MaintenanceTasks;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Models.MaintenanceTasks;
+using OnecMonitor.Server.Services;
 using OnecMonitor.Server.ViewModels;
 using OnecMonitor.Server.ViewModels.MaintenanceTasks;
 
 namespace OnecMonitor.Server.Controllers;
 
-public class MaintenanceTasksController(AppDbContext appDbContext, IMapper mapper) : Controller
+public class MaintenanceTasksController(AppDbContext appDbContext, AgentsConnectionsManager connectionsManager, IMapper mapper) : Controller
 {
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
-    
+
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
-        => View(new MaintenanceTasksIndexViewModel
+    {
+        var items = await appDbContext.MaintenanceTasks
+            .AsNoTracking()
+            .Include(c => c.RootNode)
+            .ToListAsync(cancellationToken);
+
+        foreach (var item in items)
+            await LoadNodesRecursively(item.RootNode, false, cancellationToken);
+
+        return View(new MaintenanceTasksIndexViewModel
         {
-            Items = await appDbContext.MaintenanceTasks
-                .AsNoTracking()
-                .ProjectTo<MaintenanceTaskListItemViewModel>(mapper.ConfigurationProvider)
-                .ToListAsync(cancellationToken)
+            Items = mapper.Map<List<MaintenanceTaskListItemViewModel>>(items)
         });
+    }
     
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
@@ -45,7 +54,7 @@ public class MaintenanceTasksController(AppDbContext appDbContext, IMapper mappe
         if (model == null)
             return NotFound();
         
-        await LoadNodesRecursively(model.RootNode, cancellationToken);
+        await LoadNodesRecursively(model.RootNode, false, cancellationToken);
         
         var vm = mapper.Map<MaintenanceTaskEditViewModel>(model);
         var rootNodeVm = mapper.Map<MaintenanceStepNodeViewModel>(model.RootNode);
@@ -67,21 +76,30 @@ public class MaintenanceTasksController(AppDbContext appDbContext, IMapper mappe
             Id = Guid.NewGuid()
         } : await appDbContext.MaintenanceTasks
             .Include(c => c.RootNode)
+            .AsNoTracking()
             .FirstOrDefaultAsync(i => i.Id == vm.Id, cancellationToken);
         
         if (model == null)
             return NotFound();
         
-        mapper.Map(vm, model);
-        model.RootNode = JsonSerializer.Deserialize<MaintenanceStepNode>(vm.SerializedStepNode, _jsonOptions)!;
-        model.RootNodeId = model.RootNode.Id;
+        if (!isNew)
+            await LoadNodesRecursively(model.RootNode, false, cancellationToken);
         
+        var rootNode = JsonSerializer.Deserialize<MaintenanceStepNode>(vm.SerializedStepNode, _jsonOptions)!;
+        
+        mapper.Map(vm, model);
+        model.RootNodeId = rootNode.Id;
+        
+        var newNodes = GetNodesList(rootNode);
+        var oldNodes = GetNodesList(model.RootNode);
+        
+        await UiHelper.UpdateModelItems(appDbContext.MaintenanceStepNodes, newNodes, oldNodes, cancellationToken);
         await UiHelper.UpdateModelItems(appDbContext.InfoBases, vm.InfoBases, model.InfoBases, cancellationToken);
+        
+        model.RootNode = null!;
         
         if (isNew)
             appDbContext.MaintenanceTasks.Add(model);
-        else
-            appDbContext.MaintenanceTasks.Update(model);
         
         await appDbContext.SaveChangesAsync(cancellationToken);
             
@@ -128,6 +146,60 @@ public class MaintenanceTasksController(AppDbContext appDbContext, IMapper mappe
         
         return view;
     }
+
+    public async Task<IActionResult> Start(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var task = await appDbContext.MaintenanceTasks
+                .AsNoTracking()
+                .Include(c => c.RootNode)
+                    .ThenInclude(c => c.Step)
+                .AsNoTracking()
+                .Include(c => c.InfoBases)
+                    .ThenInclude(infoBase => infoBase.Cluster)
+                    .ThenInclude(cluster => cluster.Agent)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+            if (task == null)
+                return NotFound();
+        
+            await LoadNodesRecursively(task.RootNode, true, cancellationToken);
+        
+            var affectedAgents = task.InfoBases.Select(c => c.Cluster.Agent).Distinct().ToList();
+            var connectedAgents = connectionsManager.GetAgentsConnections(affectedAgents);
+
+            foreach (var connection in connectedAgents)
+                await connection.StartMaintenanceTask(task, cancellationToken);
+        
+            var taskToUpdate = await appDbContext.MaintenanceTasks.FindAsync([id], cancellationToken);
+            taskToUpdate!.StartDateTime = DateTime.Now;
+            await appDbContext.SaveChangesAsync(cancellationToken);
+        
+            return RedirectToAction("Index");
+        }
+        catch (Exception e)
+        {
+            return View("Error", new ErrorViewModel(e.Message));
+        }
+    }
+    
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var item = await appDbContext.MaintenanceTasks.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+            appDbContext.MaintenanceTasks.Remove(item!);
+            
+            await appDbContext.SaveChangesAsync(cancellationToken);
+            
+            return RedirectToAction("Index");
+        }
+        catch (Exception ex)
+        {
+            return View("Error", new ErrorViewModel(ex.ToString()));
+        }
+    }
     
     private async Task<MaintenanceTaskEditViewModel> PrepareViewModel(MaintenanceTaskEditViewModel vm, CancellationToken cancellationToken)
     {
@@ -159,24 +231,56 @@ public class MaintenanceTasksController(AppDbContext appDbContext, IMapper mappe
         return vm;
     }
 
-    private async Task LoadNodesRecursively(MaintenanceStepNode node, CancellationToken cancellationToken)
+    private async Task LoadNodesRecursively(MaintenanceStepNode node, bool includeFully, CancellationToken cancellationToken)
     {
         if (node.LeftNodeId != null && node.LeftNodeId != Guid.Empty)
-            node.LeftNode = await LoadNodeRecursively(node.LeftNodeId, cancellationToken);
+            node.LeftNode = await LoadNodeRecursively(node.LeftNodeId, includeFully, cancellationToken);
         
         if (node.RightNodeId != null && node.RightNodeId != Guid.Empty)
-            node.RightNode = await LoadNodeRecursively(node.RightNodeId, cancellationToken);
+            node.RightNode = await LoadNodeRecursively(node.RightNodeId, includeFully, cancellationToken);
     }
 
-    private async Task<MaintenanceStepNode> LoadNodeRecursively(Guid? id, CancellationToken cancellationToken)
+    private async Task<MaintenanceStepNode> LoadNodeRecursively(Guid? id, bool includeFully, CancellationToken cancellationToken)
     {
-        var node = (await appDbContext.MaintenanceStepNodes
+        var query = appDbContext.MaintenanceStepNodes
             .AsNoTracking()
-            .Include(c => c.Step)
-            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken))!;
-            
-        await LoadNodesRecursively(node, cancellationToken);
+            .Include(c => c.Step);
 
-        return node;
+        var fullQuery = includeFully switch
+        {
+            true => query
+                .ThenInclude(c => c.File)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken),
+            _ => query.FirstOrDefaultAsync(c => c.Id == id, cancellationToken),
+        };
+        
+        var node = await fullQuery;
+            
+        await LoadNodesRecursively(node!, includeFully, cancellationToken);
+
+        return node!;
+    }
+
+    private static List<MaintenanceStepNode> GetNodesList(MaintenanceStepNode node)
+    {
+        var list = new List<MaintenanceStepNode>();
+        FillNodesList(node, list);
+        
+        return list;
+    }
+
+    private static void FillNodesList(MaintenanceStepNode node, List<MaintenanceStepNode> list)
+    {
+        list.Add(node);
+        
+        if (node.LeftNodeId != null && node.LeftNodeId != Guid.Empty)
+        {
+            FillNodesList(node.LeftNode, list);
+        }
+            
+        if (node.RightNodeId != null && node.RightNodeId != Guid.Empty)
+        {
+            FillNodesList(node.RightNode, list);
+        }
     }
 }

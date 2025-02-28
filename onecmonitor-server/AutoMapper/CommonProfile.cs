@@ -1,9 +1,6 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using AutoMapper;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Models.MaintenanceTasks;
-using OnecMonitor.Server.ViewModels.Agents;
 using OnecMonitor.Server.ViewModels.Clusters;
 using OnecMonitor.Server.ViewModels.V8Files;
 using OnecMonitor.Server.ViewModels.Credentials;
@@ -96,7 +93,7 @@ public class CommonProfile : Profile
             .ForMember(c => c.Id, i => i.Ignore())
             .ForMember(c => c.InfoBases, i => i.Ignore());
 
-        CreateMap<MaintenanceTask, MaintenanceTaskListItemViewModel>().ReverseMap();
+        CreateMap<MaintenanceTask, MaintenanceTaskListItemViewModel>();
         
         CreateMap<MaintenanceStep, MaintenanceStepViewModel>()
             .ReverseMap()

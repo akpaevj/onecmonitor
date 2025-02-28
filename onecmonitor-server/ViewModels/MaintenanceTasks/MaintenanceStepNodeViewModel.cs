@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using OnecMonitor.Common.Models.MaintenanceTasks;
 using OnecMonitor.Server.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.ViewModels.MaintenanceTasks;

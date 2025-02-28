@@ -5,13 +5,13 @@ namespace OnecMonitor.Common.TechLog
 {
     public static class TechLogParser
     {
-        public static bool TryParse(AgentInstance agentInstance, TechLogEventContentDto item, out TjEvent tjEvent)
+        public static bool TryParse(AgentInstanceDto agentInstanceDto, TechLogEventContentDto item, out TjEvent tjEvent)
         {
             var content = item.Content.AsSpan();
 
             tjEvent = new TjEvent()
             {
-                AgentId = agentInstance.Id,
+                AgentId = agentInstanceDto.Id,
                 SeanceId = item.SeanceId,
                 Folder = item.Folder,
                 File = item.File,
@@ -19,7 +19,7 @@ namespace OnecMonitor.Common.TechLog
             };
 
             int offset;
-            if (TryParseDateTime(content[..26], agentInstance, out var dateTime))
+            if (TryParseDateTime(content[..26], agentInstanceDto, out var dateTime))
             {
                 offset = 27;
                 tjEvent.DateTime = dateTime;
@@ -57,11 +57,11 @@ namespace OnecMonitor.Common.TechLog
             return true;
         }
 
-        private static bool TryParseDateTime(ReadOnlySpan<char> content, AgentInstance agentInstance, out DateTime dateTime)
+        private static bool TryParseDateTime(ReadOnlySpan<char> content, AgentInstanceDto agentInstanceDto, out DateTime dateTime)
         {
             if (DateTime.TryParse(content, out var eventDateTime))
             {
-                dateTime = DateTime.SpecifyKind(eventDateTime.AddSeconds(-agentInstance.UtcOffset), DateTimeKind.Utc);
+                dateTime = DateTime.SpecifyKind(eventDateTime.AddSeconds(-agentInstanceDto.UtcOffset), DateTimeKind.Utc);
                 return true;
             }
             else

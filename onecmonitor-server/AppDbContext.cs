@@ -25,6 +25,8 @@ namespace OnecMonitor.Server
         public DbSet<TechLogSettings> TechLogSettings { get; set; }
         public DbSet<MaintenanceTask> MaintenanceTasks { get; set; }
         public DbSet<MaintenanceStepNode> MaintenanceStepNodes { get; set; }
+        public DbSet<MaintenanceStep> MaintenanceSteps { get; set; }
+        public DbSet<MaintenanceStepNodeLogItem> MaintenanceStepNodeLogs { get; set; }
 
         public AppDbContext(IHostEnvironment hostEnvironment)
             => DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-server.db");

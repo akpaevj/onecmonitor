@@ -1,15 +1,15 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace OnecMonitor.Server.Models.MaintenanceTasks;
+namespace OnecMonitor.Common.Models.MaintenanceTasks;
 
 public enum MaintenanceStepKind
 {
-    [Display(Name = "Блокировка сеансов")]
+    [Display(Name = "Блокировка соединений")]
     LockConnections,
     [Display(Name = "Закрытие сеансов")]
     CloseConnections,
-    [Display(Name = "Разблокировка сеансов")]
+    [Display(Name = "Разблокировка соединений")]
     UnlockConnections,
     [Display(Name = "Загрузка расширения")]
     LoadExtension,
@@ -17,8 +17,6 @@ public enum MaintenanceStepKind
     UpdateConfiguration,
     [Display(Name = "Загрузка конфигурации")]
     LoadConfiguration,
-    [Display(Name = "Обновление информационной базы")]
-    UpdateDatabase,
     [Display(Name = "Запуск внешней обработки")]
     StartExternalDataProcessor
 }

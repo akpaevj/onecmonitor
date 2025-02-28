@@ -13,7 +13,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using OnecMonitor.Common.DTO.MaintenanceTasks;
 using OnecMonitor.Server.Helpers;
+using OnecMonitor.Server.Models.MaintenanceTasks;
 using OneSTools.Common.Platform;
 using OneSTools.Common.Platform.RemoteAdministration;
 using OneSTools.Common.Platform.Services;
@@ -30,13 +32,10 @@ namespace OnecMonitor.Server.Services
         private readonly ILogger<AgentConnection> _logger;
 
         public Guid ConnectionId { get; }
-        public AgentInstance? AgentInstance { get; private set; }
+        public AgentInstanceDto? AgentInstance { get; private set; }
 
         public delegate void AgentConnectedHandler(AgentConnection agentConnection);
         public event AgentConnectedHandler? AgentConnected;
-
-        public delegate void AgentSubscribedForCommandsHandler(AgentConnection agentConnection);
-        public event AgentSubscribedForCommandsHandler? SubscribedForCommands;
 
         public delegate void AgentDisconnectedHandler(AgentConnection agentConnection);
         public event AgentDisconnectedHandler? AgentDisconnected;
@@ -60,69 +59,52 @@ namespace OnecMonitor.Server.Services
             _logger = _agentScope.ServiceProvider.GetRequiredService<ILogger<AgentConnection>>();
         }
 
-        public async Task Listen(CancellationToken cancellationToken)
+        public void Listen(CancellationToken cancellationToken)
         {
-            RunStreamLoops(cancellationToken);
-
-            // first message must be an init message
-            var firstMessage = await ReadMessage(cancellationToken);
-            
-            if (firstMessage.Header.Type != MessageType.AgentInfo)
-            {
-                Socket?.Close();
-                throw new Exception("First message must be \"Agent info\", connection closed");
-            }
-
-            await HandleInitMessage(firstMessage.Data, cancellationToken);
-                
-            while (!cancellationToken.IsCancellationRequested) 
+            MessageReceived += async (_, message) =>
             {
                 try
                 {
-                    var message = await ReadMessage(cancellationToken);
-                    
-                    try
+                    // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+                    switch (message.Header.Type)
                     {
-                        // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
-                        switch (message.Header.Type)
-                        {
-                            case MessageType.TechLogEventContent:
-                                await HandleTechLogEventContent(message.Data, cancellationToken);
-                                break;
-                            case MessageType.LastFilePositionRequest:
-                                await HandleLastFilePositionRequest(message, cancellationToken);
-                                break;
-                            case MessageType.TechLogSeancesRequest:
-                                await UpdateTechLogSeances(message, cancellationToken);
-                                break;
-                            case MessageType.SubscribingForCommands:
-                                await HandleSubscribingForCommands(message, cancellationToken);
-                                break;
-                            case MessageType.UpdateInfoBasesTaskRequest:
-                                await HandleUpdateInfoBasesTaskRequest(message, cancellationToken);
-                                break;
-                            case MessageType.UpdateInfoBaseTaskLog:
-                                await HandleUpdateInfoBasesTaskLog(message, cancellationToken);
-                                break;
-                            case MessageType.SettingsRequest:
-                                await HandleSettingsRequest(message, cancellationToken);
-                                break;
-                            default:
-                                throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
-                        }
-                    }
-                    catch (OperationCanceledException) {}
-                    catch (Exception ex)
-                    {
-                        _logger.LogTrace(ex, "Ошибка обработки сообщения");
-                        await SendError(message, ex.ToString(), cancellationToken);
+                        case MessageType.AgentInfo:
+                            await HandleInitMessage(message, cancellationToken);
+                            break;
+                        case MessageType.TechLogEventContent:
+                            await HandleTechLogEventContent(message.Data, cancellationToken);
+                            break;
+                        case MessageType.LastFilePositionRequest:
+                            await HandleLastFilePositionRequest(message, cancellationToken);
+                            break;
+                        case MessageType.TechLogSeancesRequest:
+                            await UpdateTechLogSeances(message, cancellationToken);
+                            break;
+                        case MessageType.UpdateInfoBasesTaskRequest:
+                            await HandleUpdateInfoBasesTaskRequest(message, cancellationToken);
+                            break;
+                        case MessageType.UpdateInfoBaseTaskLog:
+                            await HandleUpdateInfoBasesTaskLog(message, cancellationToken);
+                            break;
+                        case MessageType.SettingsRequest:
+                            await HandleSettingsRequest(message, cancellationToken);
+                            break;
+                        default:
+                            throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
                     }
                 }
                 catch (OperationCanceledException) {}
-            }
+                catch (Exception ex)
+                {
+                    _logger.LogTrace(ex, "Ошибка обработки сообщения");
+                    await SendError(message, ex.ToString(), cancellationToken);
+                }
+            };
+            
+            RunStreamLoops(cancellationToken);
         }
-        
-        public async Task HandleSettingsRequest(Message message, CancellationToken cancellationToken)
+
+        private async Task HandleSettingsRequest(Message message, CancellationToken cancellationToken)
         {
             var tjSettings = await _appDbContext.TechLogSettings.FirstOrDefaultAsync(cancellationToken);
 
@@ -190,6 +172,9 @@ namespace OnecMonitor.Server.Services
         
         public async Task RequestInfoBasesUpdating(CancellationToken cancellationToken)
             => await Send(MessageType.UpdateInfoBasesRequest, cancellationToken);
+        
+        public async Task StartMaintenanceTask(MaintenanceTask task, CancellationToken cancellationToken)
+            => await Send(MessageType.MaintenanceTask, _mapper.Map<MaintenanceTaskDto>(task), cancellationToken);
 
         private async Task UpdateTechLogSeances(Message callMessage, CancellationToken cancellationToken)
         {
@@ -204,21 +189,21 @@ namespace OnecMonitor.Server.Services
 
             var seances = new List<TechLogSeanceDto>();
 
-            agentSeances.ForEach(c =>
+            agentSeances.ForEach(seance =>
             {
                 StringBuilder templateBuilder = new();
 
-                c.Templates.ForEach(c =>
+                seance.Templates.ForEach(template =>
                 {
                     // add template id and combine templates
-                    templateBuilder.AppendLine(c.Content.Replace("{LOG_PATH}", $"{{LOG_PATH}}{c.Id}"));
+                    templateBuilder.AppendLine(template.Content.Replace("{LOG_PATH}", $"{{LOG_PATH}}{template.Id}"));
                 });
 
                 seances.Add(new TechLogSeanceDto()
                 {
-                    Id = c.Id,
-                    StartDateTime = c.StartDateTime,
-                    FinishDateTime = c.FinishDateTime,
+                    Id = seance.Id,
+                    StartDateTime = seance.StartDateTime,
+                    FinishDateTime = seance.FinishDateTime,
                     Template = templateBuilder.ToString()
                 });
             });
@@ -226,9 +211,9 @@ namespace OnecMonitor.Server.Services
             await Send(MessageType.TechLogSeances, seances, callMessage, cancellationToken);
         }
 
-        private async Task HandleInitMessage(ReadOnlyMemory<byte> messageData, CancellationToken cancellationToken)
+        private async Task HandleInitMessage(Message message, CancellationToken cancellationToken)
         {
-            AgentInstance = ParseMessageData<AgentInstance>(messageData, cancellationToken);
+            AgentInstance = ParseMessageData<AgentInstanceDto>(message.Data, cancellationToken);
 
             await _appDbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -260,18 +245,10 @@ namespace OnecMonitor.Server.Services
 
                 AgentConnected?.Invoke(this);
             }
-            catch (Exception ex)
+            catch
             {
                 await _appDbContext.Database.RollbackTransactionAsync(cancellationToken);
-
-                throw new RpcException(Status.DefaultCancelled, ex.Message);
             }
-        }
-
-        private async Task HandleSubscribingForCommands(Message requestMessage, CancellationToken cancellationToken)
-        {
-            SubscribedForCommands?.Invoke(this);
-            await SendOk(requestMessage, cancellationToken);
         }
 
         private async Task HandleLastFilePositionRequest(Message requestMessage, CancellationToken cancellationToken)

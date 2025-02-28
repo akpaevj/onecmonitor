@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using OnecMonitor.Common.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.Models.MaintenanceTasks;
 
@@ -12,5 +13,5 @@ public class MaintenanceStep : DatabaseObject
     public string Message { get; set; } = string.Empty;
     public Guid? FileId { get; set; }
     
-    public V8File? File { get; set; } = null!;
+    public V8File? File { get; set; }
 }

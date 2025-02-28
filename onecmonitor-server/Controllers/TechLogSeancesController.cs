@@ -140,7 +140,8 @@ namespace OnecMonitor.Server.Controllers
             model.Agents.Where(c => !newConnectedAgents.Contains(c)).ToList().ForEach(c => model.Agents.Remove(c));
 
             await dbContext.SaveChangesAsync(cancellationToken);
-            await connectionsManager.UpdateTechLogSeances(affectedAgents, cancellationToken);
+            
+            await RequestTechLogSeancesUpdating(affectedAgents, cancellationToken);
 
             return RedirectToAction("Index");
         }
@@ -163,7 +164,7 @@ namespace OnecMonitor.Server.Controllers
                 await dbContext.Database.CommitTransactionAsync(cancellationToken);
                 await dbContext.SaveChangesAsync(cancellationToken);
 
-                await connectionsManager.UpdateTechLogSeances(item.Agents, cancellationToken);
+                await RequestTechLogSeancesUpdating(item.Agents, cancellationToken);
 
                 return RedirectToAction("Index");
             }
@@ -171,6 +172,21 @@ namespace OnecMonitor.Server.Controllers
             {
                 await dbContext.Database.RollbackTransactionAsync(cancellationToken);
                 throw;
+            }
+        }
+        
+        private async Task RequestTechLogSeancesUpdating(List<Agent> agents, CancellationToken cancellationToken)
+        {
+            foreach (var connection in connectionsManager.GetAgentsConnections(agents))
+            {
+                try
+                {
+                    await connection.RequestTechLogSeancesUpdating(cancellationToken);
+                }
+                catch
+                {
+                    // ignored
+                }
             }
         }
 

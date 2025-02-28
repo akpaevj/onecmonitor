@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.EntityFrameworkCore;
+using OnecMonitor.Common.DTO;
 
 namespace OnecMonitor.Server.Services
 {
@@ -11,17 +12,13 @@ namespace OnecMonitor.Server.Services
         IConfiguration configuration,
         IServiceProvider serviceProvider,
         TechLogProcessor techLogProcessor,
-        ILogger<AgentsConnectionsManager> logger)
-        : BackgroundService
+        ILogger<AgentsConnectionsManager> logger) : BackgroundService
     {
         private readonly string _host = configuration.GetValue("OnecMonitor:Tcp:Host", "0.0.0.0");
         private readonly int _port = configuration.GetValue("OnecMonitor:Tcp:Port", 7001);
         private readonly Socket _socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-        // k - agent id, v - connection id
-        private readonly ConcurrentDictionary<Guid, Guid> _commandsSubscribers = new();
-
-        private ConcurrentDictionary<Guid, AgentConnection> Connections { get; } = new();
+        
+        private readonly HashSet<AgentConnection> _connections = [];
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -38,9 +35,8 @@ namespace OnecMonitor.Server.Services
                 var agentConnection = new AgentConnection(client, techLogProcessor, serviceProvider);
                 agentConnection.AgentConnected += AgentConnection_Connected;
                 agentConnection.AgentDisconnected += AgentConnection_Disconnected;
-                agentConnection.SubscribedForCommands += AgentConnection_SubscribedForCommands;
 
-                _ = agentConnection.Listen(stoppingToken);
+                agentConnection.Listen(stoppingToken);
             }
 
             _socket.Close();
@@ -48,62 +44,40 @@ namespace OnecMonitor.Server.Services
 
         private void AgentConnection_Connected(AgentConnection agentConnection)
         {
-            Connections.TryAdd(agentConnection.ConnectionId, agentConnection);
-
-            logger.LogInformation($"Агент подключился: {agentConnection.AgentInstance!.InstanceName}");
+            lock (_connections)
+                _connections.Add(agentConnection);
+            
+            logger.LogInformation($"Агент подключился: {agentConnection.AgentInstance!.InstanceName}. Идентификатор соединения: {agentConnection.ConnectionId}");
         }
 
         private void AgentConnection_Disconnected(AgentConnection agentConnection)
         {
-            Connections.TryRemove(agentConnection.ConnectionId, out _);
+            lock (_connections)
+                _connections.Remove(agentConnection);
 
             agentConnection.AgentConnected -= AgentConnection_Connected;
             agentConnection.AgentDisconnected -= AgentConnection_Disconnected;
-            agentConnection.SubscribedForCommands -= AgentConnection_SubscribedForCommands;
 
-            var commandsWatcher = _commandsSubscribers.FirstOrDefault(c => c.Value == agentConnection.ConnectionId);
-            if (commandsWatcher.Key != Guid.Empty)
-                _commandsSubscribers.TryRemove(commandsWatcher.Key, out _);
-
-            logger.LogInformation($"Агент отключиться: {agentConnection.AgentInstance!.InstanceName}");
-        }
-
-        private void AgentConnection_SubscribedForCommands(AgentConnection agentConnection)
-        {
-            _commandsSubscribers.TryAdd(agentConnection.AgentInstance!.Id, agentConnection.ConnectionId);
+            logger.LogInformation($"Агент отключился: {agentConnection.AgentInstance!.InstanceName}. Идентификатор соединения: {agentConnection.ConnectionId}");
         }
 
         public bool IsConnected(Guid agentId)
-            => _commandsSubscribers.ContainsKey(agentId);
+            => GetAgentConnection(agentId) != null;
 
-        public AgentConnection? GetCommandsSubscriberConnection(Guid id)
+        public AgentConnection? GetAgentConnection(Guid agentId)
         {
-            if (_commandsSubscribers.TryGetValue(id, out var connectionId) &&
-                Connections.TryGetValue(connectionId, out var agentConnection)) 
-                return agentConnection;
+            AgentConnection? agentConnection;
+            
+            lock (_connections)
+                agentConnection = _connections.FirstOrDefault(c => c.AgentInstance!.MainConnection && c.AgentInstance.Id == agentId);
 
-            return null;
+            return agentConnection;
         }
         
-        public List<AgentConnection> GetCommandSubscribers(List<Agent> agents)
-            => agents.Select(c => GetCommandsSubscriberConnection(c.Id)).Where(c => c != null).ToList()!;
+        public List<AgentConnection> GetAgentsConnections(List<Agent> agents)
+            => agents.Select(c => GetAgentConnection(c.Id)).Where(c => c != null).ToList()!;
         
         public List<Agent> GetConnectedAgents(List<Agent> agents)
-            => agents.Where(c => _commandsSubscribers.ContainsKey(c.Id)).ToList();
-
-        public async Task UpdateTechLogSeances(List<Agent> agents, CancellationToken cancellationToken)
-        {
-            foreach (var connection in agents.Select(agent => GetCommandsSubscriberConnection(agent.Id)).OfType<AgentConnection>())
-            {
-                try
-                {
-                    await connection.RequestTechLogSeancesUpdating(cancellationToken);
-                }
-                catch
-                {
-                    // ignored
-                }
-            }
-        }
+            => agents.Where(c => IsConnected(c.Id)).ToList();
     }
 }

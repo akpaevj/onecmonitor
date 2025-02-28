@@ -46,7 +46,7 @@ namespace OnecMonitor.Server.Controllers
                 if (agent == null)
                     return NotFound();
 
-                var agentConnection = connectionsManager.GetCommandsSubscriberConnection(agent.Id);
+                var agentConnection = connectionsManager.GetAgentConnection(agent.Id);
             
                 var installedPlatforms = agentConnection == null ? [] : await agentConnection.GetInstalledPlatforms(cancellationToken);
                 var ragents = agentConnection == null ? [] : await agentConnection.GetRagentServices(cancellationToken);

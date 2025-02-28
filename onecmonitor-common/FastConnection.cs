@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.SymbolStore;
 using System.Net.Sockets;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 
@@ -16,11 +17,11 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
     private CancellationToken _cancellationToken;
     
     private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Message>> _calls = new();
-    private readonly Channel<Message> _inputChannel = Channel.CreateBounded<Message>(1000);
-    private readonly Channel<Message> _outputChannel = Channel.CreateBounded<Message>(1000);
+    private readonly Channel<Message> _messagesChannel = Channel.CreateUnbounded<Message>();
     private readonly SemaphoreSlim _disconnectingEventSemaphore = new(0);
     private bool _disposedValue;
-        
+    
+    public event EventHandler<Message>? MessageReceived;
     protected internal event EventHandler? Disconnected;
 
     private void RaiseDisconnected()
@@ -42,9 +43,6 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
         
         _disconnectingEventSemaphore.Release();
     }
-
-    public async Task<Message> ReadMessage(CancellationToken cancellationToken)
-        => await _inputChannel.Reader.ReadAsync(cancellationToken);
 
     public async Task SendOk(Message callMessage, CancellationToken cancellationToken)
     {
@@ -115,16 +113,16 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
         
     private async Task<TResult> WriteMessageAndWaitResult<TResult>(Message message, MessageType responseMessageType, CancellationToken cancellationToken)
     {
-        var cts = new TaskCompletionSource<Message>();
+        var cts = new TaskCompletionSource<Message>(TaskCreationOptions.RunContinuationsAsynchronously);
         _calls.TryAdd(message.Header.CallId, cts);
         
         logger.LogTrace($"Постановка сообщения в очередь отправки. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
-        await _outputChannel.Writer.WriteAsync(message, cancellationToken);
+        await _messagesChannel.Writer.WriteAsync(message, cancellationToken);
         
-        logger.LogTrace($"Ожидание подтверждения на сообщение. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
+        logger.LogTrace($"Ожидание подтверждения получения сообщения. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
         var result = await cts.Task.WaitAsync(cancellationToken);
         
-        logger.LogTrace($"Подтверждение сообщения получено. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
+        logger.LogTrace($"Подтверждение получения сообщения получено. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
         if (result == null)
             throw new TimeoutException("Ошибка получения ответа на вызов");
             
@@ -141,14 +139,14 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
     private async Task WriteMessage(Message message, bool needWait, CancellationToken cancellationToken)
     {
         if (!needWait)
-            await _outputChannel.Writer.WriteAsync(message, cancellationToken);
+            await _messagesChannel.Writer.WriteAsync(message, cancellationToken);
         else
         {
-            var cts = new TaskCompletionSource<Message>();
+            var cts = new TaskCompletionSource<Message>(TaskCreationOptions.RunContinuationsAsynchronously);
             _calls.TryAdd(message.Header.CallId, cts);
             
             logger.LogTrace($"Постановка сообщения в очередь отправки. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
-            await _outputChannel.Writer.WriteAsync(message, cancellationToken);
+            await _messagesChannel.Writer.WriteAsync(message, cancellationToken);
             
             logger.LogTrace($"Ожидание подтверждения на сообщение. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
             var result = await cts.Task.WaitAsync(cancellationToken);
@@ -165,7 +163,29 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
                 throw new Exception($"Получено неожиданное сообщение. Ожидаемый тип: {MessageType.Ok}");
         }
     }
+        
+    private async Task StartWritingToStream()
+    {
+        try
+        {
+            while (!_cancellationToken.IsCancellationRequested)
+            {
+                var message = await _messagesChannel.Reader.ReadAsync(_cancellationToken);
+                
+                await Socket!.SendAsync(message.Header.AsMemory(), _cancellationToken);
 
+                if (message.Data.Length > 0)
+                    await Socket!.SendAsync(message.Data, _cancellationToken);
+                
+                logger.LogTrace($"Отправлено сообщение. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
+            }
+        }
+        catch
+        {
+            RaiseDisconnected();
+        }
+    }
+    
     protected async Task WriteMessageToStream<T>(MessageType messageType, T item, CancellationToken cancellationToken)
     {
         var data = MessagePackSerializer.Serialize(item, cancellationToken: cancellationToken).AsMemory();
@@ -178,29 +198,7 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
             if (header.Length > 0)
                 await Socket!.SendAsync(data, cancellationToken);
             
-            logger.LogTrace($"Отправлено сообщение в поток. Тип: {header.Type}. Идентификатор: {header.CallId}");
-        }
-        catch
-        {
-            RaiseDisconnected();
-        }
-    }
-        
-    private async Task StartWritingToStream()
-    {
-        try
-        {
-            while (!_cancellationToken.IsCancellationRequested)
-            {
-                var message = await _outputChannel.Reader.ReadAsync(_cancellationToken);
-                
-                await Socket!.SendAsync(message.Header.AsMemory(), _cancellationToken);
-
-                if (message.Data.Length > 0)
-                    await Socket!.SendAsync(message.Data, _cancellationToken);
-                
-                logger.LogTrace($"Отправлено сообщение в поток. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
-            }
+            logger.LogTrace($"Отправлено сообщение. Тип: {header.Type}. Идентификатор: {header.CallId}");
         }
         catch
         {
@@ -231,8 +229,10 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
                     
                 if (_calls.TryGetValue(message.Header.CallId, out var cts))
                     cts.TrySetResult(message);
+                else if (MessageReceived is not null)
+                    MessageReceived.Invoke(this, message);
                 else
-                    await _inputChannel.Writer.WriteAsync(message, _cancellationToken);
+                    await SendError(message, "Не найдено подключенных обработчиков сообщений", _cancellationToken);
             }
         }
         catch
