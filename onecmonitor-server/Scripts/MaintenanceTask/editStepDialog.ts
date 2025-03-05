@@ -1,7 +1,12 @@
 import * as bootstrap from "bootstrap";
 import {Modal} from "bootstrap";
 import * as uuid from "uuid";
-import { StepValidationResult } from './stepValidationResult'
+import {MaintenanceStep, MaintenanceStepsTree} from "./maintenanceStepsTree";
+
+export class StepValidationResult {
+    isValid: boolean;
+    payload: any;
+}
 
 export class EditStepDialog {
     private dialogElement: HTMLDivElement;
@@ -22,36 +27,40 @@ export class EditStepDialog {
                 if (result.isValid) {
                     this.close();
                     this.onSaveCallback(result.payload);
-                } else
+                } else {
                     this.dialogBody.innerHTML = result.payload;
+                    this.setSelectKindEventHandler();
+                }
             } catch (e) {
                 alert(e);
             }
         };
     }
 
-    public open(onSave: (step: any) => void, step: any | undefined = undefined) {
+    public open(onSave: (step: MaintenanceStep) => void, step: MaintenanceStep | null = null) {
         this.onSaveCallback = onSave;
-        
-        if (step == undefined)
-            step = {
-                Id: uuid.v4()
-            };
+        if (step == null) {
+            step = new MaintenanceStep();
+            step.id = uuid.v4();
+        }
 
         this.getEditStepForm(step).then(data => {
             this.dialogBody.innerHTML = data;
 
-            const select = this.dialogBody.querySelector<HTMLSelectElement>("select[name='Kind']");
-            select.onchange = async () => {
-                await this.updateStepForm();
-            };
-
+            this.setSelectKindEventHandler();
             this.modal.show();
         });
     }
 
     public close(): void {
         this.modal.hide();
+    }
+    
+    private setSelectKindEventHandler() {
+        const select = this.dialogBody.querySelector<HTMLSelectElement>("select[name='Kind']");
+        select.onchange = async () => {
+            await this.updateStepForm();
+        };
     }
 
     private async updateStepForm() {
@@ -102,8 +111,6 @@ export class EditStepDialog {
             });
 
             if (validateResponse.status == 200) {
-                //editStepModal.hide()
-
                 const result = new StepValidationResult();
                 result.isValid = true;
                 result.payload = await validateResponse.json();

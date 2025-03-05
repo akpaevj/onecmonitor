@@ -16,6 +16,6 @@ public class MaintenanceTaskEditViewModel
     public List<SelectableItemViewModel> InfoBases { get; set; } = [];
     [ValidateNever] 
     public List<SelectableItemViewModel> AvailableInfoBases { get; set; } = [];
-
-    public string SerializedStepNode { get; set; } = string.Empty;
+    [ValidateNever] 
+    public string Steps { get; set; } = string.Empty;
 }

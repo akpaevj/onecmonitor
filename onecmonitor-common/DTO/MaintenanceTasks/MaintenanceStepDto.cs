@@ -11,9 +11,18 @@ public class MaintenanceStepDto
     [Key(1)]
     public MaintenanceStepKind Kind { get; set; }
     [Key(2)]
-    public string AccessCode { get; set; } = string.Empty;
+    public MaintenanceStepNodeKind NodeKind { get; set; }
     [Key(3)]
-    public string Message { get; set; } = string.Empty;
+    public Guid? PreviousStepId { get; set; }
     [Key(4)]
+    public Guid? LeftStepId { get; set; }
+    [Key(5)]
+    public Guid? RightStepId { get; set; }
+    [Key(6)]
+    public string AccessCode { get; set; } = string.Empty;
+    [Key(7)]
+    public string Message { get; set; } = string.Empty;
+
+    [Key(8)] 
     public V8FileDto? File { get; set; }
 }

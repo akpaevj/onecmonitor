@@ -4,7 +4,7 @@ using OnecMonitor.Server.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.Models.MaintenanceTasks;
 
-public class MaintenanceStepNodeLogItem : DatabaseObject
+public class MaintenanceStepLogItem : DatabaseObject
 {
     [DataType(DataType.Date)]
     public DateTime TimeStamp { get; set; }
@@ -12,10 +12,11 @@ public class MaintenanceStepNodeLogItem : DatabaseObject
     public bool IsFinish { get; set; }
     public string Message { get; set; } = string.Empty;
     public Guid InfoBaseId { get; set; }
-    public Guid StepNodeId { get; set; } 
+    public Guid StepId { get; set; } 
     
     [ForeignKey(nameof(InfoBaseId))]
     public virtual InfoBase InfoBase { get; set; } = null!;
-    [ForeignKey(nameof(StepNodeId))]
-    public virtual MaintenanceStepNode StepNode { get; set; } = null!;
+    
+    [ForeignKey(nameof(StepId))]
+    public virtual MaintenanceStep Step { get; set; } = null!;
 }

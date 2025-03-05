@@ -1,104 +1,77 @@
 import {EditStepDialog} from "./editStepDialog";
 import * as uuid from "uuid";
-import {MaintenanceStepNodeKind} from "./maintenanceStepNodeKind";
-import {StepsEditorHelper} from './stepsEditorHelper'
+import {MaintenanceStepNodeKind, MaintenanceStepsTree} from "./maintenanceStepsTree";
 
 export class NodesGraphActionsDialog {
     private editStepDialog: EditStepDialog;
-    private stepsEditorHelper: StepsEditorHelper;
+    private tree: MaintenanceStepsTree;
     private dialogElement: HTMLDivElement;
 
-    constructor(editStepDialog: EditStepDialog, stepsEditorHelper: StepsEditorHelper, popupElement: HTMLDivElement) {
+    constructor(editStepDialog: EditStepDialog, tree: MaintenanceStepsTree, popupElement: HTMLDivElement) {
         this.editStepDialog = editStepDialog;
-        this.stepsEditorHelper = stepsEditorHelper;
         this.dialogElement = popupElement;
+        this.tree = tree;
     }
 
-    public show(nodeId: string | undefined = undefined): void {
-        const root = this.stepsEditorHelper.getRootNode();
-        const node = nodeId == undefined ? undefined : this.stepsEditorHelper.findNode(nodeId, root);
+    public show(nodeId: string | null = null): void {
+        const editingStep = nodeId == null ? null : this.tree.findStep(nodeId);
         
         const editBtn = this.dialogElement.querySelector<HTMLButtonElement>('#edit-step-btn');
-        editBtn.hidden = nodeId == undefined;
+        editBtn.hidden = nodeId == null;
         editBtn.onclick = async () => {
             this.dialogElement.hidePopover();
-            this.editStepDialog.open(step => {
-                node.Step = step;
-                node.StepId = step.id;
-            }, node.Step);
+            
+            this.editStepDialog.open(async step => {
+                await this.tree.updateStep(step);
+            }, editingStep);
         }
 
         const deleteStepBtn = this.dialogElement.querySelector<HTMLButtonElement>('#delete-step-btn');
-        deleteStepBtn.hidden = nodeId == undefined;
+        deleteStepBtn.hidden = nodeId == null;
         deleteStepBtn.onclick = async () => {
             this.dialogElement.hidePopover();
-            
-            if (root.Id == node.Id)
-                this.stepsEditorHelper.saveNode(undefined);
-            else {
-                this.stepsEditorHelper.deleteNode(root, node);
-                this.stepsEditorHelper.saveNode(root);
-            }
 
-            await this.stepsEditorHelper.redrawNodes();
+            await this.tree.removeStep(nodeId);
         }
 
         this.dialogElement.querySelector<HTMLButtonElement>('#add-step-btn').onclick = () => {
             this.dialogElement.hidePopover();
-            this.addStep(MaintenanceStepNodeKind.Simple, nodeId);
+            this.addLeftStep(MaintenanceStepNodeKind.Simple, nodeId);
         }
 
         this.dialogElement.querySelector<HTMLButtonElement>('#add-binary-step-btn').onclick = () => {
             this.dialogElement.hidePopover();
-            this.addStep(MaintenanceStepNodeKind.TryCatch, nodeId);
+            this.addLeftStep(MaintenanceStepNodeKind.TryCatch, nodeId);
         }
 
         const addErrorStepBtn = this.dialogElement.querySelector<HTMLButtonElement>('#add-error-step-btn');
-        addErrorStepBtn.hidden = nodeId == undefined || node.Kind == MaintenanceStepNodeKind.Simple;
+        addErrorStepBtn.hidden = nodeId == null || editingStep.nodeKind === MaintenanceStepNodeKind.Simple;
         addErrorStepBtn.onclick = async () => {
             this.dialogElement.hidePopover();
-            this.addCatchNode(root, node, MaintenanceStepNodeKind.Simple);
+            this.addRightStep(MaintenanceStepNodeKind.Simple, nodeId);
         }
 
         const addErrorBinaryStepBtn = this.dialogElement.querySelector<HTMLButtonElement>('#add-error-binary-step-btn');
-        addErrorBinaryStepBtn.hidden = nodeId == undefined || node.Kind == MaintenanceStepNodeKind.Simple;
+        addErrorBinaryStepBtn.hidden = nodeId == null || editingStep.nodeKind == MaintenanceStepNodeKind.Simple;
         addErrorBinaryStepBtn.onclick = async () => {
             this.dialogElement.hidePopover();
-            this.addCatchNode(root, node, MaintenanceStepNodeKind.TryCatch);
+            this.addRightStep(MaintenanceStepNodeKind.TryCatch, nodeId);
         }
 
         this.dialogElement.showPopover()
     }
     
-    private addStep(kind: MaintenanceStepNodeKind, nodeId: string | undefined = undefined) {
-        if (nodeId == undefined)
-            this.editStepDialog.open(async step => {
-                await this.stepsEditorHelper.addRootNode({
-                    Id: uuid.v4(),
-                    Kind: kind,
-                    Step: step,
-                    StepId: step.id
-                });
-            });
-        else
-            this.editStepDialog.open(async step => {
-                await this.stepsEditorHelper.addLeftNode(nodeId, {
-                    Id: uuid.v4(),
-                    Kind: kind,
-                    Step: step,
-                    StepId: step.id
-                });
-            });
+    private addLeftStep(kind: MaintenanceStepNodeKind, nodeId: string | null = null) {
+        this.editStepDialog.open(async step => {
+            step.nodeKind = kind;
+            await this.tree.addStep(step, nodeId, true);
+        });
     }
     
-    private addCatchNode(root: any, parent: any, kind: MaintenanceStepNodeKind) {
+    private addRightStep(kind: MaintenanceStepNodeKind, nodeId: string | null = null) {
         this.editStepDialog.open(async step => {
-            await this.stepsEditorHelper.addRightNode(root, parent, {
-                Id: uuid.v4(),
-                Kind: kind,
-                Step: step,
-                StepId: step.id
-            });
+            step.nodeKind = kind;
+            await this.tree.addStep(step, nodeId, false);
         });
     }
 }

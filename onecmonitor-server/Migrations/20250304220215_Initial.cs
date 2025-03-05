@@ -52,6 +52,21 @@ namespace OnecMonitor.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "MaintenanceTasks",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    StartDateTime = table.Column<long>(type: "INTEGER", nullable: false),
+                    IsFaulted = table.Column<bool>(type: "INTEGER", nullable: false),
+                    FinishDateTime = table.Column<long>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MaintenanceTasks", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TechLogFilters",
                 columns: table => new
                 {
@@ -209,7 +224,12 @@ namespace OnecMonitor.Server.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
+                    MaintenanceTaskId = table.Column<string>(type: "TEXT", nullable: false),
                     Kind = table.Column<int>(type: "INTEGER", nullable: false),
+                    NodeKind = table.Column<int>(type: "INTEGER", nullable: false),
+                    PreviousStepId = table.Column<string>(type: "TEXT", nullable: true),
+                    LeftStepId = table.Column<string>(type: "TEXT", nullable: true),
+                    RightStepId = table.Column<string>(type: "TEXT", nullable: true),
                     AccessCode = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     Message = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     FileId = table.Column<string>(type: "TEXT", nullable: true)
@@ -217,6 +237,12 @@ namespace OnecMonitor.Server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MaintenanceSteps", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MaintenanceSteps_MaintenanceTasks_MaintenanceTaskId",
+                        column: x => x.MaintenanceTaskId,
+                        principalTable: "MaintenanceTasks",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_MaintenanceSteps_V8Files_FileId",
                         column: x => x.FileId,
@@ -244,59 +270,6 @@ namespace OnecMonitor.Server.Migrations
                         name: "FK_UpdateInfoBaseTaskV8File_V8Files_FilesId",
                         column: x => x.FilesId,
                         principalTable: "V8Files",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "MaintenanceStepNodes",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    Kind = table.Column<int>(type: "INTEGER", nullable: false),
-                    LeftNodeId = table.Column<string>(type: "TEXT", nullable: true),
-                    RightNodeId = table.Column<string>(type: "TEXT", nullable: true),
-                    StepId = table.Column<string>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MaintenanceStepNodes", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_MaintenanceStepNodes_MaintenanceStepNodes_LeftNodeId",
-                        column: x => x.LeftNodeId,
-                        principalTable: "MaintenanceStepNodes",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_MaintenanceStepNodes_MaintenanceStepNodes_RightNodeId",
-                        column: x => x.RightNodeId,
-                        principalTable: "MaintenanceStepNodes",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_MaintenanceStepNodes_MaintenanceSteps_StepId",
-                        column: x => x.StepId,
-                        principalTable: "MaintenanceSteps",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "MaintenanceTasks",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    StartDateTime = table.Column<long>(type: "INTEGER", nullable: false),
-                    IsFaulted = table.Column<bool>(type: "INTEGER", nullable: false),
-                    FinishDateTime = table.Column<long>(type: "INTEGER", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    RootNodeId = table.Column<string>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MaintenanceTasks", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_MaintenanceTasks_MaintenanceStepNodes_RootNodeId",
-                        column: x => x.RootNodeId,
-                        principalTable: "MaintenanceStepNodes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -361,7 +334,7 @@ namespace OnecMonitor.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MaintenanceStepNodeLogs",
+                name: "MaintenanceStepLogs",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
@@ -370,21 +343,21 @@ namespace OnecMonitor.Server.Migrations
                     IsFinish = table.Column<bool>(type: "INTEGER", nullable: false),
                     Message = table.Column<string>(type: "TEXT", nullable: false),
                     InfoBaseId = table.Column<string>(type: "TEXT", nullable: false),
-                    StepNodeId = table.Column<string>(type: "TEXT", nullable: false)
+                    StepId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MaintenanceStepNodeLogs", x => x.Id);
+                    table.PrimaryKey("PK_MaintenanceStepLogs", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MaintenanceStepNodeLogs_InfoBases_InfoBaseId",
+                        name: "FK_MaintenanceStepLogs_InfoBases_InfoBaseId",
                         column: x => x.InfoBaseId,
                         principalTable: "InfoBases",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MaintenanceStepNodeLogs_MaintenanceStepNodes_StepNodeId",
-                        column: x => x.StepNodeId,
-                        principalTable: "MaintenanceStepNodes",
+                        name: "FK_MaintenanceStepLogs_MaintenanceSteps_StepId",
+                        column: x => x.StepId,
+                        principalTable: "MaintenanceSteps",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -459,28 +432,13 @@ namespace OnecMonitor.Server.Migrations
                 column: "TemplatesId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceStepNodeLogs_InfoBaseId",
-                table: "MaintenanceStepNodeLogs",
+                name: "IX_MaintenanceStepLogs_InfoBaseId",
+                table: "MaintenanceStepLogs",
                 column: "InfoBaseId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceStepNodeLogs_StepNodeId",
-                table: "MaintenanceStepNodeLogs",
-                column: "StepNodeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceStepNodes_LeftNodeId",
-                table: "MaintenanceStepNodes",
-                column: "LeftNodeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceStepNodes_RightNodeId",
-                table: "MaintenanceStepNodes",
-                column: "RightNodeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceStepNodes_StepId",
-                table: "MaintenanceStepNodes",
+                name: "IX_MaintenanceStepLogs_StepId",
+                table: "MaintenanceStepLogs",
                 column: "StepId");
 
             migrationBuilder.CreateIndex(
@@ -489,9 +447,9 @@ namespace OnecMonitor.Server.Migrations
                 column: "FileId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceTasks_RootNodeId",
-                table: "MaintenanceTasks",
-                column: "RootNodeId");
+                name: "IX_MaintenanceSteps_MaintenanceTaskId",
+                table: "MaintenanceSteps",
+                column: "MaintenanceTaskId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UpdateInfoBaseTaskLogItems_InfoBaseId",
@@ -522,7 +480,7 @@ namespace OnecMonitor.Server.Migrations
                 name: "LogTemplateTechLogSeance");
 
             migrationBuilder.DropTable(
-                name: "MaintenanceStepNodeLogs");
+                name: "MaintenanceStepLogs");
 
             migrationBuilder.DropTable(
                 name: "TechLogFilters");
@@ -543,10 +501,16 @@ namespace OnecMonitor.Server.Migrations
                 name: "TechLogSeances");
 
             migrationBuilder.DropTable(
+                name: "MaintenanceSteps");
+
+            migrationBuilder.DropTable(
                 name: "InfoBases");
 
             migrationBuilder.DropTable(
                 name: "UpdateInfoBaseTasks");
+
+            migrationBuilder.DropTable(
+                name: "V8Files");
 
             migrationBuilder.DropTable(
                 name: "Clusters");
@@ -559,15 +523,6 @@ namespace OnecMonitor.Server.Migrations
 
             migrationBuilder.DropTable(
                 name: "Credentials");
-
-            migrationBuilder.DropTable(
-                name: "MaintenanceStepNodes");
-
-            migrationBuilder.DropTable(
-                name: "MaintenanceSteps");
-
-            migrationBuilder.DropTable(
-                name: "V8Files");
         }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using OnecMonitor.Agent.Extensions;
 using OnecMonitor.Agent.Services.InfoBases;
 using OnecMonitor.Common.DTO;
 using OnecMonitor.Common.DTO.MaintenanceTasks;
@@ -16,21 +17,18 @@ public class MaintenanceTaskExecutor : BackgroundService
     
     private readonly AsyncServiceScope _scope;
     private readonly OnecMonitorConnection _serverConnection;
-    private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly RasHolder _rasHolder;
     private readonly ILogger<MaintenanceTaskExecutor> _logger;
     
     public MaintenanceTaskExecutor(
         IServiceProvider serviceProvider, 
         MaintenanceTaskExecutorQueue tasksQueue, 
-        RasHolder rasHolder, 
-        IHostApplicationLifetime applicationLifetime, 
+        RasHolder rasHolder,
         ILogger<MaintenanceTaskExecutor> logger) 
     {
         _scope = serviceProvider.CreateAsyncScope();
         _queue = tasksQueue;
         _serverConnection = _scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
-        _applicationLifetime = applicationLifetime;
         _rasHolder = rasHolder;
         _logger = logger;
     }
@@ -60,14 +58,14 @@ public class MaintenanceTaskExecutor : BackgroundService
 
         await Parallel.ForEachAsync(task.InfoBases, cancellationToken, async (infoBase, stoppingToken) =>
         {
-            var log = new List<MaintenanceStepNodeLogItemDto>();
+            var log = new List<MaintenanceStepLogItemDto>();
             
-            var context = new MaintenanceStepNodeContext
+            var context = new MaintenanceStepContext
             {
                 InfoBase = infoBase,
                 Log = log,
                 V8Files = v8Files,
-                Node = task.RootNode
+                Step = task.Steps.GetRootStep()
             };
 
             try
@@ -80,30 +78,38 @@ public class MaintenanceTaskExecutor : BackgroundService
                             
                 if (!context.Platform.HasOnecV8)
                     throw new Exception("Для платформы агента не установлен конфигуратор");
-            
-                var currentNode = task.RootNode;
 
-                while (!stoppingToken.IsCancellationRequested && currentNode != null)
+                while (!stoppingToken.IsCancellationRequested)
                 {
-                    context.Node = currentNode;
-                
-                    if (currentNode.Kind == MaintenanceStepNodeKind.TryCatch)
+                    if (context.Step.NodeKind == MaintenanceStepNodeKind.TryCatch)
                     {
                         try
                         {
                             HandleTaskStepNode(context);
-                            currentNode = currentNode.LeftNode;
+                            
+                            if (context.Step.LeftStepId is not null)
+                                context.Step = task.Steps.GetStep(context.Step.LeftStepId);
+                            else
+                                break;
                         }
                         catch (Exception e)
                         {
                             AddLogItem(context, e.ToString(), true);
-                            currentNode = currentNode!.RightNode;
+                            
+                            if (context.Step.RightStepId is not null)
+                                context.Step = task.Steps.GetStep(context.Step.RightStepId);
+                            else
+                                break;
                         }
                     }
                     else
                     {
                         HandleTaskStepNode(context);
-                        currentNode = currentNode.LeftNode;
+                        
+                        if (context.Step.LeftStepId is not null)
+                            context.Step = task.Steps.GetStep(context.Step.LeftStepId);
+                        else
+                            break;
                     }
                 }
 
@@ -116,13 +122,26 @@ public class MaintenanceTaskExecutor : BackgroundService
                 await SendLog(log, stoppingToken);
             }
         });
+
+        foreach (var file in v8Files.Values)
+        {
+            try
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
+            catch
+            {
+                // ignore
+            }
+        }
     }
 
-    private static void HandleTaskStepNode(MaintenanceStepNodeContext context)
+    private static void HandleTaskStepNode(MaintenanceStepContext context)
     {
-        AddLogItem(context, $"Обработка шага \"{context.Node.Step.Kind.GetDisplay()}\"");
+        AddLogItem(context, $"Обработка шага \"{context.Step.Kind.GetDisplay()}\"");
 
-        switch (context.Node.Step.Kind)
+        switch (context.Step.Kind)
         {
             case MaintenanceStepKind.LockConnections:
                 LockConnections(context);
@@ -146,13 +165,13 @@ public class MaintenanceTaskExecutor : BackgroundService
                 StartExternalDataProcessor(context);
                 break;
             default:
-                throw new Exception($"Неизвестный тип шага \"{context.Node.Step.Kind.GetDisplay()}\"");
+                throw new Exception($"Неизвестный тип шага \"{context.Step.Kind.GetDisplay()}\"");
         }
     }
     
-    private static void AddLogItem(MaintenanceStepNodeContext context, string message, bool isError = false, bool isFinish = false)
+    private static void AddLogItem(MaintenanceStepContext context, string message, bool isError = false, bool isFinish = false)
     {
-        context.Log.Add(new MaintenanceStepNodeLogItemDto
+        context.Log.Add(new MaintenanceStepLogItemDto
         {
             Id = Guid.NewGuid(),
             Message = message,
@@ -160,60 +179,57 @@ public class MaintenanceTaskExecutor : BackgroundService
             IsFinish = isFinish,
             TimeStamp = DateTime.Now,
             InfoBaseId = context.InfoBase.Id,
-            StepNodeId = context.Node.Id
+            StepId = context.Step.Id
         });
     }
     
-    private async Task SendLog(List<MaintenanceStepNodeLogItemDto> log, CancellationToken cancellationToken)
+    private async Task SendLog(List<MaintenanceStepLogItemDto> log, CancellationToken cancellationToken)
         => await _serverConnection.Send(MessageType.MaintenanceStepNodeLog, log, cancellationToken);
 
     private static async Task<ConcurrentDictionary<Guid, string>> SaveTaskV8Files(MaintenanceTaskDto task,
         CancellationToken cancellationToken)
     {
         var files = new ConcurrentDictionary<Guid, string>();
-        await SaveStepNodeV8File(task.RootNode, files, cancellationToken);
+        await SaveStepNodeV8File(task.Steps, files, cancellationToken);
         
         return files;
     }
 
-    private static async Task SaveStepNodeV8File(MaintenanceStepNodeDto node, ConcurrentDictionary<Guid, string> files, CancellationToken cancellationToken)
+    private static async Task SaveStepNodeV8File(List<MaintenanceStepDto> steps, ConcurrentDictionary<Guid, string> files, CancellationToken cancellationToken)
     {
-        if (node.Step.File != null && !files.ContainsKey(node.Step.File.Id))
+        foreach (var step in steps)
         {
-            var path = Path.Join(Path.GetTempPath(), $"{node.Step.File.Id}{node.Step.File.FileExtension}") ;
+            if (step.File == null || files.ContainsKey(step.File.Id)) 
+                continue;
+            
+            var path = Path.Join(Path.GetTempPath(), $"{step.File.Id}{step.File.FileExtension}") ;
 
             if (!File.Exists(path))
             {
                 await using var file = File.Create(path);
-                file.Write(node.Step.File.Data);
+                await file.WriteAsync(step.File.Data, cancellationToken);
                 file.Close();
             }
             
-            files.TryAdd(node.Step.File.Id, path);
-            node.Step.File.Data = null!;
+            files.TryAdd(step.File.Id, path);
+            step.File.Data = null!;
         }
-        
-        if (node.LeftNode != null)
-            await SaveStepNodeV8File(node.LeftNode, files, cancellationToken);
-        
-        if (node.RightNode != null)
-            await SaveStepNodeV8File(node.RightNode, files, cancellationToken);
     }
 
-    private static void LockConnections(MaintenanceStepNodeContext context)
+    private static void LockConnections(MaintenanceStepContext context)
     {
         context.Rac.BlockConnections(
             context.InfoBase.Cluster.Id, 
             context.InfoBase.InfoBaseInternalId,
             context.InfoBase.Credentials.User,
             context.InfoBase.Credentials.Password,
-            context.Node.Step.AccessCode,
-            context.Node.Step.Message);
+            context.Step.AccessCode,
+            context.Step.Message);
         
-        context.AccessCode = context.Node.Step.AccessCode;
+        context.AccessCode = context.Step.AccessCode;
     }
     
-    private static void CloseConnections(MaintenanceStepNodeContext context)
+    private static void CloseConnections(MaintenanceStepContext context)
     {
         var sessions = context.Rac.GetInfoBaseSessions(context.InfoBase.Cluster.Id, context.InfoBase.InfoBaseInternalId);
         sessions
@@ -232,7 +248,7 @@ public class MaintenanceTaskExecutor : BackgroundService
             });
     }
     
-    private static void UnlockConnections(MaintenanceStepNodeContext context)
+    private static void UnlockConnections(MaintenanceStepContext context)
     {
         context.Rac.UnblockConnections(
             context.InfoBase.Cluster.Id, 
@@ -241,13 +257,13 @@ public class MaintenanceTaskExecutor : BackgroundService
             context.InfoBase.Credentials.Password);
     }
     
-    private static void LoadExtension(MaintenanceStepNodeContext context)
+    private static void LoadExtension(MaintenanceStepContext context)
     {
-        var filePath = context.V8Files[context.Node.Step.File!.Id];
+        var filePath = context.V8Files[context.Step.File!.Id];
         
         using var batch = context.GetBatchDesigner();
         batch.LoadExtension(
-            context.Node.Step.File.Name, 
+            context.Step.File!.Name, 
             filePath, 
             context.InfoBase.Credentials.User, 
             context.InfoBase.Credentials.Password, 
@@ -255,9 +271,9 @@ public class MaintenanceTaskExecutor : BackgroundService
             true);
     }
 
-    private static void LoadConfiguration(MaintenanceStepNodeContext context)
+    private static void LoadConfiguration(MaintenanceStepContext context)
     {
-        var filePath = context.V8Files[context.Node.Step.File!.Id];
+        var filePath = context.V8Files[context.Step.File!.Id];
         
         using var batch = context.GetBatchDesigner();
         batch.LoadConfiguration(
@@ -268,9 +284,9 @@ public class MaintenanceTaskExecutor : BackgroundService
             true);
     }
     
-    private static void UpdateConfiguration(MaintenanceStepNodeContext context)
+    private static void UpdateConfiguration(MaintenanceStepContext context)
     {
-        var filePath = context.V8Files[context.Node.Step.File!.Id];
+        var filePath = context.V8Files[context.Step.File!.Id];
         
         using var batch = context.GetBatchDesigner();
         batch.UpdateConfiguration(
@@ -281,9 +297,9 @@ public class MaintenanceTaskExecutor : BackgroundService
             true);
     }
 
-    private static void StartExternalDataProcessor(MaintenanceStepNodeContext context)
+    private static void StartExternalDataProcessor(MaintenanceStepContext context)
     {
-        var filePath = context.V8Files[context.Node.Step.File!.Id];
+        var filePath = context.V8Files[context.Step.File!.Id];
         
         var batch = context.GetBatchEnterprise();
         batch.ExecuteExternalDataProcessor(

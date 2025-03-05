@@ -90,22 +90,18 @@ public class CommonProfile : Profile
         
         CreateMap<MaintenanceTask, MaintenanceTaskEditViewModel>()
             .ReverseMap()
+            .ForMember(c => c.Steps, i => i.Ignore())
             .ForMember(c => c.Id, i => i.Ignore())
             .ForMember(c => c.InfoBases, i => i.Ignore());
 
         CreateMap<MaintenanceTask, MaintenanceTaskListItemViewModel>();
-        
+
         CreateMap<MaintenanceStep, MaintenanceStepViewModel>()
+            .ForMember(c => c.Files, i => i.Ignore())
+            .ForMember(c => c.Kinds, i => i.Ignore())
             .ReverseMap()
-            .ForMember(c => c.Id, i => i.Ignore())
             .ForMember(c => c.File, i => i.Ignore());
-        
-        CreateMap<MaintenanceStepNode, MaintenanceStepNodeViewModel>()
-            .ForMember(c => c.StepId, i => i.MapFrom(src => src.Step.Id))
-            .ReverseMap()
-            .ForMember(c => c.Id, i => i.Ignore())
-            .ForMember(c => c.LeftNode, i => i.Ignore())
-            .ForMember(c => c.RightNode, i => i.Ignore())
-            .ForMember(c => c.Step, i => i.Ignore());
+
+        CreateMap<MaintenanceStep, MaintenanceStep>();
     }
 }

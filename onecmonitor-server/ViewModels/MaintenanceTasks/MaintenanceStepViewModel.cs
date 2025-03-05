@@ -13,6 +13,22 @@ public class MaintenanceStepViewModel
 {
     [JsonPropertyName("id")]
     public Guid Id { get; set; }
+    
+    [JsonPropertyName("nodeKind")]
+    public MaintenanceStepNodeKind NodeKind { get; set; }
+    
+    [JsonPropertyName("previousStepId")]
+    [ValidateNever] 
+    public Guid? PreviousStepId { get; set; }
+    
+    [JsonPropertyName("leftStepId")]
+    [ValidateNever] 
+    public Guid? LeftStepId { get; set; }
+    
+    [JsonPropertyName("rightStepId")]
+    [ValidateNever]
+    public Guid? RightStepId { get; set; }
+    
     [JsonPropertyName("kind")]
     public MaintenanceStepKind Kind { get; set; }
     [ValidateNever] 
@@ -30,7 +46,7 @@ public class MaintenanceStepViewModel
     public Guid? FileId { get; set; }
     [ValidateNever] 
     public SelectList Files { get; set; } = null!;
-    
-    [JsonPropertyName("title")]
+
+    [JsonPropertyName("title")] 
     public string Title => Kind.GetDisplay();
 }

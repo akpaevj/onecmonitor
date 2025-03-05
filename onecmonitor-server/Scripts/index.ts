@@ -18,9 +18,5 @@ export * from './techLog'
 export * from './infoBasesUpdatingTaskLog'
 export * from './infoBasesUpdateTask'
 export {EditStepDialog} from "./MaintenanceTask/editStepDialog";
-export {StepValidationResult} from "./MaintenanceTask/stepValidationResult";
-export {MaintenanceStepNodeKind} from "./MaintenanceTask/maintenanceStepNodeKind";
-export {NodesGraphOptions} from "./MaintenanceTask/nodesGraphOptions";
-export {NodesGraph} from "./MaintenanceTask/nodesGraph";
+export {MaintenanceStepsTree} from "./MaintenanceTask/maintenanceStepsTree";
 export {NodesGraphActionsDialog} from "./MaintenanceTask/nodesGraphActionsDialog";
-export {StepsEditorHelper} from "./MaintenanceTask/stepsEditorHelper";

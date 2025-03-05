@@ -35,7 +35,8 @@
     <div class="mb-3">
         <div class="card">
             <div class="card-header">Схема</div>
-            <input id="schema-nodes" type="text" hidden class="form-control" name="SerializedStepNode" value="@Model.SerializedStepNode">
+            <input id="steps" hidden type="text" asp-for="Steps" value="@Model.Steps"></input>
+            <span asp-validation-for="Steps" class="text-danger text-center"></span>
             <div id="graphBody" class="card-body" style="min-height: 200px"></div>
         </div>
     </div>

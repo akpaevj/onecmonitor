@@ -1,6 +1,8 @@
 using AutoMapper;
 using OnecMonitor.Common.DTO;
+using OnecMonitor.Common.DTO.MaintenanceTasks;
 using OnecMonitor.Server.Models;
+using OnecMonitor.Server.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.AutoMapper;
 
@@ -24,5 +26,9 @@ public class DtoProfile : Profile
         CreateMap<UpdateInfoBaseTask, UpdateInfoBaseTaskDto>().ReverseMap();
 
         CreateMap<UpdateInfoBaseTaskLogItemDto, UpdateInfoBaseTaskLogItem>();
+
+        CreateMap<MaintenanceStep, MaintenanceStepDto>();
+        CreateMap<MaintenanceTask, MaintenanceTaskDto>();
+        CreateMap<MaintenanceStepLogItemDto, MaintenanceStepLogItem>();
     }
 }

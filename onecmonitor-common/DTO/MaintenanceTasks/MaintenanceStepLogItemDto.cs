@@ -2,7 +2,8 @@ using MessagePack;
 
 namespace OnecMonitor.Common.DTO.MaintenanceTasks;
 
-public class MaintenanceStepNodeLogItemDto
+[MessagePackObject]
+public class MaintenanceStepLogItemDto
 {
     [Key(0)] 
     public Guid Id { get; set; }
@@ -17,5 +18,5 @@ public class MaintenanceStepNodeLogItemDto
     [Key(5)] 
     public Guid InfoBaseId { get; set; }
     [Key(6)] 
-    public Guid StepNodeId { get; set; }
+    public Guid StepId { get; set; }
 }

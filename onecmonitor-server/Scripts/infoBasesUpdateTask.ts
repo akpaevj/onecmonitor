@@ -1,10 +1,10 @@
-import {NodesGraph} from "./MaintenanceTask/nodesGraph";
+import {MaintenanceStepsTree} from "./MaintenanceTask/maintenanceStepsTree";
 
-let nodesGraph: NodesGraph = undefined;
+let nodesGraph: MaintenanceStepsTree = undefined;
 
 export async function initStepsEditor() {
-    nodesGraph = new NodesGraph({
-        nodesInputElement: getSchemaNodesElement(),
+    nodesGraph = new MaintenanceStepsTree({
+        stepsInputElement: getSchemaNodesElement(),
         editStepModalElement: getStepEditDialogElement(),
         nodeGraphActionsElement: getNodeActionsElement(),
         bodyElement: getGraphBodyElement()
@@ -24,7 +24,7 @@ function getGraphBodyElement(): HTMLDivElement {
 }
 
 function getSchemaNodesElement(): HTMLInputElement {
-    return document.getElementById('schema-nodes') as HTMLInputElement;
+    return document.getElementById('steps') as HTMLInputElement;
 }
 
 function getStepEditDialogElement(): HTMLDivElement {

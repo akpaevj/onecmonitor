@@ -24,9 +24,8 @@ namespace OnecMonitor.Server
         public DbSet<UpdateInfoBaseTaskLogItem> UpdateInfoBaseTaskLogItems { get; set; }
         public DbSet<TechLogSettings> TechLogSettings { get; set; }
         public DbSet<MaintenanceTask> MaintenanceTasks { get; set; }
-        public DbSet<MaintenanceStepNode> MaintenanceStepNodes { get; set; }
         public DbSet<MaintenanceStep> MaintenanceSteps { get; set; }
-        public DbSet<MaintenanceStepNodeLogItem> MaintenanceStepNodeLogs { get; set; }
+        public DbSet<MaintenanceStepLogItem> MaintenanceStepLogs { get; set; }
 
         public AppDbContext(IHostEnvironment hostEnvironment)
             => DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-server.db");
@@ -43,6 +42,19 @@ namespace OnecMonitor.Server
 
             configurationBuilder.Properties<DateTime>()
                 .HaveConversion<DateTimeToBinaryConverter>();
+        }
+        
+        public static void ManyToMany<T>(List<T> newCollection, List<T> oldCollection)
+        {
+            newCollection
+                .Except(oldCollection)
+                .ToList()
+                .ForEach(x => newCollection.Remove(x));
+
+            oldCollection
+                .Except(newCollection)
+                .ToList()
+                .ForEach(newCollection.Add);
         }
 
         public static void AddBuiltInLogTemplate(MigrationBuilder migrationBuilder, Guid id, string name, string content)

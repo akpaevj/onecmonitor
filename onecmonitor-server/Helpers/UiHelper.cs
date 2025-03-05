@@ -77,30 +77,28 @@ public static class UiHelper
             .ForEach(c => modelItems.Remove(c));
     }
     
-    public static async Task UpdateModelItems<T>(
-        IQueryable<T> queryable,
-        List<T> newItems,
-        List<T> oldItems,
-        CancellationToken cancellationToken) where T : DatabaseObject
-    {
-        var ids = newItems.Select(c => c.Id);
-        
-        var addedItems = await queryable
-            .Where(c => ids.Contains(c.Id))
-            .ToListAsync(cancellationToken);
-        
-        // add new
-        addedItems
-            .Where(c => !oldItems.Contains(c))
-            .ToList()
-            .ForEach(oldItems.Add);
-        
-        // remove deleted
-        oldItems
-            .Where(c => !addedItems.Contains(c))
-            .ToList()
-            .ForEach(c => oldItems.Remove(c));
-    }
+    // public static async Task UpdateModelItems<T>(
+    //     IQueryable<T> queryable,
+    //     List<T> newItems,
+    //     List<T> oldItems,
+    //     CancellationToken cancellationToken) where T : DatabaseObject
+    // {
+    //     var ids = newItems.Select(c => c.Id);
+    //     var oldIds = oldItems.Select(c => c.Id);
+    //     
+    //     var addedItems = newItems
+    //         .Where(c => oldIds.Contains(c.Id))
+    //         .ToList();
+    //     
+    //     // add new
+    //     addedItems.ForEach(queryable);
+    //     
+    //     // remove deleted
+    //     oldItems
+    //         .Where(c => !addedItems.Contains(c))
+    //         .ToList()
+    //         .ForEach(c => oldItems.Remove(c));
+    // }
 
     private static T? GetAttributeOfType<T>(this Enum enumVal) where T : Attribute
     {

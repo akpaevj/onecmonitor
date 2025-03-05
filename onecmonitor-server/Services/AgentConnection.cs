@@ -86,6 +86,9 @@ namespace OnecMonitor.Server.Services
                         case MessageType.UpdateInfoBaseTaskLog:
                             await HandleUpdateInfoBasesTaskLog(message, cancellationToken);
                             break;
+                        case MessageType.MaintenanceStepNodeLog:
+                            await HandleMaintenanceStepLog(message, cancellationToken);
+                            break;
                         case MessageType.SettingsRequest:
                             await HandleSettingsRequest(message, cancellationToken);
                             break;
@@ -264,6 +267,62 @@ namespace OnecMonitor.Server.Services
                 cancellationToken);
 
             await Send(MessageType.LastFilePosition, response, requestMessage, cancellationToken);
+        }
+        
+        private async Task HandleMaintenanceStepLog(Message requestMessage, CancellationToken cancellationToken)
+        {
+            var result = ParseMessageData<List<MaintenanceStepLogItemDto>>(requestMessage.Data, cancellationToken);
+            
+            var log = _mapper.Map<List<MaintenanceStepLogItem>>(result);
+
+            if (log.Count > 0)
+            {
+                await _appDbContext.Database.BeginTransactionAsync(cancellationToken);
+
+                try
+                {
+                    await _appDbContext.MaintenanceStepLogs.AddRangeAsync(log, cancellationToken);
+                    
+                    await _appDbContext.SaveChangesAsync(cancellationToken);
+
+                    var step = await _appDbContext.MaintenanceSteps
+                        .AsNoTracking()
+                        .Include(c => c.MaintenanceTask)
+                            .ThenInclude(c => c.InfoBases)
+                        .FirstOrDefaultAsync(c => c.Id == log[0].StepId, cancellationToken);
+
+                    var infoBasesCount = step!.MaintenanceTask.InfoBases.Count;
+                    var finishedCount = await _appDbContext.MaintenanceStepLogs
+                        .AsNoTracking()
+                        .Where(c => c.Step.MaintenanceTask.Id == step.MaintenanceTask.Id && c.IsFinish)
+                        .CountAsync(cancellationToken);
+                    
+                    var task = step.MaintenanceTask;
+                    
+                    task.IsFaulted = await _appDbContext.MaintenanceStepLogs
+                        .AsNoTracking()
+                        .AnyAsync(c => c.Step.MaintenanceTask.Id == step.MaintenanceTask.Id && c.IsError, cancellationToken);
+                    
+                    if (infoBasesCount == finishedCount)
+                        task.FinishDateTime = DateTime.Now;
+                    
+                    _appDbContext.Entry(task).State = EntityState.Modified;
+                    
+                    await _appDbContext.SaveChangesAsync(cancellationToken);
+                    await _appDbContext.Database.CommitTransactionAsync(cancellationToken);
+                    
+                    await SendOk(requestMessage, cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    await _appDbContext.Database.RollbackTransactionAsync(cancellationToken);
+                    _logger.LogError(e, "Ошибка записи лога шага обслуживания");
+                    
+                    await SendError(requestMessage, e.Message, cancellationToken);
+                }
+            }
+            else
+                await SendOk(requestMessage, cancellationToken);
         }
 
         private async Task HandleUpdateInfoBasesTaskLog(Message requestMessage, CancellationToken cancellationToken)

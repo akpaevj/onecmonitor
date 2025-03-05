@@ -225,49 +225,37 @@ namespace OnecMonitor.Server.Migrations
                     b.Property<int>("Kind")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("LeftStepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MaintenanceTaskId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("NodeKind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PreviousStepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RightStepId")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.HasIndex("FileId");
 
+                    b.HasIndex("MaintenanceTaskId");
+
                     b.ToTable("MaintenanceSteps");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Kind")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("LeftNodeId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RightNodeId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("StepId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LeftNodeId");
-
-                    b.HasIndex("RightNodeId");
-
-                    b.HasIndex("StepId");
-
-                    b.ToTable("MaintenanceStepNodes");
-                });
-
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNodeLogItem", b =>
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepLogItem", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -287,7 +275,7 @@ namespace OnecMonitor.Server.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("StepNodeId")
+                    b.Property<string>("StepId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -298,9 +286,9 @@ namespace OnecMonitor.Server.Migrations
 
                     b.HasIndex("InfoBaseId");
 
-                    b.HasIndex("StepNodeId");
+                    b.HasIndex("StepId");
 
-                    b.ToTable("MaintenanceStepNodeLogs");
+                    b.ToTable("MaintenanceStepLogs");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
@@ -320,16 +308,10 @@ namespace OnecMonitor.Server.Migrations
                     b.Property<bool>("IsFaulted")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("RootNodeId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<long>("StartDateTime")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("RootNodeId");
 
                     b.ToTable("MaintenanceTasks");
                 });
@@ -613,33 +595,18 @@ namespace OnecMonitor.Server.Migrations
                         .WithMany()
                         .HasForeignKey("FileId");
 
-                    b.Navigation("File");
-                });
-
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", b =>
-                {
-                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", "LeftNode")
-                        .WithMany()
-                        .HasForeignKey("LeftNodeId");
-
-                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", "RightNode")
-                        .WithMany()
-                        .HasForeignKey("RightNodeId");
-
-                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStep", "Step")
-                        .WithMany()
-                        .HasForeignKey("StepId")
+                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", "MaintenanceTask")
+                        .WithMany("Steps")
+                        .HasForeignKey("MaintenanceTaskId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("LeftNode");
+                    b.Navigation("File");
 
-                    b.Navigation("RightNode");
-
-                    b.Navigation("Step");
+                    b.Navigation("MaintenanceTask");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNodeLogItem", b =>
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepLogItem", b =>
                 {
                     b.HasOne("OnecMonitor.Server.Models.InfoBase", "InfoBase")
                         .WithMany()
@@ -647,26 +614,15 @@ namespace OnecMonitor.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", "StepNode")
+                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStep", "Step")
                         .WithMany("Logs")
-                        .HasForeignKey("StepNodeId")
+                        .HasForeignKey("StepId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("InfoBase");
 
-                    b.Navigation("StepNode");
-                });
-
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
-                {
-                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", "RootNode")
-                        .WithMany()
-                        .HasForeignKey("RootNodeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("RootNode");
+                    b.Navigation("Step");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTaskLogItem", b =>
@@ -720,7 +676,7 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("InfoBases");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepNode", b =>
+            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
                 {
                     b.Navigation("Logs");
                 });
@@ -728,6 +684,8 @@ namespace OnecMonitor.Server.Migrations
             modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
                 {
                     b.Navigation("InfoBases");
+
+                    b.Navigation("Steps");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.UpdateInfoBaseTask", b =>
