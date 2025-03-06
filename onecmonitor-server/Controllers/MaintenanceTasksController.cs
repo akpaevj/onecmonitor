@@ -215,8 +215,10 @@ public class MaintenanceTasksController(AppDbContext appDbContext, AgentsConnect
     {
         try
         {
-            var item = await appDbContext.MaintenanceTasks.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
-            
+            var item = await appDbContext.MaintenanceTasks
+                .Include(c => c.Steps)
+                .ThenInclude(c => c.Logs)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
             appDbContext.MaintenanceTasks.Remove(item!);
             
             await appDbContext.SaveChangesAsync(cancellationToken);

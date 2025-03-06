@@ -28,6 +28,5 @@ public class MaintenanceStep : DatabaseObject
 
     [ForeignKey(nameof(MaintenanceTaskId))]
     public MaintenanceTask MaintenanceTask { get; set; } = null!;
-    
     public virtual List<MaintenanceStepLogItem> Logs { get; set; } = [];
 }

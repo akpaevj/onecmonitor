@@ -19,4 +19,6 @@ public class MaintenanceStepLogItemDto
     public Guid InfoBaseId { get; set; }
     [Key(6)] 
     public Guid StepId { get; set; }
+    [Key(7)] 
+    public Guid TaskId { get; set; }
 }

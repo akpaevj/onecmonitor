@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OnecMonitor.Server.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.Models;
 
@@ -13,5 +14,6 @@ public class InfoBase : DatabaseObject
     
     public virtual Credentials Credentials { get; set; } = null!;
     public virtual Cluster Cluster { get; set; } = null!;
-    public virtual List<UpdateInfoBaseTask> UpdateTasks { get; set; } = [];
+    
+    public virtual List<MaintenanceTask> MaintenanceTasks { get; set; } = [];
 }

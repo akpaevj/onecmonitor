@@ -5,7 +5,6 @@ using OnecMonitor.Common.DTO;
 using OnecMonitor.Common.DTO.MaintenanceTasks;
 using OnecMonitor.Common.Extensions;
 using OnecMonitor.Common.Models.MaintenanceTasks;
-using OneSTools.Common.Designer.Batch;
 using OneSTools.Common.Platform.RemoteAdministration;
 using OneSTools.Common.Platform.Services;
 
@@ -62,6 +61,7 @@ public class MaintenanceTaskExecutor : BackgroundService
             
             var context = new MaintenanceStepContext
             {
+                Task = task,
                 InfoBase = infoBase,
                 Log = log,
                 V8Files = v8Files,
@@ -81,6 +81,12 @@ public class MaintenanceTaskExecutor : BackgroundService
 
                 while (!stoppingToken.IsCancellationRequested)
                 {
+                    if (log.Count > 0)
+                    {
+                        await SendLog(log, cancellationToken);
+                        log.Clear();
+                    }
+                    
                     if (context.Step.NodeKind == MaintenanceStepNodeKind.TryCatch)
                     {
                         try
@@ -179,7 +185,8 @@ public class MaintenanceTaskExecutor : BackgroundService
             IsFinish = isFinish,
             TimeStamp = DateTime.Now,
             InfoBaseId = context.InfoBase.Id,
-            StepId = context.Step.Id
+            StepId = context.Step.Id,
+            TaskId = context.Task.Id
         });
     }
     
@@ -269,6 +276,8 @@ public class MaintenanceTaskExecutor : BackgroundService
             context.InfoBase.Credentials.Password, 
             context.AccessCode,
             true);
+        
+        AddLogItem(context, batch.OutFileContent);
     }
 
     private static void LoadConfiguration(MaintenanceStepContext context)
@@ -282,6 +291,8 @@ public class MaintenanceTaskExecutor : BackgroundService
             context.InfoBase.Credentials.Password, 
             context.AccessCode,
             true);
+        
+        AddLogItem(context, batch.OutFileContent);
     }
     
     private static void UpdateConfiguration(MaintenanceStepContext context)
@@ -295,6 +306,8 @@ public class MaintenanceTaskExecutor : BackgroundService
             context.InfoBase.Credentials.Password, 
             context.AccessCode,
             true);
+        
+        AddLogItem(context, batch.OutFileContent);
     }
 
     private static void StartExternalDataProcessor(MaintenanceStepContext context)
@@ -308,5 +321,11 @@ public class MaintenanceTaskExecutor : BackgroundService
             context.InfoBase.Credentials.Password, 
             context.AccessCode,
             true);
+    }
+
+    public override void Dispose()
+    {
+        _scope.Dispose();
+        base.Dispose();
     }
 }

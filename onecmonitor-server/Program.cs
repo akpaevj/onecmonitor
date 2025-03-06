@@ -11,6 +11,7 @@ using OnecMonitor.Common.TechLog;
 using Grpc.Core;
 using Microsoft.Extensions.FileProviders;
 using OnecMonitor.Server.AutoMapper;
+using OnecMonitor.Server.Hubs;
 using OnecMonitor.Server.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,7 +36,11 @@ builder.WebHost.ConfigureKestrel((context, options) =>
     });
 });
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(opt =>
+{
+    opt.EnableDetailedErrors = true;
+    opt.MaximumReceiveMessageSize = 20 * 1024 * 1024;
+});
 
 builder.Services.AddAutoMapper(typeof(DtoProfile));
 builder.Services.AddAutoMapper(typeof(CommonProfile));
@@ -74,6 +79,7 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseRouting();
+app.UseWebSockets();
 
 app.UseCors(options =>
 {
@@ -95,6 +101,8 @@ if (settings?.Enabled ?? false)
     var clickHouseContext = scope.ServiceProvider.GetRequiredService<ITechLogStorage>();
     await clickHouseContext.InitDatabase();
 }
+
+app.MapHub<MaintenanceTaskLogsHub>("/MaintenanceTaskLogs");
 
 app.MapControllerRoute(
     name: "default",

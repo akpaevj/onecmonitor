@@ -281,32 +281,27 @@ namespace OnecMonitor.Server.Services
 
                 try
                 {
+                    log.ForEach(c => c.TimeStamp = c.TimeStamp.AddSeconds(AgentInstance!.UtcOffset));
                     await _appDbContext.MaintenanceStepLogs.AddRangeAsync(log, cancellationToken);
                     
                     await _appDbContext.SaveChangesAsync(cancellationToken);
+                    
+                    var task = await _appDbContext.MaintenanceTasks
+                        .Include(c => c.InfoBases)
+                        .FirstOrDefaultAsync(c => c.Id == result[0].TaskId, cancellationToken);
 
-                    var step = await _appDbContext.MaintenanceSteps
-                        .AsNoTracking()
-                        .Include(c => c.MaintenanceTask)
-                            .ThenInclude(c => c.InfoBases)
-                        .FirstOrDefaultAsync(c => c.Id == log[0].StepId, cancellationToken);
-
-                    var infoBasesCount = step!.MaintenanceTask.InfoBases.Count;
+                    var infoBasesCount = task!.InfoBases.Count;
                     var finishedCount = await _appDbContext.MaintenanceStepLogs
                         .AsNoTracking()
-                        .Where(c => c.Step.MaintenanceTask.Id == step.MaintenanceTask.Id && c.IsFinish)
+                        .Where(c => c.Step.MaintenanceTask.Id == task.Id && c.IsFinish)
                         .CountAsync(cancellationToken);
-                    
-                    var task = step.MaintenanceTask;
                     
                     task.IsFaulted = await _appDbContext.MaintenanceStepLogs
                         .AsNoTracking()
-                        .AnyAsync(c => c.Step.MaintenanceTask.Id == step.MaintenanceTask.Id && c.IsError, cancellationToken);
+                        .AnyAsync(c => c.Step.MaintenanceTask.Id == task.Id && c.IsError, cancellationToken);
                     
                     if (infoBasesCount == finishedCount)
                         task.FinishDateTime = DateTime.Now;
-                    
-                    _appDbContext.Entry(task).State = EntityState.Modified;
                     
                     await _appDbContext.SaveChangesAsync(cancellationToken);
                     await _appDbContext.Database.CommitTransactionAsync(cancellationToken);

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Server.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.Models.MaintenanceTasks;
@@ -10,6 +11,7 @@ public class MaintenanceStepLogItem : DatabaseObject
     public DateTime TimeStamp { get; set; }
     public bool IsError { get; set; }
     public bool IsFinish { get; set; }
+    [MaxLength(200)]
     public string Message { get; set; } = string.Empty;
     public Guid InfoBaseId { get; set; }
     public Guid StepId { get; set; } 

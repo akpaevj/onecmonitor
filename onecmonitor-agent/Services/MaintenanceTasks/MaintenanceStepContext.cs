@@ -9,6 +9,7 @@ namespace OnecMonitor.Agent.Services.MaintenanceTasks;
 
 public class MaintenanceStepContext
 {
+    public MaintenanceTaskDto Task { get; set; } = null!;
     public InfoBaseDto InfoBase { get; set; } = null!;
     public MaintenanceStepDto Step { get; set; } = null!;
     public string AccessCode { get; set; } = string.Empty;

@@ -4,7 +4,7 @@ public abstract class DatabaseObject
 {
     public Guid Id { get; set; }
 
-    public bool Equals(DatabaseObject other)
+    private bool Equals(DatabaseObject other)
     {
         return Id.Equals(other.Id);
     }

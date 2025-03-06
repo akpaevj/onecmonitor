@@ -53,9 +53,12 @@
                         <a class="btn btn-outline-primary btn-sm" asp-action="Start" asp-route-id="@item.Id">Запустить</a>
                         <a class="btn btn-outline-warning btn-sm" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
                     }
+                    @if (finished)
+                    {
+                        <a class="btn btn-outline-success btn-sm" asp-action="Restart" asp-route-id="@item.Id">Рестарт</a>
+                    }
                     @if (!started || finished)
                     {
-                        <a class="btn btn-outline-success btn-sm" asp-action="Restart" asp-route-id="@item.Id">Перезапустить</a>
                         <a class="btn btn-outline-danger btn-sm" onclick="OM.openDeleteDialog('@item.Id', '@item.Description')">Удалить</a>
                     }
                 </td>

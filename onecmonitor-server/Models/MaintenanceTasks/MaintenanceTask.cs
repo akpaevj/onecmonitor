@@ -13,5 +13,6 @@ public class MaintenanceTask : DatabaseObject
     public DateTime FinishDateTime { get; set; } = DateTime.MinValue;
     
     public virtual List<MaintenanceStep> Steps { get; set; } = [];
+    [DeleteBehavior(DeleteBehavior.Cascade)]
     public virtual List<InfoBase> InfoBases { get; set; } = [];
 }
