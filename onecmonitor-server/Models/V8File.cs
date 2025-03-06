@@ -11,8 +11,6 @@ public class V8File : DatabaseObject
     public bool IsExtension { get; set; } = false;
     public bool IsConfiguration { get; set; } = false;
     public bool IsExternalDataProcessor { get; set; } = false;
-    
-    public virtual List<UpdateInfoBaseTask> UpdateTasks { get; set; } = [];
 
     public override string ToString()
     {

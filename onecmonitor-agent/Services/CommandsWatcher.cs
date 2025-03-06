@@ -1,6 +1,5 @@
 ﻿using MessagePack;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Agent.Services.InfoBases;
 using OnecMonitor.Agent.Services.MaintenanceTasks;
 using OnecMonitor.Agent.Services.TechLog;
 using OnecMonitor.Common.DTO;
@@ -15,7 +14,6 @@ namespace OnecMonitor.Agent.Services
     {
         private readonly OnecMonitorConnection _server;
         private readonly AppDbContext _appDbContext;
-        private readonly InfoBasesUpdateTasksQueue _updateTasksQueue;
         private readonly MaintenanceTaskExecutorQueue _maintenanceTasksQueue;
         private readonly RasHolder _rasHolder;
         private readonly TechLogExporter _techLogExporter;
@@ -24,7 +22,6 @@ namespace OnecMonitor.Agent.Services
 
         public CommandsWatcher(
             IServiceProvider serviceProvider, 
-            InfoBasesUpdateTasksQueue updateTasksQueue,
             MaintenanceTaskExecutorQueue maintenanceTasksQueue,
             TechLogExporter techLogExporter,
             RasHolder rasHolder,
@@ -36,7 +33,6 @@ namespace OnecMonitor.Agent.Services
             _server = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
             _appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             _techLogExporter = techLogExporter;
-            _updateTasksQueue = updateTasksQueue;
             _maintenanceTasksQueue = maintenanceTasksQueue;
             _applicationLifetime = appLifetime;
             _logger = logger;
@@ -73,9 +69,6 @@ namespace OnecMonitor.Agent.Services
                     case MessageType.RasServicesRequest:
                         await SendRasServices(message, _applicationLifetime.ApplicationStopping);
                         break;
-                    case MessageType.UpdateInfoBasesRequest:
-                        await HandleUpdateInfoBasesRequest(message, _applicationLifetime.ApplicationStopping);
-                        break;
                     case MessageType.UpdateSettingsRequest:
                         await HandleUpdateSettingsRequest(message, _applicationLifetime.ApplicationStopping);
                         break;
@@ -111,12 +104,6 @@ namespace OnecMonitor.Agent.Services
         {
             var platforms = V8Platforms.GetInstalledPlatforms();
             await _server.Send(MessageType.InstalledPlatforms, platforms, message, cancellationToken);
-        }
-
-        private async Task HandleUpdateInfoBasesRequest(Message message, CancellationToken cancellationToken)
-        {
-            await _updateTasksQueue.QueueAsync(message, cancellationToken);
-            await _server.SendOk(message, cancellationToken);
         }
         
         private async Task HandleUpdateSettingsRequest(Message message, CancellationToken cancellationToken)

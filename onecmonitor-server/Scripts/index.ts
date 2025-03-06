@@ -9,13 +9,11 @@ import '../node_modules/bootstrap/dist/js/bootstrap.bundle.min'
 require('./itemSelectionDialog')
 require('./deleteDialog')
 require('./techLog')
-require('./infoBasesUpdateTask')
 require('./MaintenanceTask/maintenanceTaskLog')
 
 export * from './itemSelectionDialog'
 export * from './deleteDialog'
 export * from './techLog'
-export * from './infoBasesUpdateTask'
 export * from './MaintenanceTask/maintenanceTaskLog'
 export {EditStepDialog} from "./MaintenanceTask/editStepDialog";
 export {MaintenanceStepsTree} from "./MaintenanceTask/maintenanceStepsTree";

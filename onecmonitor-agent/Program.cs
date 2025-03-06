@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Agent;
 using OnecMonitor.Agent.Models;
 using OnecMonitor.Agent.Services;
-using OnecMonitor.Agent.Services.InfoBases;
 using OnecMonitor.Agent.Services.MaintenanceTasks;
 using OnecMonitor.Agent.Services.TechLog;
 using OnecMonitor.Common.Storage;
@@ -29,9 +28,6 @@ var host = Host.CreateDefaultBuilder(args)
         
         services.AddSingleton<MaintenanceTaskExecutorQueue>();
         services.AddHostedService<MaintenanceTaskExecutor>();
-
-        services.AddSingleton<InfoBasesUpdateTasksQueue>();
-        services.AddHostedService<InfoBasesUpdater>();
         
         services.AddSingleton<CommandsWatcher>();
     })

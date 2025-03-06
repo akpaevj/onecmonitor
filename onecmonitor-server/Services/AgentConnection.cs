@@ -80,12 +80,6 @@ namespace OnecMonitor.Server.Services
                         case MessageType.TechLogSeancesRequest:
                             await UpdateTechLogSeances(message, cancellationToken);
                             break;
-                        case MessageType.UpdateInfoBasesTaskRequest:
-                            await HandleUpdateInfoBasesTaskRequest(message, cancellationToken);
-                            break;
-                        case MessageType.UpdateInfoBaseTaskLog:
-                            await HandleUpdateInfoBasesTaskLog(message, cancellationToken);
-                            break;
                         case MessageType.MaintenanceStepNodeLog:
                             await HandleMaintenanceStepLog(message, cancellationToken);
                             break;
@@ -172,9 +166,6 @@ namespace OnecMonitor.Server.Services
         
         public async Task RequestTechLogSeancesUpdating(CancellationToken cancellationToken)
             => await Send(MessageType.UpdateTechLogSeancesRequest, cancellationToken);
-        
-        public async Task RequestInfoBasesUpdating(CancellationToken cancellationToken)
-            => await Send(MessageType.UpdateInfoBasesRequest, cancellationToken);
         
         public async Task StartMaintenanceTask(MaintenanceTask task, CancellationToken cancellationToken)
             => await Send(MessageType.MaintenanceTask, _mapper.Map<MaintenanceTaskDto>(task), cancellationToken);
@@ -318,51 +309,6 @@ namespace OnecMonitor.Server.Services
             }
             else
                 await SendOk(requestMessage, cancellationToken);
-        }
-
-        private async Task HandleUpdateInfoBasesTaskLog(Message requestMessage, CancellationToken cancellationToken)
-        {
-            var result = ParseMessageData<List<UpdateInfoBaseTaskLogItemDto>>(requestMessage.Data, cancellationToken);
-            
-            var log = _mapper.Map<List<UpdateInfoBaseTaskLogItem>>(result);
-
-            if (log.Count > 0)
-            {
-                var oldIds = await _appDbContext.UpdateInfoBaseTaskLogItems
-                    .Where(c => c.TaskId == log[0].TaskId && c.InfoBaseId == log[0].InfoBaseId)
-                    .Select(c => c.Id)
-                    .ToListAsync(cancellationToken);
-                
-                var logIds = log.Select(c => c.Id).ToList();
-                var newIds = logIds.Except(oldIds).ToList();
-                
-                var newLogItems = log.Where(c => newIds.Contains(c.Id)).ToList();
-                
-                await _appDbContext.UpdateInfoBaseTaskLogItems.AddRangeAsync(newLogItems, cancellationToken);
-                await _appDbContext.SaveChangesAsync(cancellationToken);
-            }
-            
-            await SendOk(requestMessage, cancellationToken);
-        }
-        
-        private async Task HandleUpdateInfoBasesTaskRequest(Message requestMessage, CancellationToken cancellationToken)
-        {
-            var task = await _appDbContext.UpdateInfoBaseTasks
-                .Where(c => c.InfoBases.Any(i => i.Cluster.Agent.Id == AgentInstance!.Id))
-                .Include(c => c.Files)
-                .Include(c => c.InfoBases)
-                .ThenInclude(c => c.Credentials)
-                .Include(c => c.InfoBases)
-                .ThenInclude(c => c.Cluster)
-                .ThenInclude(c => c.Credentials)
-                .Include(c => c.InfoBases)
-                .ThenInclude(c => c.Cluster)
-                .ThenInclude(c => c.Agent)
-                .OrderByDescending(c => c.StartDateTime)
-                .ProjectTo<UpdateInfoBaseTaskDto>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(cancellationToken);
-                
-            await Send(MessageType.UpdateInfoBasesTask, task!, requestMessage, cancellationToken);
         }
 
         private async Task HandleTechLogEventContent(ReadOnlyMemory<byte> messageData, CancellationToken cancellationToken)

@@ -20,8 +20,6 @@ namespace OnecMonitor.Server
         public DbSet<Credentials> Credentials { get; set; }
         public DbSet<InfoBase> InfoBases { get; set; }
         public DbSet<Cluster> Clusters { get; set; }
-        public DbSet<UpdateInfoBaseTask> UpdateInfoBaseTasks { get; set; }
-        public DbSet<UpdateInfoBaseTaskLogItem> UpdateInfoBaseTaskLogItems { get; set; }
         public DbSet<TechLogSettings> TechLogSettings { get; set; }
         public DbSet<MaintenanceTask> MaintenanceTasks { get; set; }
         public DbSet<MaintenanceStep> MaintenanceSteps { get; set; }

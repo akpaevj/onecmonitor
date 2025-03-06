@@ -76,6 +76,9 @@
 	  <_ContentIncludedByDefault Remove="Views\MaintenanceTasks\Steps\UpdateConfiguration.cshtml" />
 	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Steps\LockConnections.cshtml" />
 	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Steps\UpdateConfiguration.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Edit.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Index.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Log.cshtml" />
 	</ItemGroup>
 
 	<ItemGroup>

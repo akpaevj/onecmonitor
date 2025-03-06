@@ -23,10 +23,6 @@ public class DtoProfile : Profile
 
         CreateMap<InfoBase, InfoBaseDto>().ReverseMap();
 
-        CreateMap<UpdateInfoBaseTask, UpdateInfoBaseTaskDto>().ReverseMap();
-
-        CreateMap<UpdateInfoBaseTaskLogItemDto, UpdateInfoBaseTaskLogItem>().ReverseMap();
-
         CreateMap<MaintenanceStep, MaintenanceStepDto>().ReverseMap();
         CreateMap<MaintenanceTask, MaintenanceTaskDto>().ReverseMap();
         CreateMap<MaintenanceStepLogItem, MaintenanceStepLogItemDto>().ReverseMap();

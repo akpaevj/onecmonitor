@@ -16,10 +16,7 @@
         RasServices,
         ClustersResponse,
         InfoBasesResponse,
-        UpdateInfoBaseTaskLog,
-        UpdateInfoBasesTaskRequest,
         SettingsRequest,
-        
         MaintenanceStepNodeLog,
         
         // Server messages
@@ -31,11 +28,8 @@
         RasServicesRequest,
         ClustersRequest,
         InfoBasesRequest,
-        UpdateInfoBasesRequest,
-        UpdateInfoBasesTask,
         UpdateSettingsRequest,
         Settings,
-        
         MaintenanceTask,
     }
 }

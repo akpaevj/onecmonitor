@@ -8,7 +8,6 @@ using OnecMonitor.Server.ViewModels.InfoBases;
 using OnecMonitor.Server.ViewModels.MaintenanceTasks;
 using OnecMonitor.Server.ViewModels.TechLogSeances;
 using OnecMonitor.Server.ViewModels.TechLogSettings;
-using OnecMonitor.Server.ViewModels.UpdateInfoBaseTasks;
 
 namespace OnecMonitor.Server.AutoMapper;
 
@@ -71,18 +70,6 @@ public class CommonProfile : Profile
         CreateMap<V8File, V8FileEditViewModel>()
             .ReverseMap()
             .ForMember(c => c.Id, i => i.Ignore());
-
-        CreateMap<UpdateInfoBaseTask, UpdateInfoBaseTaskListItemViewModel>()
-            .ForMember(dest => dest.IsStarted, i => i.MapFrom(src => src.StartDateTime != DateTime.MinValue))
-            .ForMember(dest => dest.IsFaulted, i => i.MapFrom(src => src.Log.Any(result => result.IsError)))
-            .ForMember(dest => dest.IsFinished, i => i.MapFrom(src => src.Log.Any(result => result.IsFinish)));
-
-        CreateMap<UpdateInfoBaseTask, UpdateInfoBaseTaskEditViewModel>()
-            .ReverseMap()
-            .ForMember(c => c.Id, i => i.Ignore())
-            .ForMember(c => c.Files, i => i.Ignore())
-            .ForMember(c => c.InfoBases, i => i.Ignore())
-            .ForMember(c => c.Log, i => i.Ignore());
 
         CreateMap<TechLogSettings, TechLogSettingsEditViewModel>()
             .ReverseMap()
