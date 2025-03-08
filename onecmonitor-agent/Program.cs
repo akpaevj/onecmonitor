@@ -1,13 +1,9 @@
-using System.Reflection;
-using Grpc.Net.Client;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Agent;
 using OnecMonitor.Agent.Models;
 using OnecMonitor.Agent.Services;
 using OnecMonitor.Agent.Services.MaintenanceTasks;
 using OnecMonitor.Agent.Services.TechLog;
-using OnecMonitor.Common.Storage;
-using OnecMonitor.Common.TechLog;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((_, services) =>
@@ -17,6 +13,10 @@ var host = Host.CreateDefaultBuilder(args)
             options.ServiceName = "OnecMonitorAgent";
         });
         services.AddSystemd();
+        
+        services.AddSingleton<V8PlatformsProvider>();
+        services.AddSingleton<V8ServicesProvider>();
+        
         services.AddSingleton<RasHolder>();
         services.AddDbContext<AppDbContext>();
         

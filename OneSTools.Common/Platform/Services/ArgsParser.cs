@@ -1,33 +1,9 @@
-using System.Text.RegularExpressions;
-
 namespace OneSTools.Common.Platform.Services;
 
 public record ArgsKeyValue(string Key, string Value);
 
 public static class ArgsParser
 {
-    public static string? GetPosixOptionValue(string[] args, string longKey, string shortKey)
-    {
-        var value = GetLongOptionValue(args, longKey);
-        
-        return GetShortOptionValue(args, shortKey);
-    }
-    
-    public static string? GetLongOptionValue(string[] args, string key)
-    {
-        var index = Array.IndexOf(args, $"--{key}");
-        return index == -1 ? null : args[index].Split('=', 2)[1];
-    }
-    
-    public static string? GetShortOptionValue(string[] args, string key)
-    {
-        var index = Array.IndexOf(args, $"-{key}");
-        return index != -1 ? args[index + 1] : "";
-    }
-
-    private static bool ContainsArgument(string[] args, string argument)
-        => args.Contains(argument);
-
     public static string? GetOptionValue(this ArgsKeyValue[] args, string longKey, string shortKey)
     {
         var arg = args.FirstOrDefault(a => a.Key == longKey);

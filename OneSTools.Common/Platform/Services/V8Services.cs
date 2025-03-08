@@ -6,57 +6,40 @@ using OneSTools.Common.Extensions;
 
 namespace OneSTools.Common.Platform.Services;
 
-public static class V8Services
+public static partial class V8Services
 {
     private const int RagentDefaultPort = 1540;
     private const int RagentDefaultRegPortPort = 1541;
     private const int RasDefaultPort = 1545;
     
-    public static RasService GetActiveRasForClusterPort(int port)
+    public static RagentService GetActiveRagentForClusterPort(int port, IReadOnlyList<V8Platform> platforms)
     {
-        var ragent = GetActiveRagentForClusterPort(port);
-        return GetActiveRasForRagent(ragent);
-    }
-    
-    public static RagentService GetActiveRagentForClusterPort(int port)
-    {
-        var ragent = GetActiveRagentServices().FirstOrDefault(c => c.RegPort == port);
+        var ragent = GetActiveRagentServices(platforms).FirstOrDefault(c => c.RegPort == port);
         if (ragent == null)
             throw new Exception($"Не удалось получить активную службу агента сервера для переданного порта - {port}");
         
         return ragent;
     }
 
-    public static RasService GetActiveRasForRagent(RagentService ragent)
-    {
-        var ras = GetActiveRasServices().FirstOrDefault(c => c.RagentHost.IsLocalHost() && c.RagentPort == ragent.Port);
-        
-        if (ras == null)
-            throw new Exception("Не удалось получить активную службу RAS для переданного ragent");
-        
-        return ras;
-    }
+    public static List<RagentService> GetActiveRagentServices(IReadOnlyList<V8Platform> platforms)
+        => GetRagentServices(platforms).Where(c => c.IsActive).ToList();
+    
+    public static List<RagentService> GetRagentServices(IReadOnlyList<V8Platform> platforms)
+        => GetV8Services(platforms).Where(c => c is RagentService).Select(c => (c as RagentService)!).ToList();
 
-    public static List<RagentService> GetActiveRagentServices()
-        => GetRagentServices().Where(c => c.IsActive).ToList();
+    private static List<RasService> GetActiveRasServices(IReadOnlyList<V8Platform> platforms)
+        => GetRasServices(platforms).Where(c => c.IsActive).ToList();
     
-    public static List<RagentService> GetRagentServices()
-        => GetV8Services().Where(c => c is RagentService).Select(c => (c as RagentService)!).ToList();
-
-    private static List<RasService> GetActiveRasServices()
-        => GetRasServices().Where(c => c.IsActive).ToList();
+    public static List<RasService> GetRasServices(IReadOnlyList<V8Platform> platforms)
+        => GetV8Services(platforms).Where(c => c is RasService).Select(c => (c as RasService)!).ToList();
     
-    public static List<RasService> GetRasServices()
-        => GetV8Services().Where(c => c is RasService).Select(c => (c as RasService)!).ToList();
-    
-    private static List<V8Service> GetV8Services()
-        => Environment.OSVersion.Platform == PlatformID.Win32NT ? GetWindowsServices() : GetLinuxDaemons();
+    private static List<V8Service> GetV8Services(IReadOnlyList<V8Platform> platforms)
+        => Environment.OSVersion.Platform == PlatformID.Win32NT ? GetWindowsServices(platforms) : GetLinuxDaemons(platforms);
 
     #region Windows
 #pragma warning disable CA1416
-    private static List<V8Service> GetWindowsServices()
+    private static List<V8Service> GetWindowsServices(IReadOnlyList<V8Platform> platforms)
     {
-        var platforms = V8Platforms.GetInstalledPlatforms();
         var items = new List<V8Service>();
 
         foreach (var v8Service in ServiceController.GetServices())
@@ -94,7 +77,7 @@ public static class V8Services
                     {
                         Name = description,
                         IsActive = isActive,
-                        Platform = V8Platforms.GetInstalledPlatformByPath(platformPath!)!,
+                        Platform = platforms.GetByPath(platformPath!)!,
                         Port = port == null ? RasDefaultPort : int.Parse(port)
                     };
                 
@@ -131,7 +114,7 @@ public static class V8Services
                     {
                         Name = description,
                         IsActive = isActive,
-                        Platform = V8Platforms.GetInstalledPlatformByPath(platformPath!)!,
+                        Platform = platforms.GetByPath(platformPath!)!,
                         Port = port == null ? RagentDefaultPort : int.Parse(port),
                         RegPort = regPort == null ? RagentDefaultRegPortPort : int.Parse(regPort)
                     };
@@ -170,9 +153,8 @@ public static class V8Services
 
     #region LINUX
     
-    private static List<V8Service> GetLinuxDaemons()
+    private static List<V8Service> GetLinuxDaemons(IReadOnlyList<V8Platform> platforms)
     {
-        var platforms = V8Platforms.GetInstalledPlatforms();
         var items = new List<V8Service>();
         
         var output =
@@ -187,9 +169,9 @@ public static class V8Services
             if (string.IsNullOrEmpty(line))
                 break;
                 
-            var name = Regex.Match(line, @".*?(?=\s)", RegexOptions.ExplicitCapture).Value.Trim();
+            var name = ServiceNameRegex().Match(line).Value.Trim();
             var execStart = RunCommandWithBash($"systemctl show {name} -p ExecStart");
-            var argv = Regex.Match(execStart, @"(?<=argv\[\]=).*?(?=;)", RegexOptions.ExplicitCapture).Value.Trim();
+            var argv = ArgvRegex().Match(execStart).Value.Trim();
             
             var args = ArgsParser.ParsePairs(argv);
             if (args.Length < 1)
@@ -226,7 +208,7 @@ public static class V8Services
                     {
                         Name = description,
                         IsActive = isActive,
-                        Platform = V8Platforms.GetInstalledPlatformByPath(platformPath!)!,
+                        Platform = platforms.GetByPath(platformPath!)!,
                         Port = port == null ? RasDefaultPort : int.Parse(port)
                     };
                 
@@ -263,7 +245,7 @@ public static class V8Services
                     {
                         Name = description,
                         IsActive = isActive,
-                        Platform = V8Platforms.GetInstalledPlatformByPath(platformPath!)!,
+                        Platform = platforms.GetByPath(platformPath!)!,
                         Port = port == null ? RagentDefaultPort : int.Parse(port),
                         RegPort = regPort == null ? RagentDefaultRegPortPort : int.Parse(regPort)
                     };
@@ -281,15 +263,14 @@ public static class V8Services
     {
         if (argument == null)
             return null;
-        
-        if (argument.StartsWith("${") && argument.EndsWith('}'))
-        {
-            var variable = argument[2..^1];
-            var env = RunCommandWithBash($"systemctl show {name} -p Environment");
-            return Regex.Match(env, $@"(?<={variable}=).*?(?=(\s|$))", RegexOptions.ExplicitCapture).Value.Trim();
-        }
-        else 
+
+        if (!argument.StartsWith("${") || !argument.EndsWith('}')) 
             return argument;
+        
+        var variable = argument[2..^1];
+        var env = RunCommandWithBash($"systemctl show {name} -p Environment");
+        
+        return Regex.Match(env, $@"(?<={variable}=).*?(?=(\s|$))", RegexOptions.ExplicitCapture).Value.Trim();
     }
     
     private static string RunCommandWithBash(string command)
@@ -332,4 +313,9 @@ public static class V8Services
         process.Close();
         return output;
     }
+
+    [GeneratedRegex(@".*?(?=\s)", RegexOptions.ExplicitCapture)]
+    private static partial Regex ServiceNameRegex();
+    [GeneratedRegex(@"(?<=argv\[\]=).*?(?=;)", RegexOptions.ExplicitCapture)]
+    private static partial Regex ArgvRegex();
 }

@@ -9,7 +9,7 @@ public class V8Service
 {
     [DisplayName("Имя")]
     [Key(0)] 
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
     [DisplayName("Запущена")]
     [Key(1)] 
     public bool IsActive { get; set; }

@@ -1,7 +1,6 @@
-import * as bootstrap from "bootstrap";
 import {Modal} from "bootstrap";
 import * as uuid from "uuid";
-import {MaintenanceStep, MaintenanceStepsTree} from "./maintenanceStepsTree";
+import {MaintenanceStep} from "./maintenanceStepsTree";
 
 export class StepValidationResult {
     isValid: boolean;
@@ -17,7 +16,7 @@ export class EditStepDialog {
 
     constructor(element: HTMLDivElement) {
         this.dialogElement = element;
-        this.modal = new bootstrap.Modal(element);
+        this.modal = new Modal(element);
         this.dialogBody = this.dialogElement.querySelector('.modal-body');
 
         this.dialogElement.querySelector<HTMLButtonElement>('#save-btn').onclick = async () => {

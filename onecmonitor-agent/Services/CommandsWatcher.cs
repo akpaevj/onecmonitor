@@ -19,6 +19,8 @@ namespace OnecMonitor.Agent.Services
         private readonly TechLogExporter _techLogExporter;
         private readonly IHostApplicationLifetime _applicationLifetime;
         private readonly ILogger<CommandsWatcher> _logger;
+        private readonly V8PlatformsProvider _v8PlatformsProvider;
+        private readonly V8ServicesProvider _v8ServicesProvider;
 
         public CommandsWatcher(
             IServiceProvider serviceProvider, 
@@ -26,6 +28,8 @@ namespace OnecMonitor.Agent.Services
             TechLogExporter techLogExporter,
             RasHolder rasHolder,
             IHostApplicationLifetime appLifetime,
+            V8PlatformsProvider v8PlatformsProvider,
+            V8ServicesProvider v8ServicesProvider,
             ILogger<CommandsWatcher> logger) 
         {
             var scope = serviceProvider.CreateAsyncScope();
@@ -33,6 +37,8 @@ namespace OnecMonitor.Agent.Services
             _server = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
             _appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             _techLogExporter = techLogExporter;
+            _v8PlatformsProvider = v8PlatformsProvider;
+            _v8ServicesProvider = v8ServicesProvider;
             _maintenanceTasksQueue = maintenanceTasksQueue;
             _applicationLifetime = appLifetime;
             _logger = logger;
@@ -102,7 +108,7 @@ namespace OnecMonitor.Agent.Services
 
         private async Task SendInstalledPlatforms(Message message, CancellationToken cancellationToken)
         {
-            var platforms = V8Platforms.GetInstalledPlatforms();
+            var platforms = _v8PlatformsProvider.GetInstalledPlatforms();
             await _server.Send(MessageType.InstalledPlatforms, platforms, message, cancellationToken);
         }
         
@@ -129,7 +135,7 @@ namespace OnecMonitor.Agent.Services
         
         private async Task SendV8Clusters(Message message, CancellationToken cancellationToken)
         {
-            var ragents = V8Services.GetActiveRagentServices();
+            var ragents = _v8ServicesProvider.GetActiveRagentServices();
             var clusters = new List<V8Cluster>();
 
             foreach (var rac in ragents.Select(_rasHolder.GetActiveRasForRagent).Select(Rac.GetRacForRasService))
@@ -142,7 +148,7 @@ namespace OnecMonitor.Agent.Services
         {
             var request = MessagePackSerializer.Deserialize<InfoBasesRequestDto>(message.Data, cancellationToken: cancellationToken);
 
-            var ragent = V8Services.GetActiveRagentForClusterPort(request.Cluster.Port);
+            var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(request.Cluster.Port);
             var ras = _rasHolder.GetActiveRasForRagent(ragent);
             var rac = Rac.GetRacForRasService(ras);
             
@@ -154,7 +160,7 @@ namespace OnecMonitor.Agent.Services
         
         private async Task SendRagentServices(Message message, CancellationToken cancellationToken)
         {
-            var services = V8Services.GetRagentServices();
+            var services = _v8ServicesProvider.GetRagentServices();
             await _server.Send(MessageType.RagentServices, services, message, cancellationToken);
         }
         

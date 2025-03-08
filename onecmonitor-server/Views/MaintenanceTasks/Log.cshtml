@@ -17,23 +17,13 @@
             <div class="card-header">Информационные базы</div>
             <div class="card-body">
                 <ul class="nav nav-pills flex-column align-items-center" id="infoBasesTab" role="tablist">
-                    @foreach (var kv in Model.Items)
+                    @foreach (var item in Model.InfoBases)
                     {
-                        var id = kv.Key.Id.ToString().Replace("-", "");
+                        var id = item.Id.ToString().Replace("-", "");
                         <li class="nav-item w-100 row row-cols-auto g-3 align-items-center" role="presentation">
-                            <button class="nav-link w-100" id="@id" data-infobase-id="@kv.Key.Id" data-bs-toggle="tab" data-bs-target="#tab_@id" type="button" role="tab" aria-controls="tab_@id" aria-selected="false">
-                                @kv.Key.InfoBaseName
-                                @{
-                                    var style = "text-danger";
-                                    
-                                    if (kv.Value.Count > 0)
-                                        style = "text-warning";
-                                    
-                                    if (kv.Value.Exists(c => c.IsFinish))
-                                        style = "text-success";
-
-                                    <i class="fs-5 bi-three-dots-vertical @style" data-infobase-id="@kv.Key.Id"></i>
-                                }
+                            <button class="nav-link w-100" id="@id" data-infobase-id="@item.Id" data-bs-toggle="tab" data-bs-target="#tab_@id" type="button" role="tab" aria-controls="tab_@id" aria-selected="false">
+                                @item.InfoBaseName
+                                <i class="fs-5 bi-three-dots-vertical text-danger" data-infobase-id="@item.Id"></i>
                             </button>
                         </li>
                     }
@@ -46,10 +36,10 @@
             <div class="card-header">Журнал</div>
             <div class="card-body">
                 <div class="tab-content" id="myTabContent">
-                    @foreach (var kv in Model.Items)
+                    @foreach (var item in Model.InfoBases)
                     {
-                        var id = kv.Key.Id.ToString().Replace("-", "");
-                        <div class="tab-pane fade" id="tab_@id" data-infobase-id="@kv.Key.Id" role="tabpanel" aria-labelledby="@id" tabindex="0">
+                        var id = item.Id.ToString().Replace("-", "");
+                        <div class="tab-pane fade" id="tab_@id" data-infobase-id="@item.Id" role="tabpanel" aria-labelledby="@id" tabindex="0">
                             <div class="table-responsive">
                                 <table class="table table-striped table-bordered">
                                     <thead>
@@ -59,23 +49,7 @@
                                         <th class="col">Сообщение</th>
                                     </tr>
                                     </thead>
-                                    <tbody>
-                                    @foreach (var logItem in kv.Value.OrderBy(c => c.TimeStamp))
-                                    {
-                                        <tr data-log-item="@logItem.Id">
-                                            <td>@logItem.TimeStamp.ToString(CultureInfo.InvariantCulture)</td>
-                                            @if (logItem.IsError)
-                                            {
-                                                <td class="text-danger">@logItem.IsError</td>
-                                            }
-                                            else
-                                            {
-                                                <td class="text-success">@logItem.IsError</td>
-                                            }
-                                            <td style="white-space: pre-wrap">@logItem.Message</td>
-                                        </tr>
-                                    }
-                                    </tbody>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>

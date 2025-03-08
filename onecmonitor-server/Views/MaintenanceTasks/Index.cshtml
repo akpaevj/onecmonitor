@@ -33,7 +33,7 @@
             
             <tr>
                 <td>@item.Description</td>
-                <td>@(started ? item.StartDateTime.ToString(CultureInfo.InvariantCulture) : "")</td>
+                <td>@(started ? item.StartDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "")</td>
                 @if (item.IsFaulted)
                 {
                     <td class="text-danger">@item.IsFaulted</td>
@@ -42,7 +42,7 @@
                 {
                     <td class="text-success">@item.IsFaulted</td>
                 }
-                <td>@(finished ? item.FinishDateTime.ToString(CultureInfo.InvariantCulture) : "")</td>
+                <td>@(finished ? item.FinishDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "")</td>
                 <td class="text-center">
                     @if (started)
                     {

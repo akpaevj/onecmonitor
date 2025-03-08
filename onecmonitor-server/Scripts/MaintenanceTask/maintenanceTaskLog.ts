@@ -1,5 +1,4 @@
 import * as signalR from "@microsoft/signalr";
-import * as signalRMsgPack from '@microsoft/signalr-protocol-msgpack'
 import {HubConnectionState} from "@microsoft/signalr";
 import {Tab} from "bootstrap";
 
@@ -89,20 +88,26 @@ export async function initLog(taskId: string) {
             });
         });
 
+        await invokeGetLogs(connection, taskId);
+        
         setInterval(async () => {
-            if (connection.state != HubConnectionState.Connected)
-                return;
-            
-            try {
-                await connection.invoke('GetLogs', taskId);
-            }
-            catch (error) {
-                console.log(error);
-            }
+            await invokeGetLogs(connection, taskId);
         }, 2000);
     }
     catch (error) {
         console.error(error);
+    }
+}
+
+async function invokeGetLogs(connection: signalR.HubConnection, taskId: string) {
+    if (connection.state != HubConnectionState.Connected)
+        return;
+
+    try {
+        await connection.invoke('GetLogs', taskId);
+    }
+    catch (error) {
+        console.log(error);
     }
 }
 

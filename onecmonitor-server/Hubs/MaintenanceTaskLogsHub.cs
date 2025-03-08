@@ -1,15 +1,9 @@
-using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.DTO;
-using OnecMonitor.Common.DTO.MaintenanceTasks;
-using OnecMonitor.Server.Models;
-using OnecMonitor.Server.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.Hubs;
 
-public class MaintenanceTaskLogsHub(AppDbContext appDbContext, IMapper mapper) : Hub
+public class MaintenanceTaskLogsHub(AppDbContext appDbContext) : Hub
 {
     public async Task GetLogs(string taskId)
     {

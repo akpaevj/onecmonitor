@@ -235,9 +235,7 @@ public class MaintenanceTasksController(AppDbContext appDbContext, AgentsConnect
     {
         var task = await appDbContext.MaintenanceTasks
             .AsNoTracking()
-            .Include(c => c.Steps)
-                .ThenInclude(c => c.Logs)
-                .ThenInclude(c => c.InfoBase)
+            .Include(c => c.InfoBases)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
         if (task == null)
@@ -246,10 +244,7 @@ public class MaintenanceTasksController(AppDbContext appDbContext, AgentsConnect
         return View(new MaintenanceTaskLogViewModel
         {
             TaskId = task.Id,
-            Items = task.Steps
-                .SelectMany(c => c.Logs)
-                .GroupBy(c => c.InfoBase)
-                .ToDictionary(c => c.Key, c => c.ToList())
+            InfoBases = task.InfoBases
         });
     }
     

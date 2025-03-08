@@ -1,7 +1,6 @@
 import {EditStepDialog} from "./editStepDialog";
 import {NodesGraphActionsDialog} from './nodesGraphActionsDialog'
 import Mermaid from "mermaid";
-import {json} from "node:stream/consumers";
 
 export enum MaintenanceStepNodeKind {
     Simple,
@@ -27,6 +26,21 @@ export class MaintenanceStepsTreeOptions {
     nodeGraphActionsElement: HTMLDivElement
     editStepModalElement: HTMLDivElement
     stepsInputElement: HTMLInputElement
+}
+
+let nodesGraph: MaintenanceStepsTree = undefined;
+
+export async function initStepsEditor() {
+    nodesGraph = new MaintenanceStepsTree({
+        stepsInputElement: document.getElementById('steps') as HTMLInputElement,
+        editStepModalElement: document.getElementById('edit-step-dialog') as HTMLDivElement,
+        nodeGraphActionsElement: document.getElementById('node-actions') as HTMLDivElement,
+        bodyElement: document.getElementById('graphBody') as HTMLDivElement
+    });
+}
+
+export function clickNode(nodeId: string) {
+    nodesGraph.handleNodeClick(nodeId);
 }
 
 export class MaintenanceStepsTree {

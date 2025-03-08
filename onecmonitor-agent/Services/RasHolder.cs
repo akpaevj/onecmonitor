@@ -7,14 +7,14 @@ using OneSTools.Common.Platform.Services;
 
 namespace OnecMonitor.Agent.Services;
 
-public class RasHolder : IDisposable
+public class RasHolder(V8ServicesProvider v8ServicesProvider) : IDisposable
 {
     private readonly List<Process> _processes = [];
     private readonly Dictionary<int, RasService> _rasServiceModels = [];
     
     public List<RasService> GetRasServices()
     {
-        var services = V8Services.GetRasServices();
+        var services = v8ServicesProvider.GetRasServices();
         services.AddRange(_rasServiceModels.Values.ToList());
 
         return services;

@@ -16,18 +16,21 @@ public class MaintenanceTaskExecutor : BackgroundService
     private readonly AsyncServiceScope _scope;
     private readonly OnecMonitorConnection _serverConnection;
     private readonly RasHolder _rasHolder;
+    private readonly V8ServicesProvider _v8ServicesProvider;
     private readonly ILogger<MaintenanceTaskExecutor> _logger;
     
     public MaintenanceTaskExecutor(
         IServiceProvider serviceProvider, 
         MaintenanceTaskExecutorQueue tasksQueue, 
         RasHolder rasHolder,
+        V8ServicesProvider v8ServicesProvider,
         ILogger<MaintenanceTaskExecutor> logger) 
     {
         _scope = serviceProvider.CreateAsyncScope();
         _queue = tasksQueue;
         _serverConnection = _scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
         _rasHolder = rasHolder;
+        _v8ServicesProvider = v8ServicesProvider;
         _logger = logger;
     }
     
@@ -69,7 +72,7 @@ public class MaintenanceTaskExecutor : BackgroundService
 
             try
             {
-                var ragent = V8Services.GetActiveRagentForClusterPort(infoBase.Cluster.Port);
+                var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(infoBase.Cluster.Port);
                 var ras = _rasHolder.GetActiveRasForRagent(ragent);
             
                 context.Rac = Rac.GetRacForRasService(ras);

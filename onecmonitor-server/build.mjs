@@ -1,5 +1,4 @@
 import * as esbuild from 'esbuild';
-import * as path from "node:path";
 
 await esbuild.build({
     entryPoints: ['./Scripts/index.ts'],
@@ -11,5 +10,5 @@ await esbuild.build({
     },
     minify: true,
     globalName: 'OM',
-    sourcemap: 'inline'
+    //sourcemap: 'inline'
 })

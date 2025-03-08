@@ -161,7 +161,6 @@ public sealed class OnecV8BatchMode : IDisposable
     public void Dispose()
     {
         Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
     private void Dispose(bool disposing)

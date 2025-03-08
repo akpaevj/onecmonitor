@@ -1,5 +1,4 @@
 import {EditStepDialog} from "./editStepDialog";
-import * as uuid from "uuid";
 import {MaintenanceStepNodeKind, MaintenanceStepsTree} from "./maintenanceStepsTree";
 
 export class NodesGraphActionsDialog {
