@@ -246,7 +246,7 @@ namespace OnecMonitor.Server.Migrations
                     Name = table.Column<string>(type: "TEXT", nullable: false),
                     InfoBaseName = table.Column<string>(type: "TEXT", nullable: false),
                     PublishAddress = table.Column<string>(type: "TEXT", nullable: false),
-                    CredentialsId = table.Column<string>(type: "TEXT", nullable: false),
+                    CredentialsId = table.Column<string>(type: "TEXT", nullable: true),
                     ClusterId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
@@ -262,8 +262,7 @@ namespace OnecMonitor.Server.Migrations
                         name: "FK_InfoBases_Credentials_CredentialsId",
                         column: x => x.CredentialsId,
                         principalTable: "Credentials",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(

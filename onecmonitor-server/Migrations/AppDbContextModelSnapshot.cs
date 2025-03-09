@@ -156,7 +156,6 @@ namespace OnecMonitor.Server.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CredentialsId")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("InfoBaseInternalId")
@@ -502,9 +501,7 @@ namespace OnecMonitor.Server.Migrations
 
                     b.HasOne("OnecMonitor.Server.Models.Credentials", "Credentials")
                         .WithMany("InfoBases")
-                        .HasForeignKey("CredentialsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CredentialsId");
 
                     b.Navigation("Cluster");
 

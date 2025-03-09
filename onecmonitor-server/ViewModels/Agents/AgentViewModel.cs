@@ -8,7 +8,7 @@ namespace OnecMonitor.Server.ViewModels.Agents;
 
 [ValidateNever]
 [DisplayName("Агент монитора")]
-public class AgentEditViewModel
+public class AgentViewModel
 {
     public Guid Id { get; set; }
     [DisplayName("Имя экземпляра")]
@@ -21,8 +21,4 @@ public class AgentEditViewModel
     public List<RagentService> RagentServices { get; set; } = [];
     [DisplayName("Службы сервера администрирования 1С")]
     public List<RasService> RasServices { get; set; } = [];
-    
-    [DisplayName("Кластеры")]
-    public List<SelectableItemViewModel> Clusters { get; set; } = [];
-    public List<SelectableItemViewModel> AvailableClusters { get; set; } = [];
 }

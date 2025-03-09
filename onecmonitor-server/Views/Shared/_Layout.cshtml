@@ -22,13 +22,6 @@
                     </a>
                 </a>
                 <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start" id="mainMenu">
-                    
-                    <li>
-                        <a asp-controller="Agents" asp-action="Index" class="text-primary nav-link text-white px-0 align-middle">
-                            <i class="fs-4 bi-diagram-3"></i>
-                            <span class="ms-1 d-none d-sm-inline">Агенты монитора</span>
-                        </a>
-                    </li>
                     <li>
                         <a href="#infoBasesServiceSubMenu" data-bs-toggle="collapse" aria-controls="infoBasesServiceSubMenu" aria-expanded="false" class="text-primary nav-link text-white px-0 align-middle">
                             <i class="fs-4 bi-database"></i>
@@ -89,8 +82,8 @@
             </div>
         </div>
         <div class="col py-3">
-            <div class="container-fluid">
-                <main role="main" class="pb-3">
+            <div class="container-fluid h-100">
+                <main role="main" class="pb-3 h-100">
                     @RenderBody()
                 </main>
             </div>

@@ -13,46 +13,21 @@ namespace OnecMonitor.Server.Controllers
     public class AgentsController(AppDbContext appDbContext, AgentsConnectionsManager connectionsManager, IMapper mapper)
         : Controller
     {
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(CancellationToken cancellationToken)
         {
-            var viewModel = new List<AgentsListItemViewModel>();
+            var viewModel = new List<AgentViewModel>();
 
-            var savedAgents = await appDbContext.Agents.ToListAsync();
-            var connectedAgents = connectionsManager.GetConnectedAgents(savedAgents);
-
+            var savedAgents = await appDbContext.Agents.ToListAsync(cancellationToken);
+            
             foreach (var agent in savedAgents)
             {
-                var connectedAgent = connectedAgents.FirstOrDefault(c => Equals(c, agent));
-
-                viewModel.Add(new AgentsListItemViewModel()
-                {
-                    Id = agent.Id,
-                    InstanceName = agent.InstanceName,
-                    IsConnected = connectedAgent != null
-                });
-            }
-
-            return View(viewModel);
-        }
-
-        public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var agent = await appDbContext.Agents
-                    .Include(c => c.Clusters)
-                    .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
-            
-                if (agent == null)
-                    return NotFound();
-
                 var agentConnection = connectionsManager.GetAgentConnection(agent.Id);
             
                 var installedPlatforms = agentConnection == null ? [] : await agentConnection.GetInstalledPlatforms(cancellationToken);
                 var ragents = agentConnection == null ? [] : await agentConnection.GetRagentServices(cancellationToken);
                 var rases = agentConnection == null ? [] : await agentConnection.GetRasServices(cancellationToken);
-
-                var vm = new AgentEditViewModel
+                
+                viewModel.Add(new AgentViewModel
                 {
                     Id = agent.Id,
                     InstanceName = agent.InstanceName,
@@ -60,32 +35,10 @@ namespace OnecMonitor.Server.Controllers
                     InstalledPlatforms = installedPlatforms,
                     RagentServices = ragents,
                     RasServices = rases,
-                    Clusters = mapper.Map<List<SelectableItemViewModel>>(agent.Clusters)
-                };
-            
-                return View(await PrepareVewModel(vm, cancellationToken));
+                });
             }
-            catch (Exception e)
-            {
-                return View("Error", new ErrorViewModel(e.Message));
-            }
-        }
 
-        [HttpPost]
-        public async Task<IActionResult> Save(AgentEditViewModel vm, CancellationToken cancellationToken)
-        {
-            var model = await appDbContext.Agents
-                .Include(c => c.Clusters)
-                .FirstOrDefaultAsync(c => c.Id == vm.Id, cancellationToken);
-            
-            if (model == null)
-                return NotFound();
-            
-            await UiHelper.UpdateModelItems(appDbContext.Clusters, vm.Clusters, model.Clusters, cancellationToken);
-            
-            await appDbContext.SaveChangesAsync(cancellationToken);
-            
-            return RedirectToAction("Index");
+            return View(viewModel);
         }
         
         public async Task<IActionResult> Delete(Guid id)
@@ -102,17 +55,6 @@ namespace OnecMonitor.Server.Controllers
             await appDbContext.SaveChangesAsync();
 
             return RedirectToAction("Index");
-        }
-        
-        private async Task<AgentEditViewModel> PrepareVewModel(AgentEditViewModel vm, CancellationToken cancellationToken)
-        {
-            vm.AvailableClusters = await UiHelper.SelectableItemsFrom(
-                appDbContext.Clusters,
-                vm.Clusters,
-                mapper, 
-                cancellationToken);
-            
-            return vm;
         }
     }
 }

@@ -32,25 +32,29 @@ public static class ArgsParser
             }
             else
             {
-                if (argItem.StartsWith('-'))
-                {
-                    key = argItem.TrimStart('-');
-                    keyRead = true;
-                }
-                else if (argItem.StartsWith("--"))
+                if (argItem.StartsWith("--"))
                 {
                     key = argItem.TrimStart('-');
 
                     if (key.Contains('='))
                     {
-                        var kv = argItem.Split('=', 2);
+                        var kv = key.Split('=', 2);
                         
                         items.Add(new ArgsKeyValue(kv[0], kv[1]));
                         keyRead = false;
                         key = string.Empty;
                     }
-                    else 
-                        keyRead = true;
+                    else
+                    {
+                        items.Add(new ArgsKeyValue("", key));
+                        keyRead = false;
+                        key = string.Empty;
+                    }
+                }
+                else if (argItem.StartsWith('-'))
+                {
+                    key = argItem.TrimStart('-');
+                    keyRead = true;
                 }
                 else
                 {

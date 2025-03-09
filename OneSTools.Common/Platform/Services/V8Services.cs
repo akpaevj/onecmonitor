@@ -268,8 +268,12 @@ public static partial class V8Services
             return argument;
         
         var variable = argument[2..^1];
-        var env = RunCommandWithBash($"systemctl show {name} -p Environment");
-        
+        return GetEnvironmentVariableValue(name, variable);
+    }
+
+    private static string GetEnvironmentVariableValue(string name, string variable)
+    {
+        var env = RunCommandWithBash($"systemctl show {name} -P Environment");
         return Regex.Match(env, $@"(?<={variable}=).*?(?=(\s|$))", RegexOptions.ExplicitCapture).Value.Trim();
     }
     

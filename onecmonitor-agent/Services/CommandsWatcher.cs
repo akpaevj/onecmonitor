@@ -151,8 +151,9 @@ namespace OnecMonitor.Agent.Services
             var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(request.Cluster.Port);
             var ras = _rasHolder.GetActiveRasForRagent(ragent);
             var rac = Rac.GetRacForRasService(ras);
-            
-            var infoBases = rac.GetInfoBasesSummaries(request.Cluster.Id);
+
+            var creds = request.Cluster.Credentials;
+            var infoBases = rac.GetInfoBasesSummaries(request.Cluster.Id, creds?.User ?? "", creds?.Password ?? "");
             
             await _server.Send(MessageType.InfoBasesResponse, infoBases, message,
                 cancellationToken);

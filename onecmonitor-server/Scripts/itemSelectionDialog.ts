@@ -1,9 +1,9 @@
 import {Modal} from "bootstrap";
-import * as common from './common'
+import {setIndexes} from './common'
 
 export function setIndexesOnSubmit(listIds: string[]) {
     listIds.forEach((listId: string) => {
-        common.setIndexesOnSubmit(document.querySelectorAll<HTMLInputElement>(`#${listId} input`));
+        setIndexes(document.querySelectorAll<HTMLInputElement>(`#${listId} input`));
     })
 }
 

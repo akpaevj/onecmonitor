@@ -9,10 +9,10 @@ public class InfoBase : DatabaseObject
     public string Name { get; set; } = string.Empty;
     public string InfoBaseName { get; set; } = string.Empty;
     public string PublishAddress { get; set; } = string.Empty;
-    public Guid CredentialsId { get; set; }
+    public Guid? CredentialsId { get; set; }
     public Guid ClusterId { get; set; }
     
-    public virtual Credentials Credentials { get; set; } = null!;
+    public virtual Credentials? Credentials { get; set; } = null!;
     public virtual Cluster Cluster { get; set; } = null!;
     
     public virtual List<MaintenanceTask> MaintenanceTasks { get; set; } = [];

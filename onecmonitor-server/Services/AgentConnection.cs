@@ -144,16 +144,8 @@ namespace OnecMonitor.Server.Services
                     {
                         Id = cluster.ClusterInternalId,
                         Host = cluster.Host,
-                        Port = cluster.Port
-                    },
-                    Credentials = cluster.Credentials switch
-                    {
-                        null => null,
-                        _ => new CredentialsDto
-                        {
-                            User = cluster.Credentials.User,
-                            Password = cluster.Credentials.Password
-                        }
+                        Port = cluster.Port,
+                        Credentials = cluster.Credentials == null ? null : _mapper.Map<CredentialsDto>(cluster.Credentials)
                     }
                 },
                 cancellationToken);

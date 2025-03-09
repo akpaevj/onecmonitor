@@ -12,7 +12,7 @@ public class InfoBaseDto
     [Key(2)]
     public string InfoBaseName { get; set; } = string.Empty;
     [Key(3)] 
-    public CredentialsDto Credentials { get; set; } = null!;
+    public CredentialsDto? Credentials { get; set; }
     [Key(4)] 
     public string PublishAddress { get; set; } = string.Empty;
     [Key(5)] 

@@ -10,5 +10,5 @@ await esbuild.build({
     },
     minify: true,
     globalName: 'OM',
-    //sourcemap: 'inline'
+    sourcemap: 'inline'
 })

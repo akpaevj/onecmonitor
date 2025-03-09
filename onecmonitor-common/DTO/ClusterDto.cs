@@ -11,4 +11,6 @@ public class ClusterDto
     public string Host { get; set; } = string.Empty;
     [Key(2)] 
     public int Port { get; set; } = 1540;
+    [Key(3)]
+    public CredentialsDto? Credentials { get; set; }
 }

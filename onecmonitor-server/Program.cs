@@ -54,6 +54,7 @@ builder.Services.AddHostedService((sp) => sp.GetRequiredService<TechLogProcessor
 builder.Services.AddSingleton<TechLogProcessor>();
 builder.Services.AddHostedService((sp) => sp.GetRequiredService<AgentsConnectionsManager>());
 builder.Services.AddSingleton<AgentsConnectionsManager>();
+//builder.Services.AddHostedService<ClustersDetector>();
 
 var app = builder.Build();
 

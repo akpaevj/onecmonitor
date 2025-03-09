@@ -10,7 +10,7 @@ using OnecMonitor.Server;
 namespace OnecMonitor.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250307093136_Initial")]
+    [Migration("20250308234638_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -159,7 +159,6 @@ namespace OnecMonitor.Server.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CredentialsId")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("InfoBaseInternalId")
@@ -505,9 +504,7 @@ namespace OnecMonitor.Server.Migrations
 
                     b.HasOne("OnecMonitor.Server.Models.Credentials", "Credentials")
                         .WithMany("InfoBases")
-                        .HasForeignKey("CredentialsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CredentialsId");
 
                     b.Navigation("Cluster");
 

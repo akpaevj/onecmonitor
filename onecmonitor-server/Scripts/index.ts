@@ -9,6 +9,7 @@ import '../node_modules/bootstrap/dist/js/bootstrap.bundle.min'
 
 export * from './itemSelectionDialog'
 export * from './deleteDialog'
+export * from './common'
 //export * from './techLog'
 export * from './MaintenanceTask/maintenanceTaskLog'
 export {EditStepDialog} from "./MaintenanceTask/editStepDialog";

@@ -230,17 +230,24 @@ public class MaintenanceTaskExecutor : BackgroundService
         context.Rac.BlockConnections(
             context.InfoBase.Cluster.Id, 
             context.InfoBase.InfoBaseInternalId,
-            context.InfoBase.Credentials.User,
-            context.InfoBase.Credentials.Password,
             context.Step.AccessCode,
-            context.Step.Message);
+            context.Step.Message,
+            context.InfoBase.Cluster.Credentials?.User ?? "",
+            context.InfoBase.Cluster.Credentials?.Password ?? "",
+            context.InfoBase.Credentials?.User ?? "",
+            context.InfoBase.Credentials?.Password ?? "");
         
         context.AccessCode = context.Step.AccessCode;
     }
     
     private static void CloseConnections(MaintenanceStepContext context)
     {
-        var sessions = context.Rac.GetInfoBaseSessions(context.InfoBase.Cluster.Id, context.InfoBase.InfoBaseInternalId);
+        var sessions = context.Rac.GetInfoBaseSessions(
+            context.InfoBase.Cluster.Id, 
+            context.InfoBase.InfoBaseInternalId,
+            context.InfoBase.Cluster.Credentials?.User ?? "",
+            context.InfoBase.Cluster.Credentials?.Password ?? "");
+        
         sessions
             .Where(c => !c.AppId.Contains("RAS", StringComparison.CurrentCultureIgnoreCase))
             .ToList()
@@ -248,7 +255,11 @@ public class MaintenanceTaskExecutor : BackgroundService
             {
                 try
                 {
-                    context.Rac.TerminateSession(context.InfoBase.Cluster.Id, s.Id);
+                    context.Rac.TerminateSession(
+                        context.InfoBase.Cluster.Id, 
+                        s.Id,
+                        context.InfoBase.Cluster.Credentials?.User ?? "",
+                        context.InfoBase.Cluster.Credentials?.Password ?? "");
                 }
                 catch
                 {
@@ -262,8 +273,10 @@ public class MaintenanceTaskExecutor : BackgroundService
         context.Rac.UnblockConnections(
             context.InfoBase.Cluster.Id, 
             context.InfoBase.InfoBaseInternalId,
-            context.InfoBase.Credentials.User,
-            context.InfoBase.Credentials.Password);
+            context.InfoBase.Cluster.Credentials?.User ?? "",
+            context.InfoBase.Cluster.Credentials?.Password ?? "",
+            context.InfoBase.Credentials?.User ?? "",
+            context.InfoBase.Credentials?.Password ?? "");
     }
     
     private static void LoadExtension(MaintenanceStepContext context)
@@ -274,8 +287,8 @@ public class MaintenanceTaskExecutor : BackgroundService
         batch.LoadExtension(
             context.Step.File!.Name, 
             filePath, 
-            context.InfoBase.Credentials.User, 
-            context.InfoBase.Credentials.Password, 
+            context.InfoBase.Credentials?.User ?? "", 
+            context.InfoBase.Credentials?.Password ?? "", 
             context.AccessCode,
             true);
         
@@ -289,8 +302,8 @@ public class MaintenanceTaskExecutor : BackgroundService
         using var batch = context.GetBatchDesigner();
         batch.LoadConfiguration(
             filePath, 
-            context.InfoBase.Credentials.User, 
-            context.InfoBase.Credentials.Password, 
+            context.InfoBase.Credentials?.User ?? "", 
+            context.InfoBase.Credentials?.Password ?? "", 
             context.AccessCode,
             true);
         
@@ -304,8 +317,8 @@ public class MaintenanceTaskExecutor : BackgroundService
         using var batch = context.GetBatchDesigner();
         batch.UpdateConfiguration(
             filePath, 
-            context.InfoBase.Credentials.User, 
-            context.InfoBase.Credentials.Password, 
+            context.InfoBase.Credentials?.User ?? "", 
+            context.InfoBase.Credentials?.Password ?? "", 
             context.AccessCode,
             true);
         
@@ -319,8 +332,8 @@ public class MaintenanceTaskExecutor : BackgroundService
         var batch = context.GetBatchEnterprise();
         batch.ExecuteExternalDataProcessor(
             filePath, 
-            context.InfoBase.Credentials.User, 
-            context.InfoBase.Credentials.Password, 
+            context.InfoBase.Credentials?.User ?? "", 
+            context.InfoBase.Credentials?.Password ?? "", 
             context.AccessCode,
             true);
     }

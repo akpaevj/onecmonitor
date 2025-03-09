@@ -25,8 +25,8 @@ public class Rac(V8Platform platform, string host = "localhost", int port = 1545
             })
             .ToList();
     
-    public List<V8InfoBaseSummary> GetInfoBasesSummaries(string clusterId)
-        => GetOutputItems($"infobase --cluster={clusterId} summary list", 10)
+    public List<V8InfoBaseSummary> GetInfoBasesSummaries(string clusterId, string clusterUser = "", string clusterPassword = "")
+        => GetOutputItems($"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} summary list", 10)
             .Select(c => new V8InfoBaseSummary()
             {
                 Id = c["infobase"], 
@@ -34,8 +34,8 @@ public class Rac(V8Platform platform, string host = "localhost", int port = 1545
             })
             .ToList();
     
-    public V8InfoBase GetInfoBase(string clusterId, string infoBaseId, string user, string password)
-        => GetOutputItems($"infobase --cluster={clusterId} info --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}", 20)
+    public V8InfoBase GetInfoBase(string clusterId, string infoBaseId, string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
+        => GetOutputItems($"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} info --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}", 20)
             .Select(c => new V8InfoBase
             {
                 Id = c["infobase"], 
@@ -47,15 +47,14 @@ public class Rac(V8Platform platform, string host = "localhost", int port = 1545
             })
             .First();
 
-    public void BlockConnections(string clusterId, string infoBaseId, string user, string password,
-        string permissionCode, string deniedMessage)
-        => StartRacAndGetOutput($"infobase --cluster={clusterId} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=on --scheduled-jobs-deny=on --permission-code={permissionCode} --denied-message=\"{deniedMessage}\"", 10);
+    public void BlockConnections(string clusterId, string infoBaseId, string permissionCode, string deniedMessage, string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
+        => StartRacAndGetOutput($"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=on --scheduled-jobs-deny=on --permission-code={permissionCode} --denied-message=\"{deniedMessage}\"", 10);
     
-    public List<V8Session> GetInfoBaseSessions(string clusterId, string infoBaseId)
+    public List<V8Session> GetInfoBaseSessions(string clusterId, string infoBaseId, string clusterUser = "", string clusterPassword = "")
     {
-        var infoBases = GetInfoBasesSummaries(clusterId);
+        var infoBases = GetInfoBasesSummaries(clusterId, clusterUser, clusterPassword);
 
-        return GetOutputItems($"session --cluster={clusterId} list --infobase={infoBaseId}", 20)
+        return GetOutputItems($"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId}", 20)
             .Select(c => new V8Session
             {
                 Id = c["session"],
@@ -68,11 +67,11 @@ public class Rac(V8Platform platform, string host = "localhost", int port = 1545
             .ToList();
     }
 
-    public void TerminateSession(string clusterId, string sessionId)
-        => StartRacAndGetOutput($"session --cluster={clusterId} terminate --session={sessionId}", 10);
+    public void TerminateSession(string clusterId, string sessionId, string clusterUser = "", string clusterPassword = "")
+        => StartRacAndGetOutput($"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} terminate --session={sessionId}", 10);
     
-    public void UnblockConnections(string clusterId, string infoBaseId, string user, string password)
-        => StartRacAndGetOutput($"infobase --cluster={clusterId} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=off --scheduled-jobs-deny=off", 10);
+    public void UnblockConnections(string clusterId, string infoBaseId, string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
+        => StartRacAndGetOutput($"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=off --scheduled-jobs-deny=off", 10);
     
     private List<Dictionary<string, string>> GetOutputItems(string command, int commandTimeout)
     {
