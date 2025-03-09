@@ -181,13 +181,10 @@ public class MaintenanceTasksController(AppDbContext appDbContext, AgentsConnect
         {
             var task = await appDbContext.MaintenanceTasks
                 .AsNoTracking()
-                .Include(c => c.Steps)
-                    .ThenInclude(c => c.File)
-                .Include(c => c.InfoBases)
-                    .ThenInclude(ib => ib.Credentials)
-                .Include(c => c.InfoBases)
-                    .ThenInclude(infoBase => infoBase.Cluster)
-                    .ThenInclude(cluster => cluster.Agent)
+                .Include(c => c.Steps).ThenInclude(c => c.File)
+                .Include(c => c.InfoBases).ThenInclude(c => c.Credentials)
+                .Include(c => c.InfoBases).ThenInclude(c => c.Cluster.Agent)
+                .Include(c => c.InfoBases).ThenInclude(c => c.Cluster.Credentials)
                 .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
             if (task == null)
