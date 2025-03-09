@@ -55,10 +55,10 @@ public class MaintenanceTaskExecutor : BackgroundService
 
     private async Task StartMaintenanceTask(MaintenanceTaskDto task, CancellationToken cancellationToken)
     {
-        var v8Files = await SaveTaskV8Files(task, cancellationToken);
-
         await Parallel.ForEachAsync(task.InfoBases, cancellationToken, async (infoBase, stoppingToken) =>
         {
+            var v8Files = await SaveTaskV8Files(task, cancellationToken);
+            
             var log = new List<MaintenanceStepLogItemDto>();
             
             var context = new MaintenanceStepContext
@@ -74,10 +74,10 @@ public class MaintenanceTaskExecutor : BackgroundService
             {
                 var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(infoBase.Cluster.Port);
                 var ras = _rasHolder.GetActiveRasForRagent(ragent);
-            
+
                 context.Rac = Rac.GetRacForRasService(ras);
                 context.Platform = ragent.Platform;
-                            
+
                 if (!context.Platform.HasOnecV8)
                     throw new Exception("Для платформы агента не установлен конфигуратор");
 
@@ -88,13 +88,13 @@ public class MaintenanceTaskExecutor : BackgroundService
                         await SendLog(log, cancellationToken);
                         log.Clear();
                     }
-                    
+
                     if (context.Step.NodeKind == MaintenanceStepNodeKind.TryCatch)
                     {
                         try
                         {
                             HandleTaskStepNode(context);
-                            
+
                             if (context.Step.LeftStepId is not null)
                                 context.Step = task.Steps.GetStep(context.Step.LeftStepId);
                             else
@@ -103,7 +103,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                         catch (Exception e)
                         {
                             AddLogItem(context, e.ToString(), true);
-                            
+
                             if (context.Step.RightStepId is not null)
                                 context.Step = task.Steps.GetStep(context.Step.RightStepId);
                             else
@@ -113,7 +113,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                     else
                     {
                         HandleTaskStepNode(context);
-                        
+
                         if (context.Step.LeftStepId is not null)
                             context.Step = task.Steps.GetStep(context.Step.LeftStepId);
                         else
@@ -129,20 +129,11 @@ public class MaintenanceTaskExecutor : BackgroundService
                 AddLogItem(context, e.ToString(), true, true);
                 await SendLog(log, stoppingToken);
             }
+            finally
+            {
+                DeleteV8Files(v8Files);
+            }
         });
-
-        foreach (var file in v8Files.Values)
-        {
-            try
-            {
-                if (File.Exists(file))
-                    File.Delete(file);
-            }
-            catch
-            {
-                // ignore
-            }
-        }
     }
 
     private static void HandleTaskStepNode(MaintenanceStepContext context)
@@ -211,17 +202,30 @@ public class MaintenanceTaskExecutor : BackgroundService
             if (step.File == null || files.ContainsKey(step.File.Id)) 
                 continue;
             
-            var path = Path.Join(Path.GetTempPath(), $"{step.File.Id}{step.File.FileExtension}") ;
+            var path = Path.Join(Path.GetTempPath(), $"{Guid.NewGuid()}{step.File.FileExtension}") ;
 
-            if (!File.Exists(path))
-            {
-                await using var file = File.Create(path);
-                await file.WriteAsync(step.File.Data, cancellationToken);
-                file.Close();
-            }
+            await using var file = File.Create(path);
+            await file.WriteAsync(step.File.Data, cancellationToken);
+            file.Close(); 
             
             files.TryAdd(step.File.Id, path);
             step.File.Data = null!;
+        }
+    }
+
+    private static void DeleteV8Files(ConcurrentDictionary<Guid, string> files)
+    {
+        foreach (var file in files.Values)
+        {
+            try
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
+            catch
+            {
+                // ignore
+            }
         }
     }
 

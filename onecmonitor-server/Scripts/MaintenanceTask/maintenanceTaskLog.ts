@@ -59,7 +59,7 @@ export async function initLog(taskId: string) {
 
                 const logsDiv = document.querySelector(`.tab-pane[data-infobase-id='${selectedInfoBase}'] tbody`);
                 if (logsDiv != null) {
-                    item.log.forEach(i => {
+                    item.log.filter(c => c.infoBaseId == selectedInfoBase).forEach(i => {
                         const logItem = logsDiv.querySelector(`tr[data-log-item='${i.id}']`);
                         if (logItem == null) {
                             const newLogItem = document.createElement('tr');

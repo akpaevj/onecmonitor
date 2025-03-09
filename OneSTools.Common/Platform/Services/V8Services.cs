@@ -9,7 +9,7 @@ namespace OneSTools.Common.Platform.Services;
 public static partial class V8Services
 {
     private const int RagentDefaultPort = 1540;
-    private const int RagentDefaultRegPortPort = 1541;
+    private const int RagentDefaultRegPort = 1541;
     private const int RasDefaultPort = 1545;
     
     public static RagentService GetActiveRagentForClusterPort(int port, IReadOnlyList<V8Platform> platforms)
@@ -116,7 +116,7 @@ public static partial class V8Services
                         IsActive = isActive,
                         Platform = platforms.GetByPath(platformPath!)!,
                         Port = port == null ? RagentDefaultPort : int.Parse(port),
-                        RegPort = regPort == null ? RagentDefaultRegPortPort : int.Parse(regPort)
+                        RegPort = regPort == null ? RagentDefaultRegPort : int.Parse(regPort)
                     };
                 
                     items.Add(service);
@@ -223,7 +223,7 @@ public static partial class V8Services
                         }
                         else
                         {
-                            service.RagentHost = last.Value;
+                            service.RagentHost = GetExecStartArgValue(name, last.Value) ?? "localhost";
                             service.RagentPort = RagentDefaultPort;
                         }
                     }
@@ -247,7 +247,7 @@ public static partial class V8Services
                         IsActive = isActive,
                         Platform = platforms.GetByPath(platformPath!)!,
                         Port = port == null ? RagentDefaultPort : int.Parse(port),
-                        RegPort = regPort == null ? RagentDefaultRegPortPort : int.Parse(regPort)
+                        RegPort = regPort == null ? RagentDefaultRegPort : int.Parse(regPort)
                     };
                 
                     items.Add(service);
@@ -264,10 +264,12 @@ public static partial class V8Services
         if (argument == null)
             return null;
 
-        if (!argument.StartsWith("${") || !argument.EndsWith('}')) 
+        if (!argument.StartsWith('$'))
             return argument;
         
-        var variable = argument[2..^1];
+        var offset = argument.StartsWith("${") ? 1 : 0;
+        var variable = argument[(1 + offset)..^offset];
+        
         return GetEnvironmentVariableValue(name, variable);
     }
 
