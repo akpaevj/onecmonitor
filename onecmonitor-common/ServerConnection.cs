@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
-using OnecMonitor.Common.DTO;
 
 namespace OnecMonitor.Common;
 
@@ -50,6 +49,7 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.NotConnected)
             {
                 logger.LogTrace("Ошибка установки соединения с сервером");
+                await Task.Delay(10000, cancellationToken);
             }
 
             if (Socket?.Connected == true)

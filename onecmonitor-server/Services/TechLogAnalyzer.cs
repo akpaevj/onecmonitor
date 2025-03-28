@@ -1,30 +1,25 @@
-﻿using Microsoft.Extensions.Logging;
-using NuGet.Packaging;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Common.DTO;
+using OnecMonitor.Common.Models;
 using OnecMonitor.Common.Storage;
+using OnecMonitor.Common.TechLog;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace OnecMonitor.Server.Services
 {
-    public class TechLogAnalyzer
+    public class TechLogAnalyzer(IServiceProvider serviceProvider, IMapper mapper, ILogger<TechLogAnalyzer> logger)
     {
-        private readonly ITechLogStorage _clickHouseContext;
-        private readonly ILogger<TechLogAnalyzer> _logger;
-
-        public TechLogAnalyzer(ITechLogStorage clickHouseContext, ILogger<TechLogAnalyzer> logger) 
-        {
-            _clickHouseContext = clickHouseContext;
-            _logger = logger;
-        }
+        private ITechLogRepository? _repository;
 
         public async Task<List<CallGraphMember>> GetCallEventsChain(Guid id, CancellationToken cancellationToken)
         {
+            await InitConnection(cancellationToken);
+            
             var chain = new List<CallGraphMember>();
 
-            var tjEvent = await _clickHouseContext.GetTjEvent($"Id = '{id}'", cancellationToken);
+            var tjEvent = await _repository.GetTjEvent($"Id = '{id}'", cancellationToken);
 
             if (tjEvent == null)
                 throw new Exception($"Tech log event with id {id} is not found");
@@ -39,6 +34,8 @@ namespace OnecMonitor.Server.Services
 
         private async Task CompleteWithNestedCalls(TjEvent tjEvent, List<CallGraphMember> chain, CancellationToken cancellationToken)
         {
+            await InitConnection(cancellationToken);
+            
             if (chain.FirstOrDefault(c => c.Event!.Id == tjEvent.Id) == null)
                 chain.Add(new CallGraphMember(tjEvent));
             else
@@ -52,7 +49,7 @@ namespace OnecMonitor.Server.Services
                 and Id != toUUID('{tjEvent.Id}')
             """;
 
-            var call = await _clickHouseContext.GetTjEvent(filter, cancellationToken);
+            var call = await _repository.GetTjEvent(filter, cancellationToken);
 
             if (call != null)
             {
@@ -65,6 +62,8 @@ namespace OnecMonitor.Server.Services
 
         private async Task<string> GetCallContext(TjEvent tjEvent, CancellationToken cancellationToken)
         {
+            await InitConnection(cancellationToken);
+            
             var filter =
             $"""
                 TClientId = {tjEvent.TClientId}
@@ -85,7 +84,7 @@ namespace OnecMonitor.Server.Services
                 EventName = "",
                 Context = ""
             };
-            var item = await _clickHouseContext.GetTjEventProperties(filter, fields, c, cancellationToken);
+            var item = await _repository.GetTjEventProperties(filter, fields, c, cancellationToken);
 
             if (item != null && item.EventName == "Context")
                 return item.Context;
@@ -95,6 +94,8 @@ namespace OnecMonitor.Server.Services
 
         private async Task CompleteWithNestedScalls(TjEvent tjEvent, List<CallGraphMember> chain, CancellationToken cancellationToken)
         {
+            await InitConnection(cancellationToken);
+            
             if (chain.FirstOrDefault(c => c.Event!.Id == tjEvent.Id) == null)
                 chain.Add(new CallGraphMember(tjEvent));
             else
@@ -112,7 +113,7 @@ namespace OnecMonitor.Server.Services
                     StartDateTime
                 """;
 
-            var items = await _clickHouseContext.GetTjEvents(filter, cancellationToken);
+            var items = await _repository.GetTjEvents(filter, cancellationToken);
 
             foreach(var item in items)
             {
@@ -123,9 +124,11 @@ namespace OnecMonitor.Server.Services
 
         public async Task<Dictionary<Guid, LockWaitingGraphMember>> GetLockWaitingGraph(Guid id, CancellationToken cancellationToken)
         {
+            await InitConnection(cancellationToken);
+            
             var graph = new Dictionary<Guid, LockWaitingGraphMember>();
 
-            var tjEvent = await _clickHouseContext.GetTjEvent($"Id = '{id}'", cancellationToken);
+            var tjEvent = await _repository.GetTjEvent($"Id = '{id}'", cancellationToken);
 
             if (tjEvent == null)
                 graph.Add(id, new LockWaitingGraphMember());
@@ -153,6 +156,8 @@ namespace OnecMonitor.Server.Services
             Dictionary<Guid, LockWaitingGraphMember> graph,
             CancellationToken cancellationToken)
         {
+            await InitConnection(cancellationToken);
+            
             // check this tlock doesn't exist in the graph, otherwise next code might cause cycle queries
             if (graph.ContainsKey(tlock.Id))
                 return;
@@ -186,7 +191,7 @@ namespace OnecMonitor.Server.Services
                     DateTime DESC
                 """;
 
-                var culpritTlock = await _clickHouseContext.GetTjEvent(culpritFilter, cancellationToken);
+                var culpritTlock = await _repository.GetTjEvent(culpritFilter, cancellationToken);
 
                 if (culpritTlock != null)
                 {
@@ -206,7 +211,7 @@ namespace OnecMonitor.Server.Services
                         DateTime
                     """;
 
-                    culpritTlock = await _clickHouseContext.GetTjEvent(culpritFilter, cancellationToken);
+                    culpritTlock = await _repository.GetTjEvent(culpritFilter, cancellationToken);
 
                     if (culpritTlock != null)
                     {
@@ -237,7 +242,7 @@ namespace OnecMonitor.Server.Services
                     and Id != '{tlock.Id}'
                 """;
 
-            var indirectCulprits = await _clickHouseContext.GetTjEvents(indirectCulpritsFilter, cancellationToken);
+            var indirectCulprits = await _repository.GetTjEvents(indirectCulpritsFilter, cancellationToken);
 
             foreach (var indirectCulprit in indirectCulprits)
             {
@@ -269,6 +274,8 @@ namespace OnecMonitor.Server.Services
 
         private async Task<TjEvent?> GetEndTransactionEvent(TjEvent tlock, CancellationToken cancellationToken)
         {
+            await InitConnection(cancellationToken);
+            
             var filter =
                 $"""
                     EventName = 'SDBL'
@@ -283,7 +290,7 @@ namespace OnecMonitor.Server.Services
 
             try
             {
-                return await _clickHouseContext.GetTjEvent(filter, cancellationToken);
+                return await _repository.GetTjEvent(filter, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -304,12 +311,33 @@ namespace OnecMonitor.Server.Services
 
             try
             {
-                return await _clickHouseContext.GetTjEvent(filter, cancellationToken);
+                return await _repository.GetTjEvent(filter, cancellationToken);
             }
             catch (Exception ex)
             {
                 throw new Exception("Failed to find timeout victim", ex);
             }
+        }
+
+        private async Task InitConnection(CancellationToken cancellationToken)
+        {
+            if (_repository != null)
+                return;
+            
+            await using var scope = serviceProvider.CreateAsyncScope();
+            await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            
+            var settings =
+                await dbContext.TechLogSettings
+                    .AsNoTracking()
+                    .Include(c => c.Dbms)
+                    .Include(c => c.Credentials)
+                    .FirstOrDefaultAsync(cancellationToken) ?? new TechLogSettings();
+
+            var dtoSettings = mapper.Map<TechLogSettingsDto>(settings);
+            
+            _repository = new ClickHouseContext(dtoSettings.Dbms, dtoSettings.Credentials, dtoSettings.DatabaseName, dtoSettings.Table);
+            await _repository.Connect(cancellationToken);
         }
     }
 }

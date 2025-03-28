@@ -21,12 +21,12 @@ namespace OnecMonitor.Server.Migrations
                     b.Property<string>("AgentsId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("SeancesId")
+                    b.Property<string>("TechLogSeancesId")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("AgentsId", "SeancesId");
+                    b.HasKey("AgentsId", "TechLogSeancesId");
 
-                    b.HasIndex("SeancesId");
+                    b.HasIndex("TechLogSeancesId");
 
                     b.ToTable("AgentTechLogSeance");
                 });
@@ -133,7 +133,6 @@ namespace OnecMonitor.Server.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Password")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("User")
@@ -143,6 +142,71 @@ namespace OnecMonitor.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Credentials");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.Dbms", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Dbms");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.EventLogSettings", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CredentialsId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DatabaseName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DbmsId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("InfoBaseNameRegex")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Table")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CredentialsId");
+
+                    b.HasIndex("DbmsId");
+
+                    b.ToTable("EventLogSettings");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
@@ -300,7 +364,13 @@ namespace OnecMonitor.Server.Migrations
                     b.Property<long>("FinishDateTime")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsFaulted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsTemplate")
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("StartDateTime")
@@ -363,33 +433,30 @@ namespace OnecMonitor.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ClickHouseDatabase")
+                    b.Property<string>("CredentialsId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DatabaseName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ClickHouseHost")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ClickHousePassword")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("ClickHousePort")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ClickHouseUser")
-                        .IsRequired()
-                        .HasMaxLength(100)
+                    b.Property<string>("DbmsId")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Enabled")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Table")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CredentialsId");
+
+                    b.HasIndex("DbmsId");
 
                     b.ToTable("TechLogSettings");
                 });
@@ -404,16 +471,10 @@ namespace OnecMonitor.Server.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsConfiguration")
+                    b.Property<int>("FileType")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("IsExtension")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsExternalDataProcessor")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsUpdate")
+                    b.Property<bool>("IsArchived")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
@@ -439,7 +500,7 @@ namespace OnecMonitor.Server.Migrations
 
                     b.HasOne("OnecMonitor.Server.Models.TechLogSeance", null)
                         .WithMany()
-                        .HasForeignKey("SeancesId")
+                        .HasForeignKey("TechLogSeancesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -489,6 +550,21 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Agent");
 
                     b.Navigation("Credentials");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.EventLogSettings", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.Credentials", "Credentials")
+                        .WithMany()
+                        .HasForeignKey("CredentialsId");
+
+                    b.HasOne("OnecMonitor.Server.Models.Dbms", "Dbms")
+                        .WithMany()
+                        .HasForeignKey("DbmsId");
+
+                    b.Navigation("Credentials");
+
+                    b.Navigation("Dbms");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
@@ -542,6 +618,21 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("InfoBase");
 
                     b.Navigation("Step");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.TechLogSettings", b =>
+                {
+                    b.HasOne("OnecMonitor.Server.Models.Credentials", "Credentials")
+                        .WithMany()
+                        .HasForeignKey("CredentialsId");
+
+                    b.HasOne("OnecMonitor.Server.Models.Dbms", "Dbms")
+                        .WithMany()
+                        .HasForeignKey("DbmsId");
+
+                    b.Navigation("Credentials");
+
+                    b.Navigation("Dbms");
                 });
 
             modelBuilder.Entity("OnecMonitor.Server.Models.Agent", b =>

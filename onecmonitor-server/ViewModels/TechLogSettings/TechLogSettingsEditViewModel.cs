@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace OnecMonitor.Server.ViewModels.TechLogSettings;
 
@@ -6,10 +7,12 @@ public class TechLogSettingsEditViewModel
 {
     public Guid Id { get; set; }
     public bool Enabled { get; set; } = false;
-    public string ClickHouseHost { get; set; } = string.Empty;
-    public int ClickHousePort { get; set; } = 8123;
-    public string ClickHouseDatabase { get; set; } = "onecmonitor_techlog";
-    public string ClickHouseUser { get; set; } = "default";
-    [ValidateNever]
-    public string ClickHousePassword { get; set; } = string.Empty;
+    public Guid? DbmsId { get; set; }
+    [ValidateNever] 
+    public SelectList AvailableDbms { get; set; } = null!;
+    public string DatabaseName { get; set; } = "onecmonitor";
+    public string Table { get; set; } = "techlog";
+    public Guid? CredentialsId { get; set; }
+    [ValidateNever] 
+    public SelectList AvailableCredentials { get; set; } = null!;
 }

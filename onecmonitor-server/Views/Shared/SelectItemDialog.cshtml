@@ -1,5 +1,9 @@
 @model OnecMonitor.Server.ViewModels.SelectItemDialogViewModel
 
+@{
+    var nameInputName = Model.ItemsModelProperty + "[].Name";
+    var idInputName = Model.ItemsModelProperty + "[].Id";
+}
 <div class="card">
     <div class="card-header">
         <div class="col">
@@ -11,11 +15,10 @@
         <div id="@Model.ItemsModelProperty-list" class="list-group">
             @foreach (var item in Model.Items)
             {
-                var inputName = Model.ItemsModelProperty + "[].Id";
-                
                 <button type="button" class="list-group-item list-group-item-action">
                     @item.Name
-                    <input type="text" name="@inputName" value="@item.Id" hidden>
+                    <input type="text" name="@nameInputName" value="@item.Name" hidden>
+                    <input type="text" name="@idInputName" value="@item.Id" hidden>
                 </button>
             }
         </div>
@@ -41,10 +44,10 @@
                         @foreach (var item in Model.AvailableItems)
                         {
                             <button type="button" class="list-group-item list-group-item-action">
-                                @item.Name
                                 @{
-                                    var name = Model.ItemsModelProperty + "[].Id";
-                                    <input type="text" name="@name" value="@item.Id" hidden>
+                                    @item.Name
+                                    <input type="text" name="@nameInputName" value="@item.Name" hidden>
+                                    <input type="text" name="@idInputName" value="@item.Id" hidden>
                                 }
                             </button>
                         }

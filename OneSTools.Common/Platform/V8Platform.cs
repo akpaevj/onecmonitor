@@ -27,8 +27,13 @@ public class V8Platform
     [DisplayName("Путь к RAS")]
     [Key(6)]
     public string RasPath { get; init; } = string.Empty;
-    [DisplayName("Версия")]
     [Key(7)]
+    public bool HasIbcmd { get; init; }
+    [DisplayName("Путь к ibcmd")]
+    [Key(8)]
+    public string IbcmdPath { get; init; } = string.Empty;
+    [DisplayName("Версия")]
+    [Key(9)]
     public string Version { get; init; } = string.Empty;
     
     public override bool Equals(object? obj)

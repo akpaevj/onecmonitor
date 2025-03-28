@@ -1,14 +1,14 @@
-﻿using MessagePack;
+﻿using System.Net.Sockets;
+using System.Text;
+using AutoMapper;
+using MessagePack;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Common;
 using OnecMonitor.Common.DTO;
+using OnecMonitor.Common.DTO.MaintenanceTasks;
 using OnecMonitor.Common.Storage;
 using OnecMonitor.Common.TechLog;
 using OnecMonitor.Server.Models;
-using System.Net.Sockets;
-using System.Text;
-using AutoMapper;
-using OnecMonitor.Common.DTO.MaintenanceTasks;
 using OnecMonitor.Server.Models.MaintenanceTasks;
 using OneSTools.Common.Platform;
 using OneSTools.Common.Platform.RemoteAdministration;
@@ -18,11 +18,8 @@ namespace OnecMonitor.Server.Services
 {
     public class AgentConnection : FastConnection
     {
-        private readonly AsyncServiceScope _agentScope;
-        private readonly AppDbContext _appDbContext;
-        private readonly ITechLogStorage _clickHouseContext;
-        private readonly TechLogProcessor _techLogProcessor;
         private readonly IMapper _mapper;
+        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<AgentConnection> _logger;
 
         public Guid ConnectionId { get; }
@@ -34,8 +31,11 @@ namespace OnecMonitor.Server.Services
         public delegate void AgentDisconnectedHandler(AgentConnection agentConnection);
         public event AgentDisconnectedHandler? AgentDisconnected;
 
-        public AgentConnection(Socket socket, TechLogProcessor techLogProcessor, IServiceProvider serviceProvider)
-            : base(serviceProvider.GetRequiredService<ILogger<AgentConnection>>())
+        public AgentConnection(
+            Socket socket, 
+            IServiceProvider serviceProvider, 
+            ILogger<AgentConnection> logger)
+            : base(logger)
         {
             Socket = socket;
             
@@ -45,12 +45,9 @@ namespace OnecMonitor.Server.Services
             };
 
             ConnectionId = Guid.NewGuid();
-            _agentScope = serviceProvider.CreateAsyncScope();
-            _appDbContext = _agentScope.ServiceProvider.GetRequiredService<AppDbContext>();
-            _clickHouseContext = serviceProvider.GetRequiredService<ITechLogStorage>();
-            _techLogProcessor = techLogProcessor;
             _mapper = serviceProvider.GetRequiredService<IMapper>();
-            _logger = _agentScope.ServiceProvider.GetRequiredService<ILogger<AgentConnection>>();
+            _serviceProvider = serviceProvider;
+            _logger = logger;
         }
 
         public void Listen(CancellationToken cancellationToken)
@@ -64,15 +61,6 @@ namespace OnecMonitor.Server.Services
                     {
                         case MessageType.AgentInfo:
                             await HandleInitMessage(message, cancellationToken);
-                            break;
-                        case MessageType.TechLogEventContent:
-                            await HandleTechLogEventContent(message.Data, cancellationToken);
-                            break;
-                        case MessageType.LastFilePositionRequest:
-                            await HandleLastFilePositionRequest(message, cancellationToken);
-                            break;
-                        case MessageType.TechLogSeancesRequest:
-                            await UpdateTechLogSeances(message, cancellationToken);
                             break;
                         case MessageType.MaintenanceStepNodeLog:
                             await HandleMaintenanceStepLog(message, cancellationToken);
@@ -94,21 +82,43 @@ namespace OnecMonitor.Server.Services
             
             RunStreamLoops(cancellationToken);
         }
-
-        private async Task HandleSettingsRequest(Message message, CancellationToken cancellationToken)
+        
+        private async Task<SettingsDto> GetSettings(CancellationToken cancellationToken)
         {
-            var tjSettings = await _appDbContext.TechLogSettings.FirstOrDefaultAsync(cancellationToken);
+            await using var scope = _serviceProvider.CreateAsyncScope();
+            await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+            var eventLogSettings =
+                await dbContext.EventLogSettings
+                    .AsNoTracking()
+                    .Include(c => c.Dbms)
+                    .Include(c => c.Credentials)
+                    .FirstOrDefaultAsync(cancellationToken) ?? new EventLogSettings();
+
+            var techLogSettings =
+                await dbContext.TechLogSettings
+                    .AsNoTracking()
+                    .Include(c => c.Dbms)
+                    .Include(c => c.Credentials)
+                    .FirstOrDefaultAsync(cancellationToken) ?? new TechLogSettings();
+            
+            var techLogSettingsDto = _mapper.Map<TechLogSettingsDto>(techLogSettings);
+            techLogSettingsDto.Seances = await GetTechLogSeances(cancellationToken);
+            
             var settings = new SettingsDto
             {
-                TechLogEnabled = tjSettings?.Enabled ?? false
+                EventLogSettings = _mapper.Map<EventLogSettingsDto>(eventLogSettings),
+                TechLogSettings = techLogSettingsDto
             };
-            
-            await Send(MessageType.Settings, settings, message, cancellationToken);
+
+            return settings;
         }
 
-        public async Task SendUpdateSettingsRequest(CancellationToken cancellationToken)
-            => await Send(MessageType.UpdateSettingsRequest, cancellationToken);
+        private async Task HandleSettingsRequest(Message message, CancellationToken cancellationToken)
+            => await Send(MessageType.Settings, await GetSettings(cancellationToken), message, cancellationToken);
+
+        public async Task SendSettingsRequest(CancellationToken cancellationToken)
+            => await Send(MessageType.Settings, await GetSettings(cancellationToken), cancellationToken);
 
         public async Task<List<V8Platform>> GetInstalledPlatforms(CancellationToken cancellationToken)
             => await Get<List<V8Platform>>(
@@ -150,56 +160,50 @@ namespace OnecMonitor.Server.Services
                 },
                 cancellationToken);
         
-        public async Task RequestTechLogSeancesUpdating(CancellationToken cancellationToken)
-            => await Send(MessageType.UpdateTechLogSeancesRequest, cancellationToken);
-        
         public async Task StartMaintenanceTask(MaintenanceTask task, CancellationToken cancellationToken)
             => await Send(MessageType.MaintenanceTask, _mapper.Map<MaintenanceTaskDto>(task), cancellationToken);
-
-        private async Task UpdateTechLogSeances(Message callMessage, CancellationToken cancellationToken)
+        
+        private async Task<List<TechLogSeanceDto>> GetTechLogSeances(CancellationToken cancellationToken)
         {
-            var agent = await _appDbContext.Agents.FirstOrDefaultAsync(c => c.Id == AgentInstance!.Id, cancellationToken);
-
-            var agentSeances = await _appDbContext.TechLogSeances
-                .AsNoTracking()
-                .Include(c => c.Agents)
-                .Where(c => c.Agents.Contains(agent!))
-                .Include(c => c.Templates)
-                .ToListAsync(cancellationToken);
+            await using var scope = _serviceProvider.CreateAsyncScope();
+            await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            
+            var agent = await dbContext.Agents
+                .Include(c => c.TechLogSeances).ThenInclude(c => c.Templates)
+                .FirstOrDefaultAsync(c => c.Id == AgentInstance!.Id, cancellationToken);
 
             var seances = new List<TechLogSeanceDto>();
 
-            agentSeances.ForEach(seance =>
+            agent!.TechLogSeances.ForEach(seance =>
             {
-                StringBuilder templateBuilder = new();
-
                 seance.Templates.ForEach(template =>
                 {
-                    // add template id and combine templates
-                    templateBuilder.AppendLine(template.Content.Replace("{LOG_PATH}", $"{{LOG_PATH}}{template.Id}"));
-                });
-
-                seances.Add(new TechLogSeanceDto()
-                {
-                    Id = seance.Id,
-                    StartDateTime = seance.StartDateTime,
-                    FinishDateTime = seance.FinishDateTime,
-                    Template = templateBuilder.ToString()
+                    seances.Add(new TechLogSeanceDto
+                    {
+                        Id = seance.Id,
+                        StartDateTime = seance.StartDateTime,
+                        FinishDateTime = seance.FinishDateTime,
+                        TemplateId = template.Id,
+                        Template = template.Content
+                    }); 
                 });
             });
 
-            await Send(MessageType.TechLogSeances, seances, callMessage, cancellationToken);
+            return seances;
         }
 
         private async Task HandleInitMessage(Message message, CancellationToken cancellationToken)
         {
             AgentInstance = ParseMessageData<AgentInstanceDto>(message.Data, cancellationToken);
 
-            await _appDbContext.Database.BeginTransactionAsync(cancellationToken);
+            await using var scope = _serviceProvider.CreateAsyncScope();
+            await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            
+            await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
-                var foundItem = await _appDbContext.Agents.FirstOrDefaultAsync(c => c.Id == AgentInstance.Id, cancellationToken);
+                var foundItem = await dbContext.Agents.FirstOrDefaultAsync(c => c.Id == AgentInstance.Id, cancellationToken);
 
                 if (foundItem == null)
                 {
@@ -208,42 +212,27 @@ namespace OnecMonitor.Server.Services
                         Id = AgentInstance.Id,
                         InstanceName = AgentInstance.InstanceName
                     };
-                    _appDbContext.Agents.Add(agent);
+                    dbContext.Agents.Add(agent);
 
-                    await _appDbContext.SaveChangesAsync(cancellationToken);
+                    await dbContext.SaveChangesAsync(cancellationToken);
                 }
                 else if (foundItem.InstanceName != AgentInstance.InstanceName)
                 {
                     foundItem.InstanceName = AgentInstance.InstanceName;
 
-                    _appDbContext.Entry(foundItem).State = EntityState.Modified;
+                    dbContext.Entry(foundItem).State = EntityState.Modified;
 
-                    await _appDbContext.SaveChangesAsync(cancellationToken);
+                    await dbContext.SaveChangesAsync(cancellationToken);
                 }
 
-                await _appDbContext.Database.CommitTransactionAsync(cancellationToken);
+                await dbContext.Database.CommitTransactionAsync(cancellationToken);
 
                 AgentConnected?.Invoke(this);
             }
             catch
             {
-                await _appDbContext.Database.RollbackTransactionAsync(cancellationToken);
+                await dbContext.Database.RollbackTransactionAsync(cancellationToken);
             }
-        }
-
-        private async Task HandleLastFilePositionRequest(Message requestMessage, CancellationToken cancellationToken)
-        {
-            var request = ParseMessageData<LastFilePositionRequestDto>(requestMessage.Data, cancellationToken);
-
-            var response = await _clickHouseContext.GetLastFilePosition(
-                AgentInstance!.Id.ToString(),
-                request.SeanceId.ToString(),
-                request.TemplateId.ToString(),
-                request.Folder,
-                request.File,
-                cancellationToken);
-
-            await Send(MessageType.LastFilePosition, response, requestMessage, cancellationToken);
         }
         
         private async Task HandleMaintenanceStepLog(Message requestMessage, CancellationToken cancellationToken)
@@ -254,40 +243,43 @@ namespace OnecMonitor.Server.Services
 
             if (log.Count > 0)
             {
-                await _appDbContext.Database.BeginTransactionAsync(cancellationToken);
+                await using var scope = _serviceProvider.CreateAsyncScope();
+                await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                
+                await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
                 try
                 {
                     log.ForEach(c => c.TimeStamp = c.TimeStamp.AddSeconds(AgentInstance!.UtcOffset));
-                    await _appDbContext.MaintenanceStepLogs.AddRangeAsync(log, cancellationToken);
+                    await dbContext.MaintenanceStepLogs.AddRangeAsync(log, cancellationToken);
                     
-                    await _appDbContext.SaveChangesAsync(cancellationToken);
+                    await dbContext.SaveChangesAsync(cancellationToken);
                     
-                    var task = await _appDbContext.MaintenanceTasks
+                    var task = await dbContext.MaintenanceTasks
                         .Include(c => c.InfoBases)
                         .FirstOrDefaultAsync(c => c.Id == result[0].TaskId, cancellationToken);
 
                     var infoBasesCount = task!.InfoBases.Count;
-                    var finishedCount = await _appDbContext.MaintenanceStepLogs
+                    var finishedCount = await dbContext.MaintenanceStepLogs
                         .AsNoTracking()
                         .Where(c => c.Step.MaintenanceTask.Id == task.Id && c.IsFinish)
                         .CountAsync(cancellationToken);
                     
-                    task.IsFaulted = await _appDbContext.MaintenanceStepLogs
+                    task.IsFaulted = await dbContext.MaintenanceStepLogs
                         .AsNoTracking()
                         .AnyAsync(c => c.Step.MaintenanceTask.Id == task.Id && c.IsError, cancellationToken);
                     
                     if (infoBasesCount == finishedCount)
                         task.FinishDateTime = DateTime.Now;
                     
-                    await _appDbContext.SaveChangesAsync(cancellationToken);
-                    await _appDbContext.Database.CommitTransactionAsync(cancellationToken);
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                    await dbContext.Database.CommitTransactionAsync(cancellationToken);
                     
                     await SendOk(requestMessage, cancellationToken);
                 }
                 catch (Exception e)
                 {
-                    await _appDbContext.Database.RollbackTransactionAsync(cancellationToken);
+                    await dbContext.Database.RollbackTransactionAsync(cancellationToken);
                     _logger.LogError(e, "Ошибка записи лога шага обслуживания");
                     
                     await SendError(requestMessage, e.Message, cancellationToken);
@@ -295,15 +287,6 @@ namespace OnecMonitor.Server.Services
             }
             else
                 await SendOk(requestMessage, cancellationToken);
-        }
-
-        private async Task HandleTechLogEventContent(ReadOnlyMemory<byte> messageData, CancellationToken cancellationToken)
-        {
-            var item = ParseMessageData<TechLogEventContentDto>(messageData, cancellationToken);
-
-            _logger.LogTrace($"Event with content \"{item.Content}\" from {item.Folder}/{item.File} {item.EndPosition} is read");
-
-            await _techLogProcessor.ProcessTjEventContent(AgentInstance!, item, cancellationToken);
         }
 
         private static T ParseMessageData<T>(ReadOnlyMemory<byte> messageData, CancellationToken cancellationToken)

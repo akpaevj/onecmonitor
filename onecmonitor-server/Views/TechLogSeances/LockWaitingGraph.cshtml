@@ -1,6 +1,5 @@
-﻿@using Newtonsoft.Json;
-@using OnecMonitor.Server.ViewModels.TechLogSeances;
-@model LockWaitingGraphViewModel
+﻿@using Newtonsoft.Json
+@model OnecMonitor.Server.ViewModels.TechLogSeances.LockWaitingGraphViewModel
 
 <input type="text" hidden id="graph" name="graph" value="@JsonConvert.SerializeObject(Model.Graph)" />
 

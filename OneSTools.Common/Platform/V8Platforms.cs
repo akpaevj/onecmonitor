@@ -34,6 +34,7 @@ public static partial class V8Platforms
                         var onecV8 = ExecutableExists(directory, "1cv8");
                         var ras = ExecutableExists(directory, "ras");
                         var rac = ExecutableExists(directory, "rac");
+                        var ibcmd = ExecutableExists(directory, "ibcmd");
                         
                         return new V8Platform
                         {
@@ -44,7 +45,9 @@ public static partial class V8Platforms
                             HasRac = rac.Exists,
                             RacPath = rac.Path,
                             HasRas = ras.Exists,
-                            RasPath = ras.Path
+                            RasPath = ras.Path,
+                            HasIbcmd = ibcmd.Exists,
+                            IbcmdPath = ibcmd.Path
                         };
                     })
                 );
@@ -63,7 +66,7 @@ public static partial class V8Platforms
         return (File.Exists(path), path);
     }
 
-    private static string[] GetDefaultInstallationPaths()
+    public static string[] GetDefaultInstallationPaths()
         => Environment.OSVersion.Platform switch
         {
             PlatformID.Win32NT => [

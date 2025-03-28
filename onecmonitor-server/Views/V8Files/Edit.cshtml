@@ -1,11 +1,10 @@
-﻿@using OnecMonitor.Server.ViewModels.V8Files;
-@model V8FileEditViewModel
+﻿@model OnecMonitor.Server.ViewModels.V8Files.V8FileEditViewModel
 
 @{
-    ViewData["Title"] = "Файл 1С";
+    ViewData["Title"] = "Файл";
 }
 
-<h2 class="mb-3">Файл 1С</h2>
+<h2 class="mb-3">Файл</h2>
 
 <form method="post" asp-action="Save" enctype="multipart/form-data" style="height: 100%">
     <div class="mb-3">
@@ -16,8 +15,9 @@
     <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
 
     <div class="mb-3">
-        <label class="form-label" asp-for="Name">Имя</label>
+        <label class="form-label" asp-for="Name">Наименование</label>
         <input type="text" class="form-control" asp-for="Name" value="@Model.Name">
+        <div id="nameHelp" class="form-text">Для расширения используется как имя для загрузки в задачах обслуживания ИБ</div>
         <span asp-validation-for="Name" class="text-danger"></span>
     </div>
 

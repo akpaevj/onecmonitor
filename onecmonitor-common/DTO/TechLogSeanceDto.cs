@@ -12,7 +12,7 @@ namespace OnecMonitor.Common.DTO
         [Key(2)]
         public DateTime FinishDateTime { get; set; }
         [Key(3)]
-        public bool DirectSending { get; set; }
+        public Guid TemplateId { get; set; }
         [Key(4)]
         public string Template { get; set; } = string.Empty;
     }

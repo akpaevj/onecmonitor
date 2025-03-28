@@ -1,26 +1,87 @@
-﻿@using OnecMonitor.Server.ViewModels.TechLogSeances;
-@model TechLogViewModel
+﻿@model OnecMonitor.Server.ViewModels.TechLogSeances.TechLogViewModel
 
 @{
     ViewData["Title"] = "Записи сеанса сбора тех. журнала";
 }
 
-<form class="mb-3" method="get">
+<h5>@Model.Description</h5>
+
+<div class="input-group mb-3">
+    <input id="filter" class="form-control" asp-for="Filter" type="text" placeholder="WHERE clause" list="filtersList" aria-describedby="searchBtn">
+    <input class="btn btn-primary" type="submit" id="searchBtn" value="Search" />
+</div>
+
+<nav om-current-page="@Model.CurrentPage" om-pages-count="@Model.PagesCount" om-filter="@Model.Filter"></nav>
+
+<div class="accordion mb-3">
+    @foreach (var item in Model.TjEvents)
+    {
+        var detailsId = $"eventDetails-{item.TjEvent.Id}";
+        
+        <div class="accordion-item">
+            <div class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@detailsId" aria-expanded="false" aria-controls="@detailsId">
+                    <div class="col">@item.TjEvent.DateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff")</div>
+                    <div class="col">@item.TjEvent.Duration</div>
+                    <div class="col">@item.TjEvent.EventName</div>
+                    <div class="col">@item.TjEvent.Level</div>
+                </button>
+            </div>
+            <div id="@detailsId" class="collapse accordion-collapse" data-bs-parent=".accordion">
+                <div class="accordion-body">
+                    <table class="table mb-0 @item.AdditionalCss">
+                        <thead>
+                        <tr>
+                            <th>Свойство</th>
+                            <th>Значение</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var property in item.TjEvent.Properties)
+                        {
+                            <tr>
+                                <td style="word-break: break-all">@property.Key</td>
+                                <td style="word-break: break-all">@property.Value</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<nav om-current-page="@Model.CurrentPage" om-pages-count="@Model.PagesCount" om-filter="@Model.Filter"></nav>
+
+@section Scripts
+{
+    <script type="text/javascript">
+        const filterInput = document.getElementById('filter');
+        
+        document.getElementById('searchBtn').addEventListener('click', () => {
+            OM.applyTechLogFilter(filterInput.value);
+        });
+    
+    </script>
+}
+
+@*<form class="mb-3" method="get">
 
     <div class="input-group mb-3">
         <input class="form-control" asp-for="Filter" type="text" placeholder="WHERE clause" list="filtersList" aria-describedby="searchBtn">
         <input class="btn btn-primary" type="submit" id="searchBtn" value="Search" />
     </div>
 
-    @* <div class="input-group mb-3">
+    $1$ <div class="input-group mb-3">
         <textarea hidden asp-for="Filter" id="where">@Model.Filter</textarea>
         <div class="form-control" style="min-height: 400px" id="sql_editor"></div>
         <input class="btn btn-primary" type="submit" id="searchBtn" value="Search" />
-    </div> *@
+    </div> #1#
 
     <div class="table-responsive">
-        <table id="techlog" class="table table-striped table-bordered">
-            <thead class="bg-dark text-white">
+        <table id="techlog" class="table table-sm table-striped table-hover table-bordered accordion">
+            <thead>
             <tr>
                 <th scope="col" class="col-3">Время</th>
                 <th scope="col" class="col-2">Длительность</th>
@@ -34,7 +95,7 @@
             {
                 var detailsId = $"eventDetails-{item.TjEvent.Id}";
 
-                <tr data-bs-toggle="collapse" data-bs-target="#@detailsId" aria-expanded="false" aria-controls="@detailsId" class="cursor-pointer om-event-row @item.AdditionalCss">
+                <tr data-bs-toggle="collapse" data-bs-target="#@detailsId">
                     <td>@item.TjEvent.DateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff")</td>
                     <td>@item.TjEvent.Duration</td>
                     <td>@item.TjEvent.EventName</td>
@@ -46,27 +107,25 @@
                         }
                     </td>
                 </tr>
-                <tr class="collapse" id="@detailsId">
-                    <td colspan="5" class="m-0 border-0 p-0">
-                        <div class="m-0 border-0 p-0">
-                            <table class="table table-bordered mb-0 @item.AdditionalCss">
-                                <thead>
+                <tr id="#@detailsId" class="collapse accordion-collapse" data-bs-parent=".table">
+                    <td colspan=" 5">
+                        <table class="table mb-0 @item.AdditionalCss">
+                            <thead>
+                            <tr>
+                                <th>Свойство</th>
+                                <th>Значение</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var property in item.TjEvent.Properties)
+                            {
                                 <tr>
-                                    <th>Свойство</th>
-                                    <th>Значение</th>
+                                    <td style="word-break: break-all">@property.Key</td>
+                                    <td style="word-break: break-all">@property.Value</td>
                                 </tr>
-                                </thead>
-                                <tbody>
-                                @foreach (var property in item.TjEvent.Properties)
-                                {
-                                    <tr>
-                                        <td style="word-break: break-all">@property.Key</td>
-                                        <td style="word-break: break-all">@property.Value</td>
-                                    </tr>
-                                }
-                                </tbody>
-                            </table>
-                        </div>
+                            }
+                            </tbody>
+                        </table>
                     </td>
                 </tr>
             }
@@ -74,7 +133,7 @@
         </table>
     </div>
 
-    <nav om-current-page="@Model.CurrentPage" class="align-self-center" om-pages-count="@Model.PagesCount" om-filter="@Model.Filter"></nav>
+    <nav om-current-page="@Model.CurrentPage" om-pages-count="@Model.PagesCount" om-filter="@Model.Filter"></nav>
 
 </form>
 
@@ -85,8 +144,8 @@
             const editorContainer = document.getElementById('sql_editor');
             const contentContainer = document.getElementById('where');
 
-            OM.initAceEditor(editorContainer, contentContainer, 'sql', true);
+            //OM.initAceEditor(editorContainer, contentContainer, 'sql', true);
         } 
         init();
     </script>
-}
+}*@

@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OnecMonitor.Server.Converters.Sqlite;
 using OnecMonitor.Server.Models;
-using OnecMonitor.Common.DTO;
 using OnecMonitor.Server.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server
@@ -20,10 +19,12 @@ namespace OnecMonitor.Server
         public DbSet<Credentials> Credentials { get; set; }
         public DbSet<InfoBase> InfoBases { get; set; }
         public DbSet<Cluster> Clusters { get; set; }
+        public DbSet<Dbms> Dbms { get; set; }
         public DbSet<TechLogSettings> TechLogSettings { get; set; }
         public DbSet<MaintenanceTask> MaintenanceTasks { get; set; }
         public DbSet<MaintenanceStep> MaintenanceSteps { get; set; }
         public DbSet<MaintenanceStepLogItem> MaintenanceStepLogs { get; set; }
+        public DbSet<EventLogSettings> EventLogSettings { get; set; }
 
         public AppDbContext(IHostEnvironment hostEnvironment)
             => DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-server.db");

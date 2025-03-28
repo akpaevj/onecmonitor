@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Rendering;
 using OnecMonitor.Server.Models;
 
 namespace OnecMonitor.Server.ViewModels;

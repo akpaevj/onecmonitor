@@ -1,8 +1,6 @@
 ﻿using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using OnecMonitor.Server.Models;
-using System.ComponentModel.DataAnnotations;
 
 namespace OnecMonitor.Server.ViewModels.TechLogSeances
 {

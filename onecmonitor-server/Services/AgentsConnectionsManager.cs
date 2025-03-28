@@ -1,17 +1,14 @@
-﻿using OnecMonitor.Common.TechLog;
-using OnecMonitor.Server.Models;
-using System.Collections.Concurrent;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.DTO;
+using OnecMonitor.Common.TechLog;
+using OnecMonitor.Server.Models;
 
 namespace OnecMonitor.Server.Services
 {
     public class AgentsConnectionsManager(
         IConfiguration configuration,
         IServiceProvider serviceProvider,
-        TechLogProcessor techLogProcessor,
         ILogger<AgentsConnectionsManager> logger) : BackgroundService
     {
         private readonly string _host = configuration.GetValue("OnecMonitor:Tcp:Host", "0.0.0.0");
@@ -32,7 +29,11 @@ namespace OnecMonitor.Server.Services
 
                 var client = await _socket.AcceptAsync(stoppingToken);
 
-                var agentConnection = new AgentConnection(client, techLogProcessor, serviceProvider);
+                var agentConnection = new AgentConnection(
+                    client,
+                    serviceProvider,
+                    serviceProvider.GetRequiredService<ILogger<AgentConnection>>());
+                
                 agentConnection.AgentConnected += AgentConnection_Connected;
                 agentConnection.AgentDisconnected += AgentConnection_Disconnected;
 
@@ -61,9 +62,6 @@ namespace OnecMonitor.Server.Services
             logger.LogInformation($"Агент отключился: {agentConnection.AgentInstance!.InstanceName}. Идентификатор соединения: {agentConnection.ConnectionId}");
         }
 
-        public bool IsConnected(Guid agentId)
-            => GetAgentConnection(agentId) != null;
-
         public AgentConnection? GetAgentConnection(Guid agentId)
         {
             AgentConnection? agentConnection;
@@ -74,10 +72,19 @@ namespace OnecMonitor.Server.Services
             return agentConnection;
         }
         
-        public List<AgentConnection> GetAgentsConnections(List<Agent> agents)
-            => agents.Select(c => GetAgentConnection(c.Id)).Where(c => c != null).ToList()!;
-        
-        public List<Agent> GetConnectedAgents(List<Agent> agents)
-            => agents.Where(c => IsConnected(c.Id)).ToList();
+        public async Task<List<AgentConnection>> GetActiveAgentsConnections(CancellationToken cancellationToken)
+        {
+            await using var scope = serviceProvider.CreateAsyncScope();
+            await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            
+            var dbAgents = await dbContext.Agents.ToListAsync(cancellationToken);
+            
+            return GetActiveAgentsConnections(dbAgents);
+        }
+
+        public List<AgentConnection> GetActiveAgentsConnections(List<Agent> agents)
+        {
+            return agents.Select(c => GetAgentConnection(c.Id)).Where(c => c != null).ToList()!;
+        }
     }
 }

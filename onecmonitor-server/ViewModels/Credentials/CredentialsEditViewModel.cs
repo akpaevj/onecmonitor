@@ -9,6 +9,7 @@ public class CredentialsEditViewModel
     public Guid Id { get; init; }
     public string Name { get; set; } = string.Empty;
     public string User { get; set; } = string.Empty;
+    [ValidateNever]
     public string Password { get; set; } = string.Empty;
     public bool DefaultForClusters { get; set; } = false;
     public bool DefaultV8Admin { get; set; } = false;

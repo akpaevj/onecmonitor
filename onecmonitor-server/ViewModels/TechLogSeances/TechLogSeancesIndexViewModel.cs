@@ -7,5 +7,6 @@
         public int CurrentPage { get; set; } = 1;
         public int PagesCount { get; set; }
         public List<TechLogSeancesListItemViewModel> Seances { get; set; } = new();
+        public bool RepositoryAvailable { get; set; }
     }
 }

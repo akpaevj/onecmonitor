@@ -7,4 +7,5 @@ public class MaintenanceTaskListItemViewModel
     public DateTime FinishDateTime { get; set; }
     public string Description { get; set; } = string.Empty;
     public bool IsFaulted { get; set; } = false;
+    public bool IsArchived { get; set; } = false;
 }

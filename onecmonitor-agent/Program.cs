@@ -2,8 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Agent;
 using OnecMonitor.Agent.Models;
 using OnecMonitor.Agent.Services;
+using OnecMonitor.Agent.Services.EventLog;
 using OnecMonitor.Agent.Services.MaintenanceTasks;
 using OnecMonitor.Agent.Services.TechLog;
+using OnecMonitor.Common.DTO.MaintenanceTasks;
+using OnecMonitor.Common.Services;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((_, services) =>
@@ -21,13 +24,19 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddDbContext<AppDbContext>();
         
         services.AddTransient<OnecMonitorConnection>();
-        
-        services.AddSingleton<TechLogFolderWatcher>();
-        services.AddSingleton<TechLogExporter>();
-        services.AddHostedService<TechLogSeancesWatcher>();
-        
-        services.AddSingleton<MaintenanceTaskExecutorQueue>();
+
+        services.AddSingleton<MonitorQueue<MaintenanceTaskDto>>();
         services.AddHostedService<MaintenanceTaskExecutor>();
+
+        services.AddSingleton<EventLogRepositoryManager>();
+        services.AddSingleton<EventLogExporter>();
+        services.AddSingleton<EventLogExportManager>();
+        
+        services.AddSingleton<TechLogRepositoryManager>();
+        services.AddSingleton<TechLogExporter>();
+        services.AddSingleton<TechLogFoldersManager>();
+        services.AddSingleton<TechLogReadersManager>();
+        services.AddSingleton<TechLogManager>();
         
         services.AddSingleton<CommandsWatcher>();
     })
@@ -42,7 +51,7 @@ await appDbContext.Database.MigrateAsync();
 // update agent instance info
 var configuration = host.Services.GetRequiredService<IConfiguration>();
 
-var agentInstance = appDbContext.AgentInstance.FirstOrDefault();
+var agentInstance = appDbContext.AgentInstance.AsNoTracking().FirstOrDefault();
 
 var instanceName = configuration.GetValue("Agent:InstanceName", Environment.MachineName);
 if (string.IsNullOrEmpty(instanceName))
@@ -67,15 +76,9 @@ else if (agentInstance.InstanceName != instanceName)
     appDbContext.SaveChanges();
 }
 
+host.Services.GetRequiredService<TechLogManager>();
 
-// another init actions
-var techLogExporter = host.Services.GetRequiredService<TechLogExporter>();
-appLifetime.ApplicationStopping.Register(() =>
-{
-    techLogExporter.Stop();
-    techLogExporter.Dispose();
-});
-
-await host.Services.GetRequiredService<CommandsWatcher>().Start(appLifetime.ApplicationStopping);
+await host.Services.GetRequiredService<CommandsWatcher>()
+    .Start(appLifetime.ApplicationStopping);
 
 host.Run();

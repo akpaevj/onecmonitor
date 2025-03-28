@@ -5,12 +5,13 @@
 @model OnecMonitor.Server.ViewModels.MaintenanceTasks.MaintenanceTaskEditViewModel
 
 @{
-    ViewData["Title"] = "Задача обслуживания";
+    var title = Model.IsTemplate ? "Шаблон задачи обслуживания" : "Задача обслуживания";
+    ViewData["Title"] = title;
 }
 
-<h2 class="mb-3">Задача обслуживания</h2>
+<h2 class="mb-3">@title</h2>
 
-<form method="post" asp-action="Save" style="height: 100%">
+<form method="post" asp-action="Save" asp-route-isTemplate="@Model.IsTemplate" style="height: 100%">
     <div class="mb-3">
         <button class="btn btn-primary" type="submit">Сохранить</button>
         <button class="btn btn-secondary" onclick="history.back()" type="button">Назад</button>
@@ -30,6 +31,7 @@
             nameof(Model.InfoBases),
             Model.InfoBases,
             Model.AvailableInfoBases))
+        <span asp-validation-for="InfoBases" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
@@ -95,6 +97,6 @@
 @section Scripts
 {
     <script type="text/javascript">
-        OM.initStepsEditor();
+        OM.initStepsEditor(@Model.IsTemplate.ToString().ToLower());
     </script>
 }

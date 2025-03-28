@@ -1,6 +1,4 @@
-﻿using OnecMonitor.Server.Models;
-
-namespace OnecMonitor.Server.ViewModels.Log
+﻿namespace OnecMonitor.Server.ViewModels.Log
 {
     public class LogTemplateEditViewModel
     {

@@ -2,20 +2,28 @@ import {CallGraphMember, LockWaitingMember, LockWaitingMemberType} from "./model
 import {DataGroup, DataItem, Timeline, TimelineOptions} from "vis-timeline";
 import * as vis from "visjs-network";
 import * as ace from 'ace-builds/src-noconflict/ace';
+import 'ace-builds/src-noconflict/theme-one_dark';
+import 'ace-builds/src-noconflict/mode-xml';
+import 'ace-builds/src-noconflict/mode-sql';
+import {setUrlParameterValue} from "./common";
+
+export function applyTechLogFilter(filter: string) {
+    setUrlParameterValue('filter', filter);
+}
 
 export function initAceEditor(editorContainer: Element, contentContainer: HTMLTextAreaElement, mode: string, heightToContent: Boolean = false) {
     let editor = ace.edit(editorContainer, {
         mode: `ace/mode/${mode}`,
         selectionStyle: "text",
-        theme: 'ace/theme/twilight',
+        theme: 'ace/theme/one_dark',
         enableLiveAutocompletion: true,
         autoScrollEditorIntoView: false
     });
 
     if (mode === 'sql') {
         editor.setOption('enableSnippets', true);
-        let langTools = ace.require('ace/ext/language_tools');
-        langTools.addCompleter(getClickHouseCompleter());
+        //let langTools = ace.require('ace/ext/language_tools');
+        //langTools.addCompleter(getClickHouseCompleter());
     }
 
     if (heightToContent) {

@@ -14,7 +14,8 @@ public class ClusterEditViewModel
     public int Port { get; set; } = 1540;
 
     public Guid? CredentialsId { get; set; }
-    [ValidateNever] public SelectList Credentials { get; set; } = null!;
+    [ValidateNever] 
+    public SelectList Credentials { get; set; } = null!;
     
     public Guid AgentId { get; set; }
     [DisplayName("Агенты")]
@@ -25,5 +26,6 @@ public class ClusterEditViewModel
     [ValidateNever] 
     [DisplayName("Информационные базы")]
     public List<SelectableItemViewModel> InfoBases { get; set; } = [];
-    [ValidateNever] public List<SelectableItemViewModel> AvailableInfoBases { get; set; } = [];
+    [ValidateNever] 
+    public List<SelectableItemViewModel> AvailableInfoBases { get; set; } = [];
 }

@@ -1,11 +1,7 @@
-using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using OneSTools.Common.Designer.Agent.Models;
 using Renci.SshNet;
-using Renci.SshNet.Common;
 
 namespace OneSTools.Common.Designer.Agent;
 
@@ -95,6 +91,16 @@ public class DesignerAgentClient : IDisposable
 
     public async Task ConnectIb()
         => await _shellStream.WriteCommand("common connect-ib");
+    
+    public async Task LoadCfg(string path)
+    {
+        await _shellStream.WriteCommand($"config load-cfg --file \"{path}\"");
+    }
+    
+    public async Task LoadExtension(string path, string extensionName)
+    {
+        await _shellStream.WriteCommand($"config load-cfg --file=\"{path}\" --extension=\"{extensionName}\"");
+    }
 
     public async Task<ExtensionInfo> GetExtension(string name)
     {

@@ -16,32 +16,31 @@
     <div class="mb-3">
         <label class="form-check-label" asp-for="Enabled">Включен</label>
         <input class="form-check-input" type="checkbox" asp-for="Enabled" checked="@Model.Enabled">
-    </div>
-
-    <h4 class="mb-3">ClickHouse</h4>
-
-    <div class="mb-3">
-        <label class="form-label" asp-for="ClickHouseHost">Хост</label>
-        <input type="text" class="form-control" asp-for="ClickHouseHost" value="@Model.ClickHouseHost">
-        <span asp-validation-for="ClickHouseHost" class="text-danger"></span>
+        <span asp-validation-for="Enabled" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="ClickHousePort">Порт</label>
-        <input type="number" class="form-control" asp-for="ClickHousePort" value="@Model.ClickHousePort">
-        <span asp-validation-for="ClickHousePort" class="text-danger"></span>
+        <label class="form-label" asp-for="DbmsId">СУБД</label>
+        <select asp-for="DbmsId" class="form-control" asp-items="Model.AvailableDbms"></select>
+        <span asp-validation-for="DbmsId" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="ClickHouseUser">Пользователь</label>
-        <input type="text" class="form-control" asp-for="ClickHouseUser" value="@Model.ClickHouseUser">
-        <span asp-validation-for="ClickHouseUser" class="text-danger"></span>
+        <label class="form-label" asp-for="DatabaseName">Имя базы данных</label>
+        <input type="text" class="form-control" asp-for="DatabaseName" value="@Model.DatabaseName">
+        <span asp-validation-for="DatabaseName" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="ClickHousePassword">Пароль</label>
-        <input type="password" class="form-control" asp-for="ClickHousePassword" value="@Model.ClickHousePassword">
-        <span asp-validation-for="ClickHousePassword" class="text-danger"></span>
+        <label class="form-label" asp-for="Table">Имя таблицы хранения</label>
+        <input type="text" class="form-control" asp-for="Table" value="@Model.Table">
+        <span asp-validation-for="Table" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="CredentialsId">Учетные данные</label>
+        <select asp-for="CredentialsId" class="form-control" asp-items="Model.AvailableCredentials"></select>
+        <span asp-validation-for="CredentialsId" class="text-danger"></span>
     </div>
 
 </form>

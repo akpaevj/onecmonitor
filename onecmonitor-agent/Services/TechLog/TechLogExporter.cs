@@ -1,239 +1,111 @@
-﻿using System.Text;
-using Microsoft.Extensions.Caching.Memory;
+using System.Threading.Tasks.Dataflow;
 using OnecMonitor.Common.DTO;
+using OnecMonitor.Common.Models;
+using OnecMonitor.Common.Services;
+using OnecMonitor.Common.Storage;
+using OnecMonitor.Common.TechLog;
+using Timer = System.Timers.Timer;
 
-namespace OnecMonitor.Agent.Services.TechLog
+namespace OnecMonitor.Agent.Services.TechLog;
+
+public class TechLogExporter
 {
-    public class TechLogExporter : IDisposable
+    private readonly TechLogRepositoryManager _repositoryManager;
+    private readonly IHostApplicationLifetime _applicationLifetime;
+    private readonly ILogger<TechLogExporter> _logger;
+
+    private ITechLogRepository? _repository;
+    private CancellationTokenSource? _cts;
+    private Timer? _flushTimer;
+
+    private ActionBlock<TjEvent[]>? _sendBlock;
+    private BatchBlock<TjEvent>? _batchBlock;
+    private ActionBlock<TechLogEventContent>? _parseBlock;
+
+    public TechLogExporter(
+        TechLogRepositoryManager repositoryManager,
+        IHostApplicationLifetime applicationLifetime, 
+        ILogger<TechLogExporter> logger)
     {
-        private readonly AsyncServiceScope _scope;
-        private readonly OnecMonitorConnection _onecMonitorConnection;
-        private readonly TechLogFolderWatcher _techLogWatcher;
-        private readonly ILogger<TechLogExporter> _logger;
-        private readonly MemoryCache _filesLastPositionCache;
-        private CancellationTokenSource? _cts;
+        _repositoryManager = repositoryManager;
+        _repositoryManager.SettingsChanged += SettingsChanged;
+        _applicationLifetime = applicationLifetime;
+        _logger = logger;
+    }
 
-        public bool Enabled => _cts?.IsCancellationRequested == false;
+    private void SettingsChanged(object? sender, TechLogSettingsDto e)
+    {
+        _cts?.Cancel();
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(_applicationLifetime.ApplicationStopping);
 
-        public TechLogExporter(
-            IServiceProvider serviceProvider,
-            TechLogFolderWatcher techLogWatcher,
-            ILogger<TechLogExporter> logger)
-        {
-            _scope = serviceProvider.CreateAsyncScope();
-            _onecMonitorConnection = _scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
-            _techLogWatcher = techLogWatcher;
-            _logger = logger;
-            _filesLastPositionCache = new MemoryCache(new MemoryCacheOptions());
+        if (e.Enabled)
+            Init(_cts.Token);
+    }
 
-            _techLogWatcher.LogFileChanged += path =>
-            {
-                _ = StartFileReading(path);
-                _logger.LogTrace("Started reading changed file");
-            };
-
-            _techLogWatcher.LogFileCreated += path =>
-            {
-                _ = StartFileReading(path);
-                _logger.LogDebug("Started reading the new file");
-            };
-        }
-
-        public void Start()
-        {
-            if (!_cts?.IsCancellationRequested == false)
-                Stop();
-
-            _cts?.Dispose();
-            _cts = new CancellationTokenSource();
-            _cts.Token.Register(() => 
-            {
-                _techLogWatcher.Stop();
-            });
-            
-            _onecMonitorConnection.Start();
-
-            try
-            {
-                var existsFiles = _techLogWatcher.GetExistFiles();
-
-                foreach (var filePath in existsFiles)
-                {
-                    if (_cts.Token.IsCancellationRequested)
-                        break;
-
-                    _techLogWatcher.StopWatchFile(filePath);
-
-                    _ = StartFileReading(filePath);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to fetch exist log files");
-                return;
-            }
-
-            _techLogWatcher.Start();
-        }
+    private void Init(CancellationToken cancellationToken)
+    {
+        _repository = _repositoryManager.GetInstance();
+        _repository.Connect(cancellationToken);
         
-        public void Stop()
-            => _cts?.Cancel();
+        var sendBlockOptions = new ExecutionDataflowBlockOptions
+        {
+            MaxDegreeOfParallelism = 1,
+            BoundedCapacity = 10000
+        };
 
-        private async Task StartFileReading(string path)
+        _sendBlock = new ActionBlock<TjEvent[]>(async tjEvents =>
         {
             try
             {
-                var position = await GetLastFilePosition(path, _cts!.Token);
+                await _repository.WriteEvents(tjEvents, cancellationToken);
 
-                _logger.LogTrace($"Started reading the new file: {path} from {position} position");
-
-                try
-                {
-                    using var reader = new NewTechLogReader(path, position);
-
-                    var fileName = Path.GetFileNameWithoutExtension(path);
-                    var folder = Path.GetFileName(Path.GetDirectoryName(path)) ?? "";
-                    var seanceId = new Guid(Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(path))))!);
-                    var templateId = new Guid(Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(path)))!);
-
-                    var cacheKey = GetCacheKey(ref seanceId, ref templateId, folder, fileName);
-
-                    while (!_cts!.IsCancellationRequested)
-                    {
-                        var read = false;
-
-                        try
-                        {
-                            _logger.LogTrace("Begin reading the next event item");
-
-                            read = reader.MoveNext();
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Failed to read log file");
-                        }
-
-                        if (read)
-                        {
-                            _logger.LogTrace("Event is read");
-
-                            var message = new TechLogEventContentDto
-                            {
-                                SeanceId = seanceId,
-                                TemplateId = templateId,
-                                Folder = folder,
-                                File = fileName,
-                                EndPosition = reader.Position,
-                                Content = reader.EventContent
-                            };
-
-                            await _onecMonitorConnection.Send(MessageType.TechLogEventContent, message, _cts.Token);
-
-                            CachePosition(cacheKey, message.EndPosition);
-                        }
-                        else
-                            break;
-                    }
-
-                    _logger.LogTrace("Stopping reading the file");
-
-                    _techLogWatcher.StartWatchFile(path);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to read log file");
-                }
+                _logger.LogTrace("Tj events batch has been sent to the database");
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
-                _logger.LogError(ex, "Failed to get last file position");
+                _logger.LogError(ex, "Failed to send tech log events batch to the database");
             }
-        }
+        }, sendBlockOptions);
 
-        private static string GetCacheKey(ref Guid seanceId, ref Guid templateId, string folder, string file)
+        var batchBlockOptions = new GroupingDataflowBlockOptions
         {
-            var builder = new StringBuilder();
+            BoundedCapacity = 10000
+        };
+        _batchBlock = new BatchBlock<TjEvent>(5000, batchBlockOptions);
 
-            builder.Append(seanceId.ToString());
-            builder.Append('_');
-            builder.Append(templateId.ToString());
-            builder.Append('_');
-            builder.Append(folder);
-            builder.Append('_');
-            builder.Append(file);
-
-            return builder.ToString();
-        }
-
-        private void CachePosition(string cacheKey, long newPosition)
+        var parseBlockOptions = new ExecutionDataflowBlockOptions
         {
-            if (!TryGetPositionFromCache(cacheKey, out var position) || position < newPosition)
-            {
-                if (position < newPosition)
-                    _filesLastPositionCache.Set(cacheKey, newPosition, TimeSpan.FromHours(1));
-            }
-            else
-                _filesLastPositionCache.Set(cacheKey, newPosition, TimeSpan.FromHours(1));
-        }
-
-        private bool TryGetPositionFromCache(ref Guid seanceId, ref Guid templateId, string folder, string file, out long position)
+            MaxDegreeOfParallelism = Environment.ProcessorCount,
+            BoundedCapacity = 10000,
+        };
+        _parseBlock = new ActionBlock<TechLogEventContent>(async i =>
         {
-            var cacheKey = GetCacheKey(ref seanceId,ref templateId, folder, file);
-
-            return TryGetPositionFromCache(cacheKey, out position);
-        }
-
-        private bool TryGetPositionFromCache(string cacheKey, out long position)
-            => _filesLastPositionCache.TryGetValue(cacheKey, out position);
-
-        public void ClearCache()
-            => _filesLastPositionCache.Clear();
-
-        private static (Guid SeanceId, Guid TemplateId, string Folder, string File) GetFileInfo(string path)
-        {
-            var file = Path.GetFileNameWithoutExtension(path);
-            var folder = Directory.GetParent(path)!.Name;
-            var templateId = Guid.Parse(Directory.GetParent(path)!.Parent!.Name);
-            var seanceId = Guid.Parse(Directory.GetParent(path)!.Parent!.Parent!.Name);
-
-            return (seanceId, templateId, folder, file);
-        }
-
-        private async Task<long> GetLastFilePosition(string path, CancellationToken cancellationToken = default)
-        {
-            var fileInfo = GetFileInfo(path);
-
-            if (TryGetPositionFromCache(ref fileInfo.SeanceId, ref fileInfo.TemplateId, fileInfo.Folder, fileInfo.File, out var position))
-                return position;
-
             try
             {
-                _logger.LogTrace("Last position in file requested");
-            
-                return await _onecMonitorConnection.Get<LastFilePositionRequestDto, long>(
-                    MessageType.LastFilePositionRequest, 
-                    MessageType.LastFilePosition,
-                    new LastFilePositionRequestDto
-                    {
-                        SeanceId = fileInfo.SeanceId,
-                        TemplateId = fileInfo.TemplateId,
-                        Folder = fileInfo.Folder,
-                        File = fileInfo.File
-                    }, 
-                    cancellationToken);
+                if (TechLogParser.TryParse(i, out var tjEvent))
+                    await _batchBlock.SendAsync(tjEvent, cancellationToken);
+                else
+                    _logger.LogError($"Ошибка разбора события технологического журнала: {i.Content}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get last file position");
-                throw;
+                _logger.LogError(ex, $"Ошибка разбора события технологического журнала: {i.Content}");
             }
-        }
+        }, parseBlockOptions);
+        
+        cancellationToken.Register(_parseBlock.Complete);
 
-        public void Dispose()
-        {
-            _onecMonitorConnection.Dispose();
-            _techLogWatcher.Dispose();
-            _scope.Dispose();
-        }
+        _ = _parseBlock.Completion.ContinueWith(_ => _batchBlock.Complete(), cancellationToken);
+        _batchBlock.LinkTo(_sendBlock!, new DataflowLinkOptions { PropagateCompletion = true });
+
+        _flushTimer = new Timer(1000);
+        _flushTimer.Elapsed += (_, _) => _batchBlock.TriggerBatch();
+        _flushTimer.Start();
+    }
+
+    public async Task ProcessTjEventContent(TechLogEventContent eventContent, CancellationToken cancellationToken = default)
+    {
+        _logger.LogTrace("Отправка события технологического журнала в блок разбора");
+        await _parseBlock!.SendAsync(eventContent, cancellationToken);
     }
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace OneSTools.Common.Designer.Agent;
@@ -17,5 +18,5 @@ public class DesignerAgentMessage
 
     [JsonPropertyName("body")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public System.Text.Json.JsonDocument Body { get; init; }
+    public JsonDocument Body { get; init; }
 }

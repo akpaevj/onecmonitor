@@ -1,7 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Server.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.Models.MaintenanceTasks;
 

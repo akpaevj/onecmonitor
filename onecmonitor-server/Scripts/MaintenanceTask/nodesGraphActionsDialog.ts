@@ -15,8 +15,10 @@ export class NodesGraphActionsDialog {
     public show(nodeId: string | null = null): void {
         const editingStep = nodeId == null ? null : this.tree.findStep(nodeId);
         
+        const isFirstStep = nodeId == null;
+        
         const editBtn = this.dialogElement.querySelector<HTMLButtonElement>('#edit-step-btn');
-        editBtn.hidden = nodeId == null;
+        this.showHideButton(editBtn, !isFirstStep);
         editBtn.onclick = async () => {
             this.dialogElement.hidePopover();
             
@@ -26,7 +28,7 @@ export class NodesGraphActionsDialog {
         }
 
         const deleteStepBtn = this.dialogElement.querySelector<HTMLButtonElement>('#delete-step-btn');
-        deleteStepBtn.hidden = nodeId == null;
+        this.showHideButton(deleteStepBtn, !isFirstStep);
         deleteStepBtn.onclick = async () => {
             this.dialogElement.hidePopover();
 
@@ -44,20 +46,24 @@ export class NodesGraphActionsDialog {
         }
 
         const addErrorStepBtn = this.dialogElement.querySelector<HTMLButtonElement>('#add-error-step-btn');
-        addErrorStepBtn.hidden = nodeId == null || editingStep.nodeKind === MaintenanceStepNodeKind.Simple;
+        this.showHideButton(addErrorStepBtn, !isFirstStep && editingStep.nodeKind !== MaintenanceStepNodeKind.Simple);
         addErrorStepBtn.onclick = async () => {
             this.dialogElement.hidePopover();
             this.addRightStep(MaintenanceStepNodeKind.Simple, nodeId);
         }
 
         const addErrorBinaryStepBtn = this.dialogElement.querySelector<HTMLButtonElement>('#add-error-binary-step-btn');
-        addErrorBinaryStepBtn.hidden = nodeId == null || editingStep.nodeKind == MaintenanceStepNodeKind.Simple;
+        this.showHideButton(addErrorBinaryStepBtn, !isFirstStep && editingStep.nodeKind !== MaintenanceStepNodeKind.Simple);
         addErrorBinaryStepBtn.onclick = async () => {
             this.dialogElement.hidePopover();
             this.addRightStep(MaintenanceStepNodeKind.TryCatch, nodeId);
         }
 
         this.dialogElement.showPopover()
+    }
+
+    private showHideButton(button: HTMLButtonElement, value: boolean) {
+        button.hidden = !value;
     }
     
     private addLeftStep(kind: MaintenanceStepNodeKind, nodeId: string | null = null) {

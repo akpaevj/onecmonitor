@@ -13,18 +13,20 @@
     </div>
 
     <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
-    <input type="text" hidden class="form-control" asp-for="InfoBaseInternalId" value="@Model.InfoBaseInternalId">
 
     <div class="mb-3">
-        <label class="form-label" asp-for="Name">Имя</label>
-        <input type="text" class="form-control" asp-for="Name" value="@Model.Name">
-        <span asp-validation-for="Name" class="text-danger"></span>
+        <label class="form-label" asp-for="ClusterId">Кластер</label>
+        <select disabled asp-for="ClusterId" class="form-control" asp-items="Model.Clusters"></select>
     </div>
 
     <div class="mb-3">
-        <label class="form-label" asp-for="InfoBaseName">Наименование информационной базы</label>
-        <input type="text" class="form-control" asp-for="InfoBaseName" value="@Model.InfoBaseName">
-        <span asp-validation-for="InfoBaseName" class="text-danger"></span>
+        <label class="form-label" asp-for="InfoBaseName">Имя</label>
+        <input disabled type="text" class="form-control" asp-for="InfoBaseName" value="@Model.InfoBaseName">
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="Name">Представление</label>
+        <input type="text" class="form-control" asp-for="Name" value="@Model.Name">
     </div>
 
     <div class="mb-3">
@@ -37,12 +39,6 @@
         <label class="form-label" asp-for="CredentialsId">Учетные данные</label>
         <select asp-for="CredentialsId" class="form-control" asp-items="Model.Credentials"></select>
         <span asp-validation-for="CredentialsId" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label" asp-for="ClusterId">Кластер</label>
-        <select asp-for="ClusterId" class="form-control" asp-items="Model.Clusters"></select>
-        <span asp-validation-for="ClusterId" class="text-danger"></span>
     </div>
 
 </form>

@@ -1,0 +1,42 @@
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model OnecMonitor.Server.ViewModels.Dbms.DbmsEditViewModel
+
+@{
+    ViewData["Title"] = "СУБД";
+}
+
+<h2 class="mb-3">СУБД</h2>
+
+<form method="post" asp-action="Save" style="height: 100%">
+    <div class="mb-3">
+        <button class="btn btn-primary" type="submit">Сохранить</button>
+        <button class="btn btn-secondary" onclick="history.back()" type="button">Назад</button>
+    </div>
+
+    <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="Name">Имя</label>
+        <input type="text" class="form-control" asp-for="Name" value="@Model.Name">
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="Type">Тип СУБД</label>
+        <select asp-for="Type" class="form-control" asp-items="Model.Types"></select>
+        <span asp-validation-for="Type" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="Host">Хост</label>
+        <input type="text" class="form-control" asp-for="Host" value="@Model.Host">
+        <span asp-validation-for="Host" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="Port">Порт</label>
+        <input type="number" class="form-control" asp-for="Port" value="@Model.Port">
+        <span asp-validation-for="Port" class="text-danger"></span>
+    </div>
+
+</form>

@@ -1,31 +1,29 @@
 ﻿using MessagePack;
-using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Agent.Services.MaintenanceTasks;
-using OnecMonitor.Agent.Services.TechLog;
+using OnecMonitor.Agent.Services.EventLog;
 using OnecMonitor.Common.DTO;
 using OnecMonitor.Common.DTO.MaintenanceTasks;
-using OneSTools.Common.Platform;
+using OnecMonitor.Common.Services;
 using OneSTools.Common.Platform.RemoteAdministration;
-using OneSTools.Common.Platform.Services;
 
 namespace OnecMonitor.Agent.Services
 {
     internal class CommandsWatcher
     {
         private readonly OnecMonitorConnection _server;
-        private readonly AppDbContext _appDbContext;
-        private readonly MaintenanceTaskExecutorQueue _maintenanceTasksQueue;
+        private readonly MonitorQueue<MaintenanceTaskDto> _maintenanceTasksQueue;
+        private readonly TechLogRepositoryManager _techLogRepositoryManager;
+        private readonly EventLogExportManager _eventLogExportManager;
         private readonly RasHolder _rasHolder;
-        private readonly TechLogExporter _techLogExporter;
         private readonly IHostApplicationLifetime _applicationLifetime;
         private readonly ILogger<CommandsWatcher> _logger;
         private readonly V8PlatformsProvider _v8PlatformsProvider;
         private readonly V8ServicesProvider _v8ServicesProvider;
 
         public CommandsWatcher(
-            IServiceProvider serviceProvider, 
-            MaintenanceTaskExecutorQueue maintenanceTasksQueue,
-            TechLogExporter techLogExporter,
+            IServiceProvider serviceProvider,
+            TechLogRepositoryManager techLogRepositoryManager,
+            MonitorQueue<MaintenanceTaskDto> maintenanceTasksQueue,
+            EventLogExportManager eventLogExportManager,
             RasHolder rasHolder,
             IHostApplicationLifetime appLifetime,
             V8PlatformsProvider v8PlatformsProvider,
@@ -35,15 +33,16 @@ namespace OnecMonitor.Agent.Services
             var scope = serviceProvider.CreateAsyncScope();
             _rasHolder = rasHolder;
             _server = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
-            _appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            _techLogExporter = techLogExporter;
+            _techLogRepositoryManager = techLogRepositoryManager;
             _v8PlatformsProvider = v8PlatformsProvider;
             _v8ServicesProvider = v8ServicesProvider;
+            _eventLogExportManager = eventLogExportManager;
             _maintenanceTasksQueue = maintenanceTasksQueue;
             _applicationLifetime = appLifetime;
             _logger = logger;
 
             _server.MessageReceived += MessageReceived;
+            
             _applicationLifetime.ApplicationStopping.Register(() =>
             {
                 _server.MessageReceived -= MessageReceived;
@@ -57,9 +56,6 @@ namespace OnecMonitor.Agent.Services
                 // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                 switch (message.Header.Type)
                 {
-                    case MessageType.UpdateTechLogSeancesRequest:
-                        await UpdateTechLogSeancesByRequest(message, _applicationLifetime.ApplicationStopping);
-                        break;
                     case MessageType.InstalledPlatformsRequest:
                         await SendInstalledPlatforms(message, _applicationLifetime.ApplicationStopping);
                         break;
@@ -75,8 +71,8 @@ namespace OnecMonitor.Agent.Services
                     case MessageType.RasServicesRequest:
                         await SendRasServices(message, _applicationLifetime.ApplicationStopping);
                         break;
-                    case MessageType.UpdateSettingsRequest:
-                        await HandleUpdateSettingsRequest(message, _applicationLifetime.ApplicationStopping);
+                    case MessageType.Settings:
+                        await HandleSettings(message, _applicationLifetime.ApplicationStopping);
                         break;
                     case MessageType.MaintenanceTask:
                         await HandleMaintenanceTask(message, _applicationLifetime.ApplicationStopping);
@@ -104,6 +100,8 @@ namespace OnecMonitor.Agent.Services
         public async Task Start(CancellationToken token)
         {
             await _server.Start(true);
+            
+            await UpdateSettings(token);
         }
 
         private async Task SendInstalledPlatforms(Message message, CancellationToken cancellationToken)
@@ -111,26 +109,29 @@ namespace OnecMonitor.Agent.Services
             var platforms = _v8PlatformsProvider.GetInstalledPlatforms();
             await _server.Send(MessageType.InstalledPlatforms, platforms, message, cancellationToken);
         }
-        
-        private async Task HandleUpdateSettingsRequest(Message message, CancellationToken cancellationToken)
+
+        private async Task ApplySettings(SettingsDto settingsDto, CancellationToken cancellationToken)
         {
-            await UpdateSettings(cancellationToken);
+            _techLogRepositoryManager.SetSettings(settingsDto.TechLogSettings);
+            await _eventLogExportManager.UpdateSettings(settingsDto.EventLogSettings, cancellationToken);
+        }
+        
+        private async Task HandleSettings(Message message, CancellationToken cancellationToken)
+        {
+            var settings = MessagePackSerializer.Deserialize<SettingsDto>(message.Data, cancellationToken: cancellationToken);
+            await ApplySettings(settings, cancellationToken);
             
             await _server.SendOk(message, cancellationToken);
         }
 
         private async Task UpdateSettings(CancellationToken cancellationToken)
         {
-            var response =
-                await _server.Get<SettingsDto>(MessageType.SettingsRequest, MessageType.Settings, cancellationToken);
-            
-            if (response.TechLogEnabled)
-            {
-                await UpdateTechLogSeances(cancellationToken);
-                _techLogExporter.Start();
-            }
-            else
-                _techLogExporter.Stop();
+            var response = await _server.Get<SettingsDto>(
+                MessageType.SettingsRequest,
+                MessageType.Settings,
+                cancellationToken);
+
+            await ApplySettings(response, cancellationToken);
         }
         
         private async Task SendV8Clusters(Message message, CancellationToken cancellationToken)
@@ -169,66 +170,6 @@ namespace OnecMonitor.Agent.Services
         {
             var services = _rasHolder.GetRasServices();
             await _server.Send(MessageType.RasServices, services, message, cancellationToken);
-        }
-
-        private async Task UpdateTechLogSeancesByRequest(Message message, CancellationToken cancellationToken)
-        {
-            await _server.SendOk(message, cancellationToken);
-
-            if (_techLogExporter.Enabled)
-                await UpdateTechLogSeances(cancellationToken);
-        }
-
-        private async Task UpdateTechLogSeances(CancellationToken cancellationToken)
-        {
-            try
-            {
-                var seances = await _server.Get<List<TechLogSeanceDto>>(
-                    MessageType.TechLogSeancesRequest, 
-                    MessageType.TechLogSeances, 
-                    cancellationToken);
-
-                await _appDbContext.Database.BeginTransactionAsync(cancellationToken);
-
-                var currentSeances = await _appDbContext.TechLogSeances.ToListAsync(cancellationToken);
-                var removedSeances = currentSeances.Where(c => seances.FirstOrDefault(e => e.Id == c.Id) == null).ToList();
-                var addedSeances = seances.Where(c => currentSeances.FirstOrDefault(e => e.Id == c.Id) == null).ToList();
-                var updatedSeances = currentSeances.Where(c =>
-                {
-                    var gotSeance = seances.FirstOrDefault(e => e.Id == c.Id);
-
-                    if (gotSeance == null || c.Template == gotSeance.Template) 
-                        return false;
-                    
-                    c.Template = gotSeance.Template;
-                    return true;
-
-                }).ToList();
-
-                removedSeances.ForEach(c => c.Status = Models.TechLogSeanceStatus.Deleted);
-
-                await _appDbContext.AddRangeAsync(addedSeances.Select(seance => new Models.TechLogSeance()
-                {
-                    Id = seance.Id,
-                    StartDateTime = seance.StartDateTime,
-                    FinishDateTime = seance.FinishDateTime,
-                    Template = seance.Template
-                }), cancellationToken);
-
-                if (updatedSeances.Count > 0)
-                    _appDbContext.UpdateRange(updatedSeances);
-
-                await _appDbContext.Database.CommitTransactionAsync(cancellationToken);
-
-                await _appDbContext.SaveChangesAsync(cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                await _appDbContext.Database.RollbackTransactionAsync(cancellationToken);
-                _logger.LogError(ex, "Failed to update tech log collecting seances");
-            }
-
-            _appDbContext.ChangeTracker.Clear();
         }
     }
 }

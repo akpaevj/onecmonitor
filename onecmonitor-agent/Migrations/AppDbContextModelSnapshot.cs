@@ -30,32 +30,6 @@ namespace OnecMonitor.Agent.Migrations
 
                     b.ToTable("AgentInstance");
                 });
-
-            modelBuilder.Entity("OnecMonitor.Agent.Models.TechLogSeance", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FinishDateTime")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("StartDateTime")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Template")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TechLogSeances");
-                });
 #pragma warning restore 612, 618
         }
     }

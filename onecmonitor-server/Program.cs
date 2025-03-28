@@ -1,18 +1,18 @@
 using System.Net;
 using AutoMapper;
-using OnecMonitor.Server.Services;
-using OnecMonitor.Server;
-using Grpc.Net.Client;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using OnecMonitor.Common.DTO;
+using OnecMonitor.Common.EventLog;
+using OnecMonitor.Common.Services;
 using OnecMonitor.Common.Storage;
 using OnecMonitor.Common.TechLog;
-using Grpc.Core;
-using Microsoft.Extensions.FileProviders;
+using OnecMonitor.Server;
 using OnecMonitor.Server.AutoMapper;
+using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Hubs;
-using OnecMonitor.Server.Models;
+using OnecMonitor.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +27,7 @@ builder.WebHost.ConfigureKestrel((context, options) =>
     options.Limits.MaxRequestBodySize = 2000 * 1024 * 1024;
     
     // configure http listener
-    var host = context.Configuration.GetValue("OnecMonitor:Http:Host", "0.0.0.0")!;
+    var host = context.Configuration.GetValue("OnecMonitor:Http:Host", "0.0.0.0");
     var port = context.Configuration.GetValue("OnecMonitor:Http:Port", 7002);
 
     options.Listen(IPAddress.Parse(host), port, configure =>
@@ -45,16 +45,16 @@ builder.Services.AddSignalR(opt =>
 builder.Services.AddAutoMapper(typeof(DtoProfile));
 builder.Services.AddAutoMapper(typeof(CommonProfile));
 
+builder.Services.AddSingleton<TechLogRepositoryManager>();
+builder.Services.AddSingleton<EventLogRepositoryManager>();
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<TechLogAnalyzer>();
 builder.Services.AddDbContext<AppDbContext>();
 builder.Services.AddCors();
-builder.Services.AddSingleton<ITechLogStorage, ClickHouseContext>();
-builder.Services.AddHostedService((sp) => sp.GetRequiredService<TechLogProcessor>());
-builder.Services.AddSingleton<TechLogProcessor>();
-builder.Services.AddHostedService((sp) => sp.GetRequiredService<AgentsConnectionsManager>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<AgentsConnectionsManager>());
 builder.Services.AddSingleton<AgentsConnectionsManager>();
-//builder.Services.AddHostedService<ClustersDetector>();
+builder.Services.AddHostedService<ClustersInfoBasesDetector>();
 
 var app = builder.Build();
 
@@ -95,13 +95,10 @@ await using var scope = app.Services.CreateAsyncScope();
 var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 await appDbContext.Database.MigrateAsync();
 
-var settings = await appDbContext.TechLogSettings.FirstOrDefaultAsync();
-
-if (settings?.Enabled ?? false)
-{
-    var clickHouseContext = scope.ServiceProvider.GetRequiredService<ITechLogStorage>();
-    await clickHouseContext.InitDatabase();
-}
+// Init techlog repository settings
+var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+var techLogManager = scope.ServiceProvider.GetRequiredService<TechLogRepositoryManager>();
+TechLogHelper.UpdateTechLogSettings(mapper, techLogManager, appDbContext);
 
 app.MapHub<MaintenanceTaskLogsHub>("/MaintenanceTaskLogs");
 

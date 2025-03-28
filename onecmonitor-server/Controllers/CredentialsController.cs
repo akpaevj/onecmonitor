@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
-using OnecMonitor.Server.ViewModels.Clusters;
 using OnecMonitor.Server.ViewModels.Credentials;
 
 namespace OnecMonitor.Server.Controllers;
@@ -81,11 +80,12 @@ public class CredentialsController(AppDbContext appDbContext, IMapper mapper) : 
     
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var item = await appDbContext.Credentials.FindAsync(
-            [id], 
-            cancellationToken: cancellationToken);
+        var item = await appDbContext.Credentials.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
         
-        appDbContext.Entry(item!).State = EntityState.Deleted;
+        if (item == null)
+            return NotFound();
+        
+        appDbContext.Entry(item).State = EntityState.Deleted;
         await appDbContext.SaveChangesAsync(cancellationToken);
 
         return RedirectToAction("Index");

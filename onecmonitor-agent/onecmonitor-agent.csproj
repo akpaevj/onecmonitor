@@ -8,6 +8,8 @@
     <RootNamespace>OnecMonitor.Agent</RootNamespace>
 	<ServerGarbageCollection>true</ServerGarbageCollection>
 	<Configurations>Debug;Release;Debug agent;Debug server</Configurations>
+	<Authors>Akpaev E.A.</Authors>
+	<Company>Akpaev E.A.</Company>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,9 +19,13 @@
     <None Update="Asserts\ПодтверждениеЛегальности.epf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="install.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClickHouse.Client" Version="7.13.0" />
     <PackageReference Include="MessagePack" Version="3.1.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.1">
       <PrivateAssets>all</PrivateAssets>
@@ -30,6 +36,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.1" />
     <PackageReference Include="OneScript.Hosting" Version="2.0.0-rc4" />
+    <PackageReference Include="OneSTools.BracketsFile" Version="2.1.9" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.1" />
   </ItemGroup>
 
@@ -39,8 +46,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Asserts\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DebugSymbols>False</DebugSymbols>
+    <DebugType>None</DebugType>
+  </PropertyGroup>
 	
 </Project>

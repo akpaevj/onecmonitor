@@ -8,6 +8,8 @@
 		<RootNamespace>OnecMonitor.Server</RootNamespace>
 		<AssemblyName>OnecMonitor</AssemblyName>
 		<Configurations>Debug;Release;Debug agent;Debug server</Configurations>
+		<Authors>Akpaev E.A.</Authors>
+		<Company>Akpaev E.A.</Company>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -16,19 +18,22 @@
 	  <None Remove="om-server.db-wal" />
 	  <None Remove="Scripts\models.ts" />
 	  <None Remove="Scripts\site.ts" />
+	  <Content Remove="tsconfig.json" />
+	  <None Include="tsconfig.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </None>
+	  <Content Remove="package-lock.json" />
+	  <None Include="package-lock.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </None>
+	  <Content Remove="package.json" />
+	  <None Include="package.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 	<ItemGroup>
 	  <Content Include="Styles\site.css" />
-	  <Content Update="package.json">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Content>
-	  <Content Update="package-lock.json">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Content>
-	  <Content Update="tsconfig.json">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Content>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -88,6 +93,7 @@
 	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Edit.cshtml" />
 	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Index.cshtml" />
 	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Log.cshtml" />
+	  <_ContentIncludedByDefault Remove="Views\ClustersInfoBases\Index.cshtml" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -101,5 +107,10 @@
 			<UserProperties tsconfig_1json__JsonSchema="https://json.schemastore.org/tsconfig.json" />
 		</VisualStudio>
 	</ProjectExtensions>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<DebugSymbols>False</DebugSymbols>
+		<DebugType>None</DebugType>
+	</PropertyGroup>
 	
 </Project>

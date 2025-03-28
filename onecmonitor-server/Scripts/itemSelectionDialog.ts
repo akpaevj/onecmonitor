@@ -1,9 +1,12 @@
 import {Modal} from "bootstrap";
-import {setIndexes} from './common'
+import {setExactlyIndex} from './common'
 
 export function setIndexesOnSubmit(listIds: string[]) {
     listIds.forEach((listId: string) => {
-        setIndexes(document.querySelectorAll<HTMLInputElement>(`#${listId} input`));
+        const buttons = document.querySelectorAll<HTMLButtonElement>(`#${listId} button`);
+        buttons.forEach((button, index) => {
+            setExactlyIndex(button.querySelectorAll<HTMLInputElement>(`input`), index);
+        })
     })
 }
 
@@ -24,7 +27,7 @@ export function initSelectItemDialog(id: string) {
     }
 
     const form = document.querySelector('form');
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', () => {
         setIndexesOnSubmit([itemsListId]);
     })
 

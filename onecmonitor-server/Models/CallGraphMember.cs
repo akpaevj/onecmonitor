@@ -1,4 +1,5 @@
 ﻿using OnecMonitor.Common.DTO;
+using OnecMonitor.Common.Models;
 
 namespace OnecMonitor.Server.Models
 {

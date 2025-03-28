@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Server.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.Models;
@@ -12,7 +11,7 @@ public class InfoBase : DatabaseObject
     public Guid? CredentialsId { get; set; }
     public Guid ClusterId { get; set; }
     
-    public virtual Credentials? Credentials { get; set; } = null!;
+    public virtual Credentials? Credentials { get; set; }
     public virtual Cluster Cluster { get; set; } = null!;
     
     public virtual List<MaintenanceTask> MaintenanceTasks { get; set; } = [];

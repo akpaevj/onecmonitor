@@ -1,21 +1,18 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Server.Helpers;
-using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Services;
 using OnecMonitor.Server.ViewModels;
 using OnecMonitor.Server.ViewModels.Agents;
 
 namespace OnecMonitor.Server.Controllers
 {
-    public class AgentsController(AppDbContext appDbContext, AgentsConnectionsManager connectionsManager, IMapper mapper)
+    public class AgentsController(AppDbContext appDbContext, AgentsConnectionsManager connectionsManager)
         : Controller
     {
         public async Task<IActionResult> Index(CancellationToken cancellationToken)
         {
-            var viewModel = new List<AgentViewModel>();
+            var viewModel = new List<AgentDetailsViewModel>();
 
             var savedAgents = await appDbContext.Agents.ToListAsync(cancellationToken);
             
@@ -27,7 +24,7 @@ namespace OnecMonitor.Server.Controllers
                 var ragents = agentConnection == null ? [] : await agentConnection.GetRagentServices(cancellationToken);
                 var rases = agentConnection == null ? [] : await agentConnection.GetRasServices(cancellationToken);
                 
-                viewModel.Add(new AgentViewModel
+                viewModel.Add(new AgentDetailsViewModel
                 {
                     Id = agent.Id,
                     InstanceName = agent.InstanceName,
@@ -43,10 +40,8 @@ namespace OnecMonitor.Server.Controllers
         
         public async Task<IActionResult> Delete(Guid id)
         {
-            if (connectionsManager.IsConnected(id))
-            {
-                return View("Error", new ErrorViewModel("Connected agent cannot be deleted"));
-            }
+            if (connectionsManager.GetAgentConnection(id) != null)
+                return View("Error", new ErrorViewModel("Подключенный агент не может быть удален"));
 
             var item = appDbContext.Agents.FirstOrDefault(c => c.Id == id);
 

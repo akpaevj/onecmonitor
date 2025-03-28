@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -51,6 +50,16 @@ public static class UiHelper
         
         return mapper.Map<List<SelectableItemViewModel>>(availableItems);
     }
+    
+    public static async Task<List<SelectableItemViewModel>> SelectableItemsFrom<T1>(
+        IQueryable<T1> queryable,
+        IMapper mapper,
+        CancellationToken cancellationToken) where T1 : DatabaseObject
+    {
+        var allItems = await queryable.ToListAsync(cancellationToken);
+        
+        return mapper.Map<List<SelectableItemViewModel>>(allItems);
+    }
 
     public static async Task UpdateModelItems<T1>(
         IQueryable<T1> queryable,
@@ -76,29 +85,6 @@ public static class UiHelper
             .ToList()
             .ForEach(c => modelItems.Remove(c));
     }
-    
-    // public static async Task UpdateModelItems<T>(
-    //     IQueryable<T> queryable,
-    //     List<T> newItems,
-    //     List<T> oldItems,
-    //     CancellationToken cancellationToken) where T : DatabaseObject
-    // {
-    //     var ids = newItems.Select(c => c.Id);
-    //     var oldIds = oldItems.Select(c => c.Id);
-    //     
-    //     var addedItems = newItems
-    //         .Where(c => oldIds.Contains(c.Id))
-    //         .ToList();
-    //     
-    //     // add new
-    //     addedItems.ForEach(queryable);
-    //     
-    //     // remove deleted
-    //     oldItems
-    //         .Where(c => !addedItems.Contains(c))
-    //         .ToList()
-    //         .ForEach(c => oldItems.Remove(c));
-    // }
 
     private static T? GetAttributeOfType<T>(this Enum enumVal) where T : Attribute
     {

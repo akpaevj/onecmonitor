@@ -1,4 +1,3 @@
-@using OnecMonitor.Server.ViewModels
 @model OnecMonitor.Server.ViewModels.Clusters.ClusterEditViewModel
 
 @{
@@ -14,44 +13,31 @@
     </div>
 
     <input type="text" hidden class="form-control" asp-for="Id" value="@Model.Id">
-    <input type="text" hidden class="form-control" asp-for="ClusterInternalId" value="@Model.ClusterInternalId">
+
+    <div class="mb-3">
+        <label class="form-label" asp-for="AgentId">Агент</label>
+        <select disabled asp-for="AgentId" class="form-control disabled" asp-items="Model.Agents"></select>
+    </div>
 
     <div class="mb-3">
         <label class="form-label" asp-for="Name">Имя</label>
-        <input type="text" class="form-control" asp-for="Name" value="@Model.Name">
-        <span asp-validation-for="Name" class="text-danger"></span>
+        <input disabled type="text" class="form-control" asp-for="Name" value="@Model.Name">
     </div>
 
     <div class="mb-3">
         <label class="form-label" asp-for="Host">Хост</label>
-        <input type="text" class="form-control" asp-for="Host" value="@Model.Host">
-        <span asp-validation-for="Host" class="text-danger"></span>
+        <input disabled type="text" class="form-control" asp-for="Host" value="@Model.Host">
     </div>
 
     <div class="mb-3">
         <label class="form-label" asp-for="Port">Порт</label>
-        <input type="number" class="form-control" asp-for="Port" value="@Model.Port">
-        <span asp-validation-for="Port" class="text-danger"></span>
+        <input disabled type="number" class="form-control" asp-for="Port" value="@Model.Port">
     </div>
 
     <div class="mb-3">
         <label class="form-label" asp-for="CredentialsId">Учетные данные</label>
         <select asp-for="CredentialsId" class="form-control" asp-items="Model.Credentials"></select>
         <span asp-validation-for="CredentialsId" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label" asp-for="AgentId">Агент</label>
-        <select asp-for="AgentId" class="form-control" asp-items="Model.Agents"></select>
-        <span asp-validation-for="AgentId" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        @await Html.PartialAsync("SelectItemDialog", new SelectItemDialogViewModel(
-            Html.DisplayNameFor(c => c.InfoBases),
-            nameof(Model.InfoBases),
-            Model.InfoBases,
-            Model.AvailableInfoBases))
     </div>
 
 </form>

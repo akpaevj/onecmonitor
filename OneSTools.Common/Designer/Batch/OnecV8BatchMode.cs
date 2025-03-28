@@ -165,7 +165,8 @@ public sealed class OnecV8BatchMode : IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (!disposing) return;
+        if (!disposing) 
+            return;
         
         _process?.Dispose();
         _process = null;

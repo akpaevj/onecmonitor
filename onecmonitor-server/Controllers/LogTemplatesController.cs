@@ -1,13 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.DotNet.Scaffolding.Shared.Project;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.ViewModels.Log;
 using OnecMonitor.Server.ViewModels.Log.Index;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace OnecMonitor.Server.Controllers
 {

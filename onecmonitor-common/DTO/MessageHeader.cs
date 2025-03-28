@@ -1,8 +1,4 @@
-﻿using MessagePack;
-using System.Net.Sockets;
-using System.Numerics;
-
-namespace OnecMonitor.Common.DTO
+﻿namespace OnecMonitor.Common.DTO
 {
     public struct MessageHeader
     {

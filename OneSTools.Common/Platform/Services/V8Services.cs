@@ -37,7 +37,7 @@ public static partial class V8Services
         => Environment.OSVersion.Platform == PlatformID.Win32NT ? GetWindowsServices(platforms) : GetLinuxDaemons(platforms);
 
     #region Windows
-#pragma warning disable CA1416
+    #pragma warning disable CA1416
     private static List<V8Service> GetWindowsServices(IReadOnlyList<V8Platform> platforms)
     {
         var items = new List<V8Service>();
@@ -109,6 +109,8 @@ public static partial class V8Services
                 {
                     var port = args.GetOptionValue("port");
                     var regPort = args.GetOptionValue("regport");
+                    var clusterCatalog = args.GetOptionValue("d");
+                    clusterCatalog = Path.Combine(clusterCatalog!, $"reg_{regPort}");
                 
                     var service = new RagentService
                     {
@@ -116,7 +118,8 @@ public static partial class V8Services
                         IsActive = isActive,
                         Platform = platforms.GetByPath(platformPath!)!,
                         Port = port == null ? RagentDefaultPort : int.Parse(port),
-                        RegPort = regPort == null ? RagentDefaultRegPort : int.Parse(regPort)
+                        RegPort = regPort == null ? RagentDefaultRegPort : int.Parse(regPort),
+                        ClusterCatalog = clusterCatalog
                     };
                 
                     items.Add(service);
@@ -127,11 +130,17 @@ public static partial class V8Services
         
         return items;
     }
-    
+
     private static string? GetImagePath(string serviceName)
+        => GetServiceKeyValue(serviceName, "ImagePath");
+    
+    private static string? GetObjectName(string serviceName)
+        => GetServiceKeyValue(serviceName, "ObjectName");
+    
+    private static string? GetServiceKeyValue(string serviceName, string valueName)
     {
         using var key = Registry.LocalMachine.OpenSubKey(@$"SYSTEM\CurrentControlSet\Services\{serviceName}");
-        return key?.GetValue("ImagePath", null)?.ToString();
+        return key?.GetValue(valueName, null)?.ToString();
     }
     
     private static string RunCommandWithCmd(string command)
@@ -148,7 +157,7 @@ public static partial class V8Services
         
         return RunProcessAndGetOutput(psi);
     }
-#pragma warning restore CA1416
+    #pragma warning restore CA1416
     #endregion
 
     #region LINUX
@@ -240,6 +249,14 @@ public static partial class V8Services
                 {
                     var port = GetExecStartArgValue(name, args.GetOptionValue("port"));
                     var regPort = GetExecStartArgValue(name, args.GetOptionValue("regport"));
+                    
+                    var clusterCatalog = GetExecStartArgValue(name, args.GetOptionValue("d"));
+                    if (string.IsNullOrEmpty(clusterCatalog))
+                    {
+                        var user = GetVariableValue(name, "User");
+                        clusterCatalog = Path.Join("/home", user, ".1cv8/");
+                    }
+                    clusterCatalog = Path.Combine(clusterCatalog, $"reg_{regPort}");
                 
                     var service = new RagentService
                     {
@@ -247,7 +264,8 @@ public static partial class V8Services
                         IsActive = isActive,
                         Platform = platforms.GetByPath(platformPath!)!,
                         Port = port == null ? RagentDefaultPort : int.Parse(port),
-                        RegPort = regPort == null ? RagentDefaultRegPort : int.Parse(regPort)
+                        RegPort = regPort == null ? RagentDefaultRegPort : int.Parse(regPort),
+                        ClusterCatalog = clusterCatalog
                     };
                 
                     items.Add(service);
@@ -272,10 +290,13 @@ public static partial class V8Services
         
         return GetEnvironmentVariableValue(name, variable);
     }
+    
+    private static string GetVariableValue(string name, string variable)
+        => RunCommandWithBash($"systemctl show {name} -P {variable}").Trim();
 
     private static string GetEnvironmentVariableValue(string name, string variable)
     {
-        var env = RunCommandWithBash($"systemctl show {name} -P Environment");
+        var env = GetVariableValue(name, "Environment");
         return Regex.Match(env, $@"(?<={variable}=).*?(?=(\s|$))", RegexOptions.ExplicitCapture).Value.Trim();
     }
     

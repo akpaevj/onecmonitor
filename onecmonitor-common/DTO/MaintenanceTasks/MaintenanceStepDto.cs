@@ -22,7 +22,6 @@ public class MaintenanceStepDto
     public string AccessCode { get; set; } = string.Empty;
     [Key(7)]
     public string Message { get; set; } = string.Empty;
-
     [Key(8)] 
     public V8FileDto? File { get; set; }
 }

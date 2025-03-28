@@ -1,11 +1,4 @@
-﻿using MessagePack;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace OnecMonitor.Common.DTO
+﻿namespace OnecMonitor.Common.DTO
 {
     public class Message
     {

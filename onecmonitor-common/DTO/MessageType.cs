@@ -8,9 +8,6 @@
         
         // Client messages
         AgentInfo,
-        TechLogSeancesRequest,
-        LastFilePositionRequest,
-        TechLogEventContent,
         InstalledPlatforms,
         RagentServices,
         RasServices,
@@ -20,15 +17,11 @@
         MaintenanceStepNodeLog,
         
         // Server messages
-        LastFilePosition,
-        TechLogSeances,
-        UpdateTechLogSeancesRequest,
         InstalledPlatformsRequest,
         RagentServicesRequest,
         RasServicesRequest,
         ClustersRequest,
         InfoBasesRequest,
-        UpdateSettingsRequest,
         Settings,
         MaintenanceTask,
     }

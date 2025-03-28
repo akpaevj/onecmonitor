@@ -10,13 +10,15 @@ namespace OnecMonitor.Server.Controllers;
 
 public class V8FilesController(AppDbContext appDbContext, IMapper mapper, IWebHostEnvironment webHostEnvironment) : Controller
 {
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(bool showArchived, CancellationToken cancellationToken)
     {
         return View(new V8FilesIndexViewModel
         {
+            ShowArchived = showArchived,
             Items = await appDbContext.V8Files
+                .Where(c => showArchived || !c.IsArchived)
                 .ProjectTo<V8FileListItemViewModel>(mapper.ConfigurationProvider)
-                .ToListAsync()
+                .ToListAsync(cancellationToken)
         });
     }
 
@@ -43,9 +45,9 @@ public class V8FilesController(AppDbContext appDbContext, IMapper mapper, IWebHo
         MultipartBodyLengthLimit = int.MaxValue,
         ValueLengthLimit = int.MaxValue)
     ]
-    public async Task<IActionResult> Save(Guid id, V8FileEditViewModel vm, CancellationToken cancellationToken)
+    public async Task<IActionResult> Save(V8FileEditViewModel vm, CancellationToken cancellationToken)
     {
-        var isNew = id == Guid.Empty;
+        var isNew = vm.Id == Guid.Empty;
         
         if (!isNew)
             ModelState.Remove(nameof(V8FileEditViewModel.File));
@@ -56,7 +58,7 @@ public class V8FilesController(AppDbContext appDbContext, IMapper mapper, IWebHo
         var model = isNew ? new V8File
         {
             Id = Guid.NewGuid()
-        } : await appDbContext.V8Files.FindAsync([id], cancellationToken);
+        } : await appDbContext.V8Files.FindAsync([vm.Id], cancellationToken);
         
         if (model == null)
             return NotFound();
@@ -67,20 +69,20 @@ public class V8FilesController(AppDbContext appDbContext, IMapper mapper, IWebHo
             var extension = Path.GetExtension(vm.File.FileName);
             
             if (extension.Equals(".CF", StringComparison.InvariantCultureIgnoreCase))
-                model.IsConfiguration = true;
+                model.FileType = V8FileType.Cf;
             else if (extension.Equals(".CFE", StringComparison.InvariantCultureIgnoreCase))
-                model.IsExtension = true;
+                model.FileType = V8FileType.Cfe;
             else if (extension.Equals(".CFU", StringComparison.InvariantCultureIgnoreCase))
-                model.IsUpdate = true;
+                model.FileType = V8FileType.Cfu;
             else if (extension.Equals(".EPF", StringComparison.InvariantCultureIgnoreCase))
-                model.IsExternalDataProcessor = true;
+                model.FileType = V8FileType.Epf;
             else
                 ModelState.AddModelError(nameof(V8FileEditViewModel.File), "Invalid file format");
             
             if (!ModelState.IsValid)
                 return View("Edit", vm);
             
-            var fileName = $"{vm.Name}_{vm.Version}{extension}";
+            var fileName = $"{model.Id}{extension}";
             var path = Path.Combine(webHostEnvironment.ContentRootPath, "Data", fileName);
         
             if (System.IO.File.Exists(path))
@@ -104,14 +106,26 @@ public class V8FilesController(AppDbContext appDbContext, IMapper mapper, IWebHo
     
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var item = await appDbContext.V8Files.FindAsync(
-            [id], 
-            cancellationToken: cancellationToken);
+        var item = await appDbContext.V8Files.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
         if (System.IO.File.Exists(item!.DataPath))
             System.IO.File.Delete(item.DataPath);
         
-        appDbContext.V8Files.Remove(item!);
+        appDbContext.V8Files.Remove(item);
+        await appDbContext.SaveChangesAsync(cancellationToken);
+
+        return RedirectToAction("Index");
+    }
+    
+    public async Task<IActionResult> Archive(Guid id, CancellationToken cancellationToken)
+    {
+        var item = await appDbContext.V8Files.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+        if (System.IO.File.Exists(item!.DataPath))
+            System.IO.File.Delete(item.DataPath);
+
+        item.IsArchived = !item.IsArchived;
+        
         await appDbContext.SaveChangesAsync(cancellationToken);
 
         return RedirectToAction("Index");

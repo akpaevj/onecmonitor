@@ -1,19 +1,12 @@
-@using System.Globalization
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Microsoft.IdentityModel.Tokens
-@using OnecMonitor.Server.ViewModels
-@using OnecMonitor.Server.ViewModels.Agents;
 @model OnecMonitor.Server.ViewModels.MaintenanceTasks.MaintenanceTaskLogViewModel
 
 @{
     ViewData["Title"] = "Лог задачи обслуживания";
 }
 
-<h2 class="mb-3">Лог задачи обслуживания</h2>
-
-<div class="row">
-    <div class="col-3">
-        <div class="card">
+<div class="row h-100">
+    <div class="col-3 h-100">
+        <div class="card h-100">
             <div class="card-header">Информационные базы</div>
             <div class="card-body">
                 <ul class="nav nav-pills flex-column align-items-center" id="infoBasesTab" role="tablist">
@@ -21,18 +14,20 @@
                     {
                         var id = item.Id.ToString().Replace("-", "");
                         <li class="nav-item w-100 row row-cols-auto g-3 align-items-center" role="presentation">
-                            <button class="nav-link w-100" id="@id" data-infobase-id="@item.Id" data-bs-toggle="tab" data-bs-target="#tab_@id" type="button" role="tab" aria-controls="tab_@id" aria-selected="false">
-                                @item.InfoBaseName
+                            <div class="hstack gap-2 p-0 w-100">
+                                <button class="nav-link w-100" id="@id" data-infobase-id="@item.Id" data-bs-toggle="tab" data-bs-target="#tab_@id" type="button" role="tab" aria-controls="tab_@id" aria-selected="false">
+                                    @item.InfoBaseName
+                                </button>
                                 <i class="fs-5 bi-three-dots-vertical text-danger" data-infobase-id="@item.Id"></i>
-                            </button>
+                            </div>
                         </li>
                     }
                 </ul>
             </div>
         </div>
     </div>
-    <div class="col">
-        <div class="card">
+    <div class="col-9 h-100">
+        <div class="card h-100">
             <div class="card-header">Журнал</div>
             <div class="card-body">
                 <div class="tab-content" id="myTabContent">

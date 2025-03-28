@@ -1,6 +1,5 @@
-﻿@using Newtonsoft.Json;
-@using OnecMonitor.Server.ViewModels.TechLogSeances;
-@model CallChainViewModel
+﻿@using Newtonsoft.Json
+@model OnecMonitor.Server.ViewModels.TechLogSeances.CallChainViewModel
 
 <input type="text" hidden id="chain" name="chain" value="@JsonConvert.SerializeObject(Model.Chain)" />
 

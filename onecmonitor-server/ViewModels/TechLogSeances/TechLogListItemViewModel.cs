@@ -1,6 +1,4 @@
-﻿using OnecMonitor.Common.DTO;
-using OnecMonitor.Server.Models;
-using System.Security.Policy;
+﻿using OnecMonitor.Common.Models;
 
 namespace OnecMonitor.Server.ViewModels.TechLogSeances
 {
@@ -8,34 +6,30 @@ namespace OnecMonitor.Server.ViewModels.TechLogSeances
     {
         public TjEvent TjEvent { get; set; }
         public string AdditionalCss { get; set; } = string.Empty;
-        public List<TjEventAction> AvailableActions { get; } = new();
+        public List<TjEventAction> AvailableActions { get; } = [];
 
         public TechLogListItemViewModel(TjEvent tjEvent)
         {
             TjEvent = tjEvent;
 
-            if (TjEvent.EventName == "TLOCK" && tjEvent.WaitConnections.Length > 0)
+            switch (TjEvent.EventName)
             {
-                AdditionalCss = "om-warning";
-                AvailableActions.Add(TjEventAction.ShowLockWaitingTimeline);
-                AvailableActions.Add(TjEventAction.ShowLockWaitingGraph);
+                case "TLOCK" when tjEvent.WaitConnections.Length > 0:
+                    AdditionalCss = "om-warning";
+                    AvailableActions.Add(TjEventAction.ShowLockWaitingTimeline);
+                    AvailableActions.Add(TjEventAction.ShowLockWaitingGraph);
+                    break;
+                case "TTIMEOUT":
+                case "TDEADLOCK":
+                    AdditionalCss = "om-danger";
+                    AvailableActions.Add(TjEventAction.ShowLockWaitingTimeline);
+                    AvailableActions.Add(TjEventAction.ShowLockWaitingGraph);
+                    break;
+                case "CALL":
+                case "SCALL":
+                    AvailableActions.Add(TjEventAction.CallTimeline);
+                    break;
             }
-            else if (TjEvent.EventName == "TTIMEOUT")
-            {
-                AdditionalCss = "om-danger";
-                AvailableActions.Add(TjEventAction.ShowLockWaitingTimeline);
-                AvailableActions.Add(TjEventAction.ShowLockWaitingGraph);
-            }
-            else if (TjEvent.EventName == "TDEADLOCK")
-            {
-                AdditionalCss = "om-danger";
-                AvailableActions.Add(TjEventAction.ShowLockWaitingTimeline);
-                AvailableActions.Add(TjEventAction.ShowLockWaitingGraph);
-            }
-            else if (TjEvent.EventName == "CALL")
-                AvailableActions.Add(TjEventAction.CallTimeline);
-            else if (TjEvent.EventName == "SCALL")
-                AvailableActions.Add(TjEventAction.CallTimeline);
         }
     }
 }

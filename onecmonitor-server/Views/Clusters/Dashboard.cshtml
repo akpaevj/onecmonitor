@@ -1,0 +1,74 @@
+﻿@model OnecMonitor.Server.ViewModels.Clusters.DashboardViewModel
+
+@{
+    ViewData["Title"] = Html.DisplayNameForModel();
+}
+
+<div class="row h-100">
+    <div class="col h-100">
+        <div class="card h-100">
+            <div class="card-header">@Html.DisplayNameFor(c => c.Clusters)</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="clusters" class="table table-striped table-bordered table-hover">
+                        <thead>
+                        <tr>
+                            <th class="col">Имя</th>
+                            <th class="col">Агент</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Clusters)
+                        {
+                            <tr data-cluster-id="@item.Id" class="cursor-pointer">
+                                <td>@item.Name</td>
+                                <td>@item.Agent.InstanceName</td>
+                                <td class="text-center">
+                                    <a class="btn btn-outline-warning btn-sm" asp-controller="Clusters" asp-action="Edit" asp-route-id="@item.Id">Изменить</a>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col h-100">
+        <div class="card h-100">
+            <div class="card-header">@Html.DisplayNameFor(c => c.InfoBases)</div>
+            <div id="infoBases" class="card-body">
+                @foreach (var cluster in Model.Clusters)
+                {
+                    <table hidden id="infoBases-@cluster.Id" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th class="col">Имя</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var infoBase in Model.InfoBases.Where(c => c.Cluster.Id == cluster.Id))
+                        {
+                            <tr>
+                                <td>@infoBase.Name</td>
+                                <td class="text-center">
+                                    <a class="btn btn-outline-warning btn-sm" asp-controller="InfoBases" asp-action="Edit" asp-route-id="@infoBase.Id">Изменить</a>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script type="text/javascript">
+        OM.initClustersInfoBases(document.getElementById('clusters'), document.getElementById('infoBases'));
+    </script>
+}

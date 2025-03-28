@@ -1,5 +1,4 @@
 using OnecMonitor.Server.Models;
-using OnecMonitor.Server.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.ViewModels.MaintenanceTasks;
 

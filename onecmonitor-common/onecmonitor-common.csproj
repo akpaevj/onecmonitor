@@ -35,4 +35,9 @@
 		<Protobuf Include="Protos\clickhouse_grpc.proto" GrpcServices="Client" />
 	</ItemGroup>
 
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <DebugSymbols>False</DebugSymbols>
+        <DebugType>None</DebugType>
+    </PropertyGroup>
+
 </Project>

@@ -5,29 +5,27 @@ using OnecMonitor.Common.DTO.MaintenanceTasks;
 using OnecMonitor.Common.Extensions;
 using OnecMonitor.Common.Models.MaintenanceTasks;
 using OneSTools.Common.Platform.RemoteAdministration;
-using OneSTools.Common.Platform.Services;
 
 namespace OnecMonitor.Agent.Services.MaintenanceTasks;
 
 public class MaintenanceTaskExecutor : BackgroundService
 {
-    private readonly MaintenanceTaskExecutorQueue _queue;
-    
     private readonly AsyncServiceScope _scope;
     private readonly OnecMonitorConnection _serverConnection;
+    private readonly MonitorQueue<MaintenanceTaskDto> _queue;
     private readonly RasHolder _rasHolder;
     private readonly V8ServicesProvider _v8ServicesProvider;
     private readonly ILogger<MaintenanceTaskExecutor> _logger;
     
     public MaintenanceTaskExecutor(
         IServiceProvider serviceProvider, 
-        MaintenanceTaskExecutorQueue tasksQueue, 
+        MonitorQueue<MaintenanceTaskDto> queue,
         RasHolder rasHolder,
         V8ServicesProvider v8ServicesProvider,
         ILogger<MaintenanceTaskExecutor> logger) 
     {
         _scope = serviceProvider.CreateAsyncScope();
-        _queue = tasksQueue;
+        _queue = queue;
         _serverConnection = _scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
         _rasHolder = rasHolder;
         _v8ServicesProvider = v8ServicesProvider;
@@ -232,7 +230,7 @@ public class MaintenanceTaskExecutor : BackgroundService
     private static void LockConnections(MaintenanceStepContext context)
     {
         context.Rac.BlockConnections(
-            context.InfoBase.Cluster.Id, 
+            context.InfoBase.Cluster.ClusterInternalId, 
             context.InfoBase.InfoBaseInternalId,
             context.Step.AccessCode,
             context.Step.Message,
@@ -247,7 +245,7 @@ public class MaintenanceTaskExecutor : BackgroundService
     private static void CloseConnections(MaintenanceStepContext context)
     {
         var sessions = context.Rac.GetInfoBaseSessions(
-            context.InfoBase.Cluster.Id, 
+            context.InfoBase.Cluster.ClusterInternalId, 
             context.InfoBase.InfoBaseInternalId,
             context.InfoBase.Cluster.Credentials?.User ?? "",
             context.InfoBase.Cluster.Credentials?.Password ?? "");
@@ -260,7 +258,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                 try
                 {
                     context.Rac.TerminateSession(
-                        context.InfoBase.Cluster.Id, 
+                        context.InfoBase.Cluster.ClusterInternalId, 
                         s.Id,
                         context.InfoBase.Cluster.Credentials?.User ?? "",
                         context.InfoBase.Cluster.Credentials?.Password ?? "");
@@ -275,7 +273,7 @@ public class MaintenanceTaskExecutor : BackgroundService
     private static void UnlockConnections(MaintenanceStepContext context)
     {
         context.Rac.UnblockConnections(
-            context.InfoBase.Cluster.Id, 
+            context.InfoBase.Cluster.ClusterInternalId, 
             context.InfoBase.InfoBaseInternalId,
             context.InfoBase.Cluster.Credentials?.User ?? "",
             context.InfoBase.Cluster.Credentials?.Password ?? "",

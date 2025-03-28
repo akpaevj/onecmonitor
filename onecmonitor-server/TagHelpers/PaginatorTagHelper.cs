@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
-using System.Reflection.Emit;
-using System.Text;
 
 namespace OnecMonitor.Server.TagHelpers;
 
@@ -51,7 +48,7 @@ public class PaginatorTagHelper(IHtmlGenerator generator) : TagHelper
                 startPage = 1;
         }
 
-        output.Content.AppendHtml("<ul class=\"pagination\">");
+        output.Content.AppendHtml("<ul class=\"pagination justify-content-center\">");
 
         // first page ref
         if (startPage > 1)
@@ -62,7 +59,7 @@ public class PaginatorTagHelper(IHtmlGenerator generator) : TagHelper
             AppendLi(startPage - 1, "<<", output);
 
         // go to page buttons
-        for (int i = startPage; i <= finishPage; i++)
+        for (var i = startPage; i <= finishPage; i++)
             AppendLi(i, i.ToString(), output);
 
         // fast stepping after

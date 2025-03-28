@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using MessagePack;
-using OneSTools.Common.Platform.Services;
 
 namespace OneSTools.Common.Platform.Services;
 
@@ -15,6 +14,9 @@ public class RagentService : V8Service
     [DisplayName("Порт кластера")]
     public int RegPort { get; set; }
     [Key(4)]
+    [DisplayName("Каталог кластера")]
+    public string ClusterCatalog { get; set; } = null!;
+    [Key(5)]
     [DisplayName("Платформа")]
     public V8Platform Platform { get; set; } = null!;
 }

@@ -26,16 +26,18 @@ export class MaintenanceStepsTreeOptions {
     nodeGraphActionsElement: HTMLDivElement
     editStepModalElement: HTMLDivElement
     stepsInputElement: HTMLInputElement
+    isTemplate: boolean
 }
 
 let nodesGraph: MaintenanceStepsTree = undefined;
 
-export async function initStepsEditor() {
+export async function initStepsEditor(isTemplate: boolean) {
     nodesGraph = new MaintenanceStepsTree({
         stepsInputElement: document.getElementById('steps') as HTMLInputElement,
         editStepModalElement: document.getElementById('edit-step-dialog') as HTMLDivElement,
         nodeGraphActionsElement: document.getElementById('node-actions') as HTMLDivElement,
-        bodyElement: document.getElementById('graphBody') as HTMLDivElement
+        bodyElement: document.getElementById('graphBody') as HTMLDivElement,
+        isTemplate: isTemplate,
     });
 }
 
@@ -60,7 +62,7 @@ export class MaintenanceStepsTree {
             darkMode: true
         })
 
-        this.editStepDialog = new EditStepDialog(this.options.editStepModalElement);
+        this.editStepDialog = new EditStepDialog(this.options.editStepModalElement, this.options.isTemplate);
         this.nodesGraphActionsDialog = new NodesGraphActionsDialog(
             this.editStepDialog,
             this,
@@ -135,7 +137,12 @@ export class MaintenanceStepsTree {
             throw new Error("Узел не найден.");
         }
         
-        this.steps.set(step.id, step);
+        const currentStep = this.steps.get(step.id);
+        currentStep.kind = step.kind;
+        currentStep.title = step.title;
+        currentStep.message = step.message;
+        currentStep.accessCode = step.accessCode;
+        currentStep.fileId = step.fileId;
 
         this.stepsToInputValue();
         await this.redrawNodes();

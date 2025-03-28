@@ -1,7 +1,5 @@
 using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Newtonsoft.Json;
 using OnecMonitor.Server.Models;
 
 namespace OnecMonitor.Server.ViewModels.MaintenanceTasks;
@@ -11,6 +9,8 @@ public class MaintenanceTaskEditViewModel
     public Guid Id { get; set; }
     [DisplayName("Описание")]
     public string Description { get; set; } = string.Empty;
+    public bool IsTemplate { get; set; } = false;
+    public bool IsArchived { get; set; } = false;
     
     [DisplayName("Информационные базы")]
     public List<SelectableItemViewModel> InfoBases { get; set; } = [];

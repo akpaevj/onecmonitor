@@ -1,11 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OnecMonitor.Server.Models;
 
-namespace OnecMonitor.Server.ViewComponents
+namespace OnecMonitor.Server.ViewComponents;
+
+public class LockWaitingGraphMemberDetails : ViewComponent
 {
-    public class LockWaitingGraphMemberDetails : ViewComponent
-    {
-        public IViewComponentResult Invoke(LockWaitingGraphMember member)
-            => View(member);
-    }
+    public IViewComponentResult Invoke(LockWaitingGraphMember member)
+        => View(member);
 }

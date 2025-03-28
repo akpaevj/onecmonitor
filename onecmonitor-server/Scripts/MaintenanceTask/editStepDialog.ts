@@ -9,13 +9,15 @@ export class StepValidationResult {
 
 export class EditStepDialog {
     private dialogElement: HTMLDivElement;
+    private readonly isTemplate: boolean;
     private dialogBody: HTMLDivElement;
     private modal: Modal;
 
     private onSaveCallback: (step: any) => void = undefined;
 
-    constructor(element: HTMLDivElement) {
+    constructor(element: HTMLDivElement, isTemplate: boolean) {
         this.dialogElement = element;
+        this.isTemplate = isTemplate;
         this.modal = new Modal(element);
         this.dialogBody = this.dialogElement.querySelector('.modal-body');
 
@@ -65,7 +67,7 @@ export class EditStepDialog {
     private async updateStepForm() {
         const formData = new FormData(this.dialogBody.querySelector<HTMLFormElement>('form'));
 
-        const response = await fetch('/MaintenanceTasks/UpdateStep', {
+        const response = await fetch(`/MaintenanceTasks/UpdateStep`, {
             method: 'POST',
             body: formData
         });
@@ -85,7 +87,7 @@ export class EditStepDialog {
         return new Promise<string | undefined>(async (resolve, reject) => {
             const body = step != undefined ? JSON.stringify(step) : "";
 
-            const response = await fetch("/MaintenanceTasks/EditStep", {
+            const response = await fetch(`/MaintenanceTasks/EditStep`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -104,7 +106,7 @@ export class EditStepDialog {
         return new Promise<StepValidationResult>(async (resolve, reject) => {
             const formData = new FormData(this.dialogBody.querySelector<HTMLFormElement>('form'));
 
-            const validateResponse = await fetch('/MaintenanceTasks/ValidateStep', {
+            const validateResponse = await fetch(`/MaintenanceTasks/ValidateStep?isTemplate=${this.isTemplate}`, {
                 method: 'POST',
                 body: formData
             });
