@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting.Systemd;
 using OnecMonitor.Agent;
 using OnecMonitor.Agent.Models;
 using OnecMonitor.Agent.Services;
@@ -16,6 +17,8 @@ var host = Host.CreateDefaultBuilder(args)
             options.ServiceName = "OnecMonitorAgent";
         });
         services.AddSystemd();
+
+        services.AddSingleton<FilesProvider>();
         
         services.AddSingleton<V8PlatformsProvider>();
         services.AddSingleton<V8ServicesProvider>();

@@ -366,4 +366,4 @@ onecmonitor-server/om-server.db
 onecmonitor-agent/om-agent.db
 onecmonitor-server/wwwroot/
 Publish/
-.idea
+.idea/

@@ -1,9 +1,7 @@
 using System.Text;
 using System.Xml;
-using OnecMonitor.Agent.Helpers;
 using OnecMonitor.Common.DTO;
 using OnecMonitor.Common.Services;
-using OneScript.Commons;
 
 namespace OnecMonitor.Agent.Services.TechLog;
 
@@ -15,15 +13,18 @@ public class TechLogManager
     private readonly ILogger<TechLogManager> _logger;
     
     private CancellationTokenSource? _cts;
-    private readonly string _rootLogPath = FilesHelper.TechLogRootPath;
+    private readonly string _rootLogPath;
 
     public TechLogManager(
+        FilesProvider filesProvider,
         TechLogRepositoryManager repositoryManager,
         V8PlatformsProvider platformsProvider,
         TechLogFoldersManager foldersManager,
         IHostApplicationLifetime applicationLifetime,
         ILogger<TechLogManager> logger)
     {
+        _rootLogPath = filesProvider.TechLogFolder;
+            
         _platformsProvider = platformsProvider;
         _foldersManager = foldersManager;
         _applicationLifetime = applicationLifetime;

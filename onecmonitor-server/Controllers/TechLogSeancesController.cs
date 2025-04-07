@@ -151,7 +151,7 @@ public class TechLogSeancesController(
     {
         using var techLogRepository = repositoryManager.GetInstance();
             
-        await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await using var tran = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
