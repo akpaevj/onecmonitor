@@ -15,6 +15,7 @@
         InfoBasesResponse,
         SettingsRequest,
         MaintenanceStepNodeLog,
+        V8FileRequest,
         
         // Server messages
         InstalledPlatformsRequest,
@@ -24,5 +25,6 @@
         InfoBasesRequest,
         Settings,
         MaintenanceTask,
+        V8FileChunk
     }
 }

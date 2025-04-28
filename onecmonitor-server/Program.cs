@@ -3,11 +3,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using OnecMonitor.Common.DTO;
-using OnecMonitor.Common.EventLog;
 using OnecMonitor.Common.Services;
-using OnecMonitor.Common.Storage;
-using OnecMonitor.Common.TechLog;
 using OnecMonitor.Server;
 using OnecMonitor.Server.AutoMapper;
 using OnecMonitor.Server.Helpers;
@@ -24,7 +20,7 @@ builder.Services.AddSystemd();
 
 builder.WebHost.ConfigureKestrel((context, options) =>
 {
-    options.Limits.MaxRequestBodySize = 2000 * 1024 * 1024;
+    options.Limits.MaxRequestBodySize = long.MaxValue;
     
     // configure http listener
     var host = context.Configuration.GetValue("OnecMonitor:Http:Host", "0.0.0.0");
@@ -44,6 +40,8 @@ builder.Services.AddSignalR(opt =>
 
 builder.Services.AddAutoMapper(typeof(DtoProfile));
 builder.Services.AddAutoMapper(typeof(CommonProfile));
+
+builder.Services.AddScoped<AdministrationApi>();
 
 builder.Services.AddSingleton<TechLogRepositoryManager>();
 builder.Services.AddSingleton<EventLogRepositoryManager>();

@@ -42,7 +42,7 @@ public class V8FilesController(AppDbContext appDbContext, IMapper mapper, IWebHo
 
     [HttpPost]
     [RequestFormLimits(
-        MultipartBodyLengthLimit = int.MaxValue,
+        MultipartBodyLengthLimit = long.MaxValue,
         ValueLengthLimit = int.MaxValue)
     ]
     public async Task<IActionResult> Save(V8FileEditViewModel vm, CancellationToken cancellationToken)

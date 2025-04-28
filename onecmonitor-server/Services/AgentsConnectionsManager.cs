@@ -48,7 +48,8 @@ namespace OnecMonitor.Server.Services
             lock (_connections)
                 _connections.Add(agentConnection);
             
-            logger.LogInformation($"Агент подключился: {agentConnection.AgentInstance!.InstanceName}. Идентификатор соединения: {agentConnection.ConnectionId}");
+            if (agentConnection.AgentInstance!.MainConnection)
+                logger.LogInformation($"Агент подключился: {agentConnection.AgentInstance!.InstanceName}. Идентификатор соединения: {agentConnection.ConnectionId}");
         }
 
         private void AgentConnection_Disconnected(AgentConnection agentConnection)
@@ -59,7 +60,8 @@ namespace OnecMonitor.Server.Services
             agentConnection.AgentConnected -= AgentConnection_Connected;
             agentConnection.AgentDisconnected -= AgentConnection_Disconnected;
 
-            logger.LogInformation($"Агент отключился: {agentConnection.AgentInstance!.InstanceName}. Идентификатор соединения: {agentConnection.ConnectionId}");
+            if (agentConnection.AgentInstance!.MainConnection)
+                logger.LogInformation($"Агент отключился: {agentConnection.AgentInstance!.InstanceName}. Идентификатор соединения: {agentConnection.ConnectionId}");
         }
 
         public AgentConnection? GetAgentConnection(Guid agentId)
@@ -82,7 +84,7 @@ namespace OnecMonitor.Server.Services
             return GetActiveAgentsConnections(dbAgents);
         }
 
-        public List<AgentConnection> GetActiveAgentsConnections(List<Agent> agents)
+        private List<AgentConnection> GetActiveAgentsConnections(List<Agent> agents)
         {
             return agents.Select(c => GetAgentConnection(c.Id)).Where(c => c != null).ToList()!;
         }

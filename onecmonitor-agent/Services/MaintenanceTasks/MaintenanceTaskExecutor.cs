@@ -4,6 +4,7 @@ using OnecMonitor.Common.DTO;
 using OnecMonitor.Common.DTO.MaintenanceTasks;
 using OnecMonitor.Common.Extensions;
 using OnecMonitor.Common.Models.MaintenanceTasks;
+using OneScript.Commons;
 using OneSTools.Common.Platform.RemoteAdministration;
 
 namespace OnecMonitor.Agent.Services.MaintenanceTasks;
@@ -13,6 +14,7 @@ public class MaintenanceTaskExecutor : BackgroundService
     private readonly AsyncServiceScope _scope;
     private readonly OnecMonitorConnection _serverConnection;
     private readonly MonitorQueue<MaintenanceTaskDto> _queue;
+    private readonly IServiceProvider _serviceProvider;
     private readonly RasHolder _rasHolder;
     private readonly V8ServicesProvider _v8ServicesProvider;
     private readonly ILogger<MaintenanceTaskExecutor> _logger;
@@ -24,6 +26,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         V8ServicesProvider v8ServicesProvider,
         ILogger<MaintenanceTaskExecutor> logger) 
     {
+        _serviceProvider = serviceProvider;
         _scope = serviceProvider.CreateAsyncScope();
         _queue = queue;
         _serverConnection = _scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
@@ -53,9 +56,12 @@ public class MaintenanceTaskExecutor : BackgroundService
 
     private async Task StartMaintenanceTask(MaintenanceTaskDto task, CancellationToken cancellationToken)
     {
+        var v8Files = await SaveTaskV8Files(task, cancellationToken);
+        
         await Parallel.ForEachAsync(task.InfoBases, cancellationToken, async (infoBase, stoppingToken) =>
         {
-            var v8Files = await SaveTaskV8Files(task, cancellationToken);
+            // Перекопируем файлы для каждого задания, т.к. 1С на кой-то хрен нужен монопольный доступ к файлам CF, CFE, CFU
+            var localFiles = CopyFilesForInfoBase(v8Files);
             
             var log = new List<MaintenanceStepLogItemDto>();
             
@@ -64,7 +70,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                 Task = task,
                 InfoBase = infoBase,
                 Log = log,
-                V8Files = v8Files,
+                V8Files = localFiles,
                 Step = task.Steps.GetRootStep()
             };
 
@@ -129,9 +135,27 @@ public class MaintenanceTaskExecutor : BackgroundService
             }
             finally
             {
-                DeleteV8Files(v8Files);
+                DeleteV8Files(localFiles);
             }
         });
+        
+        DeleteV8Files(v8Files);
+    }
+
+    private static Dictionary<Guid, string> CopyFilesForInfoBase(Dictionary<Guid, string> files)
+    {
+        var result = new Dictionary<Guid, string>();
+
+        foreach (var file in files)
+        {
+            var extension = Path.GetExtension(file.Value);
+            var path = Path.Join(Path.GetTempPath(), $"{Guid.NewGuid()}{extension}");
+            File.Copy(file.Value, path);
+            
+            result.Add(file.Key, path);
+        }
+
+        return result;
     }
 
     private static void HandleTaskStepNode(MaintenanceStepContext context)
@@ -157,6 +181,9 @@ public class MaintenanceTaskExecutor : BackgroundService
                 break;
             case MaintenanceStepKind.LoadConfiguration:
                 LoadConfiguration(context);
+                break;
+            case MaintenanceStepKind.DeleteExtension:
+                DeleteExtension(context);
                 break;
             case MaintenanceStepKind.StartExternalDataProcessor:
                 StartExternalDataProcessor(context);
@@ -184,34 +211,22 @@ public class MaintenanceTaskExecutor : BackgroundService
     private async Task SendLog(List<MaintenanceStepLogItemDto> log, CancellationToken cancellationToken)
         => await _serverConnection.Send(MessageType.MaintenanceStepNodeLog, log, cancellationToken);
 
-    private static async Task<ConcurrentDictionary<Guid, string>> SaveTaskV8Files(MaintenanceTaskDto task,
+    private async Task<Dictionary<Guid, string>> SaveTaskV8Files(MaintenanceTaskDto task,
         CancellationToken cancellationToken)
     {
-        var files = new ConcurrentDictionary<Guid, string>();
-        await SaveStepNodeV8File(task.Steps, files, cancellationToken);
-        
-        return files;
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        using var downloader = scope.ServiceProvider.GetRequiredService<V8FilesDownloader>();
+
+        var filesToDownload = task.Steps
+            .Where(c => c.File is not null)
+            .Select(c => c.File!)
+            .DistinctBy(c => c.Id)
+            .ToList();
+
+        return await downloader.Download(_serverConnection, filesToDownload, cancellationToken);
     }
 
-    private static async Task SaveStepNodeV8File(List<MaintenanceStepDto> steps, ConcurrentDictionary<Guid, string> files, CancellationToken cancellationToken)
-    {
-        foreach (var step in steps)
-        {
-            if (step.File == null || files.ContainsKey(step.File.Id)) 
-                continue;
-            
-            var path = Path.Join(Path.GetTempPath(), $"{Guid.NewGuid()}{step.File.FileExtension}") ;
-
-            await using var file = File.Create(path);
-            await file.WriteAsync(step.File.Data, cancellationToken);
-            file.Close(); 
-            
-            files.TryAdd(step.File.Id, path);
-            step.File.Data = null!;
-        }
-    }
-
-    private static void DeleteV8Files(ConcurrentDictionary<Guid, string> files)
+    private static void DeleteV8Files(Dictionary<Guid, string> files)
     {
         foreach (var file in files.Values)
         {
@@ -289,6 +304,19 @@ public class MaintenanceTaskExecutor : BackgroundService
         batch.LoadExtension(
             context.Step.File!.Name, 
             filePath, 
+            context.InfoBase.Credentials?.User ?? "", 
+            context.InfoBase.Credentials?.Password ?? "", 
+            context.AccessCode,
+            true);
+        
+        AddLogItem(context, batch.OutFileContent);
+    }
+    
+    private static void DeleteExtension(MaintenanceStepContext context)
+    {
+        using var batch = context.GetBatchDesigner();
+        batch.DeleteExtension(
+            context.Step.ExtensionName, 
             context.InfoBase.Credentials?.User ?? "", 
             context.InfoBase.Credentials?.Password ?? "", 
             context.AccessCode,

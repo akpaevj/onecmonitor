@@ -27,9 +27,8 @@ public class DtoProfile : Profile
             .ReverseMap();
         
         CreateMap<V8File, V8FileDto>()
-            .ForMember(c => c.Data, opt => opt.MapFrom(src => File.ReadAllBytes(src.DataPath)))
-            .ForMember(c => c.FileExtension, opt => opt.MapFrom(src => Path.GetExtension(src.DataPath)))
-            .ReverseMap();
+            .ForMember(c => c.Length, opt => opt.MapFrom(src => new FileInfo(src.DataPath).Length))
+            .ForMember(c => c.FileExtension, opt => opt.MapFrom(src => Path.GetExtension(src.DataPath)));
 
         CreateMap<InfoBase, InfoBaseDto>().ReverseMap();
         

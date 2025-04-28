@@ -1,4 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@inject AppDbContext DbContext;
+
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
     <head>
@@ -61,19 +63,22 @@
                                             <small class="d-inline">Настройки</small>
                                         </a>
                                     </li>
-                                    <li class="w-100">
-                                        <a asp-controller="TechLogSeances" asp-action="Index" class="nav-link px-0 text-white">
-                                            <small class="d-inline">Сеансы сбора</small>
-                                        </a>
-                                    </li>
-                                    <li class="w-100">
-                                        <a asp-controller="LogTemplates" asp-action="Index" class="nav-link px-0 text-white">
-                                            <small class="d-inline">Шаблоны</small>
-                                        </a>
-                                    </li>
+                                    @if (DbContext.TechLogSettings.FirstOrDefault()?.Enabled == true)
+                                    {
+                                        <li class="w-100">
+                                            <a asp-controller="TechLogSeances" asp-action="Index" class="nav-link px-0 text-white">
+                                                <small class="d-inline">Сеансы сбора</small>
+                                            </a>
+                                        </li>
+                                        <li class="w-100">
+                                            <a asp-controller="LogTemplates" asp-action="Index" class="nav-link px-0 text-white">
+                                                <small class="d-inline">Шаблоны</small>
+                                            </a>
+                                        </li>
+                                    }
                                 </ul>
                             </li>
-                            <li hidden>
+                            <li>
                                 <div class="d-flex nav-link px-0 align-middle">
                                     <i class="fs-4 bi-list-columns" style="color: #2fd9ff"></i>
                                     <span class="ms-2 align-self-center d-inline text-white">Журнал регистрации</span>

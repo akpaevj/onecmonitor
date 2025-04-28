@@ -2,14 +2,35 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using OnecMonitor.Server.Helpers;
+using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Services;
 using OnecMonitor.Server.ViewModels.InfoBases;
 
 namespace OnecMonitor.Server.Controllers;
 
-public class InfoBasesController(AppDbContext appDbContext, AgentsConnectionsManager connectionsManager, IMapper mapper) : Controller
+public class InfoBasesController(
+    AppDbContext appDbContext, 
+    IServiceProvider serviceProvider,
+    IMapper mapper) : Controller
 {
+    public async Task<IActionResult> Info(string searchString, CancellationToken cancellationToken)
+    {
+        var itemsQuery = await appDbContext.InfoBases
+            .AsNoTracking()
+            .Where(c => string.IsNullOrEmpty(searchString) || c.Name.Contains(searchString))
+            .Include(c => c.Cluster)
+            .OrderBy(c => c.Name)
+            .ToListAsync(cancellationToken);
+
+        return View(new InfoBasesInfoViewModel
+        {
+            SearchString = searchString,
+            InfoBases = mapper.Map<List<InfoBaseViewModel>>(itemsQuery)
+        });
+    }
+    
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
         var vm = id == Guid.Empty
@@ -42,6 +63,25 @@ public class InfoBasesController(AppDbContext appDbContext, AgentsConnectionsMan
         await appDbContext.SaveChangesAsync(cancellationToken);
 
         return RedirectToAction("Dashboard", "Clusters");
+    }
+
+    public async Task<IActionResult> InfoBaseInfo(Guid id, CancellationToken cancellationToken)
+    {
+        var model = await appDbContext.InfoBases
+            .AsNoTracking()
+            .Include(c => c.Credentials)
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        
+        if (model == null)
+            return NotFound();
+
+        await using var scope = serviceProvider.CreateAsyncScope();
+        using var api = scope.ServiceProvider.GetRequiredService<AdministrationApi>();
+        api.Init(model);
+
+        var info = await api.Info(cancellationToken);
+        
+        return new JsonResult(info);
     }
     
     private async Task<InfoBaseEditViewModel> PrepareViewModel(InfoBaseEditViewModel vm, CancellationToken cancellationToken)

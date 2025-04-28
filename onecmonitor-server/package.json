@@ -7,10 +7,11 @@
     "build": "node build.mjs"
   },
   "dependencies": {
+    "@fontsource/roboto": "^5.2.5",
     "@microsoft/signalr": "^8.0.7",
+    "@popperjs/core": "^2.11.8",
     "ace-builds": "1.32.2",
     "bootstrap": "5.3.2",
-    "@popperjs/core": "^2.11.8",
     "bootstrap-icons": "1.11.2",
     "chart.js": "4.4.1",
     "mermaid": "^11.4.1",

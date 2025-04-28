@@ -13,7 +13,7 @@ public class MaintenanceStepContext
     public InfoBaseDto InfoBase { get; set; } = null!;
     public MaintenanceStepDto Step { get; set; } = null!;
     public string AccessCode { get; set; } = string.Empty;
-    public ConcurrentDictionary<Guid, string> V8Files { get; set; } = [];
+    public Dictionary<Guid, string> V8Files { get; set; } = [];
     public List<MaintenanceStepLogItemDto> Log { get; set; } = [];
     public Rac Rac { get; set; } = null!;
     public V8Platform Platform { get; set; } = null!;

@@ -27,6 +27,15 @@
         </div>
     }
     
+    @if (Model.Kind == MaintenanceStepKind.DeleteExtension)
+    {
+        <div class="mb-3">
+            <label class="form-label" asp-for="ExtensionName">Имя расширения</label>
+            <input type="text" class="form-control" asp-for="ExtensionName" value="@Model.ExtensionName">
+            <span asp-validation-for="ExtensionName" class="text-danger"></span>
+        </div>
+    }
+    
     @if (Model is
          {
              Kind: MaintenanceStepKind.LoadConfiguration or 

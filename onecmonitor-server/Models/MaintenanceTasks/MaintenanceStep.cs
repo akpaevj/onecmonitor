@@ -23,6 +23,9 @@ public class MaintenanceStep : DatabaseObject
     
     [ForeignKey(nameof(FileId))]
     public V8File? File { get; set; }
+    
+    [MaxLength(200)] 
+    public string ExtensionName { get; set; } = string.Empty;
 
     [ForeignKey(nameof(MaintenanceTaskId))]
     public MaintenanceTask MaintenanceTask { get; set; } = null!;

@@ -74,14 +74,6 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
         
         await WriteMessage(message, true, cancellationToken);
     }
-    
-    public async Task Send(MessageType messageType, CancellationToken cancellationToken)
-    {
-        var header = new MessageHeader(messageType, 0, Guid.NewGuid());
-        var message = new Message(header);
-
-        await WriteMessage(message, true, cancellationToken);
-    }
 
     public async Task<TResult> Get<TResult>(
         MessageType messageType, 
@@ -94,7 +86,7 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
         return await WriteMessageAndWaitResult<TResult>(message, responseMessageType, cancellationToken);
     }
 
-    public async Task<TResult> Get<T, TResult>(
+    protected async Task<TResult> Get<T, TResult>(
         MessageType messageType, 
         MessageType responseMessageType, 
         T item, 

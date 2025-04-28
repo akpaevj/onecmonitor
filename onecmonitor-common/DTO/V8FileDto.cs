@@ -20,5 +20,5 @@ public class V8FileDto
     [Key(6)] 
     public bool IsConfiguration { get; set; } = false;
     [Key(7)] 
-    public byte[] Data { get; set; } = [];
+    public long Length { get; set; }
 }

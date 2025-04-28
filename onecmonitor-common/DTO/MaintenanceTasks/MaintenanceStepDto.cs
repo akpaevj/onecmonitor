@@ -24,4 +24,6 @@ public class MaintenanceStepDto
     public string Message { get; set; } = string.Empty;
     [Key(8)] 
     public V8FileDto? File { get; set; }
+    [Key(9)]
+    public string ExtensionName { get; set; } = string.Empty;
 }

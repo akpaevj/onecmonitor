@@ -1,0 +1,36 @@
+﻿@model OnecMonitor.Server.ViewModels.InfoBases.InfoBasesInfoViewModel
+
+@{
+    ViewData["Title"] = Html.DisplayNameForModel();
+}
+
+<table id="clusters" class="table table-striped table-bordered table-hover">
+    <thead>
+    <tr>
+        <th class="col">Кластер</th>
+        <th class="col">Имя</th>
+        <th class="col">Конфигурация</th>
+        <th class="col">Версия</th>
+        <th class="col">БСП</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model.InfoBases)
+    {
+        <tr data-infoBase-id="@item.Id">
+            <td>@item.Cluster.Name</td>
+            <td>@item.Name</td>
+            <td data-type="configuration"></td>
+            <td data-type="version"></td>
+            <td data-type="sslVersion"></td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@section Scripts
+{
+    <script type="text/javascript">
+        OM.loadInfoBasesInfo();
+    </script>
+}

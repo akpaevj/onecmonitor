@@ -19,6 +19,7 @@ export class MaintenanceStep {
     message: string = '';
     fileId: string | null  = null;
     title: string = '';
+    extensionName: string = '';
 }
 
 export class MaintenanceStepsTreeOptions {
@@ -143,6 +144,7 @@ export class MaintenanceStepsTree {
         currentStep.message = step.message;
         currentStep.accessCode = step.accessCode;
         currentStep.fileId = step.fileId;
+        currentStep.extensionName = step.extensionName;
 
         this.stepsToInputValue();
         await this.redrawNodes();

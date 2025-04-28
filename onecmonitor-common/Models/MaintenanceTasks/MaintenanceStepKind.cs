@@ -12,6 +12,8 @@ public enum MaintenanceStepKind
     UnlockConnections,
     [Display(Name = "Загрузка расширения")]
     LoadExtension,
+    [Display(Name = "Удаление расширения")]
+    DeleteExtension,
     [Display(Name = "Обновление конфигурации")]
     UpdateConfiguration,
     [Display(Name = "Загрузка конфигурации")]

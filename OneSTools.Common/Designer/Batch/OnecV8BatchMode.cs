@@ -79,6 +79,15 @@ public sealed class OnecV8BatchMode : IDisposable
         Start(waitForExit);
     }
     
+    public void DeleteExtension(string extensionName, string user, string password, string accessCode = "", bool waitForExit = false)
+    {
+        AddBatchModeCommonArgs(user, password, accessCode);
+        
+        _arguments.Add($"/DeleteCfg -Extension\"{extensionName}\"");
+        
+        Start(waitForExit);
+    }
+    
     /// <summary>
     /// !!! Never call it while batch operation is running
     /// </summary>

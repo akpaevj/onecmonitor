@@ -17,7 +17,7 @@ var host = Host.CreateDefaultBuilder(args)
             options.ServiceName = "OnecMonitorAgent";
         });
         services.AddSystemd();
-
+        
         services.AddSingleton<FilesProvider>();
         
         services.AddSingleton<V8PlatformsProvider>();
@@ -27,7 +27,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddDbContext<AppDbContext>();
         
         services.AddTransient<OnecMonitorConnection>();
-
+        
+        services.AddScoped<V8FilesDownloader>();
         services.AddSingleton<MonitorQueue<MaintenanceTaskDto>>();
         services.AddHostedService<MaintenanceTaskExecutor>();
 
@@ -81,7 +82,7 @@ else if (agentInstance.InstanceName != instanceName)
 
 host.Services.GetRequiredService<TechLogManager>();
 
-await host.Services.GetRequiredService<CommandsWatcher>()
-    .Start(appLifetime.ApplicationStopping);
+_ = host.Services.GetRequiredService<CommandsWatcher>()
+    .Start(appLifetime.ApplicationStopping).ConfigureAwait(false);
 
 host.Run();

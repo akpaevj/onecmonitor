@@ -42,6 +42,9 @@ public class MaintenanceStepViewModel
     [JsonPropertyName("fileId")]
     public Guid? FileId { get; set; }
     [ValidateNever] 
+    [JsonPropertyName("extensionName")]
+    public string ExtensionName { get; set; } = string.Empty;
+    [ValidateNever] 
     public SelectList Files { get; set; } = null!;
 
     [JsonPropertyName("title")] 

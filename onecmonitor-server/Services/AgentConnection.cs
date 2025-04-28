@@ -68,6 +68,9 @@ namespace OnecMonitor.Server.Services
                         case MessageType.SettingsRequest:
                             await HandleSettingsRequest(message, cancellationToken);
                             break;
+                        case MessageType.V8FileRequest:
+                            await SendFile(message, cancellationToken);
+                            break;
                         default:
                             throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
                     }
@@ -287,6 +290,36 @@ namespace OnecMonitor.Server.Services
             }
             else
                 await SendOk(requestMessage, cancellationToken);
+        }
+
+        private async Task SendFile(Message message, CancellationToken cancellationToken)
+        {
+            var request = ParseMessageData<V8FileRequestDto>(message.Data, cancellationToken);
+            
+            await using var scope = _serviceProvider.CreateAsyncScope();
+            await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var file = await dbContext.V8Files.FindAsync([request.Id], cancellationToken);
+            
+            await using var stream = new FileStream(file!.DataPath, FileMode.Open, FileAccess.Read);
+            var sent = 0L;
+            var buffer = new byte[100 * 1024 * 1024];
+            
+            while (sent < stream.Length)
+            {
+                var read = await stream.ReadAsync(buffer, cancellationToken);
+                
+                var chunk = new V8FileChunkDto
+                {
+                    Id = request.Id,
+                    Data = buffer[..read]
+                };
+                
+                await Send(MessageType.V8FileChunk, chunk, cancellationToken);
+                sent += read;
+            }
+            
+            await SendOk(message, cancellationToken);
         }
 
         private static T ParseMessageData<T>(ReadOnlyMemory<byte> messageData, CancellationToken cancellationToken)

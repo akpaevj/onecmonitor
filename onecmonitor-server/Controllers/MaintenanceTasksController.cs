@@ -192,6 +192,10 @@ public class MaintenanceTasksController(AppDbContext appDbContext, AgentsConnect
                 if (string.IsNullOrEmpty(vm.Message))
                     ModelState.AddModelError(taskValidation ? nameof(MaintenanceTask.Steps) : nameof(vm.Message), "Не указан тест сообщения");
                 break;
+            case MaintenanceStepKind.DeleteExtension:
+                if (string.IsNullOrEmpty(vm.ExtensionName))
+                    ModelState.AddModelError(taskValidation ? nameof(MaintenanceTask.Steps) : nameof(vm.ExtensionName), "Не указано наименование расширения");
+                break;
         }
     }
 
