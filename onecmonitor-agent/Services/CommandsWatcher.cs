@@ -12,7 +12,7 @@ namespace OnecMonitor.Agent.Services
         private readonly OnecMonitorConnection _server;
         private readonly MonitorQueue<MaintenanceTaskDto> _maintenanceTasksQueue;
         private readonly TechLogRepositoryManager _techLogRepositoryManager;
-        private readonly EventLogExportManager _eventLogExportManager;
+        private readonly EventLogRepositoryManager _eventLogRepositoryManager;
         private readonly RasHolder _rasHolder;
         private readonly IHostApplicationLifetime _applicationLifetime;
         private readonly ILogger<CommandsWatcher> _logger;
@@ -22,8 +22,8 @@ namespace OnecMonitor.Agent.Services
         public CommandsWatcher(
             IServiceProvider serviceProvider,
             TechLogRepositoryManager techLogRepositoryManager,
+            EventLogRepositoryManager eventLogRepositoryManager,
             MonitorQueue<MaintenanceTaskDto> maintenanceTasksQueue,
-            EventLogExportManager eventLogExportManager,
             RasHolder rasHolder,
             IHostApplicationLifetime appLifetime,
             V8PlatformsProvider v8PlatformsProvider,
@@ -34,9 +34,9 @@ namespace OnecMonitor.Agent.Services
             _rasHolder = rasHolder;
             _server = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
             _techLogRepositoryManager = techLogRepositoryManager;
+            _eventLogRepositoryManager = eventLogRepositoryManager;
             _v8PlatformsProvider = v8PlatformsProvider;
             _v8ServicesProvider = v8ServicesProvider;
-            _eventLogExportManager = eventLogExportManager;
             _maintenanceTasksQueue = maintenanceTasksQueue;
             _applicationLifetime = appLifetime;
             _logger = logger;
@@ -110,16 +110,16 @@ namespace OnecMonitor.Agent.Services
             await _server.Send(MessageType.InstalledPlatforms, platforms, message, cancellationToken);
         }
 
-        private async Task ApplySettings(SettingsDto settingsDto, CancellationToken cancellationToken)
+        private void ApplySettings(SettingsDto settingsDto, CancellationToken cancellationToken)
         {
             _techLogRepositoryManager.SetSettings(settingsDto.TechLogSettings);
-            await _eventLogExportManager.UpdateSettings(settingsDto.EventLogSettings, cancellationToken);
+            _eventLogRepositoryManager.SetSettings(settingsDto.EventLogSettings);
         }
         
         private async Task HandleSettings(Message message, CancellationToken cancellationToken)
         {
             var settings = MessagePackSerializer.Deserialize<SettingsDto>(message.Data, cancellationToken: cancellationToken);
-            await ApplySettings(settings, cancellationToken);
+            ApplySettings(settings, cancellationToken);
             
             await _server.SendOk(message, cancellationToken);
         }
@@ -131,7 +131,7 @@ namespace OnecMonitor.Agent.Services
                 MessageType.Settings,
                 cancellationToken);
 
-            await ApplySettings(response, cancellationToken);
+            ApplySettings(response, cancellationToken);
         }
         
         private async Task SendV8Clusters(Message message, CancellationToken cancellationToken)

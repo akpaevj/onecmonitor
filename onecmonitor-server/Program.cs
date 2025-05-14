@@ -20,6 +20,7 @@ builder.Services.AddSystemd();
 
 builder.WebHost.ConfigureKestrel((context, options) =>
 {
+    options.AllowSynchronousIO = true;
     options.Limits.MaxRequestBodySize = long.MaxValue;
     
     // configure http listener

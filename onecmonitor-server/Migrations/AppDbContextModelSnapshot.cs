@@ -171,6 +171,44 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("Dbms");
                 });
 
+            modelBuilder.Entity("OnecMonitor.Server.Models.ErrorReport", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Configuration")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConfigurationVersion")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Date")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Screenshot")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("ServerVersion")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ErrorReports");
+                });
+
             modelBuilder.Entity("OnecMonitor.Server.Models.EventLogSettings", b =>
                 {
                     b.Property<string>("Id")

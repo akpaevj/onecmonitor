@@ -1,4 +1,5 @@
 using OnecMonitor.Common.DTO;
+using OnecMonitor.Common.Services;
 using OneScript.Commons;
 using Exception = System.Exception;
 
@@ -8,6 +9,7 @@ public class EventLogExportManager(
     V8ServicesProvider v8ServicesProvider,
     EventLogExporter exporter,
     IServiceProvider serviceProvider,
+    EventLogRepositoryManager _repositoryManager,
     IHostApplicationLifetime applicationLifetime,
     ILogger<EventLogExportManager> logger) : IDisposable
 {
