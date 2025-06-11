@@ -35,7 +35,7 @@
                                     </li>
                                     <li class="w-100">
                                         <a asp-controller="V8Files" asp-action="Index" class="nav-link px-0 text-white">
-                                            <small class="d-inline">Конфигурации и обработки</small>
+                                            <small class="d-inline">Конфигурации, обработки и скрипты</small>
                                         </a>
                                     </li>
                                     <li class="w-100">
@@ -97,8 +97,16 @@
                                     <span class="ms-2 align-self-center d-inline text-white">Сервис регистрации ошибок</span>
                                 </div>
                                 <ul class="nav flex-column ms-3">
+                                    @if (DbContext.ErrorLoggingServiceSettings.FirstOrDefault()?.Enabled == true)
+                                    {
+                                        <li class="w-100">
+                                            <a asp-controller="ErrorLoggingService" asp-action="Index" class="nav-link px-0 text-white">
+                                                <small class="d-inline">Журнал</small>
+                                            </a>
+                                        </li>
+                                    }
                                     <li class="w-100">
-                                        <a asp-controller="EventLogSettings" asp-action="Index" class="nav-link px-0 text-white">
+                                        <a asp-controller="ErrorLoggingService" asp-action="Settings" class="nav-link px-0 text-white">
                                             <small class="d-inline">Настройки</small>
                                         </a>
                                     </li>

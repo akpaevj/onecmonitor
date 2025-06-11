@@ -35,6 +35,12 @@
 		<Protobuf Include="Protos\clickhouse_grpc.proto" GrpcServices="Client" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Reference Include="OneScript.Core">
+	    <HintPath>..\..\..\.nuget\packages\onescript.corelib\2.0.0-rc6\lib\net6.0\OneScript.Core.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <DebugSymbols>False</DebugSymbols>
         <DebugType>None</DebugType>

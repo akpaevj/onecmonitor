@@ -4,6 +4,7 @@ using OnecMonitor.Common.DTO;
 using OnecMonitor.Common.DTO.MaintenanceTasks;
 using OnecMonitor.Common.Extensions;
 using OnecMonitor.Common.Models.MaintenanceTasks;
+using OnecMonitor.Common.Oscript;
 using OneScript.Commons;
 using OneSTools.Common.Platform.RemoteAdministration;
 
@@ -89,7 +90,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                 {
                     if (log.Count > 0)
                     {
-                        await SendLog(log, cancellationToken);
+                        await SendLog(log, stoppingToken);
                         log.Clear();
                     }
 
@@ -187,6 +188,9 @@ public class MaintenanceTaskExecutor : BackgroundService
                 break;
             case MaintenanceStepKind.StartExternalDataProcessor:
                 StartExternalDataProcessor(context);
+                break;
+            case MaintenanceStepKind.ExecuteOneScript:
+                ExecuteOneScript(context);
                 break;
             default:
                 throw new Exception($"Неизвестный тип шага \"{context.Step.Kind.GetDisplay()}\"");
@@ -310,6 +314,28 @@ public class MaintenanceTaskExecutor : BackgroundService
             true);
         
         AddLogItem(context, batch.OutFileContent);
+    }
+    
+    private static void ExecuteOneScript(MaintenanceStepContext context)
+    {
+        var scriptPath = Directory.CreateTempSubdirectory().FullName;
+        
+        var filePath = context.V8Files[context.Step.File!.Id];
+        var opmMetadata = OneScriptPackageReader.Unzip(filePath, scriptPath);
+
+        var scriptHost = new OneScriptExecutor();
+        scriptHost.OnEcho += (_, tuple) =>
+        {
+            AddLogItem(context, tuple.Message);
+        };
+        scriptHost.OnError += (_, ex) =>
+        {
+            AddLogItem(context, ex.Message, true);
+        };
+
+        scriptHost.ExecutePackageScript(scriptPath, opmMetadata!);
+        
+        Directory.Delete(scriptPath, true);
     }
     
     private static void DeleteExtension(MaintenanceStepContext context)

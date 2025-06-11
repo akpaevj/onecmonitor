@@ -21,7 +21,7 @@ public class CredentialsController(AppDbContext appDbContext, IMapper mapper) : 
                 .Include(c => c.Clusters)
                 .Include(c => c.InfoBases)
                 .ProjectTo<CredentialsEditViewModel>(mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(cancellationToken)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
             : new CredentialsEditViewModel();
 
         if (vm == null)

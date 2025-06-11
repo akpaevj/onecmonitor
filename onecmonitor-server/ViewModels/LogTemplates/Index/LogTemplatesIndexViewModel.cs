@@ -1,7 +1,7 @@
-﻿namespace OnecMonitor.Server.ViewModels.Log.Index
+﻿namespace OnecMonitor.Server.ViewModels.LogTemplates.Index
 {
     public class LogTemplatesIndexViewModel
     {
-        public List<LogTemplatesListItemViewModel> Items { get; set; } = new();
+        public List<LogTemplatesListItemViewModel> Items { get; set; } = [];
     }
 }

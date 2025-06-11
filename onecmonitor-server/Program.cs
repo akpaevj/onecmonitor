@@ -54,6 +54,7 @@ builder.Services.AddCors();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<AgentsConnectionsManager>());
 builder.Services.AddSingleton<AgentsConnectionsManager>();
 builder.Services.AddHostedService<ClustersInfoBasesDetector>();
+builder.Services.AddHostedService<ErrorReportsCleaner>();
 
 var app = builder.Build();
 

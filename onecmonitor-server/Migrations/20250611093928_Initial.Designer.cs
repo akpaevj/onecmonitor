@@ -10,7 +10,7 @@ using OnecMonitor.Server;
 namespace OnecMonitor.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250328223023_Initial")]
+    [Migration("20250611093928_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -174,6 +174,45 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("Dbms");
                 });
 
+            modelBuilder.Entity("OnecMonitor.Server.Models.ErrorLoggingServiceSettings", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReportsTtl")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ErrorLoggingServiceSettings");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Models.ErrorReport", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Report")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Screenshot")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ErrorReports");
+                });
+
             modelBuilder.Entity("OnecMonitor.Server.Models.EventLogSettings", b =>
                 {
                     b.Property<string>("Id")
@@ -278,6 +317,11 @@ namespace OnecMonitor.Server.Migrations
                     b.Property<string>("AccessCode")
                         .IsRequired()
                         .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExtensionName")
+                        .IsRequired()
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FileId")
@@ -491,6 +535,27 @@ namespace OnecMonitor.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("V8Files");
+                });
+
+            modelBuilder.Entity("OnecMonitor.Server.Views.Settings.CommonSettings", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("NotifyMaintenanceTaskCompleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("NotifyMaintenanceTaskInfoBaseCompleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TelegramBotToken")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CommonSettings");
                 });
 
             modelBuilder.Entity("AgentTechLogSeance", b =>

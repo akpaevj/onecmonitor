@@ -21,5 +21,7 @@ public class ReportRoot
     [JsonPropertyName("errorInfo")]
     public ReportErrorInfo ErrorInfo { get; set; } = null!;
     [JsonPropertyName("screenshot")]
-    public ReportScreenshot? Screenshot { get; set; } = null!;
+    public ReportScreenshot? Screenshot { get; set; }
+    [JsonPropertyName("additionalInfo")]
+    public string? AdditionalInfo { get; set; } = string.Empty;
 }

@@ -76,6 +76,8 @@ public class V8FilesController(AppDbContext appDbContext, IMapper mapper, IWebHo
                 model.FileType = V8FileType.Cfu;
             else if (extension.Equals(".EPF", StringComparison.InvariantCultureIgnoreCase))
                 model.FileType = V8FileType.Epf;
+            else if (extension.Equals(".OSPX", StringComparison.InvariantCultureIgnoreCase))
+                model.FileType = V8FileType.Ospx;
             else
                 ModelState.AddModelError(nameof(V8FileEditViewModel.File), "Invalid file format");
             

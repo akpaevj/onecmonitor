@@ -16,6 +16,7 @@ public class V8File : DatabaseObject
             V8FileType.Cfe => "расширение",
             V8FileType.Cfu => "обновление",
             V8FileType.Epf => "внешняя обработка",
+            V8FileType.Ospx => "скрипт (OneScript)",
             _ => "неизвестный"
         };
         

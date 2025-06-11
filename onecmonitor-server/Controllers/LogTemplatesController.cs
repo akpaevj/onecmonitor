@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Server.Models;
-using OnecMonitor.Server.ViewModels.Log;
-using OnecMonitor.Server.ViewModels.Log.Index;
+using OnecMonitor.Server.ViewModels.LogTemplates;
+using OnecMonitor.Server.ViewModels.LogTemplates.Index;
 
 namespace OnecMonitor.Server.Controllers
 {

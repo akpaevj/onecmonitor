@@ -1,14 +1,17 @@
 using System.Collections.Concurrent;
 using OnecMonitor.Common.DTO;
 using OnecMonitor.Common.DTO.MaintenanceTasks;
+using OneScript.Contexts;
 using OneSTools.Common.Designer.Batch;
 using OneSTools.Common.Platform;
 using OneSTools.Common.Platform.RemoteAdministration;
 
 namespace OnecMonitor.Agent.Services.MaintenanceTasks;
 
+[ContextClass("КонтекстШагаОбслуживания", "MaintenanceStepContext")]
 public class MaintenanceStepContext
 {
+    [ContextProperty("ЗадачаОбслуживания", "MaintenanceTask")]
     public MaintenanceTaskDto Task { get; set; } = null!;
     public InfoBaseDto InfoBase { get; set; } = null!;
     public MaintenanceStepDto Step { get; set; } = null!;

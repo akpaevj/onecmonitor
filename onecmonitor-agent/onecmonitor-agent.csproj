@@ -11,6 +11,7 @@
 	<Authors>Akpaev E.A.</Authors>
 	<Company>Akpaev E.A.</Company>
 	<AssemblyVersion>0.1.0</AssemblyVersion>
+	<Version>0.1.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,7 +37,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.1" />
-    <PackageReference Include="OneScript.Hosting" Version="2.0.0-rc4" />
+    <PackageReference Include="OneScript.Hosting" Version="2.0.0-rc.7" />
     <PackageReference Include="OneSTools.BracketsFile" Version="2.1.9" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.1" />
   </ItemGroup>

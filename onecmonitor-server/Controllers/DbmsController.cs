@@ -20,7 +20,7 @@ public class DbmsController(AppDbContext appDbContext, IMapper mapper) : Control
             ? await appDbContext.Dbms
                 .AsNoTracking()
                 .ProjectTo<DbmsEditViewModel>(mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(cancellationToken)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
             : new DbmsEditViewModel();
 
         if (vm == null)

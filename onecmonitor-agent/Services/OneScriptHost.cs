@@ -1,6 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Compression;
+using System.Xml;
+using System.Xml.Serialization;
+using OnecMonitor.Agent.Models;
+using OnecMonitor.Common.Models;
+using OnecMonitor.Common.Oscript;
 using OneScript.Sources;
 using OneScript.StandardLibrary;
+using ScriptEngine;
 using ScriptEngine.HostedScript;
 using ScriptEngine.HostedScript.Extensions;
 using ScriptEngine.Hosting;
@@ -9,17 +16,20 @@ namespace OnecMonitor.Agent.Services;
 
 public class OneScriptExecutor : IHostApplication
 {
-    public EventHandler<(string Message, MessageStatusEnum Status)>? OnEcho;
-    public EventHandler<Exception>? OnError;
+    public EventHandler<(string Message, MessageStatusEnum Status)>? OnEcho = null;
+    public EventHandler<Exception>? OnError = null;
     
-    public void Execute(string script)
+    public void ExecutePackageScript(string path, OpmMetadata metadata)
     {
-        using var engine = CreateEngine();
+        var executablePath = Path.Combine(path, metadata.Executable);
+        var librariesPath = Path.Combine(path, "oscript_modules");
+        
+        using var engine = CreateEngine(librariesPath);
         engine.Initialize();
 
         var source = SourceCodeBuilder
             .Create()
-            .FromString(script)
+            .FromFile(executablePath)
             .Build();
 
         var process = engine.CreateProcess(this, source);
@@ -28,19 +38,25 @@ public class OneScriptExecutor : IHostApplication
         if (exitCode != 0)
             throw new Exception("Ошибка выполнения скрипта");
     }
-    
-    private static HostedScriptEngine CreateEngine()
-        => new(DefaultEngineBuilder
+
+    private static HostedScriptEngine CreateEngine(string librariesPath)
+    {
+        var builder = DefaultEngineBuilder
             .Create()
             .SetDefaultOptions()
-            .UseNativeRuntime()
             .UseImports()
             .SetupEnvironment(e =>
             {
                 e.AddStandardLibrary();
-            })
-            .UseFileSystemLibraries()
-            .Build());
+            });
+
+        builder.Services.RegisterSingleton<IDependencyResolver>(new FileSystemDependencyResolver
+        {
+            LibraryRoot = librariesPath
+        });
+        
+        return new HostedScriptEngine(builder.Build());
+    }
 
     public void Echo(string str, MessageStatusEnum status = MessageStatusEnum.Ordinary)
     {

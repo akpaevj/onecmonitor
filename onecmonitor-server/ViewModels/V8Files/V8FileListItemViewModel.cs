@@ -17,6 +17,7 @@ public class V8FileListItemViewModel
             V8FileType.Cfe => "расширение конфигурации",
             V8FileType.Cfu => "обновление конфигурации",
             V8FileType.Epf => "внешняя обработка",
+            V8FileType.Ospx => "скрипт (OneScript)",
             _ => "неизвестный"
         };
     

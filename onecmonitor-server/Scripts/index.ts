@@ -14,6 +14,7 @@ export * from './deleteDialog'
 export * from './common'
 export * from './clustersInfoBases'
 export * from './techLog'
+export * from './errorReport'
 export * from './MaintenanceTask/maintenanceTaskLog'
 export {EditStepDialog} from "./MaintenanceTask/editStepDialog";
 export * from "./MaintenanceTask/maintenanceStepsTree";

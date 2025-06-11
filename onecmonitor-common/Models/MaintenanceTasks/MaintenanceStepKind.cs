@@ -19,5 +19,7 @@ public enum MaintenanceStepKind
     [Display(Name = "Загрузка конфигурации")]
     LoadConfiguration,
     [Display(Name = "Запуск внешней обработки")]
-    StartExternalDataProcessor
+    StartExternalDataProcessor,
+    [Display(Name = "Выполнение скрипта - OneScript")]
+    ExecuteOneScript
 }

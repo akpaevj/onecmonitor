@@ -2,8 +2,10 @@
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OnecMonitor.Server.Converters.Sqlite;
+using OnecMonitor.Server.Dto.ErrorLoggingService;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Models.MaintenanceTasks;
+using OnecMonitor.Server.Views.Settings;
 
 namespace OnecMonitor.Server
 {
@@ -27,6 +29,7 @@ namespace OnecMonitor.Server
         public DbSet<EventLogSettings> EventLogSettings { get; set; }
         public DbSet<ErrorLoggingServiceSettings> ErrorLoggingServiceSettings { get; set; }
         public DbSet<ErrorReport> ErrorReports { get; set; }
+        public DbSet<CommonSettings> CommonSettings { get; set; }
 
         public AppDbContext(IHostEnvironment hostEnvironment)
             => DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-server.db");

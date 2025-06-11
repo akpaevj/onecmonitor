@@ -6,8 +6,11 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnecMonitor.Server.Dto.ErrorLoggingService;
+using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
+using OnecMonitor.Server.ViewModels;
 using OnecMonitor.Server.ViewModels.ErrorLoggingService;
+using OnecMonitor.Server.ViewModels.ErrorLoggingService.Index;
 using OnecMonitor.Server.ViewModels.TechLogSettings;
 
 namespace OnecMonitor.Server.Controllers;
@@ -17,6 +20,35 @@ public class ErrorLoggingServiceController(
     IMapper mapper, 
     ILogger<ErrorLoggingServiceController> logger) : Controller
 {
+    
+    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    {
+        var items = await dbContext.ErrorReports.AsNoTracking().ToListAsync(cancellationToken);
+
+        var reports = items
+            .Select(c =>
+            {
+                var reportRoot = JsonSerializer.Deserialize<ReportRoot>(c.Report, ErrorReportsHelper.ReportSerializerOptions);
+                
+                return new ErrorLoggingServiceListItemViewModel
+                {
+                    Id = c.Id,
+                    Configuration = reportRoot!.ConfigInfo.Name,
+                    ConfigurationVersion = reportRoot.ConfigInfo.Version,
+                    Date = reportRoot.Time,
+                    PlatformVersion = reportRoot.ServerInfo.AppVersion,
+                    UserName = reportRoot.SessionInfo.UserName
+                };
+            })
+            .OrderByDescending(c => c.Date)
+            .ToList();
+
+        return View(new ErrorLoggingServiceIndexViewModel
+        {
+            Items = reports
+        });
+    }
+    
     [HttpGet]
     public async Task<IActionResult> Settings(CancellationToken cancellationToken)
     {
@@ -24,93 +56,60 @@ public class ErrorLoggingServiceController(
             .ProjectTo<ErrorLoggingServiceSettingsViewModel>(mapper.ConfigurationProvider)
             .FirstOrDefaultAsync(cancellationToken);
         
-        return View(settings);
+        return View(settings ?? new ErrorLoggingServiceSettingsViewModel());
     }
 
     [HttpPost]
-    public async Task<IActionResult> SaveSettings()
+    public async Task<IActionResult> SaveSettings(ErrorLoggingServiceSettingsViewModel vm, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var isNew = vm.Id == Guid.Empty;
+
+        if (!vm.Enabled)
+            ModelState.Clear();
+        
+        if (!ModelState.IsValid)
+            return View("Settings", vm);
+
+        var model = isNew ? new ErrorLoggingServiceSettings()
+        {
+            Id = Guid.NewGuid()
+        } : await dbContext.ErrorLoggingServiceSettings.FirstOrDefaultAsync(i => i.Id == vm.Id, cancellationToken);
+        
+        if (model == null)
+            return NotFound();
+
+        dbContext.Entry(model).State = isNew ? EntityState.Added : EntityState.Modified;
+        
+        mapper.Map(vm, model);
+        
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return View("Settings", vm);
     }
     
-    #region API
-    
-    private readonly JsonSerializerOptions _jsonOptions = new()
+    public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
-        Converters =
+        var model = await dbContext.ErrorReports
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+        if (model == null)
+            return NotFound();
+        
+        return View(new ErrorReportViewModel
         {
-            new ReportStackItemConverter(),
-            new ReportExtensionConverter(),
-            new ReportErrorConverter()
-        }
-    };
-    
-    [HttpPost("getInfo")]
-    public IActionResult GetInfo([FromBody]GetInfoRequest request)
-    {
-        var content = JsonSerializer.Serialize(new GetInfoResponse
-        {
-            NeedSendReport = true,
-            UserMessage = "Ошибка будет автоматически отправлена в отдел автоматизации учета",
-            DumpType = 1
+            Report = JsonSerializer.Deserialize<ReportRoot>(model.Report, ErrorReportsHelper.ReportSerializerOptions)!,
+            Screenshot = $"data:image/png;base64,{Convert.ToBase64String(model.Screenshot)}"
         });
-        var contentData = Encoding.UTF8.GetBytes(content);
-        
-        Response.Headers.ContentLength = contentData.Length;
-        
-        return Content(content, "application/json; charset=utf-8");
     }
     
-    [HttpPost("pushReport")]
-    public async Task<IActionResult> PushReport(CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        if (Request.Form.Files.Count <= 0) 
-            return new EmptyResult();
-
-        try
-        {
-            var unpackingPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            
-            var file = Request.Form.Files[0];
-            await using var stream = file.OpenReadStream();
-            ZipFile.ExtractToDirectory(stream, unpackingPath);
-
-            var reportPath = Path.Combine(unpackingPath, "report.json");
-            var reportData = await System.IO.File.ReadAllTextAsync(reportPath, cancellationToken);
-            var report = JsonSerializer.Deserialize<ReportRoot>(reportData, _jsonOptions);
+        var item = await dbContext.ErrorReports.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
         
-            if (report == null)
-                logger.LogError($"Ошибка разбора отчета об ошибке:\n {reportData}");
-            else
-            {
-                var model = new ErrorReport
-                {
-                    Id = Guid.NewGuid(),
-                    Date = report.Time,
-                    ServerVersion = report.ServerInfo.AppVersion,
-                    Configuration = report.ConfigInfo.Name,
-                    ConfigurationVersion = report.ConfigInfo.Version,
-                    UserName = report.SessionInfo.UserName,
-                    Body = reportData
-                };
+        dbContext.ErrorReports.Remove(item!);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
-                if (report.Screenshot?.File != null)
-                {
-                    var screenshotPath = Path.Combine(unpackingPath, report.Screenshot.File);
-                    model.Screenshot = await System.IO.File.ReadAllBytesAsync(screenshotPath, cancellationToken);
-                }
-        
-                dbContext.ErrorReports.Add(model);
-                await dbContext.SaveChangesAsync(cancellationToken);
-            }
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Ошибка обработки отчета об ошибке");
-        }
-
-        return new EmptyResult();
+        return RedirectToAction("Index");
     }
-
-    #endregion
 }

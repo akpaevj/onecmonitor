@@ -3,7 +3,7 @@ Description=OnecMonitor Agent
 Requires=network.target
 
 [Service]
-Type=simple
+Type=exec
 User=onecmonitor
 
 ExecStart=/opt/onecmonitor-agent/onecmonitor-agent

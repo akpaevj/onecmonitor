@@ -10,7 +10,7 @@
 		<Configurations>Debug;Release;Debug agent;Debug server</Configurations>
 		<Authors>Akpaev E.A.</Authors>
 		<Company>Akpaev E.A.</Company>
-		<AssemblyVersion>0.1.0</AssemblyVersion>
+		<AssemblyVersion>0.1.1</AssemblyVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -66,6 +66,7 @@
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="RestSharp" Version="112.1.0" />
 		<PackageReference Include="System.Threading.Tasks.Dataflow" Version="9.0.1" />
+		<PackageReference Include="Telegram.Bot" Version="22.5.1" />
 	</ItemGroup>
 
 	<ItemGroup>

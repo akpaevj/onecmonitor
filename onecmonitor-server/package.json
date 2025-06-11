@@ -17,7 +17,8 @@
     "mermaid": "^11.4.1",
     "uuid": "9.0.0",
     "vis-timeline": "7.7.3",
-    "visjs-network": "4.25.0"
+    "visjs-network": "4.25.0",
+    "highlight.js": "11.11.1"
   },
   "devDependencies": {
     "@types/ace": "^0.0.52",

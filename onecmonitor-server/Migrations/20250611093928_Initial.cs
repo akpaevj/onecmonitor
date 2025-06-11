@@ -23,6 +23,20 @@ namespace OnecMonitor.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CommonSettings",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    TelegramBotToken = table.Column<string>(type: "TEXT", nullable: false),
+                    NotifyMaintenanceTaskCompleted = table.Column<bool>(type: "INTEGER", nullable: false),
+                    NotifyMaintenanceTaskInfoBaseCompleted = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommonSettings", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Credentials",
                 columns: table => new
                 {
@@ -51,6 +65,33 @@ namespace OnecMonitor.Server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Dbms", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ErrorLoggingServiceSettings",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Enabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    ReportsTtl = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ErrorLoggingServiceSettings", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ErrorReports",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedAt = table.Column<long>(type: "INTEGER", nullable: false),
+                    Report = table.Column<string>(type: "TEXT", nullable: false),
+                    Screenshot = table.Column<byte[]>(type: "BLOB", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ErrorReports", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -270,7 +311,8 @@ namespace OnecMonitor.Server.Migrations
                     RightStepId = table.Column<string>(type: "TEXT", nullable: true),
                     AccessCode = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     Message = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    FileId = table.Column<string>(type: "TEXT", nullable: true)
+                    FileId = table.Column<string>(type: "TEXT", nullable: true),
+                    ExtensionName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -452,6 +494,15 @@ namespace OnecMonitor.Server.Migrations
         {
             migrationBuilder.DropTable(
                 name: "AgentTechLogSeance");
+
+            migrationBuilder.DropTable(
+                name: "CommonSettings");
+
+            migrationBuilder.DropTable(
+                name: "ErrorLoggingServiceSettings");
+
+            migrationBuilder.DropTable(
+                name: "ErrorReports");
 
             migrationBuilder.DropTable(
                 name: "EventLogSettings");

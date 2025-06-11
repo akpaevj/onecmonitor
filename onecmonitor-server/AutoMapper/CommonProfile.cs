@@ -1,10 +1,13 @@
 using AutoMapper;
+using OnecMonitor.Server.Dto.ErrorLoggingService;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Models.MaintenanceTasks;
 using OnecMonitor.Server.ViewModels.Agents;
 using OnecMonitor.Server.ViewModels.Clusters;
 using OnecMonitor.Server.ViewModels.Credentials;
 using OnecMonitor.Server.ViewModels.Dbms;
+using OnecMonitor.Server.ViewModels.ErrorLoggingService;
+using OnecMonitor.Server.ViewModels.ErrorLoggingService.Index;
 using OnecMonitor.Server.ViewModels.EventLogSettings;
 using OnecMonitor.Server.ViewModels.InfoBases;
 using OnecMonitor.Server.ViewModels.MaintenanceTasks;
@@ -95,6 +98,14 @@ public class CommonProfile : Profile
             .ForMember(c => c.Id, i => i.Ignore());
         
         CreateMap<EventLogSettings, EventLogSettingsEditViewModel>()
+            .ReverseMap()
+            .ForMember(c => c.Id, i => i.Ignore());
+        
+        CreateMap<ErrorLoggingServiceSettings, ErrorLoggingServiceSettingsViewModel>()
+            .ReverseMap()
+            .ForMember(c => c.Id, i => i.Ignore());
+        
+        CreateMap<ReportRoot, ErrorLoggingServiceListItemViewModel>()
             .ReverseMap()
             .ForMember(c => c.Id, i => i.Ignore());
         

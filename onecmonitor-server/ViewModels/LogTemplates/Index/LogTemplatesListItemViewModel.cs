@@ -1,4 +1,4 @@
-﻿namespace OnecMonitor.Server.ViewModels.Log.Index
+﻿namespace OnecMonitor.Server.ViewModels.LogTemplates.Index
 {
     public class LogTemplatesListItemViewModel
     {

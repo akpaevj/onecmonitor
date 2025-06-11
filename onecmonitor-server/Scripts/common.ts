@@ -30,9 +30,12 @@ export function setSuccessDangerTextColor(item: HTMLElement, value: boolean) {
 
 export function initShowArchived() {
     const input = document.querySelector<HTMLInputElement>('#showArchived');
-    input.addEventListener('change', () => {
-        setUrlParameterValue('showArchived', input.checked)
-    });
+    
+    if (input !== null) {
+        input.addEventListener('change', () => {
+            setUrlParameterValue('showArchived', input.checked)
+        });
+    }
 }
 
 export function setUrlParameterValue(param: string, value: any) {

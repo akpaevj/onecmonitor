@@ -183,6 +183,7 @@ public class MaintenanceTasksController(AppDbContext appDbContext, AgentsConnect
             case MaintenanceStepKind.UpdateConfiguration:
             case MaintenanceStepKind.LoadConfiguration:
             case MaintenanceStepKind.StartExternalDataProcessor:
+            case MaintenanceStepKind.ExecuteOneScript:
                 if (vm.FileId == null || vm.FileId == Guid.Empty)
                     ModelState.AddModelError(taskValidation ? nameof(MaintenanceTask.Steps) : nameof(vm.FileId), "Не указан файл");
                 break;
@@ -332,6 +333,7 @@ public class MaintenanceTasksController(AppDbContext appDbContext, AgentsConnect
             MaintenanceStepKind.LoadExtension => appDbContext.V8Files.Where(c => c.FileType == V8FileType.Cfe),
             MaintenanceStepKind.UpdateConfiguration => appDbContext.V8Files.Where(c => c.FileType == V8FileType.Cfu),
             MaintenanceStepKind.StartExternalDataProcessor => appDbContext.V8Files.Where(c => c.FileType == V8FileType.Epf),
+            MaintenanceStepKind.ExecuteOneScript => appDbContext.V8Files.Where(c => c.FileType == V8FileType.Ospx),
             _ => null
         };
         
