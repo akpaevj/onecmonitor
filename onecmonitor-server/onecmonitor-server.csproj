@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net9.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>dotnet-onecmonitor-047196c4-3fb2-4036-87d3-7523309e7be4</UserSecretsId>
@@ -38,40 +38,44 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AutoMapper" Version="13.0.1" />
-		<PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
-		<PackageReference Include="Grpc.AspNetCore.Server" Version="2.67.0" />
-		<PackageReference Include="Grpc.AspNetCore.Web" Version="2.67.0" />
-		<PackageReference Include="Grpc.Net.Client" Version="2.67.0" />
-		<PackageReference Include="Grpc.Net.ClientFactory" Version="2.67.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.69.0">
+		<PackageReference Include="AutoMapper" Version="14.0.0" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
+		<PackageReference Include="Grpc.AspNetCore.Server" Version="2.71.0" />
+		<PackageReference Include="Grpc.AspNetCore.Web" Version="2.71.0" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
+		<PackageReference Include="Grpc.Net.ClientFactory" Version="2.71.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.72.0">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.Json" Version="8.0.7" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.1">
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.Json" Version="9.0.6" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.1" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.12" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.1">
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.6" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.1" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.6" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.6" />
+		<PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.12.0" />
+		<PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Emoji" Version="4.12.0" />
+		<PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.12.0" />
 		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
+		<PackageReference Include="MudBlazor" Version="8.8.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="RestSharp" Version="112.1.0" />
-		<PackageReference Include="System.Threading.Tasks.Dataflow" Version="9.0.1" />
+		<PackageReference Include="System.Threading.Tasks.Dataflow" Version="9.0.6" />
 		<PackageReference Include="Telegram.Bot" Version="22.5.1" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\onecmonitor-common\onecmonitor-common.csproj" />
-	  <ProjectReference Include="..\OneSTools.Common\OneSTools.Common.csproj" />
+	  <ProjectReference Include="..\oneswiss-common\oneswiss-common.csproj" />
+	  <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -97,6 +101,10 @@
 	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Index.cshtml" />
 	  <_ContentIncludedByDefault Remove="Views\UpdateInfoBaseTasks\Log.cshtml" />
 	  <_ContentIncludedByDefault Remove="Views\ClustersInfoBases\Index.cshtml" />
+	  <_ContentIncludedByDefault Remove="Components\Components\Pages\Counter.razor" />
+	  <_ContentIncludedByDefault Remove="Components\Components\Pages\Error.razor" />
+	  <_ContentIncludedByDefault Remove="Components\Components\Pages\Home.razor" />
+	  <_ContentIncludedByDefault Remove="Components\Components\Pages\Weather.razor" />
 	</ItemGroup>
 
 	<ItemGroup>

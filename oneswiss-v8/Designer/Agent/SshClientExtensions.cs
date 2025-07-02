@@ -1,0 +1,31 @@
+using System.Text.Json;
+using Renci.SshNet;
+
+namespace OneSwiss.V8.Designer.Agent;
+
+internal static class ShellStreamExtensions
+{
+    internal static async Task WaitDataAvailable(this ShellStream stream)
+    {
+        while (!stream.DataAvailable)
+            await Task.Delay(100);
+    }
+
+    internal static async Task<DesignerAgentMessage[]> WriteCommand(this ShellStream stream, string command)
+    {
+        stream.WriteLine(command);
+        await stream.WaitDataAvailable();
+
+        var data = stream.Read();
+
+        var response = JsonSerializer.Deserialize<DesignerAgentMessage[]>(data);
+        
+        if (response is null)
+            throw new Exception("Failed to deserialize designer agent response");
+
+        if (response.First().Type == "error")
+            throw new Exception(response.First().Message);
+        
+        return response;
+    }
+}

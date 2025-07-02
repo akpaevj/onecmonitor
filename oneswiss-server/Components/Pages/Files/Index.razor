@@ -1,0 +1,85 @@
+@page "/files"
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject FilesProvider FilesProvider
+@rendermode InteractiveServer
+
+
+<PageTitle>Файлы</PageTitle>
+
+<h1 Class="mb-3">Файлы</h1>
+
+<MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="@(() => NavManager.NavigateTo("files/create"))" Class="mb-3">Добавить</MudButton>
+
+<MudTable T="File" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true"
+          Items="@_items"
+          GroupBy="@_groupDefinition"
+          GroupHeaderStyle="background-color:var(--mud-palette-background-gray)"
+          GroupFooterClass="mb-4"
+          Dense="true">
+    <ColGroup>
+        @if (_groupDefinition.Expandable)
+        {
+            <col style="width: 60px;" />
+        }
+        <col />
+        <col />
+    </ColGroup>
+    <HeaderContent>
+        <MudTh>Имя</MudTh>
+        <MudTh>Версия</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <GroupHeaderTemplate>
+        <MudTh Class="mud-table-cell-custom-group" colspan="3">@($"{context.Key}")</MudTh>
+    </GroupHeaderTemplate>
+    <RowTemplate>
+        <MudTd DataLabel="Имя">@context.Name</MudTd>
+        <MudTd DataLabel="Версия">@context.Version</MudTd>
+        <MudTd>
+            <MudStack Row>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavManager.NavigateTo($"files/{context.Id}"))" Color="Color.Info"/>
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteItem(context))" Color="Color.Error"/>
+            </MudStack>
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code
+{
+    private readonly TableGroupDefinition<File> _groupDefinition = new()
+    {
+        GroupName = "Group",
+        Indentation = false,
+        Expandable = false,
+        Selector = e => e.FileType.GetDisplay()
+    };
+
+    private IEnumerable<File> _items = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFiles();
+    }
+
+    async Task DeleteItem(File item)
+    {
+        if (await DialogService.ShowItemDeletingDialog(item, item.Name))
+        {
+            FilesProvider.DeleteDataFile(item.DataPath);
+            await LoadFiles();
+        }
+    }
+    
+    async Task LoadFiles()
+    {
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        _items = await context.Files.ToListAsync();
+    }
+}

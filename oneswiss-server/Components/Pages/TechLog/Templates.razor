@@ -1,0 +1,13 @@
+@page "/techlog/templates"
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+@rendermode InteractiveServer
+
+<DatabaseObjectsGrid T="LogTemplate" 
+                     NameSelector="template => template.Name" 
+                     Route="techlog/templates"
+                     Title="Шаблоны сбора технологического журнала">
+    <ColumnsContent>
+        <PropertyColumn Title="Наименование" Property="@(arg => arg.Name)"/>
+    </ColumnsContent>
+</DatabaseObjectsGrid>

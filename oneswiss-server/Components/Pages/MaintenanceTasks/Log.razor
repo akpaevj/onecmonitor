@@ -1,0 +1,115 @@
+@page "/maintenancetasks/{id:guid}/log"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Models.MaintenanceTasks
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject NavigationManager NavManager
+@inject ISnackbar SnackBar
+@rendermode InteractiveServer
+
+<PageTitle>Журнал задачи обслуживания</PageTitle>
+
+<h1 Class="mb-3">Журнал задачи обслуживания</h1>
+
+<MudTabs Outlined="true" Position="Position.Left" Rounded="true" Border="true"
+         ApplyEffectsToContainer="true" PanelClass="pa-6">
+    
+    @foreach (var infoBase in _taskInfoBases)
+    {
+        var logs = _logItems.TryGetValue(infoBase.Id, out var item) ? item : [];
+        
+        <MudTabPanel Text="@infoBase.Name" BadgeDot="true" BadgeColor="@(GetBadgeColor(logs))">
+            <MudTable T="MaintenanceStepLogItem" Items="logs" Style="width: 100%">
+                <HeaderContent>
+                    <MudTh>Время</MudTh>
+                    <MudTh>Уровень</MudTh>
+                    <MudTh>Сообщение</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Время">@context.TimeStamp</MudTd>
+                    <MudTd DataLabel="Уровень" Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
+                    <MudTd DataLabel="Сообщение">@context.Message</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+    }
+</MudTabs>
+
+@code
+{
+    private bool _isLoading;
+    private HubConnection? _hubConnection;
+    
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private IReadOnlyList<InfoBase> _taskInfoBases = [];
+    private Dictionary<Guid, List<MaintenanceStepLogItem>> _logItems = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavManager.ToAbsoluteUri("/taskLogHub"))
+            .Build();
+
+        _hubConnection.On("LogUpdated", async () =>
+        {
+            await UpdateItems();
+            await InvokeAsync(StateHasChanged);
+        });
+        
+        await _hubConnection.StartAsync();
+        await _hubConnection.InvokeAsync("Subscribe", Id);
+        
+        await UpdateItems();
+    }
+
+    private async Task UpdateItems()
+    {
+        if (_isLoading)
+            return;
+
+        try
+        {
+            _isLoading = true;
+
+            await using var context = await ContextFactory.CreateDbContextAsync();
+
+            var data = await context.MaintenanceTasks
+                .AsNoTracking()
+                .Include(c => c.InfoBases)
+                .Include(c => c.Steps)
+                .ThenInclude(c => c.Logs)
+                .FirstOrDefaultAsync(c => c.Id == Id);
+
+            _taskInfoBases = data!.InfoBases.OrderBy(c => c.Name).ToList();
+            _logItems = data.Steps
+                .SelectMany(c => c.Logs)
+                .GroupBy(c => c.InfoBaseId)
+                .ToDictionary(c => c.Key, i => i
+                    .OrderBy(b => b.TimeStamp)
+                    .ToList());
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static Color GetBadgeColor(List<MaintenanceStepLogItem> logs)
+    {
+        var hasError = logs.Any(c => c.IsError);
+        var finished = logs.Any(c => c.IsFinish);
+
+        if (hasError)
+            return Color.Error;
+
+        return finished ? Color.Success : Color.Warning;
+    }
+}

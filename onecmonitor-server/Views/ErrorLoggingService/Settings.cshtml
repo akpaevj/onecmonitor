@@ -24,5 +24,11 @@
         <input type="number" class="form-control" asp-for="ReportsTtl" value="@Model.ReportsTtl">
         <span asp-validation-for="ReportsTtl" class="text-danger"></span>
     </div>
+    
+    <div class="mb-3">
+        <label class="form-label" asp-for="Message">Сообщение пользователю</label>
+        <input type="text" class="form-control" asp-for="Message" value="@Model.Message">
+        <span asp-validation-for="Message" class="text-danger"></span>
+    </div>
 
 </form>

@@ -1,0 +1,51 @@
+@using System.Diagnostics.CodeAnalysis
+@using System.Linq.Expressions
+@typeparam T where T : OneSwiss.Server.Models.DatabaseObject
+
+<MudCard>
+    <MudCardHeader Class="mud-theme-tertiary">
+        <CardHeaderContent>@Title</CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudList T="T" 
+                 SelectedValues="SelectedValues" 
+                 SelectedValuesChanged="SelectedValuesChanged" 
+                 SelectionMode="SelectionMode.MultiSelection">
+            @foreach (var item in Items)
+            {
+                <MudListItem Text="@NameSelector(item)" Value="@item"></MudListItem>
+            }
+        </MudList>
+    </MudCardContent>
+</MudCard>
+
+@code {
+
+    [Parameter] 
+    public string Title { get; set; } = string.Empty;
+    
+    [Parameter] 
+    public List<T> Items { get; set; } = [];
+
+    [Parameter] 
+    public Func<T, string> NameSelector { get; set; } = null!;
+    
+    [Parameter]
+    public IReadOnlyCollection<T>? SelectedValues { get; set; }
+    
+    [Parameter]
+    public EventCallback<IReadOnlyCollection<T>?> SelectedValuesChanged { get; set; }
+    
+    [Parameter]
+    [Category("Validation")]
+    public Expression<Func<T>>? For { get; set; }
+
+    /// <summary>
+    /// Indicates whether the <see cref="P:MudBlazor.MudFormComponent`2.For" /> property is <c>null</c>.
+    /// </summary>
+    [MemberNotNullWhen(false, "For")]
+    public bool IsForNull
+    {
+        [MemberNotNullWhen(false, "For")] get => this.For == null;
+    }
+}

@@ -1,0 +1,100 @@
+@page "/infobases/{id:guid}"
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Models
+@inject NavigationManager NavigationManager
+@inject ILogger<Edit> Logger
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@implements IDisposable
+
+<PageTitle>@_title</PageTitle>
+
+<h1 Class="mb-3">@_title</h1>
+
+<EditForm Model="Model!" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator/>
+
+    <MudButton Variant="Variant.Filled" ButtonType="ButtonType.Submit" Color="Color.Primary" Class="mb-3">Сохранить</MudButton>
+
+    <MudStack>
+        <MudSelect Class="mb-3" Disabled="@true" For="@(() => Model.ClusterId)" @bind-Value="@Model!.ClusterId">
+            @foreach (var item in _context!.Clusters.ToList())
+            {
+                <MudSelectItem Value="@item.Id">@item.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField Class="mb-3" Disabled="@true" For="@(() => Model!.InfoBaseName)" @bind-Value="@Model!.InfoBaseName"></MudTextField>
+        <MudTextField Class="mb-3" For="@(() => Model!.Name)" @bind-Value="@Model!.Name"></MudTextField>
+        <MudTextField Class="mb-3" For="@(() => Model!.PublishAddress)" @bind-Value="@Model!.PublishAddress"></MudTextField>
+        <MudSelect Class="mb-3" For="@(() => Model.CredentialsId)" @bind-Value="@Model!.CredentialsId" Clearable="@true">
+            @foreach (var item in _context!.Credentials.ToList())
+            {
+                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+            }
+        </MudSelect>
+        
+    </MudStack>
+
+</EditForm>
+
+@code
+{
+    private AppDbContext? _context;
+    private string _title = string.Empty;
+    
+    [Parameter]
+    public Guid Id { get; set; }
+    
+    [SupplyParameterFromForm]
+    private InfoBase? Model { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _context = await ContextFactory.CreateDbContextAsync();
+        
+        if (Id != Guid.Empty)
+        {
+            Model = await _context!.InfoBases
+                .Include(c => c.Credentials)
+                .Include(c => c.Cluster)
+                .FirstOrDefaultAsync(c => c.Id == Id);
+
+            if (Model == null)
+                NavigateBack();
+        }
+        else
+            NavigateBack();
+
+        if (Id != Guid.Empty)
+            _title = Model!.Name;
+    }
+    
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var model = Id == Guid.Empty ? Model : await _context!.InfoBases.FirstAsync(c => c.Id == Id);
+            
+            if (Id != Guid.Empty)
+            {
+                model!.CredentialsId = Model!.CredentialsId;
+                model!.PublishAddress = Model!.PublishAddress;
+                model!.Name = Model!.Name;
+                
+                await _context!.SaveChangesAsync();
+                NavigateBack();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Ошибка при сохранении");
+        }
+    }
+    
+    private void NavigateBack()
+        => NavigationManager.NavigateTo("/clusters");
+
+    public void Dispose()
+    {
+        _context?.Dispose();
+    }
+}

@@ -1,0 +1,105 @@
+@page "/maintenancetasks/{id:guid}"
+@page "/maintenancetasks/create"
+@using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Common.Models.MaintenanceTasks
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Models.MaintenanceTasks
+@inject ILogger<EditTask> Logger
+@inject ISnackbar SnackBar
+
+<EditItem @ref="@_editItem" Id="Id" IsTemplate="false" Title="Новая задача обслуживания" Route="/maintenancetasks" OnSubmit="OnSubmit" />
+
+@code
+{
+    private EditItem _editItem;
+    
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private async Task OnSubmit((EditContext context, bool isValid) args)
+    {
+        var isValid = args.isValid;
+        var editContext = args.context;
+        
+        if (_editItem.SelectedInfoBases.Count == 0)
+        {
+            _editItem.MessageStore!.Add(
+                () => _editItem.Model!,
+                $"Не указано ни одной информационной базы"
+            );
+            isValid = false;
+        }
+        
+        foreach (var step in _editItem.Model!.Steps)
+            if (!ValidateStep(step))
+                isValid = false;
+        
+        editContext.NotifyValidationStateChanged();
+
+        // Если есть ошибки — показать их на форме
+        if (!isValid)
+            return;
+        
+        try
+        {
+            await _editItem.SaveModel();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Ошибка при сохранении");
+            SnackBar.ShowError(ex.InnerException!);
+        }
+    }
+    
+    private bool ValidateStep(MaintenanceStep step)
+    {
+        switch (step.Kind)
+        {
+            case MaintenanceStepKind.LoadExtension or 
+                MaintenanceStepKind.UpdateConfiguration or 
+                MaintenanceStepKind.LoadConfiguration or 
+                MaintenanceStepKind.StartExternalDataProcessor or 
+                MaintenanceStepKind.ExecuteOneScript when step.FileId == null || step.FileId == Guid.Empty:
+                _editItem.MessageStore!.Add(
+                    () => _editItem.Model!,
+                    $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл"
+                );
+                
+                return false;
+            case MaintenanceStepKind.LockConnections:
+            {
+                var valid = true;
+                
+                if (string.IsNullOrEmpty(step.AccessCode))
+                {
+                    _editItem.MessageStore!.Add(
+                        () => _editItem.Model!,
+                        $"В шаге \"{step.Kind.GetDisplay()}\" не указан код доступа"
+                    );
+                    valid = false;
+                }
+
+                if (string.IsNullOrEmpty(step.Message))
+                {
+                    _editItem.MessageStore!.Add(
+                        () => _editItem.Model!,
+                        $"В шаге \"{step.Kind.GetDisplay()}\" не указан тест сообщения"
+                    );
+                    valid = false;
+                }
+
+                return valid;
+            }
+            case MaintenanceStepKind.DeleteExtension when string.IsNullOrEmpty(step.ExtensionName):
+                _editItem.MessageStore!.Add(
+                    () => _editItem.Model!,
+                    $"В шаге \"{step.Kind.GetDisplay()}\" не указано имя расширения"
+                );
+                
+                return false;
+            default:
+                return true;
+        }
+    }
+}

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using OnecMonitor.Common.Models.MaintenanceTasks;
+using OneSwiss.Common.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.Models.MaintenanceTasks;
 
@@ -19,6 +19,8 @@ public class MaintenanceStep : DatabaseObject
     public string AccessCode { get; set; } = string.Empty;
     [MaxLength(200)] 
     public string Message { get; set; } = string.Empty;
+    [MaxLength(1000)] 
+    public string CommandLineArguments { get; set; } = string.Empty;
     public Guid? FileId { get; set; }
     
     [ForeignKey(nameof(FileId))]

@@ -1,7 +1,7 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.DTO;
-using OnecMonitor.Common.Services;
+using OneSwiss.Common.DTO;
+using OneSwiss.Common.Services;
 
 namespace OnecMonitor.Server.Helpers;
 

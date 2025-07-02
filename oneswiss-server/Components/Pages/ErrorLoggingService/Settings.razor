@@ -1,0 +1,89 @@
+@page "/errorloggingservice/settings"
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Models
+@inject NavigationManager NavigationManager
+@inject ILogger<Settings> Logger
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@implements IDisposable
+
+<PageTitle>Настройки сервиса регистрации ошибок</PageTitle>
+
+<h1 Class="mb-3">Настройки сервиса регистрации ошибок</h1>
+
+<EditForm Model="Model!" OnSubmit="OnSubmit">
+    <DataAnnotationsValidator/>
+    
+    <MudStack Class="mb-3" Row="true">
+        <MudButton Variant="Variant.Filled" ButtonType="ButtonType.Submit" Color="Color.Primary">Сохранить</MudButton>
+    </MudStack>
+
+    <MudStack>
+        <MudSwitch Class="mb-3" For="@(() => Model!.Enabled)" @bind-Value="@Model!.Enabled" Color="Color.Primary"></MudSwitch>
+        <MudTextField Class="mb-3" For="@(() => Model!.Message)" @bind-Value="@Model!.Message"></MudTextField>
+        <MudNumericField Class="mb-3" For="@(() => Model!.ReportsTtl)" @bind-Value="@Model!.ReportsTtl"></MudNumericField>
+    </MudStack>
+
+</EditForm>
+
+@code
+{
+    private AppDbContext? _context;
+    private ValidationMessageStore? _messageStore;
+    
+    [SupplyParameterFromForm]
+    private ErrorLoggingServiceSettings? Model { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _context = await ContextFactory.CreateDbContextAsync();
+        Model = await _context.ErrorLoggingServiceSettings.FirstOrDefaultAsync() ?? new ErrorLoggingServiceSettings();
+    }
+    
+    private async Task OnSubmit(EditContext editContext)
+    {
+        _messageStore ??= new ValidationMessageStore(editContext);
+        _messageStore.Clear();
+        
+        var isValid = true;
+        
+        if (Model!.Enabled)
+        {
+            if (string.IsNullOrEmpty(Model.Message))
+            {
+                _messageStore.Add(
+                    () => Model!.Message,
+                    "Не указано сообщение пользователю"
+                );
+                isValid = false;
+            }
+        }
+        
+        editContext.NotifyValidationStateChanged();
+        
+        if (!isValid)
+            return;
+        
+        try
+        {
+            if (Model.Id != Guid.Empty)
+                _context!.Entry(Model!).CurrentValues.SetValues(Model!);
+            else
+                _context!.ErrorLoggingServiceSettings.Add(Model!);
+
+            await _context.SaveChangesAsync();
+            NavigateBack();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Ошибка при сохранении");
+        }
+    }
+
+    private void NavigateBack()
+        => NavigationManager.NavigateTo("/errorloggingservice/settings", true);
+
+    public void Dispose()
+    {
+        _context?.Dispose();
+    }
+}

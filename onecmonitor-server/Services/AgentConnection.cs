@@ -3,16 +3,14 @@ using System.Text;
 using AutoMapper;
 using MessagePack;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common;
-using OnecMonitor.Common.DTO;
-using OnecMonitor.Common.DTO.MaintenanceTasks;
-using OnecMonitor.Common.Storage;
-using OnecMonitor.Common.TechLog;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Models.MaintenanceTasks;
-using OneSTools.Common.Platform;
-using OneSTools.Common.Platform.RemoteAdministration;
-using OneSTools.Common.Platform.Services;
+using OneSwiss.Common;
+using OneSwiss.Common.DTO;
+using OneSwiss.Common.DTO.MaintenanceTasks;
+using OneSwiss.V8.Platform;
+using OneSwiss.V8.Platform.RemoteAdministration;
+using OneSwiss.V8.Platform.Services;
 
 namespace OnecMonitor.Server.Services
 {
@@ -294,7 +292,7 @@ namespace OnecMonitor.Server.Services
 
         private async Task SendFile(Message message, CancellationToken cancellationToken)
         {
-            var request = ParseMessageData<V8FileRequestDto>(message.Data, cancellationToken);
+            var request = ParseMessageData<FileRequestDto>(message.Data, cancellationToken);
             
             await using var scope = _serviceProvider.CreateAsyncScope();
             await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -309,7 +307,7 @@ namespace OnecMonitor.Server.Services
             {
                 var read = await stream.ReadAsync(buffer, cancellationToken);
                 
-                var chunk = new V8FileChunkDto
+                var chunk = new FileChunkDto
                 {
                     Id = request.Id,
                     Data = buffer[..read]

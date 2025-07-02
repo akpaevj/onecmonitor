@@ -1,0 +1,36 @@
+.diagram-port {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    background-color: gray;
+    transform: translate(-50%, -50%);
+}
+
+.diagram-port.topright {
+    border-bottom-left-radius: 50%;
+    border-bottom-right-radius: 50%;
+    top: 25%;
+    left: 100%;
+}
+
+.diagram-port.bottomright {
+    border-bottom-left-radius: 50%;
+    border-bottom-right-radius: 50%;
+    top: 75%;
+    left: 100%;
+}
+
+.diagram-port.left {
+    border-top-left-radius: 50%;
+    border-top-right-radius: 50%;
+    left: 0;
+    top: 50%
+}
+
+body:has(div.diagram-canvas:hover) 
+{ 
+    position: fixed; 
+    overflow-y: scroll;
+    width: 100%; 
+}

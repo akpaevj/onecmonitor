@@ -1,0 +1,12 @@
+@page "/dbms"
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+@rendermode InteractiveServer
+
+<DatabaseObjectsGrid T="Dbms" NameSelector="arg => arg.Name" Route="dbms" Title="СУБД">
+    <ColumnsContent>
+        <PropertyColumn Property="@(arg => arg.Name)"/>
+        <PropertyColumn Property="@(arg => arg.Host)"/>
+        <PropertyColumn Property="@(arg => arg.Port)"/>
+    </ColumnsContent>
+</DatabaseObjectsGrid>

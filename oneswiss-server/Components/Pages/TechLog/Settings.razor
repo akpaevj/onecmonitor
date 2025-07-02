@@ -1,0 +1,128 @@
+@page "/techlog/settings"
+@using FluentValidation
+@using global::AutoMapper
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Common.DTO
+@using OneSwiss.Common.Storage
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Extensions
+@using Severity = MudBlazor.Severity
+@inject AgentsConnectionsManager AgentsConnectionsManager 
+@inject IMapper Mapper
+@inject ISnackbar SnackBar
+@implements IDisposable
+
+<EditDatabaseObject @ref="_editor" T="TechLogSettings"
+                    SingleObject="true"
+                    Title="Настройки экспорта технологического журнала"
+                    Route="techlog/settings"
+                    Validation="@_validator.ValidateValue"
+                    AfterSave="AfterSave">
+    <MudStack>
+        <MudSwitch Class="mb-3" Label="Включен" For="@(() => _editor.Model!.Enabled)" @bind-Value="@_editor.Model!.Enabled" Color="Color.Primary"/>
+        <MudSelect Class="mb-3" Label="СУБД" For="@(() => _editor.Model!.DbmsId)" @bind-Value="@_editor.Model!.DbmsId" Clearable="true">
+            @foreach (var item in _editor.Context!.Dbms.ToList())
+            {
+                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField Class="mb-3" Label="Имя базы данных" For="@(() => _editor.Model!.DatabaseName)" @bind-Value="@_editor.Model!.DatabaseName"/>
+        <MudTextField Class="mb-3" Label="Имя таблицы" For="@(() => _editor.Model!.Table)" @bind-Value="@_editor.Model!.Table"/>
+        <MudSelect Class="mb-3" Label="Учетные данные" For="@(() => _editor.Model!.CredentialsId)" @bind-Value="@_editor.Model!.CredentialsId" Clearable="true">
+            @foreach (var item in _editor.Context!.Credentials.ToList())
+            {
+                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+            }
+        </MudSelect>
+    </MudStack>
+</EditDatabaseObject>
+
+@code
+{
+    private CancellationTokenSource? _cts;
+    private EditDatabaseObject<TechLogSettings> _editor;
+    private TechLogSettingsValidator _validator = new();
+
+    protected override void OnInitialized()
+    {
+        _cts = new CancellationTokenSource();
+    }
+
+    private class TechLogSettingsValidator : OneSwissValidator<TechLogSettings>
+    {
+        public TechLogSettingsValidator()
+        {
+            When(c => c.Enabled, () =>
+            {
+                RuleFor(x => x.DatabaseName)
+                    .NotEmpty()
+                    .WithMessage("Не указано имя базы данных");
+                
+                RuleFor(x => x.Table)
+                    .NotEmpty()
+                    .WithMessage("Не указана таблица базы данных");
+                
+                RuleFor(x => x.DbmsId)
+                    .NotEqual(Guid.Empty)
+                    .WithMessage("Не указана СУБД");
+                
+                RuleFor(x => x.CredentialsId)
+                    .NotEqual(Guid.Empty)
+                    .WithMessage("Не указаны учетные данные");
+            });
+        }
+    }
+    
+    private async Task InitDataBase()
+    {
+        var settings = await _editor.Context!.TechLogSettings
+            .AsNoTracking()
+            .Include(c => c.Dbms)
+            .Include(c => c.Credentials)
+            .FirstOrDefaultAsync(_cts!.Token);
+
+        var settingsDto = Mapper.Map<TechLogSettingsDto>(settings);
+        
+        using var context = new ClickHouseContext(
+            settingsDto.Dbms, 
+            settingsDto.Credentials, 
+            settingsDto.DatabaseName, 
+            settingsDto.Table);
+        
+        await context.InitTechLogTable(_cts!.Token);
+    }
+    
+    private async Task AfterSave(TechLogSettings obj)
+    {
+        if (!obj.Enabled)
+            return;
+
+        try
+        {
+            await InitDataBase();
+            
+            SnackBar.ShowSuccess("База данных инициализирована");
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+            return;
+        }
+
+        try
+        {
+            await AgentsConnectionsManager.RaiseUpdateSettings(_cts!.Token);
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Dispose();
+    }
+}

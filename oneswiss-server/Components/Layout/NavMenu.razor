@@ -1,0 +1,43 @@
+﻿@using Microsoft.EntityFrameworkCore
+@inject AppDbContext AppDbContext
+@rendermode InteractiveServer
+
+<MudNavMenu>
+    <MudNavGroup Title="Обслуживание" Icon="@Icons.Material.Filled.DataArray" IconColor="Color.Primary" Expanded="true">
+        <MudNavLink Href="clusters">Кластеры и ИБ</MudNavLink>
+        <MudNavLink Href="files">Конфигурации обработки и скрипты</MudNavLink>
+        <MudNavLink Href="/maintenancetasks" ForceLoad="true">Задачи обслуживания</MudNavLink>
+        <MudNavLink Href="/maintenancetaskstemplates" ForceLoad="true">Шаблоны задач обслуживания</MudNavLink>
+    </MudNavGroup>
+    <MudNavGroup Title="Технологический журнал" Icon="@Icons.Material.Filled.Task" IconColor="Color.Warning" Expanded="true">
+        <MudNavLink Href="techlog/settings">Настройки</MudNavLink>
+        <MudNavLink Disabled="@_techLogDisabled" Href="/techlog/seances">Сеансы сбора</MudNavLink>
+        <MudNavLink Disabled="@_techLogDisabled" Href="/techlog/templates">Шаблоны</MudNavLink>
+    </MudNavGroup>
+    <MudNavGroup Title="Журнал регистрации" Icon="@Icons.Material.Filled.List"  IconColor="Color.Info" Expanded="true">
+        <MudNavLink Href="eventLog/settings">Настройки</MudNavLink>
+    </MudNavGroup>
+    <MudNavGroup Title="Сервис регистрации ошибок" Icon="@Icons.Material.Filled.BugReport" IconColor="Color.Error" Expanded="true">
+        <MudNavLink Href="errorLoggingService/settings">Настройки</MudNavLink>
+        <MudNavLink Disabled="@_errorLoggingServiceDisabled" Href="/errorLoggingService/list">Журнал</MudNavLink>
+    </MudNavGroup>
+    <MudNavGroup Title="Общее" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary" Expanded="true">
+        <MudNavLink Href="" Match="NavLinkMatch.All">Агенты</MudNavLink>
+        <MudNavLink Href="credentials">Учетные данные</MudNavLink>
+        <MudNavLink Href="dbms">СУБД</MudNavLink>
+    </MudNavGroup>
+</MudNavMenu>
+
+@code {
+    private bool _techLogDisabled = true;
+    private bool _errorLoggingServiceDisabled = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var elss = await AppDbContext.ErrorLoggingServiceSettings.FirstOrDefaultAsync();
+        _errorLoggingServiceDisabled = !elss?.Enabled ?? true;
+        
+        var tls = await AppDbContext.TechLogSettings.FirstOrDefaultAsync();
+        _techLogDisabled = !tls?.Enabled ?? true;
+    }
+}

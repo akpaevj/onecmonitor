@@ -1,7 +1,5 @@
 ﻿using System.Text;
 using AutoMapper;
-using OnecMonitor.Common.DTO;
-using OnecMonitor.Common.Services;
 
 namespace OnecMonitor.Server.Helpers
 {

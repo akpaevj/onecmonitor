@@ -1,0 +1,37 @@
+@page "/clusters/{id:guid}"
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+
+<EditDatabaseObject @ref="_editor" T="Cluster" 
+                    Id="Id"
+                    NameSelector="@(arg => arg.Name)"
+                    Route="clusters">
+    <FormContent>
+        <MudStack>
+            <MudSelect Class="mb-3" Disabled="@true" Label="Агент" @bind-Value="@_editor.Model!.AgentId">
+                @foreach (var item in _editor.Context.Agents.ToList())
+                {
+                    <MudSelectItem Value="@item.Id">@item.InstanceName</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField Class="mb-3" Disabled="@true" Label="Наименование" @bind-Value="@_editor.Model!.Name"></MudTextField>
+            <MudTextField Class="mb-3" Disabled="@true" Label="Хост" @bind-Value="@_editor.Model!.Host"></MudTextField>
+            <MudNumericField Class="mb-3" Disabled="@true" Label="Порт" @bind-Value="@_editor.Model!.Port"></MudNumericField>
+            <MudSelect Class="mb-3" Label="Учетные данные" @bind-Value="@_editor.Model!.CredentialsId" Clearable="@true">
+                @foreach (var item in _editor.Context.Credentials.ToList())
+                {
+                    <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+                }
+            </MudSelect>
+        
+        </MudStack>
+    </FormContent>
+</EditDatabaseObject>
+
+@code
+{
+    private EditDatabaseObject<Cluster> _editor = null!;
+    
+    [Parameter]
+    public Guid Id { get; set; }
+}

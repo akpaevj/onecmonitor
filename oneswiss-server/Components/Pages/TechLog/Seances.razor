@@ -1,0 +1,44 @@
+@page "/techlog/seances"
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
+
+<DatabaseObjectsTable @ref="_table" T="TechLogSeance" 
+                      NameSelector="arg => arg.Description" 
+                      Route="techlog/seances" 
+                      Title="Сеансы сбора технологического журнала">
+    <ColumnsContent>
+        <MudTh>Описание</MudTh>
+        <MudTh>Режим</MudTh>
+        <MudTh>Начало</MudTh>
+        <MudTh>Длительность</MudTh>
+    </ColumnsContent>
+    <RowTemplate>
+        <MudTd DataLabel="Описание">@context.Description</MudTd>
+        <MudTd DataLabel="Режим">@context.StartMode.GetDisplay()</MudTd>
+        @if (context.StartMode == TechLogSeanceStartMode.Monitor)
+        {
+            <MudTd @colspan="2"></MudTd>
+        }
+        else
+        {
+            <MudTd DataLabel="Время начала">@context.StartDateTime</MudTd>
+            <MudTd DataLabel="Длительность">@context.Duration</MudTd>
+        }
+    </RowTemplate>
+    <RowActionsContent>
+        <MudTd>
+            <MudStack Row>
+                <MudIconButton Icon="@Icons.Material.Filled.ListAlt" OnClick="@(() => NavManager.NavigateTo($"techlog/seances/{context.Id}/log"))" Color="Color.Warning"/>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavManager.NavigateTo($"techlog/seances/{context.Id}"))" Color="Color.Info"/>
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => _table.DeleteItem(context))" Color="Color.Error"/>
+            </MudStack>
+        </MudTd>
+    </RowActionsContent>
+</DatabaseObjectsTable>
+
+@code {
+    private DatabaseObjectsTable<TechLogSeance> _table = null!;
+}

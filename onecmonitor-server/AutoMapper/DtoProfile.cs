@@ -1,9 +1,9 @@
 using AutoMapper;
-using OnecMonitor.Common.DTO;
-using OnecMonitor.Common.DTO.MaintenanceTasks;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Models.MaintenanceTasks;
-using OneSTools.Common.Platform.RemoteAdministration;
+using OneSwiss.Common.DTO;
+using OneSwiss.Common.DTO.MaintenanceTasks;
+using OneSwiss.V8.Platform.RemoteAdministration;
 
 namespace OnecMonitor.Server.AutoMapper;
 
@@ -26,7 +26,7 @@ public class DtoProfile : Profile
             .ForMember(c => c.ClusterInternalId, opt => opt.MapFrom(src => src.Id))
             .ReverseMap();
         
-        CreateMap<V8File, V8FileDto>()
+        CreateMap<V8File, FileDto>()
             .ForMember(c => c.Length, opt => opt.MapFrom(src => new FileInfo(src.DataPath).Length))
             .ForMember(c => c.FileExtension, opt => opt.MapFrom(src => Path.GetExtension(src.DataPath)));
 

@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using OneSTools.Common.Platform;
-using OneSTools.Common.Platform.Services;
+using OneSwiss.V8.Platform;
+using OneSwiss.V8.Platform.Services;
 
 namespace OnecMonitor.Server.ViewModels.Agents;
 

@@ -1,0 +1,47 @@
+@using Blazor.Diagrams.Components.Renderers;
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Common.Models.MaintenanceTasks
+@using OneSwiss.Server.Extensions
+
+<MudCard>
+    <MudCardHeader Style="@("background-color: " + Node.Step.Kind.GetKindColor())">
+        <MudText>@Node.Step.Kind.GetDisplay()</MudText>
+    </MudCardHeader>
+    
+    @{
+        if (Node.Step.Kind == MaintenanceStepKind.LockConnections)
+        {
+            <MudCardContent>
+                <MudTextField Class="mb-3" For="@(() => Node.Step.Message)" @bind-Value="@Node.Step.Message"></MudTextField>
+                <MudTextField For="@(() => Node.Step.AccessCode)" @bind-Value="@Node.Step.AccessCode"></MudTextField>
+            </MudCardContent>
+        }
+        else if (Node.Step.Kind == MaintenanceStepKind.DeleteExtension)
+        {
+            <MudCardContent>
+                <MudTextField For="@(() => Node.Step.ExtensionName)" @bind-Value="@Node.Step.ExtensionName"></MudTextField>
+            </MudCardContent>
+        }
+        else if (Node.NeedLoadFiles())
+        {
+            <MudCardContent>
+                <MudSelect Class="mb-3" For="@(() => Node.Step.FileId)" @bind-Value="@Node.Step.FileId" Clearable="true">
+                    @foreach (var item in Node.Files)
+                    {
+                        <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudCardContent>
+        }
+    }
+    
+    @foreach (var port in Node.Ports)
+    {
+        <PortRenderer @key="port" Port="port"/>
+    }
+</MudCard>
+
+@code {
+    [Parameter] 
+    public StepNode Node { get; set; } = null!;
+}

@@ -1,0 +1,219 @@
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Extensions
+@inject NavigationManager NavigationManager
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject ISnackbar SnackBar
+@implements IDisposable
+@attribute [CascadingTypeParameter(nameof(T))]
+@typeparam T where T : OneSwiss.Server.Models.DatabaseObject, new()
+
+<PageTitle>@_title</PageTitle>
+
+<h1 Class="mb-3">@_title</h1>
+
+<MudForm @ref="Form" Model="Model!" Validation="Validation">
+    
+    <MudStack Row AlignItems="AlignItems.Start" Class="mb-3">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Class="mb-3">Сохранить</MudButton>
+        @if (!SingleObject)
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="NavigateBack" Class="mb-3">Назад</MudButton>
+        }
+    </MudStack>
+    
+    @ChildContent
+    
+</MudForm>
+
+@code
+{
+    private string _title = string.Empty;
+
+    public AppDbContext? Context { get; private set; }
+    public MudForm Form { get; set; } = null!;
+    
+    /// <summary>
+    /// Идентификатор элемента
+    /// </summary>
+    [Parameter]
+    public Guid Id { get; set; }
+    
+    /// <summary>
+    /// Признак того, что объект присутствует в таблице в единственном экземпляре 
+    /// </summary>
+    [Parameter]
+    public bool SingleObject { get; set; }
+    
+    /// <summary>
+    /// Начальный заголовок формы
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Функция, возвращающая представление элемента
+    /// </summary>
+    [Parameter] 
+    public Func<T, string> NameSelector { get; set; } = null!;
+
+    /// <summary>
+    /// URI к моделям. Если список моделей находится по пути /credentials, то параметр должен иметь значение credentials
+    /// </summary>
+    [Parameter] 
+    public string Route { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Содержимое формы редактирования
+    /// </summary>
+    [Parameter] 
+    public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Используется при получении сложной модели со связями
+    /// </summary>
+    [Parameter]
+    public Func<IQueryable<T>, IQueryable<T>>? ModelSelector { get; set; }
+    
+    /// <summary>
+    /// Дополнительные действия при сохранении модели
+    /// </summary>
+    [Parameter]
+    public EventCallback<T> OnSave { get; set; }
+    
+    /// <summary>
+    /// Дополнительные действия при сохранении модели
+    /// </summary>
+    [Parameter]
+    public EventCallback<T> AfterSave { get; set; }
+    
+    /// <summary>
+    /// Дополнительные действия при инициализации
+    /// </summary>
+    [Parameter]
+    public EventCallback<T> OnInitialize { get; set; }
+    
+    /// <summary>
+    /// Дополнительные действия при инициализации
+    /// </summary>
+    [Parameter]
+    public Func<object, string, Task<IEnumerable<string>>>? Validation { get; set; }
+    
+    [SupplyParameterFromForm]
+    public T? Model { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _title = Title;
+
+        try
+        {
+            Context = await ContextFactory.CreateDbContextAsync();
+
+            if (SingleObject)
+            {
+                Model = await GetSingleObject() ?? new T();
+                
+                await OnInitialize.InvokeAsync(Model!);
+            }
+            else
+            {
+                if (Id != Guid.Empty)
+                {
+                    Model = await GetModel();
+
+                    if (Model == null)
+                    {
+                        SnackBar.ShowError($"Элемент с идентификатором {Id} не найден");
+                        NavigateBack();
+                    }
+                }
+                else
+                {
+                    Model = new T();
+                }
+
+                await OnInitialize.InvokeAsync(Model!);
+
+                if (Id != Guid.Empty)
+                    _title = NameSelector(Model!);
+            }
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+            NavigateBack();
+        }
+    }
+    
+    private async Task Save()
+    {
+        await Form.Validate();
+
+        if (!Form.IsValid)
+            return;
+
+        try
+        {
+            T? model;
+            
+            if (SingleObject)
+            {
+                model = await GetSingleObject();
+
+                if (model == null)
+                {
+                    model = Model!;
+                    await OnSave.InvokeAsync(Model!);
+                    Context!.Set<T>().Add(Model!);
+                }
+                else
+                {
+                    Context!.Entry(model).CurrentValues.SetValues(Model!);
+                    await OnSave.InvokeAsync(model);
+                }
+            }
+            else
+            {
+                if (Id == Guid.Empty)
+                {
+                    model = Model!;
+                    await OnSave.InvokeAsync(Model!);
+                    Context!.Set<T>().Add(Model!);
+                }
+                else
+                {
+                    model = await GetModel();
+                
+                    Context!.Entry(model!).CurrentValues.SetValues(Model!);
+                    await OnSave.InvokeAsync(model!);
+                }
+            }
+        
+            await Context.SaveChangesAsync();
+
+            await AfterSave.InvokeAsync(model!);
+            
+            NavigateBack();
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+        }
+    }
+    
+    private async Task<T?> GetSingleObject()
+        => await (ModelSelector == null ? Context!.Set<T>() : ModelSelector
+                .Invoke(Context!.Set<T>()))
+            .FirstOrDefaultAsync();
+    
+    private async Task<T?> GetModel()
+        => await (ModelSelector == null ? Context!.Set<T>() : ModelSelector
+            .Invoke(Context!.Set<T>()))
+            .FirstOrDefaultAsync(c => c.Id == Id);
+    
+    private void NavigateBack()
+        => NavigationManager.NavigateTo($"/{Route}");
+
+    public void Dispose()
+        => Context?.Dispose();
+}

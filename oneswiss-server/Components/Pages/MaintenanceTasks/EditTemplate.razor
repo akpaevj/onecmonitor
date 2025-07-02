@@ -1,0 +1,40 @@
+@page "/maintenancetaskstemplates/{id:guid}"
+@page "/maintenancetaskstemplates/create"
+@using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
+@using OneSwiss.Server.Extensions
+@inject ILogger<EditTemplate> Logger
+@inject ISnackbar SnackBar
+
+<EditItem @ref="@_editItem" Id="Id" IsTemplate="true" Title="Новый шаблон задачи обслуживания" Route="maintenancetaskstemplates" OnSubmit="OnSubmit" />
+
+@code
+{
+    private EditItem _editItem;
+    
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private async Task OnSubmit((EditContext context, bool isValid) args)
+    {
+        _editItem.Model!.IsTemplate = true;
+            
+        var isValid = args.isValid;
+        var editContext = args.context;
+        
+        editContext.NotifyValidationStateChanged();
+
+        // Если есть ошибки — показать их на форме
+        if (!isValid)
+            return;
+        
+        try
+        {
+            await _editItem.SaveModel();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Ошибка при сохранении");
+            SnackBar.ShowError(ex.InnerException!);
+        }
+    }
+}

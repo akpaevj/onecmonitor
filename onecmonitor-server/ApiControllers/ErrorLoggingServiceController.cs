@@ -24,7 +24,7 @@ public class ErrorLoggingServiceController(
         var content = JsonSerializer.Serialize(new GetInfoResponse
         {
             NeedSendReport = needSend,
-            UserMessage = "Ошибка будет автоматически отправлена в отдел автоматизации учета",
+            UserMessage = settings!.Message,
             DumpType = 1
         });
         var contentData = Encoding.UTF8.GetBytes(content);

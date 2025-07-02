@@ -1,0 +1,29 @@
+@using OneSwiss.Server.Models.MaintenanceTasks
+@inject AppDbContext AppDbContext
+
+<MudDialog>
+    <TitleContent>
+        Выберите шаблон
+    </TitleContent>
+    <DialogContent>
+        <MudList T="MaintenanceTask" SelectionMode="SelectionMode.SingleSelection" SelectedValueChanged="OnSelectItem">
+            @foreach (var item in AppDbContext.MaintenanceTasks.Where(c => c.IsTemplate))
+            {
+                <MudListItem Value="item" Text="@item.Description"></MudListItem>
+            }
+        </MudList>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отмена</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+    
+    private void Cancel() => MudDialog.Cancel();
+
+    public void OnSelectItem(MaintenanceTask obj)
+        => MudDialog.Close(DialogResult.Ok(obj.Id));
+
+}

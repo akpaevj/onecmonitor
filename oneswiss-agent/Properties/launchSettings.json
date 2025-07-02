@@ -1,0 +1,11 @@
+﻿{
+  "profiles": {
+    "oneswiss_agent": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

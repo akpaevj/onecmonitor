@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.TechLog;
 using OnecMonitor.Server.Models;
 
 namespace OnecMonitor.Server.Services
@@ -87,6 +86,14 @@ namespace OnecMonitor.Server.Services
         private List<AgentConnection> GetActiveAgentsConnections(List<Agent> agents)
         {
             return agents.Select(c => GetAgentConnection(c.Id)).Where(c => c != null).ToList()!;
+        }
+        
+        private async Task RaiseUpdateSettings(CancellationToken cancellationToken)
+        {
+            var connections = await GetActiveAgentsConnections(cancellationToken);
+        
+            foreach (var connection in connections)
+                await connection.SendSettingsRequest(cancellationToken);
         }
     }
 }

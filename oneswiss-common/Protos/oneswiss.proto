@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+option csharp_namespace = "OnecMonitor.Common.Protocol";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+package oneswiss;
+
+service OnecSwiss {
+  rpc SendAgentInfo (AgentInfoDto) returns (google.protobuf.Empty);
+  rpc SubscribeMaintenanceTasks (google.protobuf.Empty) returns (stream MaintenanceTaskDto);
+  rpc SubscribeInfoBasesRequests (stream InfoBaseDto) returns (stream ClusterDto);
+}
+
+enum ServerRequestType {
+  platformServices = 0;
+}
+
+message ServerRequest {
+    ServerRequestType type = 1;
+}
+
+message AgentInfoDto {
+  string id = 1;
+  string instanceName = 2;
+  double utcOffset = 3;
+}
+
+message CredentialsDto {
+  string user = 1;
+  string password = 2;
+}
+
+message ClusterDto {
+  string id = 1;
+  string clusterInternalId = 2;
+  string host = 3;
+  int32 port = 4;
+  CredentialsDto credentials = 5;
+}
+
+enum DbmsTypeDto {
+  clickHouse = 0;
+}
+
+message DbmsDto {
+  DbmsTypeDto type = 1;
+  string host = 2;
+  int32 port = 3;
+}
+
+message EventLogSettingsDto {
+  bool enabled = 1;
+  DbmsDto dbms = 2;
+  string database = 3;
+  string table = 4;
+  CredentialsDto credentials = 5;
+  string infoBaseNameRegex = 6;
+}
+
+message FileChunkDto {
+  string id = 1;
+  bytes data = 2;
+}
+
+message FileDto {
+  string id = 1;
+  string name = 2;
+  string fileExtension = 3;
+  string version = 4;
+  bool isUpdate = 5;
+  bool isExtension = 6;
+  bool isConfiguration = 7;
+  int64 length = 8;
+}
+
+message InfoBaseDto {
+  string id = 1;
+  string infoBaseInternalId = 2;
+  string name = 3;
+  CredentialsDto credentials = 4;
+  string publishAddress = 5;
+  ClusterDto cluster = 6;
+}
+
+message TechLogSeanceDto {
+  string id = 1;
+  google.protobuf.Timestamp startDateTime = 2;
+  google.protobuf.Timestamp finishDateTime = 3;
+  string templateId = 4;
+  string template = 5;
+}
+
+message TechLogSettingsDto {
+  bool enabled = 1;
+  DbmsDto dbms = 2;
+  string Database = 3;
+  string table = 4;
+  CredentialsDto credentials = 5;
+  repeated TechLogSeanceDto seances = 6;
+}
+
+message SettingsDto {
+  TechLogSettingsDto techLogSettings = 1;
+  EventLogSettingsDto eventLogSettings = 2;
+}
+
+message MaintenanceStepLogItemDto {
+  string id = 1;
+  google.protobuf.Timestamp timeStamp = 2;
+  bool isError = 3;
+  bool isFinish = 4;
+  string message = 5;
+  string infoBaseId = 6;
+  string stepId = 7;
+  string taskId = 8;
+}
+
+enum MaintenanceStepKindDto {
+  lockConnections = 0;
+  closeConnections = 1;
+  unlockConnections = 2;
+  loadExtension = 3;
+  deleteExtension = 4;
+  updateConfiguration = 5;
+  loadConfiguration = 6;
+  startExternalDataProcessor = 7;
+  executeOneScript = 8;
+}
+
+enum MaintenanceStepNodeKind {
+  simple = 0;
+  tryCatch = 1;
+}
+
+message MaintenanceStepDto {
+  string id = 1;
+  MaintenanceStepKindDto kind = 2;
+  MaintenanceStepNodeKind nodeKind = 3;
+  string previousStepId = 4;
+  string rightStepId = 5;
+  string leftStepId = 6;
+  string accessCode = 7;
+  string message = 8;
+  string commandLineArguments = 9;
+  FileDto file = 10;
+  string extensionName = 11;
+}
+
+message MaintenanceTaskDto {
+  string id = 1;
+  repeated MaintenanceStepDto steps = 2;
+  repeated InfoBaseDto infoBases = 3;
+}

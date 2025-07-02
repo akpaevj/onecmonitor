@@ -1,0 +1,31 @@
+@page "/techlog/seances/{id}/log"
+@using OneSwiss.Common.Models
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+@rendermode InteractiveServer
+
+<MudTable T="TjEvent" Items="_items" bind-CurrentPage="_currentPage" bind-RowsPerPage="_rowsPerPage">
+    <HeaderContent>
+        <MudTh>Время</MudTh>
+        <MudTh>Длительность</MudTh>
+        <MudTh>Имя</MudTh>
+        <MudTh>Уровень</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Время">@context.DateTime</MudTd>
+        <MudTd DataLabel="Длительность">@context.Duration</MudTd>
+        <MudTd DataLabel="Имя">@context.EventName</MudTd>
+        <MudTd DataLabel="Уровень">@context.Level</MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager/>
+    </PagerContent>
+</MudTable>
+
+@code {
+
+    private readonly List<TjEvent> _items = [];
+    private int _rowsPerPage = 50;
+    private int _currentPage = 0;
+
+}
