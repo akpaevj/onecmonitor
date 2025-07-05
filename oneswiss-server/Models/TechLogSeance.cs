@@ -7,7 +7,7 @@
         public DateTime StartDateTime { get; set; } = DateTime.MinValue;
         public int Duration { get; set; } = 15;
         public bool DirectSending { get; set; }
-        public DateTime FinishDateTime => DateTime.SpecifyKind(StartMode == TechLogSeanceStartMode.Monitor ? DateTime.MaxValue : StartDateTime.AddMinutes(Duration), DateTimeKind.Utc);
+        public DateTime FinishDateTime => StartMode == TechLogSeanceStartMode.Monitor ? DateTime.MaxValue : StartDateTime.AddMinutes(Duration);
 
         public virtual List<LogTemplate> Templates { get; set; } = [];
         public virtual List<Agent> Agents { get; set; } = [];

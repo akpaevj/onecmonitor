@@ -1,9 +1,8 @@
 using FluentValidation;
-using OneSwiss.Server.Models;
 
 namespace OneSwiss.Server.Components;
 
-public class OneSwissValidator<T> : AbstractValidator<T>
+public class ModelValidator<T> : AbstractValidator<T>
 {
     public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
     {

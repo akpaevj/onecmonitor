@@ -12,20 +12,22 @@
         if (Node.Step.Kind == MaintenanceStepKind.LockConnections)
         {
             <MudCardContent>
-                <MudTextField Class="mb-3" For="@(() => Node.Step.Message)" @bind-Value="@Node.Step.Message"></MudTextField>
+                <MudTextField Class="mb-1" For="@(() => Node.Step.Message)" @bind-Value="@Node.Step.Message"></MudTextField>
                 <MudTextField For="@(() => Node.Step.AccessCode)" @bind-Value="@Node.Step.AccessCode"></MudTextField>
             </MudCardContent>
         }
-        else if (Node.Step.Kind == MaintenanceStepKind.DeleteExtension)
+        
+        if (Node.Step.NeeSpecifyExtensionName())
         {
-            <MudCardContent>
+            <MudCardContent Class="mb-1">
                 <MudTextField For="@(() => Node.Step.ExtensionName)" @bind-Value="@Node.Step.ExtensionName"></MudTextField>
             </MudCardContent>
         }
-        else if (Node.NeedLoadFiles())
+        
+        if (Node.Step.NeedLoadFiles())
         {
             <MudCardContent>
-                <MudSelect Class="mb-3" For="@(() => Node.Step.FileId)" @bind-Value="@Node.Step.FileId" Clearable="true">
+                <MudSelect Class="mb-1" For="@(() => Node.Step.FileId)" @bind-Value="@Node.Step.FileId" Clearable="true">
                     @foreach (var item in Node.Files)
                     {
                         <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>

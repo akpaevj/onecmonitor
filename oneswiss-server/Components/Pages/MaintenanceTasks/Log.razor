@@ -30,7 +30,7 @@
                 <RowTemplate>
                     <MudTd DataLabel="Время">@context.TimeStamp</MudTd>
                     <MudTd DataLabel="Уровень" Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
-                    <MudTd DataLabel="Сообщение">@context.Message</MudTd>
+                    <MudTd Style="white-space: pre-wrap" DataLabel="Сообщение">@context.Message</MudTd>
                 </RowTemplate>
             </MudTable>
         </MudTabPanel>
@@ -79,12 +79,12 @@
 
             var data = await context.MaintenanceTasks
                 .AsNoTracking()
-                .Include(c => c.InfoBases)
+                .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase)
                 .Include(c => c.Steps)
                 .ThenInclude(c => c.Logs)
                 .FirstOrDefaultAsync(c => c.Id == Id);
 
-            _taskInfoBases = data!.InfoBases.OrderBy(c => c.Name).ToList();
+            _taskInfoBases = data!.InfoBases.Select(c => c.InfoBase).OrderBy(c => c.Name).ToList();
             _logItems = data.Steps
                 .SelectMany(c => c.Logs)
                 .GroupBy(c => c.InfoBaseId)

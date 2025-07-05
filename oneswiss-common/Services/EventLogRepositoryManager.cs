@@ -11,7 +11,7 @@ public class EventLogRepositoryManager
 
     public EventHandler<EventLogSettingsDto>? SettingsChanged;
 
-    public void SetSettings(EventLogSettingsDto settings)
+    public void UpdateSettings(EventLogSettingsDto settings)
     {
         Settings = settings;
         SettingsChanged?.Invoke(this, Settings);

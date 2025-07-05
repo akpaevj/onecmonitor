@@ -31,7 +31,7 @@ public class ClstWatcher : IDisposable
     public void Watch()
     {
         if (!File.Exists(_clstPath))
-            throw new Exception("Couldn't find LST \"1CV8Clst.lst\" file");
+            throw new Exception("\"1CV8Clst.lst\" не обнаружен");
 
         ReadInfoBasesAndRaiseEvents();
         

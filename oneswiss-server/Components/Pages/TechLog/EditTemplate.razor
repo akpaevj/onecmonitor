@@ -8,14 +8,12 @@
                     NameSelector="template => template.Name"
                     Route="techlog/templates"
                     Title="Новый шаблон сбора технологического журнала"
-                    OnSave="OnSave">
-    <FormContent>
-        <MudStack>
-            <MudTextField Class="mb-3" Label="Наименование" @bind-Value="@_editor.Model!.Name"
-                          Required="true" RequiredError="Не заполнено наименование"/>
-            <div id="container" class="w-100" style="height: 500px"></div>
-        </MudStack>
-    </FormContent>
+                    BeforeValidation="BeforeValidation">
+    <MudStack>
+        <MudTextField Class="mb-3" Label="Наименование" @bind-Value="@_editor.Model!.Name"
+                      Required="true" RequiredError="Не заполнено наименование"/>
+        <div id="container" class="w-100" style="height: 500px"></div>
+    </MudStack>
 </EditDatabaseObject>
 
 @code
@@ -31,7 +29,7 @@
             await JS.InvokeVoidAsync("OM.initTechLogTemplateEditor", _editor.Model!.Content);
     }
 
-    private async Task OnSave(LogTemplate obj)
+    private async Task BeforeValidation(LogTemplate obj)
     {
         obj.Content = await JS.InvokeAsync<string>("OM.getTechLogTemplateEditorContent");
     }

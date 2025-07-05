@@ -3,13 +3,15 @@
 @using global::AutoMapper
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Common.DTO
+@using OneSwiss.Common.Services
 @using OneSwiss.Common.Storage
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Extensions
-@using Severity = MudBlazor.Severity
+@using OneSwiss.Server.Helpers
 @inject AgentsConnectionsManager AgentsConnectionsManager 
+@inject TechLogRepositoryManager TechLogRepositoryManager
 @inject IMapper Mapper
 @inject ISnackbar SnackBar
 @implements IDisposable
@@ -42,17 +44,17 @@
 @code
 {
     private CancellationTokenSource? _cts;
-    private EditDatabaseObject<TechLogSettings> _editor;
-    private TechLogSettingsValidator _validator = new();
+    private EditDatabaseObject<TechLogSettings> _editor = null!;
+    private readonly Validator _validator = new();
 
     protected override void OnInitialized()
     {
         _cts = new CancellationTokenSource();
     }
 
-    private class TechLogSettingsValidator : OneSwissValidator<TechLogSettings>
+    private class Validator : ModelValidator<TechLogSettings>
     {
-        public TechLogSettingsValidator()
+        public Validator()
         {
             When(c => c.Enabled, () =>
             {
@@ -65,11 +67,11 @@
                     .WithMessage("Не указана таблица базы данных");
                 
                 RuleFor(x => x.DbmsId)
-                    .NotEqual(Guid.Empty)
+                    .NotEmpty()
                     .WithMessage("Не указана СУБД");
                 
                 RuleFor(x => x.CredentialsId)
-                    .NotEqual(Guid.Empty)
+                    .NotEmpty()
                     .WithMessage("Не указаны учетные данные");
             });
         }
@@ -104,6 +106,13 @@
             await InitDataBase();
             
             SnackBar.ShowSuccess("База данных инициализирована");
+            
+            var settings = _editor.Context!.TechLogSettings
+                .Include(c => c.Credentials)
+                .Include(c => c.Dbms)
+                .FirstOrDefault();
+            
+            TechLogRepositoryManager.UpdateSettings(Mapper.Map<TechLogSettingsDto>(settings));
         }
         catch (Exception e)
         {

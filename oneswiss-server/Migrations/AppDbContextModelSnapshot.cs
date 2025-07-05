@@ -2,12 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using OnecMonitor.Server;
 using OneSwiss.Server;
 
 #nullable disable
 
-namespace OnecMonitor.Server.Migrations
+namespace OneSwiss.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
@@ -32,21 +31,6 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("AgentTechLogSeance");
                 });
 
-            modelBuilder.Entity("InfoBaseMaintenanceTask", b =>
-                {
-                    b.Property<string>("InfoBasesId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("MaintenanceTasksId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("InfoBasesId", "MaintenanceTasksId");
-
-                    b.HasIndex("MaintenanceTasksId");
-
-                    b.ToTable("InfoBaseMaintenanceTask");
-                });
-
             modelBuilder.Entity("LogTemplateTechLogSeance", b =>
                 {
                     b.Property<string>("SeancesId")
@@ -62,7 +46,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("LogTemplateTechLogSeance");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.Agent", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.Agent", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -78,7 +62,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("Agents");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.Cluster", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.Cluster", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -117,7 +101,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("Clusters");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.CommonSettings", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.CommonSettings", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -138,7 +122,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("CommonSettings");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.Credentials", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.Credentials", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -167,7 +151,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("Credentials");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.Dbms", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.Dbms", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -194,7 +178,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("Dbms");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.ErrorLoggingServiceSettings", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.ErrorLoggingServiceSettings", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -215,7 +199,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("ErrorLoggingServiceSettings");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.ErrorReport", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.ErrorReport", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -237,7 +221,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("ErrorReports");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.EventLogSettings", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.EventLogSettings", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -275,7 +259,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("EventLogSettings");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.File", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.File", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -301,7 +285,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("Files");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.InfoBase", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -339,7 +323,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("InfoBases");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.LogTemplate", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.LogTemplate", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -358,7 +342,22 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("LogTemplates");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.InfoBaseMaintenanceTask", b =>
+                {
+                    b.Property<string>("InfoBaseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MaintenanceTaskId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("InfoBaseId", "MaintenanceTaskId");
+
+                    b.HasIndex("MaintenanceTaskId");
+
+                    b.ToTable("InfoBaseMaintenanceTask");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -421,7 +420,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("MaintenanceSteps");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepLogItem", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStepLogItem", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -458,7 +457,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("MaintenanceStepLogs");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -486,7 +485,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("MaintenanceTasks");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.TechLogFilter", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.TechLogFilter", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -505,7 +504,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("TechLogFilters");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.TechLogSeance", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.TechLogSeance", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -532,7 +531,7 @@ namespace OnecMonitor.Server.Migrations
                     b.ToTable("TechLogSeances");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.TechLogSettings", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.TechLogSettings", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
@@ -568,58 +567,43 @@ namespace OnecMonitor.Server.Migrations
 
             modelBuilder.Entity("AgentTechLogSeance", b =>
                 {
-                    b.HasOne("OnecMonitor.Server.Models.Agent", null)
+                    b.HasOne("OneSwiss.Server.Models.Agent", null)
                         .WithMany()
                         .HasForeignKey("AgentsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("OnecMonitor.Server.Models.TechLogSeance", null)
+                    b.HasOne("OneSwiss.Server.Models.TechLogSeance", null)
                         .WithMany()
                         .HasForeignKey("TechLogSeancesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("InfoBaseMaintenanceTask", b =>
-                {
-                    b.HasOne("OnecMonitor.Server.Models.InfoBase", null)
-                        .WithMany()
-                        .HasForeignKey("InfoBasesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", null)
-                        .WithMany()
-                        .HasForeignKey("MaintenanceTasksId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("LogTemplateTechLogSeance", b =>
                 {
-                    b.HasOne("OnecMonitor.Server.Models.TechLogSeance", null)
+                    b.HasOne("OneSwiss.Server.Models.TechLogSeance", null)
                         .WithMany()
                         .HasForeignKey("SeancesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("OnecMonitor.Server.Models.LogTemplate", null)
+                    b.HasOne("OneSwiss.Server.Models.LogTemplate", null)
                         .WithMany()
                         .HasForeignKey("TemplatesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.Cluster", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.Cluster", b =>
                 {
-                    b.HasOne("OnecMonitor.Server.Models.Agent", "Agent")
+                    b.HasOne("OneSwiss.Server.Models.Agent", "Agent")
                         .WithMany("Clusters")
                         .HasForeignKey("AgentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("OnecMonitor.Server.Models.Credentials", "Credentials")
+                    b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
                         .WithMany("Clusters")
                         .HasForeignKey("CredentialsId");
 
@@ -628,13 +612,13 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Credentials");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.EventLogSettings", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.EventLogSettings", b =>
                 {
-                    b.HasOne("OnecMonitor.Server.Models.Credentials", "Credentials")
+                    b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
                         .WithMany()
                         .HasForeignKey("CredentialsId");
 
-                    b.HasOne("OnecMonitor.Server.Models.Dbms", "Dbms")
+                    b.HasOne("OneSwiss.Server.Models.Dbms", "Dbms")
                         .WithMany()
                         .HasForeignKey("DbmsId");
 
@@ -643,15 +627,15 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Dbms");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.InfoBase", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.InfoBase", b =>
                 {
-                    b.HasOne("OnecMonitor.Server.Models.Cluster", "Cluster")
+                    b.HasOne("OneSwiss.Server.Models.Cluster", "Cluster")
                         .WithMany("InfoBases")
                         .HasForeignKey("ClusterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("OnecMonitor.Server.Models.Credentials", "Credentials")
+                    b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
                         .WithMany("InfoBases")
                         .HasForeignKey("CredentialsId");
 
@@ -660,13 +644,32 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Credentials");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.InfoBaseMaintenanceTask", b =>
                 {
-                    b.HasOne("OnecMonitor.Server.Models.File", "File")
+                    b.HasOne("OneSwiss.Server.Models.InfoBase", "InfoBase")
+                        .WithMany("MaintenanceTasks")
+                        .HasForeignKey("InfoBaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", "MaintenanceTask")
+                        .WithMany("InfoBases")
+                        .HasForeignKey("MaintenanceTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InfoBase");
+
+                    b.Navigation("MaintenanceTask");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.File", "File")
                         .WithMany()
                         .HasForeignKey("FileId");
 
-                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", "MaintenanceTask")
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", "MaintenanceTask")
                         .WithMany("Steps")
                         .HasForeignKey("MaintenanceTaskId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -677,15 +680,15 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("MaintenanceTask");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStepLogItem", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStepLogItem", b =>
                 {
-                    b.HasOne("OnecMonitor.Server.Models.InfoBase", "InfoBase")
+                    b.HasOne("OneSwiss.Server.Models.InfoBase", "InfoBase")
                         .WithMany()
                         .HasForeignKey("InfoBaseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStep", "Step")
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", "Step")
                         .WithMany("Logs")
                         .HasForeignKey("StepId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -696,13 +699,13 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Step");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.TechLogSettings", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.TechLogSettings", b =>
                 {
-                    b.HasOne("OnecMonitor.Server.Models.Credentials", "Credentials")
+                    b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
                         .WithMany()
                         .HasForeignKey("CredentialsId");
 
-                    b.HasOne("OnecMonitor.Server.Models.Dbms", "Dbms")
+                    b.HasOne("OneSwiss.Server.Models.Dbms", "Dbms")
                         .WithMany()
                         .HasForeignKey("DbmsId");
 
@@ -711,30 +714,37 @@ namespace OnecMonitor.Server.Migrations
                     b.Navigation("Dbms");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.Agent", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.Agent", b =>
                 {
                     b.Navigation("Clusters");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.Cluster", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.Cluster", b =>
                 {
                     b.Navigation("InfoBases");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.Credentials", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.Credentials", b =>
                 {
                     b.Navigation("Clusters");
 
                     b.Navigation("InfoBases");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.InfoBase", b =>
+                {
+                    b.Navigation("MaintenanceTasks");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
                 {
                     b.Navigation("Logs");
                 });
 
-            modelBuilder.Entity("OnecMonitor.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
                 {
+                    b.Navigation("InfoBases");
+
                     b.Navigation("Steps");
                 });
 #pragma warning restore 612, 618

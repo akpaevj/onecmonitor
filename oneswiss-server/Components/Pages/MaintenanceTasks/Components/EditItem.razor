@@ -9,44 +9,38 @@
 @using Blazor.Diagrams.Core.Geometry
 @using Blazor.Diagrams.Core.Models
 @using Blazor.Diagrams.Core.Models.Base
+@using FluentValidation
+@using global::AutoMapper
 @using OneSwiss.Common.Extensions
 @using OneSwiss.Common.Models.MaintenanceTasks
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Helpers
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Models.MaintenanceTasks
-@inject NavigationManager NavigationManager
-@inject IDbContextFactory<AppDbContext> ContextFactory
-@implements IDisposable
+@using OneSwiss.Server.Components.Shared
 @rendermode InteractiveServer
 
-<PageTitle>@Title</PageTitle>
-
-<h1 Class="mb-3">@Title</h1>
-
-<EditForm Model="Model!" OnSubmit="HandleSubmit">
-    <DataAnnotationsValidator/>
-
-    @if (Model!.IsTemplate || (Model.StartDateTime == DateTime.MinValue && Model.FinishDateTime == DateTime.MinValue))
-    {
-        <MudButton Variant="Variant.Filled" ButtonType="ButtonType.Submit" Color="Color.Primary" Class="mb-3">Сохранить</MudButton>
-    }
-
-    <MudTextField Class="mb-3" For="@(() => Model!.Description)" @bind-Value="@Model!.Description"></MudTextField>
+<EditDatabaseObject @ref="_editor" T="MaintenanceTask"
+                    Id="Id"
+                    NameSelector="@(arg => arg.Description)"
+                    Title="@Title"
+                    Route="@Route"
+                    Validation="_validator.ValidateValue"
+                    OnInitialize="OnInitialize"
+                    ModelSelector="ModelSelector"
+                    BeforeValidation="BeforeValidation"
+                    OnUpdate="OnUpdate">
+    <MudStack>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Description)" Label="Наименование" @bind-Value="@_editor.Model!.Description"/>
+    </MudStack>
     
     <MudStack Row>
         
-        <MudPaper Class="rounded-lg mud-background-gray">
-            <MudList T="InfoBase" @bind-SelectedValues="SelectedInfoBases" SelectionMode="SelectionMode.MultiSelection" CheckBoxColor="Color.Primary">
-                <MudListSubheader>
-                    Информационные базы
-                </MudListSubheader>
-                @foreach (var infobase in _context!.InfoBases)
-                {
-                    <MudListItem Text="@infobase.Name" Value="@infobase"/>
-                }
-            </MudList>
-        </MudPaper>
+        <ItemsSelector T="InfoBase"
+                       @bind-SelectedValues="_selectedInfoBases"
+                       Items="@_editor.Context!.InfoBases.ToList()"
+                       Title="Информационные базы"
+                       NameSelector="item => item.Name"/>
         
         <MudPaper Class="rounded-lg mud-background-gray pa-2">
             <MudStack Row Wrap="Wrap.Wrap" Class="mb-2" Spacing="0">
@@ -64,21 +58,17 @@
                     </DiagramCanvas>
                 </CascadingValue>
             </MudPaper>
-            <div class="mud-error-text">
-                <ValidationMessage TValue="MaintenanceTask" For="@(() => Model!)"></ValidationMessage>
-            </div>
         </MudPaper>
         
     </MudStack>
-
-</EditForm>
+    
+</EditDatabaseObject>
 
 @code
 {
-    public IReadOnlyCollection<InfoBase> SelectedInfoBases { get; set; } = [];
-    public BlazorDiagram Diagram { get; set; } = null!;
-    public ValidationMessageStore? MessageStore;
-    private AppDbContext? _context;
+    private List<InfoBase> _selectedInfoBases;
+    private readonly Validator _validator = new();
+    private EditDatabaseObject<MaintenanceTask> _editor = null!;
     
     [Parameter]
     public Guid Id { get; set; }
@@ -94,45 +84,95 @@
     
     [SupplyParameterFromQuery] 
     public Guid TemplateId { get; set; }
-
-    [Parameter] 
-    public EventCallback<(EditContext Context, bool IsValid)> OnSubmit { get; set; }
     
-    [SupplyParameterFromForm]
-    public MaintenanceTask? Model { get; set; }
+    public BlazorDiagram Diagram { get; set; } = null!;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnAfterRender(bool firstRender)
     {
-        _context = await ContextFactory.CreateDbContextAsync();
+        if (!firstRender)
+            return;
+        
+        _editor.AddAdditionalValidableProperty(nameof(MaintenanceTask.InfoBases));
+        _editor.AddAdditionalValidableProperty(nameof(MaintenanceTask.Steps));
+    }
+    
+    private async Task OnInitialize((MaintenanceTask Model, AppDbContext Context) valueTuple)
+    {
+        UpdateSelectedInfoBases(valueTuple.Model);
         
         InitDiagram();
         
-        if (Id != Guid.Empty)
-        {
-            Model = await _context.MaintenanceTasks
-                .Include(c => c.InfoBases)
-                .Include(c => c.Steps)
-                .FirstOrDefaultAsync(c => c.Id == Id);
-
-            if (Model == null)
-                NavigateBack();
-        }
-        else
-        {
-            if (TemplateId == Guid.Empty)
-                Model = new MaintenanceTask();
-            else
-                await InitModelFromTemplate();
-        }
-
-        SelectedInfoBases = Model!.InfoBases;
-
-        if (Id != Guid.Empty)
-            Title = Model!.Description;
+        if (TemplateId != Guid.Empty)
+            await InitModelFromTemplate(valueTuple.Model, valueTuple.Context);
         
-        ModelToDiagram();
+        ModelToDiagram(valueTuple.Model);
     }
 
+    private void UpdateSelectedInfoBases(MaintenanceTask task)
+    {
+        _selectedInfoBases = task.InfoBases.Select(c => c.InfoBase).ToList();
+    }
+    
+    private static IQueryable<MaintenanceTask> ModelSelector(IQueryable<MaintenanceTask> arg)
+        => arg.Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).Include(c => c.Steps);
+    
+    private void BeforeValidation(MaintenanceTask obj)
+    {
+        obj.InfoBases = _selectedInfoBases.Select(c => new InfoBaseMaintenanceTask
+        {
+            InfoBaseId = c.Id,
+            MaintenanceTaskId = obj.Id
+        }).ToList();
+        obj.IsTemplate = IsTemplate;
+        
+        DiagramToModel(obj);
+    }
+    
+    private void OnUpdate(MaintenanceTask obj)
+    {
+        ModelHelper.UpdateModelItems(_editor.Model!.InfoBases, obj.InfoBases);
+        ModelHelper.UpdateModelItems(_editor.Model!.Steps, obj.Steps);
+    }
+    
+    private async Task InitModelFromTemplate(MaintenanceTask task, AppDbContext context)
+    {
+        // Запомним уже сформированный для модели id
+        var id = task.Id;
+        
+        var template = (await context.MaintenanceTasks
+            .AsNoTracking()
+            .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase)
+            .Include(c => c.Steps)
+            .FirstOrDefaultAsync(c => c.Id == TemplateId))!;
+
+        task.Id = id;
+        task.Description = template.Description;
+        task.IsTemplate = IsTemplate;
+        UpdateSelectedInfoBases(template);
+        task.Steps.AddRange(template.Steps);
+        
+        // Очистим все id, чтобы не перезатереть сам шаблон при записи
+        task.Steps.ForEach(c =>
+        {
+            var currentId = c.Id;
+            var newId = Guid.NewGuid();
+                
+            task.Steps.ForEach(i =>
+            {
+                if (i.PreviousStepId == currentId)
+                    i.PreviousStepId = newId;
+                    
+                if (i.LeftStepId == currentId)
+                    i.LeftStepId = newId;
+                    
+                if (i.RightStepId == currentId)
+                    i.RightStepId = newId;
+            });
+                
+            c.Id = newId;
+        });
+    }
+    
     private void InitDiagram()
     {
         Diagram = new BlazorDiagram(new BlazorDiagramOptions
@@ -173,6 +213,103 @@
             model.Changed += OnNodeChanged;
             stepNode.Step.Id = Guid.NewGuid();
         };
+    }
+    
+    private void DiagramToModel(MaintenanceTask task)
+    {
+        task.Steps.Clear();
+        
+        // Очистим связи шагов перед повторным заполнением, чтобы избежать фантомов
+        Diagram.Nodes.Cast<StepNode>().ToList().ForEach(c =>
+        {
+            c.Step.LeftStepId = null;
+            c.Step.RightStepId = null;
+            c.Step.PreviousStepId = null;
+        });
+
+        foreach (var node in Diagram.Nodes)
+        {
+            var step = (node as StepNode)!.Step;
+            step.PositionX = node.Position.X;
+            step.PositionY = node.Position.Y;
+
+            foreach (var link in node.PortLinks)
+            {
+                if (link.Source.Model == null || link.Target.Model == null) 
+                    return;
+        
+                var step1 = link.Source.Model as StepPort;
+                var step2 = link.Target.Model as StepPort;
+
+                var step1Node = step1!.Parent as StepNode;
+                var step2Node = step2!.Parent as StepNode;
+
+                if (step1.Alignment == PortAlignment.Left)
+                    step1Node!.Step.PreviousStepId = step2Node!.Step.Id;
+                else if (step1.Alignment == PortAlignment.TopRight)
+                    step1Node!.Step.LeftStepId = step2Node!.Step.Id;
+                else if (step1.Alignment == PortAlignment.BottomRight)
+                    step1Node!.Step.RightStepId = step2Node!.Step.Id;
+                
+                if (step2.Alignment == PortAlignment.Left)
+                    step2Node!.Step.PreviousStepId = step1Node!.Step.Id;
+                else if (step2.Alignment == PortAlignment.TopRight)
+                    step2Node!.Step.LeftStepId = step1Node!.Step.Id;
+                else if (step2.Alignment == PortAlignment.BottomRight)
+                    step2Node!.Step.RightStepId = step1Node!.Step.Id;
+            }
+
+            step.NodeKind = step is { LeftStepId: not null, RightStepId: not null } 
+                ? MaintenanceStepNodeKind.TryCatch : MaintenanceStepNodeKind.Simple;
+            
+            task.Steps.Add(step);
+        }
+    }
+
+    private void ModelToDiagram(MaintenanceTask task)
+    {
+        var nodeStepPairs = new Dictionary<MaintenanceStep, StepNode>();
+        
+        // Сначала добавляем все ноды
+        foreach (var step in task.Steps)
+        {
+            var addedNode = Diagram.Nodes.Add(new StepNode(step, new Point(step.PositionX, step.PositionY)));
+            
+            addedNode.AddPort(new StepPort(Diagram, addedNode, PortAlignment.BottomRight));
+            addedNode.AddPort(new StepPort(Diagram, addedNode, PortAlignment.TopRight));
+            addedNode.AddPort(new StepPort(Diagram, addedNode, PortAlignment.Left));
+            
+            nodeStepPairs.Add(step, addedNode);
+        }
+
+        // После того, как ноды добавлены, линкуем их в соответствии с шагами
+        foreach (var step in task.Steps)
+        {
+            var node = nodeStepPairs[step];
+
+            if (step.PreviousStepId == null) 
+                continue;
+            
+            var secondPort = GetSecondPort(step.Id);
+            Diagram.Links.Add(new LinkModel(secondPort, node.GetPort(PortAlignment.Left)!));
+        }
+
+        return;
+
+        PortModel GetSecondPort(Guid firstStepId)
+        {
+            var secondStep = task.Steps.FirstOrDefault(c => c.LeftStepId == firstStepId);
+            if (secondStep != null)
+            {
+                var n = nodeStepPairs[secondStep];
+                return n.GetPort(PortAlignment.TopRight)!;
+            }
+            
+            secondStep = task.Steps.FirstOrDefault(c => c.RightStepId == firstStepId);
+            
+            var n1 = nodeStepPairs[secondStep!];
+            return n1.GetPort(PortAlignment.BottomRight)!;
+        }
     }
 
     private void OnNodeChanged(Model model)
@@ -234,97 +371,13 @@
             topLink.Refresh();
         }
     }
-
-    private async Task HandleSubmit(EditContext editContext)
-    {
-        DiagramToModel();
-        
-        MessageStore ??= new ValidationMessageStore(editContext);
-        MessageStore.Clear();
-        
-        var isValid = true;
-        
-        // Проверим, что наш граф в принципе валиден
-        if (string.IsNullOrWhiteSpace(Model!.Description))
-        {
-            MessageStore.Add(
-                () => Model!.Description,
-                "Не указано описание"
-            );
-            isValid = false;
-        }
-        
-        var firstSteps = Model.Steps.Count(c => c.PreviousStepId == null);
-        
-        if (Model.Steps.Count == 0)
-        {
-            MessageStore.Add(
-                () => Model!,
-                "Не указаны шаги обслуживания"
-            );
-            isValid = false;
-        }
-        
-        if (firstSteps > 1)
-        {
-            MessageStore.Add(
-                () => Model!,
-                "Начальных шагов не может быть больше одного"
-            );
-            isValid = false;
-        }
-        
-        await OnSubmit.InvokeAsync((editContext, isValid));
-    }
-
-    public async Task SaveModel()
-    {
-        ModelHelper.UpdateModelItems(SelectedInfoBases, Model!.InfoBases);
-        
-        if (Id == Guid.Empty)
-            _context!.MaintenanceTasks.Add(Model!);
-        else
-        {
-            var model = await _context!.MaintenanceTasks
-                .Include(c => c.Steps)
-                .Include(c => c.InfoBases)
-                .FirstAsync(c => c.Id == Id);
-
-            // Обновляем основные значения
-            _context.Entry(model).CurrentValues.SetValues(Model!);
-
-            // --- Steps ---
-            var incomingSteps = Model!.Steps;
-
-            // Удалить старые
-            foreach (var step in model.Steps.ToList().Where(step => incomingSteps.All(s => s.Id != step.Id)))
-                _context.Remove(step);
-
-            // Добавить новые и обновить существующие
-            foreach(var newStep in incomingSteps)
-            {
-                var exists = model.Steps.FirstOrDefault(s => s.Id == newStep.Id);
-                if (exists == null)
-                {
-                    model.Steps.Add(newStep);
-                    _context.Entry(newStep).State = EntityState.Added;
-                }
-                else
-                    _context.Entry(exists).CurrentValues.SetValues(newStep);
-            }
-        }
-        
-        await _context.SaveChangesAsync();
-        
-        NavigateBack();
-    }
-
+    
     private void OnClickNodeType(MaintenanceStepKind kind)
     {
         var node = new StepNode(kind);
 
-        if (node.NeedLoadFiles())
-            node.Files = _context!.Files.Where(c => c.FileType == node.AvailableFileType).ToList();
+        if (node.Step.NeedLoadFiles())
+            node.Files = _editor.Context!.Files.AsNoTracking().Where(c => c.FileType == node.Step.AvailableFileType).ToList();
 
         node.AddPort(new StepPort(Diagram, node, PortAlignment.BottomRight));
         node.AddPort(new StepPort(Diagram, node, PortAlignment.TopRight));
@@ -332,145 +385,51 @@
         
         Diagram.Nodes.Add(node);
     }
-
-    private void NavigateBack()
-        => NavigationManager.NavigateTo($"{Route}");
-
-    private void DiagramToModel()
+    
+    class Validator : ModelValidator<MaintenanceTask>
     {
-        Model!.Steps.Clear();
-        
-        // Очистим связи шагов перед повторным заполнением, чтобы избежать фантомов
-        Diagram.Nodes.Cast<StepNode>().ToList().ForEach(c =>
+        public Validator()
         {
-            c.Step.LeftStepId = null;
-            c.Step.RightStepId = null;
-            c.Step.PreviousStepId = null;
-        });
+            RuleFor(c => c.Description)
+                .NotEmpty()
+                .WithMessage("Не указано описание");
+            
+            RuleFor(c => c.Steps)
+                .NotEmpty()
+                .WithMessage("Не указаны шаги обслуживания")
+                .Must(steps => steps.Count(c => c.PreviousStepId == null) == 1)
+                .WithMessage("Начальных шагов обслуживания не может быть больше одного");
 
-        foreach (var node in Diagram.Nodes)
-        {
-            var step = (node as StepNode)!.Step;
-            step.PositionX = node.Position.X;
-            step.PositionY = node.Position.Y;
-
-            foreach (var link in node.PortLinks)
+            When(c => !c.IsTemplate, () =>
             {
-                if (link.Source.Model == null || link.Target.Model == null) 
-                    return;
-        
-                var step1 = link.Source.Model as StepPort;
-                var step2 = link.Target.Model as StepPort;
+                RuleFor(c => c.InfoBases)
+                    .NotEmpty()
+                    .WithMessage("Не указано ни одной информационной базы");
 
-                var step1Node = step1!.Parent as StepNode;
-                var step2Node = step2!.Parent as StepNode;
+                RuleForEach(task => task.Steps)
+                    .Custom((step, context) =>
+                    {
+                        if (step.NeedLoadFiles() && step.FileId == Guid.Empty)
+                            context.AddFailure(
+                                nameof(context.PropertyPath), 
+                                $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл");
 
-                if (step1.Alignment == PortAlignment.Left)
-                    step1Node!.Step.PreviousStepId = step2Node!.Step.Id;
-                else if (step1.Alignment == PortAlignment.TopRight)
-                    step1Node!.Step.LeftStepId = step2Node!.Step.Id;
-                else if (step1.Alignment == PortAlignment.BottomRight)
-                    step1Node!.Step.RightStepId = step2Node!.Step.Id;
-                
-                if (step2.Alignment == PortAlignment.Left)
-                    step2Node!.Step.PreviousStepId = step1Node!.Step.Id;
-                else if (step2.Alignment == PortAlignment.TopRight)
-                    step2Node!.Step.LeftStepId = step1Node!.Step.Id;
-                else if (step2.Alignment == PortAlignment.BottomRight)
-                    step2Node!.Step.RightStepId = step1Node!.Step.Id;
-            }
-
-            step.NodeKind = step is { LeftStepId: not null, RightStepId: not null } 
-                ? MaintenanceStepNodeKind.TryCatch : MaintenanceStepNodeKind.Simple;
-            
-            Model.Steps.Add(step);
-        }
-    }
-
-    private void ModelToDiagram()
-    {
-        var nodeStepPairs = new Dictionary<MaintenanceStep, StepNode>();
-        
-        foreach (var step in Model!.Steps)
-        {
-            var addedNode = Diagram.Nodes.Add(new StepNode(step, new Point(step.PositionX, step.PositionY)));
-            
-            addedNode.AddPort(new StepPort(Diagram, addedNode, PortAlignment.BottomRight));
-            addedNode.AddPort(new StepPort(Diagram, addedNode, PortAlignment.TopRight));
-            addedNode.AddPort(new StepPort(Diagram, addedNode, PortAlignment.Left));
-            
-            nodeStepPairs.Add(step, addedNode);
-        }
-
-        foreach (var step in Model!.Steps)
-        {
-            var node = nodeStepPairs[step];
-
-            if (step.PreviousStepId == null) 
-                continue;
-            
-            var secondPort = GetSecondPort(step.Id);
-            Diagram.Links.Add(new LinkModel(secondPort, node.GetPort(PortAlignment.Left)!));
-        }
-
-        return;
-
-        PortModel GetSecondPort(Guid firstStepId)
-        {
-            var secondStep = Model!.Steps.FirstOrDefault(c => c.LeftStepId == firstStepId);
-            if (secondStep != null)
-            {
-                var n = nodeStepPairs[secondStep];
-                return n.GetPort(PortAlignment.TopRight)!;
-            }
-            
-            secondStep = Model!.Steps.FirstOrDefault(c => c.RightStepId == firstStepId);
-            
-            var n1 = nodeStepPairs[secondStep!];
-            return n1.GetPort(PortAlignment.BottomRight)!;
-        }
-    }
-
-    private async Task InitModelFromTemplate()
-    {
-        Model = await _context!.MaintenanceTasks
-            .AsNoTracking()
-            .Include(c => c.InfoBases)
-            .AsNoTracking()
-            .Include(c => c.Steps)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == TemplateId);
-
-        if (Model == null)
-            return;
-
-        Model.IsTemplate = false;
-        
-        // Очистим все id, чтобы не перезатереть сам шаблон при записи
-        Model.Id = Guid.Empty;
-        Model.Steps.ForEach(c =>
-        {
-            var currentId = c.Id;
-            var newId = Guid.NewGuid();
-                
-            Model.Steps.ForEach(i =>
-            {
-                if (i.PreviousStepId == currentId)
-                    i.PreviousStepId = newId;
-                    
-                if (i.LeftStepId == currentId)
-                    i.LeftStepId = newId;
-                    
-                if (i.RightStepId == currentId)
-                    i.RightStepId = newId;
+                        if (step.NeeSpecifyExtensionName() && string.IsNullOrEmpty(step.ExtensionName))
+                            context.AddFailure(
+                                nameof(context.PropertyPath), 
+                                $"В шаге \"{step.Kind.GetDisplay()}\" не указано имя расширения");
+                        
+                        if (step.NeeSpecifyMessage() && string.IsNullOrEmpty(step.Message))
+                            context.AddFailure(
+                                nameof(context.PropertyPath), 
+                                $"В шаге \"{step.Kind.GetDisplay()}\" не указан текст сообщения");
+                        
+                        if (step.NeeSpecifyAccessCode() && string.IsNullOrEmpty(step.AccessCode))
+                            context.AddFailure(
+                                nameof(context.PropertyPath), 
+                                $"В шаге \"{step.Kind.GetDisplay()}\" не указан код доступа");
+                    });
             });
-                
-            c.Id = newId;
-        });
-    }
-
-    public void Dispose()
-    {
-        _context?.Dispose();
+        }
     }
 }

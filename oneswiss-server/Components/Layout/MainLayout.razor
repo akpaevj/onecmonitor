@@ -5,10 +5,10 @@
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
-<MudLayout Class="h-100">
+<MudLayout>
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="DrawerToggle" />
-        <MudText Typo="Typo.h5" Style="@($"color:{_yellowColor}")">One</MudText>
+        <MudText Class="ms-2" Typo="Typo.h5" Style="@($"color:{_yellowColor}")">One</MudText>
         <MudText Typo="Typo.h5">Sw</MudText>
         <MudText Typo="Typo.h5" Style="@($"color:{_yellowColor}")">i</MudText>
         <MudText Typo="Typo.h5">ss</MudText>
@@ -18,7 +18,7 @@
     <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
         <NavMenu/>
     </MudDrawer>
-    <MudMainContent Class="pt-20 pa-5 h-100">
+    <MudMainContent Class="pt-20 pa-5">
         @Body
     </MudMainContent>
 </MudLayout>

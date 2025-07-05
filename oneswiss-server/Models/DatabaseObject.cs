@@ -1,6 +1,6 @@
 namespace OneSwiss.Server.Models;
 
-public abstract class DatabaseObject
+public abstract class DatabaseObject : IHasId
 {
     public Guid Id { get; set; }
 

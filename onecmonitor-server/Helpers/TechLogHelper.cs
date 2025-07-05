@@ -15,6 +15,6 @@ public class TechLogHelper
             .FirstOrDefault();
         
         var settingsDto = settings == null ? new TechLogSettingsDto() : mapper.Map<TechLogSettingsDto>(settings);
-        manager.SetSettings(settingsDto);
+        manager.UpdateSettings(settingsDto);
     }
 }

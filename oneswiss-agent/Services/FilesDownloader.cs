@@ -4,8 +4,10 @@ using OneSwiss.Common.DTO;
 
 namespace OneSwiss.Agent.Services;
 
-public class V8FilesDownloader(ILogger<V8FilesDownloader> logger) : IDisposable
+public class FilesDownloader(ILogger<FilesDownloader> logger) : IDisposable
 {
+    private const string TempFolder = "onewsiss";
+    
     private readonly object _locker = new();
     private readonly List<FileDto> _filesToDownload = [];
     private TaskCompletionSource<Dictionary<Guid, string>> _downloadTcs = null!;
@@ -99,7 +101,7 @@ public class V8FilesDownloader(ILogger<V8FilesDownloader> logger) : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    ~V8FilesDownloader()
+    ~FilesDownloader()
     {
         ReleaseUnmanagedResources();
     }

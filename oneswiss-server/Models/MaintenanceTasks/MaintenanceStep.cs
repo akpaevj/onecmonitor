@@ -48,4 +48,33 @@ public class MaintenanceStep : DatabaseObject
     [ForeignKey(nameof(MaintenanceTaskId))]
     public MaintenanceTask MaintenanceTask { get; set; } = null!;
     public virtual List<MaintenanceStepLogItem> Logs { get; set; } = [];
+    
+    public bool NeedLoadFiles()
+        => Kind is MaintenanceStepKind.LoadExtension
+            or MaintenanceStepKind.LoadConfiguration
+            or MaintenanceStepKind.ExecuteOneScript
+            or MaintenanceStepKind.StartExternalDataProcessor
+            or MaintenanceStepKind.UpdateConfiguration;
+    
+    public bool NeeSpecifyAccessCode()
+        => Kind is MaintenanceStepKind.LockConnections;
+    
+    public bool NeeSpecifyMessage()
+        => Kind is MaintenanceStepKind.LockConnections;
+    
+    public bool NeeSpecifyExtensionName()
+        => Kind is MaintenanceStepKind.LoadExtension
+            or MaintenanceStepKind.DeleteExtension;
+    
+    public FileType AvailableFileType
+        // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
+        => Kind switch
+        {
+            MaintenanceStepKind.LoadExtension => FileType.Cfe,
+            MaintenanceStepKind.UpdateConfiguration => FileType.Cfu,
+            MaintenanceStepKind.LoadConfiguration => FileType.Cf,
+            MaintenanceStepKind.StartExternalDataProcessor => FileType.Epf,
+            MaintenanceStepKind.ExecuteOneScript => FileType.Ospx,
+            _ => throw new ArgumentOutOfRangeException()
+        };
 }

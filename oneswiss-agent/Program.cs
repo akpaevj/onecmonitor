@@ -29,7 +29,7 @@ var host = Host.CreateDefaultBuilder(args)
         
         services.AddTransient<OnecMonitorConnection>();
         
-        services.AddScoped<V8FilesDownloader>();
+        services.AddScoped<FilesDownloader>();
         services.AddSingleton<MonitorQueue<MaintenanceTaskDto>>();
         services.AddHostedService<MaintenanceTaskExecutor>();
 
@@ -49,36 +49,18 @@ var host = Host.CreateDefaultBuilder(args)
 
 var appLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 
-await using var scope = host.Services.CreateAsyncScope();
-await using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-await appDbContext.Database.MigrateAsync();
-
-// update agent instance info
-var configuration = host.Services.GetRequiredService<IConfiguration>();
-
-var agentInstance = appDbContext.AgentInstance.AsNoTracking().FirstOrDefault();
-
-var instanceName = configuration.GetValue("Agent:InstanceName", Environment.MachineName);
-if (string.IsNullOrEmpty(instanceName))
-    instanceName = Environment.MachineName;
-
-if (agentInstance == null) 
+await using (var scope = host.Services.CreateAsyncScope())
 {
-    agentInstance = new AgentInstance
-    {
-        Id = Guid.NewGuid(),
-        InstanceName = instanceName
-    };
-
-    appDbContext.AgentInstance.Add(agentInstance);
-    appDbContext.SaveChanges();
+    await using var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
 }
-else if (agentInstance.InstanceName != instanceName)
-{
-    agentInstance.InstanceName = instanceName;
 
-    appDbContext.AgentInstance.Update(agentInstance);
-    appDbContext.SaveChanges();
+await using (var scope = host.Services.CreateAsyncScope())
+{
+    await using var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    
+    var configuration = host.Services.GetRequiredService<IConfiguration>();
+    CreateAgentInstance(configuration, db);
 }
 
 host.Services.GetRequiredService<TechLogManager>();
@@ -87,3 +69,33 @@ _ = host.Services.GetRequiredService<CommandsWatcher>()
     .Start(appLifetime.ApplicationStopping).ConfigureAwait(false);
 
 host.Run();
+
+return;
+
+void CreateAgentInstance(IConfiguration configuration, AppDbContext appDbContext)
+{
+    var agentInstance = appDbContext.AgentInstance.AsNoTracking().FirstOrDefault();
+
+    var instanceName = configuration.GetValue("Agent:InstanceName", Environment.MachineName);
+    if (string.IsNullOrEmpty(instanceName))
+        instanceName = Environment.MachineName;
+
+    if (agentInstance == null) 
+    {
+        agentInstance = new AgentInstance
+        {
+            Id = Guid.NewGuid(),
+            InstanceName = instanceName
+        };
+
+        appDbContext.AgentInstance.Add(agentInstance);
+        appDbContext.SaveChanges();
+    }
+    else if (agentInstance.InstanceName != instanceName)
+    {
+        agentInstance.InstanceName = instanceName;
+
+        appDbContext.AgentInstance.Update(agentInstance);
+        appDbContext.SaveChanges();
+    }
+}

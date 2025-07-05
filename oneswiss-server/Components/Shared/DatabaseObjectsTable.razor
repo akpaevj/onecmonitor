@@ -1,25 +1,43 @@
+@using global::AutoMapper
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Extensions
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @inject ISnackbar SnackBar
-@attribute [CascadingTypeParameter(nameof(T))]
-@typeparam T where T : OneSwiss.Server.Models.DatabaseObject
+@inject IMapper Mapper
+@attribute [CascadingTypeParameter(nameof(TModel))]
+@typeparam TModel where TModel : OneSwiss.Server.Models.DatabaseObject
+@attribute [CascadingTypeParameter(nameof(TViewModel))]
+@typeparam TViewModel where TViewModel : OneSwiss.Server.Models.IHasId
 
 <PageTitle>@Title</PageTitle>
 
 <h1 Class="mb-3">@Title</h1>
 
-<MudStack Row AlignItems="AlignItems.Start">
-    <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="@(() => NavManager.NavigateTo($"{Route}/create"))" Class="mb-3">Добавить</MudButton>
-    @if (TableActionsContent != null)
-    {
-        @TableActionsContent
-    }
-</MudStack>
+@if (!DisableTableActions)
+{
+    <MudStack Row AlignItems="AlignItems.Start">
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="@(() => NavManager.NavigateTo($"{Route}/create"))" Class="mb-3">Добавить</MudButton>
+        @if (TableActionsContent != null)
+        {
+            @TableActionsContent
+        }
+    </MudStack>
+}
 
-<MudTable T="T" Items="_items">
+<MudTable T="TViewModel" Items="_items"
+          GroupBy="@GroupBy"
+          GroupHeaderStyle="@GroupHeaderStyle"
+          GroupFooterClass="@GroupFooterClass"
+          Dense="@Dense"
+          Hover="@Hover">
+    <GroupHeaderTemplate>
+        @GroupHeader?.Invoke(context)
+    </GroupHeaderTemplate>
+    <ColGroup>
+        @ColGroup
+    </ColGroup>
     <HeaderContent>
         @if (ColumnsContent == null)
         {
@@ -36,11 +54,15 @@
         {
             <MudTd DataLabel="Наименование">@NameSelector(context)</MudTd>
         }
+        else
+        {
+            @RowTemplate.Invoke(context)
+        }
         <MudTd>
             <MudStack Row>
                 @if (RowActionsContent == null)
                 {
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavManager.NavigateTo($"{Route}/{context.Id}"))" Color="Color.Info"/>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavigateToItem(context))" Color="Color.Info"/>
                     @if (ShowDeleteButton)
                     {
                         <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteItem(context))" Color="Color.Error"/>
@@ -58,49 +80,78 @@
 @code
 {
     private bool _isLoading;
-    private List<T> _items = [];
+    private List<TViewModel> _items = [];
 
     [Parameter]
     public string Title { get; set; } = string.Empty;
     
     [Parameter] 
+    public bool DisableTableActions { get; set; }
+    
+    [Parameter] 
     public RenderFragment? TableActionsContent { get; set; }
 
     [Parameter]
-    public RenderFragment? ColumnsContent { get; set; } = null!;
+    public RenderFragment? ColumnsContent { get; set; }
 
     [Parameter] 
-    public RenderFragment<T>? RowTemplate { get; set; } = null!;
+    public RenderFragment<TViewModel>? RowTemplate { get; set; }
     
     [Parameter] 
-    public RenderFragment<T>? RowActionsContent { get; set; }
+    public RenderFragment<TViewModel>? RowActionsContent { get; set; }
 
     /// <summary>
     /// Используется при получении сложных моделей со связями
     /// </summary>
     [Parameter]
-    public Func<IQueryable<T>, IQueryable<T>>? ItemsSelector { get; set; }
+    public Func<IQueryable<TModel>, IQueryable<TModel>>? ItemsSelector { get; set; }
     
     [Parameter] 
-    public Func<T, string> NameSelector { get; set; } = null!;
+    public Func<TViewModel, string> NameSelector { get; set; } = null!;
 
     [Parameter] 
     public string Route { get; set; } = string.Empty;
 
     [Parameter] 
     public bool ShowDeleteButton { get; set; } = true;
+    
+    [Parameter]
+    public EventCallback<TModel> AfterDelete { get; set; }
+    
+    [Parameter] 
+    public string? GroupHeaderStyle { get; set; }
+    
+    [Parameter] 
+    public string? GroupFooterClass { get; set; }
+    
+    [Parameter] 
+    public bool Dense { get; set; }
+    
+    [Parameter] 
+    public TableGroupDefinition<TViewModel>? GroupBy { get; set; }
+    
+    [Parameter]
+    public RenderFragment<TableGroupData<object, TViewModel>>? GroupHeader { get; set; }
+    
+    [Parameter]
+    public RenderFragment? ColGroup { get; set; }
+    
+    [Parameter] 
+    public bool Hover { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         await UpdateItems();
     }
 
-    public async Task DeleteItem(T item)
+    public async Task DeleteItem(TViewModel item)
     {
-        await DialogService.ShowItemDeletingDialog(item, NameSelector(item));
+        await DialogService.ShowItemDeletingDialog<TModel>(item.Id, NameSelector(item));
         await UpdateItems();
+        
+        await AfterDelete.InvokeAsync(Mapper.Map<TModel>(item));
     }
-    
+
     public async Task<AppDbContext> GetContext()
         => await ContextFactory.CreateDbContextAsync();
 
@@ -113,7 +164,7 @@
         {
             _isLoading = true;
             
-            _items = await GetItems();
+            _items = Mapper.Map<List<TViewModel>>(await GetItems());
         }
         catch (Exception e)
         {
@@ -125,9 +176,18 @@
         }
     }
 
-    private async Task<List<T>> GetItems()
+    private async Task<List<TModel>> GetItems()
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
-        return await (ItemsSelector == null ? context.Set<T>() : ItemsSelector.Invoke(context.Set<T>())).ToListAsync();
+
+        if (ItemsSelector == null)
+            return await context.Set<TModel>().ToListAsync();
+        
+        return ItemsSelector.Invoke(context.Set<TModel>()).ToList();
+    }
+
+    private void NavigateToItem(TViewModel vm)
+    {
+        NavManager.NavigateTo($"{Route}/{vm.Id}");
     }
 }

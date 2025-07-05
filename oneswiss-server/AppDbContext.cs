@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OneSwiss.Common.Converters.Sqlite;
 using OneSwiss.Server.Models;
@@ -37,7 +36,9 @@ namespace OneSwiss.Server
             => DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-server.db");
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder.UseSqlite($"Data Source={DbPath}");
+            => optionsBuilder
+                .UseSqlite($"Data Source={DbPath}")
+                .UseAsyncSeeding(SeedLogTemplates);
 
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {
@@ -47,31 +48,24 @@ namespace OneSwiss.Server
             configurationBuilder.Properties<DateTime>()
                 .HaveConversion<DateTimeToBinaryConverter>();
         }
-        
-        public static void ManyToMany<T>(List<T> newCollection, List<T> oldCollection)
-        {
-            newCollection
-                .Except(oldCollection)
-                .ToList()
-                .ForEach(x => newCollection.Remove(x));
 
-            oldCollection
-                .Except(newCollection)
-                .ToList()
-                .ForEach(newCollection.Add);
-        }
-
-        public static void AddBuiltInLogTemplate(MigrationBuilder migrationBuilder, Guid id, string name, string content)
+        private static async Task SeedLogTemplates(DbContext context, bool seed, CancellationToken cancellationToken)
         {
-            migrationBuilder.Sql(
-                $"""
-                INSERT INTO LogTemplates 
-                VALUES (
-                    '{id}', 
-                    '{name}',
-                    '{content}'
-                    )
-                """);
+            foreach (var templateDef in BuiltInDbData.LogTemplates)
+            {
+                var id = Guid.Parse(templateDef.Id);
+                var item = await context.Set<LogTemplate>().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+                if (item == null)
+                    await context.Set<LogTemplate>().AddAsync(new LogTemplate
+                    {
+                        Id = id,
+                        Content = templateDef.Content,
+                        Name = templateDef.Name
+                    }, cancellationToken);
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
         }
     }
 }

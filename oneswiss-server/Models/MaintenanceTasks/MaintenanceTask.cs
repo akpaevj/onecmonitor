@@ -19,6 +19,5 @@ public class MaintenanceTask : DatabaseObject
     public bool IsTemplate { get; set; } = false;
     
     public virtual List<MaintenanceStep> Steps { get; set; } = [];
-    [DeleteBehavior(DeleteBehavior.Cascade)]
-    public virtual List<InfoBase> InfoBases { get; set; } = [];
+    public virtual List<InfoBaseMaintenanceTask> InfoBases { get; set; } = [];
 }

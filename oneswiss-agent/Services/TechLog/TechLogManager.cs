@@ -74,12 +74,21 @@ public class TechLogManager
                 
                 settings.Seances.ToList().ForEach(c =>
                 {
-                    if ((c.StartDateTime != DateTime.MinValue && c.StartDateTime < DateTime.UtcNow) || c.FinishDateTime < DateTime.UtcNow)
+                    if (c.FinishDateTime < DateTime.UtcNow)
                         return;
                     
                     var logPath = Path.Combine(_rootLogPath, c.Id.ToString(), c.TemplateId.ToString());
-                    if (!Directory.Exists(logPath))
-                        Directory.CreateDirectory(logPath);
+
+                    try
+                    {
+                        if (!Directory.Exists(logPath))
+                            Directory.CreateDirectory(logPath);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e, "Ошибка создания каталога сеанса сбора технологического журнала");
+                        return;
+                    }
                     
                     var templateDoc = new XmlDocument();
                     templateDoc.LoadXml(c.Template);

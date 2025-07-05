@@ -24,23 +24,4 @@ public class StepNode : NodeModel
     {
         Step = step;
     }
-    
-    public bool NeedLoadFiles()
-        => Step.Kind is MaintenanceStepKind.LoadExtension
-            or MaintenanceStepKind.LoadConfiguration
-            or MaintenanceStepKind.ExecuteOneScript
-            or MaintenanceStepKind.StartExternalDataProcessor
-            or MaintenanceStepKind.UpdateConfiguration;
-    
-    public FileType AvailableFileType
-        // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
-        => Step.Kind switch
-        {
-            MaintenanceStepKind.LoadExtension => FileType.Cfe,
-            MaintenanceStepKind.UpdateConfiguration => FileType.Cfu,
-            MaintenanceStepKind.LoadConfiguration => FileType.Cf,
-            MaintenanceStepKind.StartExternalDataProcessor => FileType.Epf,
-            MaintenanceStepKind.ExecuteOneScript => FileType.Ospx,
-            _ => throw new ArgumentOutOfRangeException()
-        };
 }

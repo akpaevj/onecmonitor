@@ -1,11 +1,13 @@
 using System.Net.Sockets;
+using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
 using OneSwiss.V8.Designer.Agent.Models;
 using Renci.SshNet;
 
 namespace OneSwiss.V8.Designer.Agent;
 
-public class DesignerAgentClient : IDisposable
+public sealed class DesignerAgentClient : IDisposable
 {
     private readonly string _host;
     private readonly int _port;
@@ -14,6 +16,7 @@ public class DesignerAgentClient : IDisposable
     private readonly SshClient _client;
     
     private ShellStream _shellStream = null!;
+    private Channel<DesignerAgentMessage> MessagesChannel { get; } = Channel.CreateUnbounded<DesignerAgentMessage>();
 
     public DesignerAgentClient(string user, string password, string host = "localhost", int port = 1543)
     {
@@ -66,63 +69,138 @@ public class DesignerAgentClient : IDisposable
         return sftp;
     }
 
-    public async Task Connect()
+    public async Task Connect(CancellationToken cancellationToken)
     {
-        _client.Connect();
+        await _client.ConnectAsync(cancellationToken);
         _shellStream = _client.CreateShellStreamNoTerminal();
 
-        await _shellStream.WaitDataAvailable();
+        // Пропустим приветственную шляпу
+        await WaitDataAvailable();
         _shellStream.Read();
-        await _shellStream.FlushAsync();
-
-        _shellStream.WriteLine("options set --show-prompt=no");
-        await _shellStream.WaitDataAvailable();
-        _shellStream.Read();
-        await _shellStream.FlushAsync();
+        await _shellStream.FlushAsync(cancellationToken);
         
-        await _shellStream.WriteCommand("options set --output-format=json");
+        WriteCommand("options set --show-prompt=no");
+        await WaitDataAvailable();
+        _shellStream.Read();
+        
+        _ = StartReadLoop(cancellationToken);
+        
+        WriteCommand("options set --output-format=json");
+        await MessagesChannel.EnsureNextSuccess();
     }
     
     public async Task EnableProgressNotification()
-        => await _shellStream.WriteCommand("options set --notify-progress=yes");
-    
+    {
+        WriteCommand("options set --notify-progress=yes");
+        await MessagesChannel.EnsureNextSuccess();
+    }
+
     public async Task DisableProgressNotification()
-        => await _shellStream.WriteCommand("options set --notify-progress=no"); 
+    {
+        WriteCommand("options set --notify-progress=no");
+        await MessagesChannel.EnsureNextSuccess();
+    }
 
     public async Task ConnectIb()
-        => await _shellStream.WriteCommand("common connect-ib");
+    {
+        WriteCommand("common connect-ib");
+        await MessagesChannel.EnsureNextSuccess();
+    }
     
     public async Task LoadCfg(string path)
     {
-        await _shellStream.WriteCommand($"config load-cfg --file \"{path}\"");
+        WriteCommand($"config load-cfg --file \"{path}\"");
+        await MessagesChannel.EnsureNextSuccess();
     }
     
+    public void UpdateDbCfg()
+    {
+        WriteCommand("config update-db-cfg --dynamic-disable --server --session-terminate=force");
+    }
+
     public async Task LoadExtension(string path, string extensionName)
     {
-        await _shellStream.WriteCommand($"config load-cfg --file=\"{path}\" --extension=\"{extensionName}\"");
+        WriteCommand($"config load-cfg --file=\"{path}\" --extension=\"{extensionName}\"");
+        await MessagesChannel.EnsureNextSuccess();
+    }
+    
+    public void UpdateDbCfgExtension(string extensionName)
+    {
+        WriteCommand($"config update-db-cfg --extension=\"{extensionName}\" --dynamic-disable --server --session-terminate=force");
+    }
+    
+    public async Task DeleteExtension(string extensionName)
+    {
+        WriteCommand($"config extensions delete --extension=\"{extensionName}\"");
+        await MessagesChannel.EnsureNextSuccess();
+    }
+
+    public async Task DeleteAllExtensions()
+    {
+        WriteCommand("config extensions delete --all-extensions");
+        await MessagesChannel.EnsureNextSuccess();
     }
 
     public async Task<ExtensionInfo> GetExtension(string name)
-    {
-        var response = await _shellStream.WriteCommand($"config extensions properties get --extension={name}");
-        return JsonSerializer.Deserialize<ExtensionInfo>(response.First().Body.RootElement.ToString())!;
+    { 
+        WriteCommand($"config extensions properties get --extension={name}");
+        return await MessagesChannel.ReadNextMessage<ExtensionInfo>();
     }
 
     public async Task<List<ExtensionInfo>> GetAllExtensions()
     {
-        var response = await _shellStream.WriteCommand("config extensions properties get --all-extensions");
-        
-        return JsonSerializer
-            .Deserialize<List<ExtensionPropertiesMessage>>(response.First().Body.RootElement.ToString())!
-            .Select(i => i.Body)
-            .ToList();
+        WriteCommand("config extensions properties get --all-extensions");
+        var properties = await MessagesChannel.ReadNextMessage<List<ExtensionPropertiesMessage>>();
+        return properties.Select(c => c.Body).ToList();
     }
 
-    public async Task DisconnectIb()
-        => await _shellStream.WriteCommand("common disconnect-ib");
+    public void DisconnectIb()
+        => WriteCommand("common disconnect-ib");
 
-    public async Task Shutdown()
-        => await _shellStream.WriteCommand("common shutdown");
+    public void Shutdown()
+        => WriteCommand("common shutdown");
+
+    public async Task ReadMessagesTillSuccess(Action<DesignerAgentMessage> handler)
+    {
+        while (true)
+        {
+            var next = await MessagesChannel.EnsureNextNotError();
+            
+            if (next.Type == "success")
+                break;
+            
+            handler.Invoke(next);
+        }
+    }
+
+    private async Task WaitDataAvailable()
+    {
+        while (!_shellStream.DataAvailable)
+            await Task.Delay(100);
+    }
+
+    private void WriteCommand(string command)
+    {
+        _shellStream.WriteLine(command);
+    }
+
+    private async Task StartReadLoop(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await WaitDataAvailable();
+
+            var data = _shellStream.Read();
+
+            var response = JsonSerializer.Deserialize<DesignerAgentMessage[]>(data);
+        
+            if (response is null)
+                throw new Exception("Failed to deserialize designer agent response");
+
+            foreach (var message in response)
+                await MessagesChannel.Writer.WriteAsync(message, cancellationToken);
+        }
+    }
     
     public void Dispose()
     {
@@ -130,9 +208,12 @@ public class DesignerAgentClient : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
-        if (disposing)
-            _client.Dispose();
+        if (!disposing) 
+            return;
+        
+        _client.Dispose();
+        MessagesChannel.Writer.Complete();
     }
 }

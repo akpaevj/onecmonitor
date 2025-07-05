@@ -28,9 +28,11 @@
 @code
 {
     private string _title = string.Empty;
+    private readonly List<string> _additionalValidableProperties = [];
+    private MudForm Form { get; set; } = null!;
 
     public AppDbContext? Context { get; private set; }
-    public MudForm Form { get; set; } = null!;
+    public T? Model { get; set; }
     
     /// <summary>
     /// Идентификатор элемента
@@ -75,13 +77,25 @@
     public Func<IQueryable<T>, IQueryable<T>>? ModelSelector { get; set; }
     
     /// <summary>
-    /// Дополнительные действия при сохранении модели
+    /// Дополнительные действия перед проверкой модели
     /// </summary>
     [Parameter]
-    public EventCallback<T> OnSave { get; set; }
+    public EventCallback<T> BeforeValidation { get; set; }
     
     /// <summary>
-    /// Дополнительные действия при сохранении модели
+    /// Дополнительные действия после проверки модели
+    /// </summary>
+    [Parameter]
+    public EventCallback<T> AfterValidation { get; set; }
+    
+    /// <summary>
+    /// Дополнительные действия при сохранении модели, которая уже существует в БД
+    /// </summary>
+    [Parameter]
+    public EventCallback<T> OnUpdate { get; set; }
+    
+    /// <summary>
+    /// Дополнительные действия после сохранения модели
     /// </summary>
     [Parameter]
     public EventCallback<T> AfterSave { get; set; }
@@ -90,16 +104,13 @@
     /// Дополнительные действия при инициализации
     /// </summary>
     [Parameter]
-    public EventCallback<T> OnInitialize { get; set; }
+    public EventCallback<(T Model, AppDbContext Context)> OnInitialize { get; set; }
     
     /// <summary>
     /// Дополнительные действия при инициализации
     /// </summary>
     [Parameter]
     public Func<object, string, Task<IEnumerable<string>>>? Validation { get; set; }
-    
-    [SupplyParameterFromForm]
-    public T? Model { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -110,33 +121,16 @@
             Context = await ContextFactory.CreateDbContextAsync();
 
             if (SingleObject)
-            {
-                Model = await GetSingleObject() ?? new T();
-                
-                await OnInitialize.InvokeAsync(Model!);
-            }
+                Model = await GetSingleObject();
             else
             {
-                if (Id != Guid.Empty)
-                {
-                    Model = await GetModel();
-
-                    if (Model == null)
-                    {
-                        SnackBar.ShowError($"Элемент с идентификатором {Id} не найден");
-                        NavigateBack();
-                    }
-                }
-                else
-                {
-                    Model = new T();
-                }
-
-                await OnInitialize.InvokeAsync(Model!);
-
+                Model = await GetModel();
+                
                 if (Id != Guid.Empty)
                     _title = NameSelector(Model!);
             }
+            
+            await OnInitialize.InvokeAsync((Model!, Context));
         }
         catch (Exception e)
         {
@@ -147,73 +141,108 @@
     
     private async Task Save()
     {
+        await BeforeValidation.InvokeAsync(Model);
+        
         await Form.Validate();
 
-        if (!Form.IsValid)
-            return;
+        if (Validation != null)
+        {
+            foreach (var item in _additionalValidableProperties)
+            {
+                var errors = await Validation.Invoke(Model!, item);
+                var enumerable = errors.ToList();
 
+                var valid = enumerable.Count == 0;
+                
+                if (valid) 
+                    continue;
+                
+                Form.IsValid = false;
+                
+                enumerable.ForEach(c => SnackBar.ShowError(c));
+            }
+        }
+
+        if (!Form.IsValid)
+        {
+            SnackBar.ShowError("Объект не записан");
+            return;
+        }
+
+        await AfterValidation.InvokeAsync(Model);
+        
         try
         {
-            T? model;
-            
-            if (SingleObject)
-            {
-                model = await GetSingleObject();
+            var model = SingleObject ? await GetSingleObject(false) : await GetModel(false);
 
-                if (model == null)
-                {
-                    model = Model!;
-                    await OnSave.InvokeAsync(Model!);
-                    Context!.Set<T>().Add(Model!);
-                }
-                else
-                {
-                    Context!.Entry(model).CurrentValues.SetValues(Model!);
-                    await OnSave.InvokeAsync(model);
-                }
+            if (model != null)
+            {
+                Context!.Entry(model).CurrentValues.SetValues(Model!);
+                await OnUpdate.InvokeAsync(model);
             }
             else
-            {
-                if (Id == Guid.Empty)
-                {
-                    model = Model!;
-                    await OnSave.InvokeAsync(Model!);
-                    Context!.Set<T>().Add(Model!);
-                }
-                else
-                {
-                    model = await GetModel();
-                
-                    Context!.Entry(model!).CurrentValues.SetValues(Model!);
-                    await OnSave.InvokeAsync(model!);
-                }
-            }
-        
-            await Context.SaveChangesAsync();
-
-            await AfterSave.InvokeAsync(model!);
+                Context!.Entry(Model!).State = EntityState.Added;
             
-            NavigateBack();
+            await Context!.SaveChangesAsync();
+
+            await AfterSave.InvokeAsync(model ?? Model!);
+            
+            SnackBar.ShowSuccess("Объект записан", false);
+            
+            if (!SingleObject)
+                NavigateBack();
         }
         catch (Exception e)
         {
             SnackBar.ShowError(e);
         }
     }
-    
-    private async Task<T?> GetSingleObject()
-        => await (ModelSelector == null ? Context!.Set<T>() : ModelSelector
-                .Invoke(Context!.Set<T>()))
+
+    private async Task<T?> GetSingleObject(bool createNew = true)
+    {
+        var item = await (ModelSelector == null
+                ? Context!.Set<T>()
+                : ModelSelector
+                    .Invoke(Context!.Set<T>()))
             .FirstOrDefaultAsync();
-    
-    private async Task<T?> GetModel()
-        => await (ModelSelector == null ? Context!.Set<T>() : ModelSelector
-            .Invoke(Context!.Set<T>()))
+
+        if (item != null) 
+            return item;
+
+        if (!createNew) 
+            return null;
+        
+        item = new T();
+        Context.Set<T>().Add(item);
+
+        return item;
+
+    }
+
+    private async Task<T?> GetModel(bool createNew = true)
+    {
+        var item = await (ModelSelector == null ? Context!.Set<T>() : ModelSelector
+                .Invoke(Context!.Set<T>()))
             .FirstOrDefaultAsync(c => c.Id == Id);
+        
+        if (item != null) 
+            return item;
+        
+        if (!createNew) 
+            return null;
+        
+        item = new T();
+        Context.Set<T>().Add(item);
+
+        return item;
+    }
     
     private void NavigateBack()
         => NavigationManager.NavigateTo($"/{Route}");
 
     public void Dispose()
         => Context?.Dispose();
+
+    public void AddAdditionalValidableProperty(string name)
+        => _additionalValidableProperties.Add(name);
 }

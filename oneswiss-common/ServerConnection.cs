@@ -43,13 +43,13 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
                 await Reconnect(cancellationToken);
 
                 logger.LogTrace("Установлено соединение с сервером");
-                
+
                 await afterConnectCallback();
             }
-            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.NotConnected)
+            catch (Exception ex)
             {
-                logger.LogTrace("Ошибка установки соединения с сервером");
-                await Task.Delay(10000, cancellationToken);
+                logger.LogError(ex, "Ошибка подключения к серверу. Следующая попытка подключения будет выполнена через 10 сек");
+                await Task.Delay(10 * 1000, cancellationToken);
             }
 
             if (Socket?.Connected == true)
@@ -80,16 +80,6 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(10));
 
-        try
-        {
-            await Socket.ConnectAsync(endPoint, cts.Token);
-        }
-        catch
-        {
-            // ignore
-        }
-
-        if (!Socket.Connected)
-            throw new SocketException((int)SocketError.NotConnected);
+        await Socket.ConnectAsync(endPoint, cts.Token);
     }
 }

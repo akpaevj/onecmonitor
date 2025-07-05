@@ -1,6 +1,7 @@
 using OneScript.Contexts;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.DTO.MaintenanceTasks;
+using OneSwiss.V8.Designer.Agent;
 using OneSwiss.V8.Designer.Batch;
 using OneSwiss.V8.Platform;
 using OneSwiss.V8.Platform.RemoteAdministration;
@@ -19,9 +20,20 @@ public class MaintenanceStepContext
     public List<MaintenanceStepLogItemDto> Log { get; set; } = [];
     public Rac Rac { get; set; } = null!;
     public V8Platform Platform { get; set; } = null!;
+    public bool UseDesignerAgent { get; set; }
+    public DesignerAgentClient? DesignerAgentClient { get; set; }
+    public CancellationToken CancellationToken { get; set; }
     
     public OnecV8BatchMode GetBatchDesigner() 
         => new(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}", InfoBase.InfoBaseName);
+
+    public OnecV8BatchMode StartDesignerAgent(string baseDirectoryPath)
+    {
+        var batch = new OnecV8BatchMode(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}", InfoBase.InfoBaseName);
+        batch.StartSshAgent(baseDirectoryPath);
+
+        return batch;
+    }
                             
     public OnecV8BatchMode GetBatchEnterprise() 
         => new(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}", InfoBase.InfoBaseName, false);

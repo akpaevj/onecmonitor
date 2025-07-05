@@ -111,8 +111,8 @@ namespace OneSwiss.Agent.Services
 
         private void ApplySettings(SettingsDto settingsDto, CancellationToken cancellationToken)
         {
-            _techLogRepositoryManager.SetSettings(settingsDto.TechLogSettings);
-            _eventLogRepositoryManager.SetSettings(settingsDto.EventLogSettings);
+            _techLogRepositoryManager.UpdateSettings(settingsDto.TechLogSettings);
+            _eventLogRepositoryManager.UpdateSettings(settingsDto.EventLogSettings);
         }
         
         private async Task HandleSettings(Message message, CancellationToken cancellationToken)

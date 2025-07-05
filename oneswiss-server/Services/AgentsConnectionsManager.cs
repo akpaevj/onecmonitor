@@ -28,17 +28,24 @@ namespace OneSwiss.Server.Services
             {
                 _socket.Listen();
 
-                var client = await _socket.AcceptAsync(stoppingToken);
+                try
+                {
+                    var client = await _socket.AcceptAsync(stoppingToken);
 
-                var agentConnection = new AgentConnection(
-                    client,
-                    serviceProvider,
-                    serviceProvider.GetRequiredService<ILogger<AgentConnection>>());
+                    var agentConnection = new AgentConnection(
+                        client,
+                        serviceProvider,
+                        serviceProvider.GetRequiredService<ILogger<AgentConnection>>());
                 
-                agentConnection.AgentConnected += AgentConnection_Connected;
-                agentConnection.AgentDisconnected += AgentConnection_Disconnected;
+                    agentConnection.AgentConnected += AgentConnection_Connected;
+                    agentConnection.AgentDisconnected += AgentConnection_Disconnected;
 
-                agentConnection.Listen(stoppingToken);
+                    agentConnection.Listen(stoppingToken);
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e, "Ошибка обработчики входящего подключения");
+                }
             }
 
             _socket.Close();
@@ -59,7 +66,7 @@ namespace OneSwiss.Server.Services
             await using var scope = serviceProvider.CreateAsyncScope();
             await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             
-            var dbAgents = await dbContext.Agents.ToListAsync(cancellationToken);
+            var dbAgents = await dbContext.Agents.AsNoTracking().ToListAsync(cancellationToken);
             
             return GetActiveAgentsConnections(dbAgents);
         }
@@ -77,7 +84,7 @@ namespace OneSwiss.Server.Services
             lock (_connections)
                 _connections.Add(agentConnection);
 
-            if (!agentConnection.AgentInstance!.MainConnection) 
+            if (agentConnection.AgentInstance?.MainConnection != true) 
                 return;
 
             SendAgentStateChangedNotification();
@@ -93,7 +100,7 @@ namespace OneSwiss.Server.Services
             agentConnection.AgentConnected -= AgentConnection_Connected;
             agentConnection.AgentDisconnected -= AgentConnection_Disconnected;
 
-            if (!agentConnection.AgentInstance!.MainConnection) 
+            if (agentConnection.AgentInstance?.MainConnection != true) 
                 return;
 
             SendAgentStateChangedNotification();

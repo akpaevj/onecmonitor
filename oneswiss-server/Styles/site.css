@@ -34,3 +34,7 @@ body:has(div.diagram-canvas:hover)
     overflow-y: scroll;
     width: 100%; 
 }
+
+.h-100 {
+    height: 100%;
+}

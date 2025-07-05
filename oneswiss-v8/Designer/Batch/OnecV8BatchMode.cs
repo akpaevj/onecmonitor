@@ -70,6 +70,17 @@ public sealed class OnecV8BatchMode : IDisposable
         Start(waitForExit);
     }
     
+    public string[] GetExtensionsList(string user, string password, string accessCode = "", bool waitForExit = false)
+    {
+        AddBatchModeCommonArgs(user, password, accessCode);
+        
+        _arguments.Add("/DumpDBCfgList -AllExtensions");
+        
+        Start(waitForExit);
+
+        return OutFileContent.Split('\n').Select(c => c.Trim()).ToArray();
+    }
+    
     public void LoadExtension(string extensionName, string cfePath, string user, string password, string accessCode = "", bool waitForExit = false)
     {
         AddBatchModeCommonArgs(user, password, accessCode);

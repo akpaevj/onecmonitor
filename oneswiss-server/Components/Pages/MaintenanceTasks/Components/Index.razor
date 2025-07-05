@@ -8,25 +8,32 @@
 @inject AgentsConnectionsManager AgentsConnectionsManager
 @rendermode InteractiveServer
 
-<DatabaseObjectsGrid @ref="_table" T="MaintenanceTask"
-                     NameSelector="task => task.Description"
-                     Route="@Route"
-                     Title="@Title"
-                     ItemsSelector="ItemsSelector">
+<DatabaseObjectsTable @ref="_table" TModel="MaintenanceTask" TViewModel="MaintenanceTask"
+                      NameSelector="@(task => task.Description)"
+                      Route="@Route"
+                      Title="@Title"
+                      ItemsSelector="ItemsSelector">
     <TableActionsContent>
         <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="CreateFromTemplate" Class="mb-3">Из шаблона</MudButton>
     </TableActionsContent>
     <ColumnsContent>
-        <PropertyColumn Title="Описание" Property="@(arg => arg.Description)"/>
-        @{
-            if (!IsTemplate)
-            {
-                <PropertyColumn Title="Время начала" Property="@(arg => arg.StartDateTime)"/>
-                <PropertyColumn Title="Есть ошибки" Property="@(arg => arg.IsFaulted)" CellClassFunc="@(arg => arg.IsFaulted ? "mud-error-text" : "mud-success-text")"/>
-                <PropertyColumn Title="Время окончания" Property="@(arg => arg.FinishDateTime)"/>
-            }
+        <MudTh>Описание</MudTh>
+        @if (!IsTemplate)
+        {
+            <MudTh>Время начала</MudTh>
+            <MudTh>Есть ошибки</MudTh>
+            <MudTh>Время окончания</MudTh>
         }
     </ColumnsContent>
+    <RowTemplate>
+        <MudTd DataLabel="Описание">@context.Description</MudTd>
+        @if (!IsTemplate)
+        {
+            <MudTd DataLabel="Время начала">@context.StartDateTime</MudTd>
+            <MudTd Class="@(context.IsFaulted ? "mud-error-text" : "mud-success-text")" DataLabel="Есть ошибки">@context.IsFaulted</MudTd>
+            <MudTd DataLabel="Время окончания">@context.FinishDateTime</MudTd>
+        }
+    </RowTemplate>
     <RowActionsContent>
         @if (!context.IsTemplate)
         {
@@ -45,10 +52,11 @@
             <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => _table.DeleteItem(context))" Color="Color.Error"/>
         }
     </RowActionsContent>
-</DatabaseObjectsGrid>
+</DatabaseObjectsTable>
+
 @code
 {
-    private DatabaseObjectsGrid<MaintenanceTask> _table = null!;
+    private DatabaseObjectsTable<MaintenanceTask, MaintenanceTask> _table = null!;
     
     [Parameter] 
     public bool IsTemplate { get; set; }
@@ -79,9 +87,9 @@
         var task = await context.MaintenanceTasks
             .AsNoTracking()
             .Include(c => c.Steps).ThenInclude(c => c.File)
-            .Include(c => c.InfoBases).ThenInclude(c => c.Credentials)
-            .Include(c => c.InfoBases).ThenInclude(c => c.Cluster).ThenInclude(c => c.Agent)
-            .Include(c => c.InfoBases).ThenInclude(c => c.Cluster).ThenInclude(c => c.Credentials)
+            .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).ThenInclude(c => c.Credentials)
+            .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).ThenInclude(c => c.Cluster).ThenInclude(c => c.Agent)
+            .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).ThenInclude(c => c.Cluster).ThenInclude(c => c.Credentials)
             .FirstOrDefaultAsync(c => c.Id == item.Id);
             
         var connections = await AgentsConnectionsManager.GetActiveAgentsConnections();

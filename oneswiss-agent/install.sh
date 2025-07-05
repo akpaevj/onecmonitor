@@ -1,13 +1,13 @@
 #!/bin/bash
-onecmonitorLogPath=/var/log/onecmonitor
-techLogPath=$onecmonitorLogPath/techlog
-onecmonitorUserName=onecmonitor
+logPath=/var/log/oneswiss
+techLogPath=$logPath/techlog
+userName=oneswiss
 
-if [[ $(getent passwd $onecmonitorUserName) = "" ]]; then
-  echo 'Создание пользователя onecmonitor'
-  sudo adduser --system --no-create-home --disabled-login $onecmonitorUserName
+if [[ $(getent passwd userName) = "" ]]; then
+  echo 'Создание пользователя oneswiss'
+  sudo adduser --system --no-create-home --disabled-login $userName
 else
-  echo "Пользователь $onecmonitorUserName уже существует"
+  echo "Пользователь $userName уже существует"
 fi
 
 echo ''
@@ -20,7 +20,7 @@ else
   
   echo "Предоставить полные права (777) на каталог сбора технологического журнала?
 Если 'n', то запись журнала клиентских приложений выполняться в него не будет (770),
-а владельцем каталога будет назначен пользователь onecmonitor и группа пользователя, запускающего службу агента сервера 1С"
+а владельцем каталога будет назначен пользователь oneswiss и группа пользователя, запускающего службу агента сервера 1С"
   
   read -p "По умолчанию - Y. Y/n? " yn
   if [ "yn" != "${yn#[Yy]}" ] ;then 
@@ -34,12 +34,12 @@ else
      grp1c='grp1cv8'
    fi
     
-   sudo chown "$onecmonitorUserName:$grp1c" "$techLogPath" 
+   sudo chown "$userName:$grp1c" "$techLogPath" 
    sudo chmod 770 "$techLogPath" 
   fi
 fi
 
 echo ''
-echo "Регистрация службы OnecMonitor Agent"
-sudo systemctl link "$(dirname "$0")/onecmonitor-agent.service"
-sudo systemctl enable onecmonitor-agent.service
+echo "Регистрация службы OneSwiss Agent"
+sudo systemctl link "$(dirname "$0")/oneswiss-agent.service"
+sudo systemctl enable oneswiss-agent.service

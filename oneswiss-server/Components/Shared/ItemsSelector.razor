@@ -1,26 +1,35 @@
-@using System.Diagnostics.CodeAnalysis
-@using System.Linq.Expressions
+
 @typeparam T where T : OneSwiss.Server.Models.DatabaseObject
 
 <MudCard>
-    <MudCardHeader Class="mud-theme-tertiary">
+    <MudCardHeader Class="mud-theme-info">
         <CardHeaderContent>@Title</CardHeaderContent>
     </MudCardHeader>
     <MudCardContent>
-        <MudList T="T" 
-                 SelectedValues="SelectedValues" 
-                 SelectedValuesChanged="SelectedValuesChanged" 
-                 SelectionMode="SelectionMode.MultiSelection">
-            @foreach (var item in Items)
-            {
-                <MudListItem Text="@NameSelector(item)" Value="@item"></MudListItem>
-            }
-        </MudList>
+        @if (Items.Count == 0)
+        {
+            <MudText Class="" Align="Align.Center">Нет данных для выбора</MudText>
+        }
+        else
+        {
+            <MudList T="T"
+                     SelectedValues="_selectedValues"
+                     SelectedValuesChanged="SelectedValuesChangedInternal"
+                     SelectionMode="SelectionMode.MultiSelection"
+                     Color="Color.Primary">
+                @foreach (var item in Items)
+                {
+                    <MudListItem Text="@NameSelector(item)" Value="@item"></MudListItem>
+                }
+            </MudList>
+        }
     </MudCardContent>
 </MudCard>
 
 @code {
 
+    private IReadOnlyCollection<T> _selectedValues = [];
+    
     [Parameter] 
     public string Title { get; set; } = string.Empty;
     
@@ -29,23 +38,21 @@
 
     [Parameter] 
     public Func<T, string> NameSelector { get; set; } = null!;
-    
-    [Parameter]
-    public IReadOnlyCollection<T>? SelectedValues { get; set; }
-    
-    [Parameter]
-    public EventCallback<IReadOnlyCollection<T>?> SelectedValuesChanged { get; set; }
-    
-    [Parameter]
-    [Category("Validation")]
-    public Expression<Func<T>>? For { get; set; }
 
-    /// <summary>
-    /// Indicates whether the <see cref="P:MudBlazor.MudFormComponent`2.For" /> property is <c>null</c>.
-    /// </summary>
-    [MemberNotNullWhen(false, "For")]
-    public bool IsForNull
+    [Parameter] 
+    public List<T> SelectedValues { get; set; } = [];
+    
+    [Parameter]
+    public EventCallback<List<T>> SelectedValuesChanged { get; set; }
+
+    protected override void OnInitialized()
     {
-        [MemberNotNullWhen(false, "For")] get => this.For == null;
+        _selectedValues = SelectedValues;
+    }
+
+    private async Task SelectedValuesChangedInternal(IReadOnlyCollection<T>? arg)
+    {
+        SelectedValues = arg?.ToList() ?? [];
+        await SelectedValuesChanged.InvokeAsync(SelectedValues);
     }
 }

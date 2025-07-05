@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace OnecMonitor.Server.Migrations
+namespace OneSwiss.Server.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration
@@ -364,21 +364,21 @@ namespace OnecMonitor.Server.Migrations
                 name: "InfoBaseMaintenanceTask",
                 columns: table => new
                 {
-                    InfoBasesId = table.Column<string>(type: "TEXT", nullable: false),
-                    MaintenanceTasksId = table.Column<string>(type: "TEXT", nullable: false)
+                    InfoBaseId = table.Column<string>(type: "TEXT", nullable: false),
+                    MaintenanceTaskId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_InfoBaseMaintenanceTask", x => new { x.InfoBasesId, x.MaintenanceTasksId });
+                    table.PrimaryKey("PK_InfoBaseMaintenanceTask", x => new { x.InfoBaseId, x.MaintenanceTaskId });
                     table.ForeignKey(
-                        name: "FK_InfoBaseMaintenanceTask_InfoBases_InfoBasesId",
-                        column: x => x.InfoBasesId,
+                        name: "FK_InfoBaseMaintenanceTask_InfoBases_InfoBaseId",
+                        column: x => x.InfoBaseId,
                         principalTable: "InfoBases",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_InfoBaseMaintenanceTask_MaintenanceTasks_MaintenanceTasksId",
-                        column: x => x.MaintenanceTasksId,
+                        name: "FK_InfoBaseMaintenanceTask_MaintenanceTasks_MaintenanceTaskId",
+                        column: x => x.MaintenanceTaskId,
                         principalTable: "MaintenanceTasks",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -439,9 +439,9 @@ namespace OnecMonitor.Server.Migrations
                 column: "DbmsId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_InfoBaseMaintenanceTask_MaintenanceTasksId",
+                name: "IX_InfoBaseMaintenanceTask_MaintenanceTaskId",
                 table: "InfoBaseMaintenanceTask",
-                column: "MaintenanceTasksId");
+                column: "MaintenanceTaskId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_InfoBases_ClusterId",

@@ -1,29 +1,29 @@
 @page "/files/{id:guid}"
 @page "/files/create"
-@using Microsoft.EntityFrameworkCore
+@using FluentValidation
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
-@inject NavigationManager NavigationManager
+@using OneSwiss.Server.Components.Shared
 @inject ILogger<Edit> Logger
-@inject IDbContextFactory<AppDbContext> ContextFactory
 @inject FilesProvider FilesProvider
-@implements IDisposable
 
-<PageTitle>@_title</PageTitle>
-
-<h1 Class="mb-3">@_title</h1>
-
-<EditForm Model="Model!" OnSubmit="OnSubmit">
-    <DataAnnotationsValidator/>
-
-    <MudButton Disabled="isLoading" Variant="Variant.Filled" ButtonType="ButtonType.Submit" Color="Color.Primary" Class="mb-3">Сохранить</MudButton>
-
+<EditDatabaseObject @ref="_editor" T="File"
+                    Id="Id"
+                    NameSelector="@(arg => arg.Name)"
+                    Route="files"
+                    Title="Новый файл"
+                    Validation="_validator.ValidateValue"
+                    AfterValidation="AfterValidation">
     <MudStack>
-        <MudTextField Class="mb-3" For="@(() => Model!.Name)" @bind-Value="@Model!.Name"></MudTextField>
-        <MudTextField Class="mb-3" For="@(() => Model!.Version)" @bind-Value="@Model!.Version"></MudTextField>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" @bind-Value="@_editor.Model!.Name"></MudTextField>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Version)" @bind-Value="@_editor.Model!.Version"></MudTextField>
         @if (Id == Guid.Empty)
         {
-            <MudFileUpload T="IBrowserFile" @bind-Files="_file" OnFilesChanged="OnFileChanged" Disabled="isLoading">
+            <MudFileUpload T="IBrowserFile" For="@(() => _file)" 
+                           @bind-Files="_file"
+                           @bind-Files:after="AfterBindFiles"
+                           Disabled="isLoading"
+                           Accept=".cf, .cfe, .cfu, .ospx, .epf">
                 <ActivatorContent>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
@@ -51,163 +51,84 @@
             </MudFileUpload>
         }
     </MudStack>
-
-</EditForm>
+</EditDatabaseObject>
 
 @code
 {
-    private AppDbContext? _context;
-    private ValidationMessageStore? _messageStore;
-    
-    private string _title = "Новый файл";
+    private readonly Validator _validator = new();
+    private EditDatabaseObject<File> _editor = null!;
+ 
     IBrowserFile? _file;
-    
-    private int _loaded = 0;
-    private bool isLoading = false;
+    private int _loaded;
+    private bool isLoading;
     
     [Parameter]
     public Guid Id { get; set; }
     
-    [SupplyParameterFromForm]
-    private File? Model { get; set; }
-
-    protected override async Task OnInitializedAsync()
+    class Validator : ModelValidator<File>
     {
-        _context = await ContextFactory.CreateDbContextAsync();
-        
-        if (Id != Guid.Empty)
+        public Validator()
         {
-            Model = await _context!.Files.FindAsync(Id);
-
-            if (Model == null)
-                NavigateBack();
+            RuleFor(c => c.Name)
+                .NotEmpty()
+                .WithMessage("Не заполнено наименование");
+            
+            RuleFor(c => c.Version)
+                .NotEmpty()
+                .WithMessage("Не указана версия");
+            
+            RuleFor(c => c.DataPath)
+                .NotEmpty()
+                .WithMessage("Прикрепите файл")
+                .WithName("_file");
         }
-        else
-            Model = new File();
-
-        if (Id != Guid.Empty)
-            _title = Model!.Name;
     }
-    
-    private async Task OnSubmit(EditContext editContext)
+
+    private void AfterBindFiles()
     {
-        _messageStore ??= new ValidationMessageStore(editContext);
-        _messageStore.Clear();
+        var extension = Path.GetExtension(_file!.Name);
+            
+        if (extension.Equals(".CF", StringComparison.InvariantCultureIgnoreCase))
+            _editor.Model!.FileType = FileType.Cf;
+        else if (extension.Equals(".CFE", StringComparison.InvariantCultureIgnoreCase))
+            _editor.Model!.FileType = FileType.Cfe;
+        else if (extension.Equals(".CFU", StringComparison.InvariantCultureIgnoreCase))
+            _editor.Model!.FileType = FileType.Cfu;
+        else if (extension.Equals(".EPF", StringComparison.InvariantCultureIgnoreCase))
+            _editor.Model!.FileType = FileType.Epf;
+        else if (extension.Equals(".OSPX", StringComparison.InvariantCultureIgnoreCase))
+            _editor.Model!.FileType = FileType.Ospx;
         
-        var isValid = true;
-        
-        if (string.IsNullOrEmpty(Model.Name))
+        _editor.Model!.Name = Path.GetFileNameWithoutExtension(_file!.Name);
+    }
+
+    private async Task AfterValidation(File obj)
+    {
+        var fileName = $"{Guid.NewGuid()}.{obj.FileType.ToString().Replace(".", "").ToLower()}";
+        await using var stream = FilesProvider.OpenDataStream(fileName);
+            
+        await using var uploadStream = _file!.OpenReadStream(long.MaxValue);
+
+        var copied = 0L;
+        var all = uploadStream.Length;
+
+        var buffer = new byte[86400];
+
+        isLoading = true;
+            
+        while (copied < all)
         {
-            _messageStore.Add(
-                () => Model!.Name,
-                "Укажите наименование"
-            );
-            isValid = false;
+            var read = await uploadStream.ReadAsync(buffer, 0, buffer.Length);
+            copied += read;
+
+            await stream.WriteAsync(buffer, 0, read);
+
+            _loaded = (int)(copied / (double)all * 100.0);
+            StateHasChanged();
         }
-        if (string.IsNullOrEmpty(Model.Version))
-        {
-            _messageStore.Add(
-                () => Model!.Version,
-                "Укажите версию"
-            );
-            isValid = false;
-        }
-        if (_file == null)
-        {
-            _messageStore.Add(
-                () => Model!.DataPath,
-                "Прикрепите файл"
-            );
-            isValid = false;
-        }
-        
-        editContext.NotifyValidationStateChanged();
 
-        var isNew = Id == Guid.Empty;
-        
-        if (Id == Guid.Empty)
-        {
-            Model.Id = Guid.NewGuid();
-            
-            // save file
-            var extension = Path.GetExtension(_file!.Name);
-            
-            if (extension.Equals(".CF", StringComparison.InvariantCultureIgnoreCase))
-                Model.FileType = FileType.Cf;
-            else if (extension.Equals(".CFE", StringComparison.InvariantCultureIgnoreCase))
-                Model.FileType = FileType.Cfe;
-            else if (extension.Equals(".CFU", StringComparison.InvariantCultureIgnoreCase))
-                Model.FileType = FileType.Cfu;
-            else if (extension.Equals(".EPF", StringComparison.InvariantCultureIgnoreCase))
-                Model.FileType = FileType.Epf;
-            else if (extension.Equals(".OSPX", StringComparison.InvariantCultureIgnoreCase))
-                Model.FileType = FileType.Ospx;
-            else
-            {
-                _messageStore.Add(
-                    () => Model!.DataPath,
-                    "Прикрепите файл"
-                );
-                isValid = false;
-            }
-            
-            if (!isValid)
-                return;
-            
-            var fileName = $"{Model.Id}{extension}";
-            await using var stream = FilesProvider.OpenDataStream(fileName);
-            
-            await using var uploadStream = _file.OpenReadStream(long.MaxValue);
-
-            var copied = 0L;
-            var all = uploadStream.Length;
-
-            var buffer = new byte[86400];
-
-            isLoading = true;
-            
-            while (copied < all)
-            {
-                var read = await uploadStream.ReadAsync(buffer, 0, buffer.Length);
-                copied += read;
-
-                await stream.WriteAsync(buffer, 0, read);
-
-                _loaded = (int)(copied / (double)all * 100.0);
-                StateHasChanged();
-            }
-
-            isLoading = false;
+        isLoading = false;
                 
-            Model.DataPath = fileName;
-        }
-        
-        try
-        {
-            if (isNew)
-                _context!.Files.Add(Model!);
-            else
-                _context!.Entry(Model!).CurrentValues.SetValues(Model!);
-
-            await _context!.SaveChangesAsync();
-            NavigateBack();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Ошибка при сохранении");
-        }
-    }
-    
-    private void NavigateBack()
-        => NavigationManager.NavigateTo("/files");
-
-    private void OnFileChanged(InputFileChangeEventArgs obj)
-    {
-        Model!.Name = Path.GetFileNameWithoutExtension(obj.File.Name);
-    }
-
-    public void Dispose()
-    {
-        _context?.Dispose();
+        obj.DataPath = fileName;
     }
 }

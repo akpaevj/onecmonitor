@@ -2,25 +2,30 @@
 @using OneSwiss.Common.Extensions
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
 @inject NavigationManager NavManager
+@inject AgentsConnectionsManager AgentsConnectionsManager
 @rendermode InteractiveServer
 
-<DatabaseObjectsTable @ref="_table" T="TechLogSeance" 
+<DatabaseObjectsTable @ref="_table" TModel="TechLogSeance" TViewModel="TechLogSeance" 
                       NameSelector="arg => arg.Description" 
                       Route="techlog/seances" 
-                      Title="Сеансы сбора технологического журнала">
+                      Title="Сеансы сбора технологического журнала"
+                      AfterDelete="AfterDelete">
     <ColumnsContent>
         <MudTh>Описание</MudTh>
-        <MudTh>Режим</MudTh>
+        <MudTh>Режим запуска</MudTh>
         <MudTh>Начало</MudTh>
         <MudTh>Длительность</MudTh>
+        <MudTh></MudTh>
     </ColumnsContent>
     <RowTemplate>
         <MudTd DataLabel="Описание">@context.Description</MudTd>
-        <MudTd DataLabel="Режим">@context.StartMode.GetDisplay()</MudTd>
+        <MudTd DataLabel="Режим запуска">@context.StartMode.GetDisplay()</MudTd>
         @if (context.StartMode == TechLogSeanceStartMode.Monitor)
         {
-            <MudTd @colspan="2"></MudTd>
+            <MudTd DataLabel="Время начала">@context.StartDateTime</MudTd>
+            <MudTd DataLabel="Длительность"></MudTd>
         }
         else
         {
@@ -40,5 +45,11 @@
 </DatabaseObjectsTable>
 
 @code {
-    private DatabaseObjectsTable<TechLogSeance> _table = null!;
+    private DatabaseObjectsTable<TechLogSeance, TechLogSeance> _table = null!;
+
+    private async Task AfterDelete(TechLogSeance obj)
+    {
+        await AgentsConnectionsManager.RaiseUpdateSettings(CancellationToken.None);
+    }
+
 }

@@ -77,8 +77,8 @@
             if (Id != Guid.Empty)
             {
                 model!.CredentialsId = Model!.CredentialsId;
-                model!.PublishAddress = Model!.PublishAddress;
-                model!.Name = Model!.Name;
+                model.PublishAddress = Model!.PublishAddress;
+                model.Name = Model!.Name;
                 
                 await _context!.SaveChangesAsync();
                 NavigateBack();

@@ -1,12 +1,12 @@
 [Unit]
-Description=OnecMonitor Agent
+Description=OneSwiss Agent
 Requires=network.target
 
 [Service]
 Type=exec
-User=onecmonitor
+User=oneswiss
 
-ExecStart=/opt/onecmonitor-agent/onecmonitor-agent
+ExecStart=/opt/oneswiss-agent/oneswiss-agent
 Restart=always
 RestartSec=1
 

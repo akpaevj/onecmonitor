@@ -172,6 +172,7 @@ namespace OneSwiss.Server.Services
             await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             
             var agent = await dbContext.Agents
+                .AsNoTracking()
                 .Include(c => c.TechLogSeances).ThenInclude(c => c.Templates)
                 .FirstOrDefaultAsync(c => c.Id == AgentInstance!.Id, cancellationToken);
 
@@ -206,7 +207,7 @@ namespace OneSwiss.Server.Services
 
             try
             {
-                var foundItem = await dbContext.Agents.FirstOrDefaultAsync(c => c.Id == AgentInstance.Id, cancellationToken);
+                var foundItem = await dbContext.Agents.AsNoTracking().FirstOrDefaultAsync(c => c.Id == AgentInstance.Id, cancellationToken);
 
                 if (foundItem == null)
                 {

@@ -1,76 +1,30 @@
-@page "/errorloggingservice/list"
-@using System.Text.Json
-@using Microsoft.EntityFrameworkCore
-@using OneSwiss.Server.Dto.ErrorLoggingService
-@using OneSwiss.Server.Extensions
-@using OneSwiss.Server.Helpers
+@page "/errorloggingservice"
 @using OneSwiss.Server.Models
-@inject NavigationManager NavManager
-@inject IDialogService DialogService
-@inject IDbContextFactory<AppDbContext> ContextFactory
+@using OneSwiss.Server.Components.Shared
 @rendermode InteractiveServer
 
-<PageTitle>Журнал сервиса регистрации ошибок</PageTitle>
-
-<h1 Class="mb-3">Журнал сервиса регистрации ошибок</h1>
-
-<MudDataGrid T="ErrorReportViewModel" Items="@_items" RowClick="@(args => NavManager.NavigateTo($"errorloggingservice/{args.Item.Id}"))">
-    <Columns>
-        <PropertyColumn Property="@(arg => arg.Date)"/>
-        <PropertyColumn Property="@(arg => arg.Configuration)"/>
-        <PropertyColumn Property="@(arg => arg.PlatformVersion)"/>
-        <PropertyColumn Property="@(arg => arg.UserName)"/>
-        <TemplateColumn>
-            <CellTemplate>
-                <MudStack Row>
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteItem(context.Item!))" Color="Color.Error" />
-                </MudStack>
-            </CellTemplate>
-        </TemplateColumn>
-    </Columns>
-</MudDataGrid>
+<DatabaseObjectsTable TModel="ErrorReport" TViewModel="ErrorReportViewModel"
+                      NameSelector="@(_ => "отчет об ошибке")"
+                      Route="errorloggingservice"
+                      Title="Журнал сервиса регистрации ошибок"
+                      ItemsSelector="ItemsSelector"
+                      DisableTableActions="true">
+    <ColumnsContent>
+        <MudTh>Дата</MudTh>
+        <MudTh>Конфигурация</MudTh>
+        <MudTh>Версия платформы</MudTh>
+        <MudTh>Пользователь</MudTh>
+    </ColumnsContent>
+    <RowTemplate>
+        <MudTd DataLabel="Дата">@context.Date</MudTd>
+        <MudTd DataLabel="Конфигурация">@context.Configuration</MudTd>
+        <MudTd DataLabel="Версия платформы">@context.PlatformVersion</MudTd>
+        <MudTd DataLabel="Пользователь">@context.UserName</MudTd>
+    </RowTemplate>
+</DatabaseObjectsTable>
 
 @code
 {
-    List<ErrorReportViewModel> _items = [];
-
-    protected override async Task OnInitializedAsync()
-    {
-        await using var context = await ContextFactory.CreateDbContextAsync();
-        var items = await context.ErrorReports.AsNoTracking().ToListAsync();
-
-        _items = items
-            .Select(c =>
-            {
-                var reportRoot = JsonSerializer.Deserialize<ReportRoot>(c.Report, ErrorReportsHelper.ReportSerializerOptions);
-                
-                return new ErrorReportViewModel
-                {
-                    Id = c.Id,
-                    Configuration = reportRoot!.ConfigInfo.Name,
-                    ConfigurationVersion = reportRoot.ConfigInfo.Version,
-                    Date = reportRoot.Time,
-                    PlatformVersion = reportRoot.ServerInfo.AppVersion,
-                    UserName = reportRoot.SessionInfo.UserName
-                };
-            })
-            .OrderByDescending(c => c.Date)
-            .ToList();
-    }
-    
-    async Task DeleteItem(ErrorReportViewModel item)
-    {
-        await DialogService.ShowItemDeletingDialog(new ErrorReport{ Id = item.Id }, "отчёт об ошибке");
-        StateHasChanged();
-    }
-    
-    public class ErrorReportViewModel
-    {
-        public Guid Id { get; set; }
-        public DateTime Date { get; set; }
-        public string Configuration { get; set; } = string.Empty;
-        public string ConfigurationVersion { get; set; } = string.Empty;
-        public string PlatformVersion { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-    }
+    private static IQueryable<ErrorReport> ItemsSelector(IQueryable<ErrorReport> arg)
+        => arg.OrderByDescending(c => c.CreatedAt);
 }

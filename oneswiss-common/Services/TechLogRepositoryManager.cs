@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Hosting;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.Models;
 using OneSwiss.Common.Storage;
@@ -11,7 +12,7 @@ public class TechLogRepositoryManager
 
     public EventHandler<TechLogSettingsDto>? SettingsChanged;
 
-    public void SetSettings(TechLogSettingsDto settings)
+    public void UpdateSettings(TechLogSettingsDto settings)
     {
         Settings = settings;
         SettingsChanged?.Invoke(this, Settings);

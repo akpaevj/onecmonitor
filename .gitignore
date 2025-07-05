@@ -367,5 +367,7 @@ oneswiss-server/om-server*
 oneswiss-agent/om-agent*
 oneswiss-server/wwwroot/
 oneswiss-server/Data/*
+oneswiss-server/appsettings.Development.json
+oneswiss-agent/appsettings.Development.json
 Publish/
 .idea/

@@ -3,26 +3,26 @@
 @rendermode InteractiveServer
 
 <MudNavMenu>
-    <MudNavGroup Title="Обслуживание" Icon="@Icons.Material.Filled.DataArray" IconColor="Color.Primary" Expanded="true">
+    <MudNavLink Href="" Class="mt-1 mb-1" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Success" Match="NavLinkMatch.All">Агенты</MudNavLink>
+    <MudNavGroup Class="mb-1" Title="Обслуживание" Icon="@Icons.Material.Filled.DataArray" IconColor="Color.Primary">
         <MudNavLink Href="clusters">Кластеры и ИБ</MudNavLink>
         <MudNavLink Href="files">Конфигурации обработки и скрипты</MudNavLink>
         <MudNavLink Href="/maintenancetasks" ForceLoad="true">Задачи обслуживания</MudNavLink>
         <MudNavLink Href="/maintenancetaskstemplates" ForceLoad="true">Шаблоны задач обслуживания</MudNavLink>
     </MudNavGroup>
-    <MudNavGroup Title="Технологический журнал" Icon="@Icons.Material.Filled.Task" IconColor="Color.Warning" Expanded="true">
+    <MudNavGroup Class="mb-1" Title="Технологический журнал" Icon="@Icons.Material.Filled.Task" IconColor="Color.Warning">
         <MudNavLink Href="techlog/settings">Настройки</MudNavLink>
         <MudNavLink Disabled="@_techLogDisabled" Href="/techlog/seances">Сеансы сбора</MudNavLink>
         <MudNavLink Disabled="@_techLogDisabled" Href="/techlog/templates">Шаблоны</MudNavLink>
     </MudNavGroup>
-    <MudNavGroup Title="Журнал регистрации" Icon="@Icons.Material.Filled.List"  IconColor="Color.Info" Expanded="true">
+    <MudNavGroup Class="mb-1" Title="Журнал регистрации" Icon="@Icons.Material.Filled.List" IconColor="Color.Info">
         <MudNavLink Href="eventLog/settings">Настройки</MudNavLink>
     </MudNavGroup>
-    <MudNavGroup Title="Сервис регистрации ошибок" Icon="@Icons.Material.Filled.BugReport" IconColor="Color.Error" Expanded="true">
+    <MudNavGroup Class="mb-1" Title="Сервис регистрации ошибок" Icon="@Icons.Material.Filled.BugReport" IconColor="Color.Error">
         <MudNavLink Href="errorLoggingService/settings">Настройки</MudNavLink>
-        <MudNavLink Disabled="@_errorLoggingServiceDisabled" Href="/errorLoggingService/list">Журнал</MudNavLink>
+        <MudNavLink Disabled="@_errorLoggingServiceDisabled" Href="/errorLoggingService">Журнал</MudNavLink>
     </MudNavGroup>
-    <MudNavGroup Title="Общее" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary" Expanded="true">
-        <MudNavLink Href="" Match="NavLinkMatch.All">Агенты</MudNavLink>
+    <MudNavGroup Title="Общее" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">
         <MudNavLink Href="credentials">Учетные данные</MudNavLink>
         <MudNavLink Href="dbms">СУБД</MudNavLink>
     </MudNavGroup>
