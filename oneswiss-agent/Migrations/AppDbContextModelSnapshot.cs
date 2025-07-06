@@ -2,12 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using OnecMonitor.Agent;
 using OneSwiss.Agent;
 
 #nullable disable
 
-namespace OnecMonitor.Agent.Migrations
+namespace OneSwiss.Agent.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
@@ -15,9 +14,9 @@ namespace OnecMonitor.Agent.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.1");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
 
-            modelBuilder.Entity("OnecMonitor.Agent.Models.AgentInstance", b =>
+            modelBuilder.Entity("OneSwiss.Agent.Models.AgentInstance", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()

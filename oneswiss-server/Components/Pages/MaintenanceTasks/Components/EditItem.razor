@@ -29,24 +29,23 @@
                     OnInitialize="OnInitialize"
                     ModelSelector="ModelSelector"
                     BeforeValidation="BeforeValidation"
-                    OnUpdate="OnUpdate">
+                    OnUpdate="OnUpdate"
+                    Editable="_editable">
     <MudStack>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Description)" Label="Наименование" @bind-Value="@_editor.Model!.Description"/>
-    </MudStack>
-    
-    <MudStack Row>
-        
-        <ItemsSelector T="InfoBase"
-                       @bind-SelectedValues="_selectedInfoBases"
-                       Items="@_editor.Context!.InfoBases.ToList()"
-                       Title="Информационные базы"
-                       NameSelector="item => item.Name"/>
-        
+        <MudStack Row AlignItems="AlignItems.Stretch" StretchItems="StretchItems.All">
+            <MudTextField Class="mb-3 w-100" For="@(() => _editor.Model!.Description)" Variant="Variant.Outlined" Label="Наименование" @bind-Value="@_editor.Model!.Description"/>
+            <ItemsSelector T="InfoBase"
+                           @bind-SelectedValues="_selectedInfoBases"
+                           Class="w-100"
+                           Items="@_editor.Context!.InfoBases.ToList()"
+                           Title="Информационные базы"
+                           NameSelector="item => item.Name"/>
+        </MudStack>
         <MudPaper Class="rounded-lg mud-background-gray pa-2">
             <MudStack Row Wrap="Wrap.Wrap" Class="mb-2" Spacing="0">
                 @foreach (var item in Enum.GetValues<MaintenanceStepKind>())
                 {
-                    <MudChip T="MaintenanceStepKind" Style="@($"background-color: {item.GetKindColor()}")" Value="@item" OnClick="@(() => OnClickNodeType(item))">@item.GetDisplay()</MudChip>
+                    <MudChip Disabled="@(!_editable)" T="MaintenanceStepKind" Style="@($"background-color: {item.GetKindColor()}")" Value="@item" OnClick="@(() => OnClickNodeType(item))">@item.GetDisplay()</MudChip>
                 }
             </MudStack>
             <MudPaper Class="rounded" Style="width: 100%; height: 500px">
@@ -59,7 +58,6 @@
                 </CascadingValue>
             </MudPaper>
         </MudPaper>
-        
     </MudStack>
     
 </EditDatabaseObject>
@@ -69,6 +67,7 @@
     private List<InfoBase> _selectedInfoBases;
     private readonly Validator _validator = new();
     private EditDatabaseObject<MaintenanceTask> _editor = null!;
+    private bool _editable;
     
     [Parameter]
     public Guid Id { get; set; }
@@ -98,6 +97,7 @@
     
     private async Task OnInitialize((MaintenanceTask Model, AppDbContext Context) valueTuple)
     {
+        _editable = valueTuple.Model.StartDateTime == DateTime.MinValue;
         UpdateSelectedInfoBases(valueTuple.Model);
         
         InitDiagram();
@@ -105,7 +105,7 @@
         if (TemplateId != Guid.Empty)
             await InitModelFromTemplate(valueTuple.Model, valueTuple.Context);
         
-        ModelToDiagram(valueTuple.Model);
+        ModelToDiagram(valueTuple.Model, valueTuple.Context);
     }
 
     private void UpdateSelectedInfoBases(MaintenanceTask task)
@@ -266,7 +266,7 @@
         }
     }
 
-    private void ModelToDiagram(MaintenanceTask task)
+    private void ModelToDiagram(MaintenanceTask task, AppDbContext context)
     {
         var nodeStepPairs = new Dictionary<MaintenanceStep, StepNode>();
         
@@ -274,11 +274,7 @@
         foreach (var step in task.Steps)
         {
             var addedNode = Diagram.Nodes.Add(new StepNode(step, new Point(step.PositionX, step.PositionY)));
-            
-            addedNode.AddPort(new StepPort(Diagram, addedNode, PortAlignment.BottomRight));
-            addedNode.AddPort(new StepPort(Diagram, addedNode, PortAlignment.TopRight));
-            addedNode.AddPort(new StepPort(Diagram, addedNode, PortAlignment.Left));
-            
+            InitNode(addedNode, context);
             nodeStepPairs.Add(step, addedNode);
         }
 
@@ -375,15 +371,18 @@
     private void OnClickNodeType(MaintenanceStepKind kind)
     {
         var node = new StepNode(kind);
+        InitNode(node, _editor.Context!);
+        Diagram.Nodes.Add(node);
+    }
 
+    private void InitNode(StepNode node, AppDbContext context)
+    {
         if (node.Step.NeedLoadFiles())
-            node.Files = _editor.Context!.Files.AsNoTracking().Where(c => c.FileType == node.Step.AvailableFileType).ToList();
+            node.Files = context.Files.AsNoTracking().Where(c => c.FileType == node.Step.AvailableFileType).ToList();
 
         node.AddPort(new StepPort(Diagram, node, PortAlignment.BottomRight));
         node.AddPort(new StepPort(Diagram, node, PortAlignment.TopRight));
         node.AddPort(new StepPort(Diagram, node, PortAlignment.Left));
-        
-        Diagram.Nodes.Add(node);
     }
     
     class Validator : ModelValidator<MaintenanceTask>

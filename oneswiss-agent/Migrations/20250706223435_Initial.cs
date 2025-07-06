@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace OnecMonitor.Agent.Migrations
+namespace OneSwiss.Agent.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration

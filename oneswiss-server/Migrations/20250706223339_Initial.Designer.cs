@@ -10,7 +10,7 @@ using OneSwiss.Server;
 namespace OneSwiss.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250704081327_Initial")]
+    [Migration("20250706223339_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

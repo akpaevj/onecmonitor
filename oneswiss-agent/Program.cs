@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting.Systemd;
-using OnecMonitor.Agent;
 using OneSwiss.Agent;
 using OneSwiss.Agent.Models;
 using OneSwiss.Agent.Services;

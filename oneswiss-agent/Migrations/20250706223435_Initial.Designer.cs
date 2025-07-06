@@ -3,24 +3,23 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using OnecMonitor.Agent;
 using OneSwiss.Agent;
 
 #nullable disable
 
-namespace OnecMonitor.Agent.Migrations
+namespace OneSwiss.Agent.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250328223004_Initial")]
+    [Migration("20250706223435_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.1");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
 
-            modelBuilder.Entity("OnecMonitor.Agent.Models.AgentInstance", b =>
+            modelBuilder.Entity("OneSwiss.Agent.Models.AgentInstance", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()

@@ -1,35 +1,32 @@
 
+@using System.Linq.Expressions
 @typeparam T where T : OneSwiss.Server.Models.DatabaseObject
 
-<MudCard>
-    <MudCardHeader Class="mud-theme-info">
-        <CardHeaderContent>@Title</CardHeaderContent>
-    </MudCardHeader>
-    <MudCardContent>
-        @if (Items.Count == 0)
-        {
-            <MudText Class="" Align="Align.Center">Нет данных для выбора</MudText>
-        }
-        else
-        {
-            <MudList T="T"
-                     SelectedValues="_selectedValues"
-                     SelectedValuesChanged="SelectedValuesChangedInternal"
-                     SelectionMode="SelectionMode.MultiSelection"
-                     Color="Color.Primary">
-                @foreach (var item in Items)
-                {
-                    <MudListItem Text="@NameSelector(item)" Value="@item"></MudListItem>
-                }
-            </MudList>
-        }
-    </MudCardContent>
-</MudCard>
+<MudSelect 
+    T="T"
+    Label="@Title"
+    Counter="_counter" 
+    MultiSelection="true" 
+    SelectedValues="SelectedValues" 
+    SelectedValuesChanged="SelectedValuesChangedInternal"
+    Variant="Variant.Outlined"
+    Class="@Class"
+    ToStringFunc="arg => NameSelector(arg!)"
+    For="For">
+    @foreach (var item in Items)
+    {
+        <MudSelectItem T="T" Value="@item">@NameSelector(item)</MudSelectItem>
+    }
+</MudSelect>
 
 @code {
 
     private IReadOnlyCollection<T> _selectedValues = [];
+    private int? _counter;
     
+    [Parameter] 
+    public string Class { get; set; } = string.Empty;
+
     [Parameter] 
     public string Title { get; set; } = string.Empty;
     
@@ -45,14 +42,25 @@
     [Parameter]
     public EventCallback<List<T>> SelectedValuesChanged { get; set; }
 
+    [Parameter]
+    public Expression<Func<T>>? For { get; set; }
+
     protected override void OnInitialized()
     {
         _selectedValues = SelectedValues;
+        UpdateCounter();
     }
 
-    private async Task SelectedValuesChangedInternal(IReadOnlyCollection<T>? arg)
+    private async Task SelectedValuesChangedInternal(IEnumerable<T?>? arg)
     {
         SelectedValues = arg?.ToList() ?? [];
         await SelectedValuesChanged.InvokeAsync(SelectedValues);
+        UpdateCounter();
     }
+
+    private void UpdateCounter()
+    {
+        _counter = _selectedValues.Count;
+    }
+
 }

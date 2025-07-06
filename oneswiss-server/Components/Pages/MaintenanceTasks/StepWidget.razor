@@ -30,7 +30,7 @@
                 <MudSelect Class="mb-1" For="@(() => Node.Step.FileId)" @bind-Value="@Node.Step.FileId" Clearable="true">
                     @foreach (var item in Node.Files)
                     {
-                        <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+                        <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
                     }
                 </MudSelect>
             </MudCardContent>

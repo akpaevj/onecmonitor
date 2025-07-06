@@ -11,15 +11,18 @@
 
 <h1 Class="mb-3">@_title</h1>
 
-<MudForm @ref="Form" Model="Model!" Validation="Validation">
-    
-    <MudStack Row AlignItems="AlignItems.Start" Class="mb-3">
+<MudStack Row AlignItems="AlignItems.Start" Class="mb-3">
+    @if (Editable)
+    {
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Class="mb-3">Сохранить</MudButton>
-        @if (!SingleObject)
-        {
-            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="NavigateBack" Class="mb-3">Назад</MudButton>
-        }
-    </MudStack>
+    }
+    @if (!SingleObject)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="NavigateBack" Class="mb-3">Назад</MudButton>
+    }
+</MudStack>
+
+<MudForm @ref="Form" Model="Model!" Validation="Validation" Disabled="@(!Editable)">
     
     @ChildContent
     
@@ -45,6 +48,12 @@
     /// </summary>
     [Parameter]
     public bool SingleObject { get; set; }
+
+    /// <summary>
+    /// Объект может быть отредактирован и записан
+    /// </summary>
+    [Parameter]
+    public bool Editable { get; set; } = true;
     
     /// <summary>
     /// Начальный заголовок формы

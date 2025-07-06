@@ -28,12 +28,12 @@
     top: 50%
 }
 
-body:has(div.diagram-canvas:hover) 
-{ 
+/*body:has(div.diagram-canvas:hover) 
+{
     position: fixed; 
     overflow-y: scroll;
     width: 100%; 
-}
+}*/
 
 .h-100 {
     height: 100%;

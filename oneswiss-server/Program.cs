@@ -1,5 +1,6 @@
 using System.Net;
 using AutoMapper;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -9,6 +10,7 @@ using OneSwiss.Common.Services;
 using OneSwiss.Server;
 using OneSwiss.Server.AutoMapper;
 using OneSwiss.Server.Components;
+using OneSwiss.Server.Components.Pages.MaintenanceTasks;
 using OneSwiss.Server.Helpers;
 using OneSwiss.Server.Hubs;
 using OneSwiss.Server.Services;
@@ -21,15 +23,15 @@ builder.WebHost.ConfigureKestrel((context, options) =>
     options.Limits.MaxRequestBodySize = long.MaxValue;
     
     // configure http listener
-    var host = context.Configuration.GetValue("OnecMonitor:Http:Host", "0.0.0.0");
-    var port = context.Configuration.GetValue("OnecMonitor:Http:Port", 7002);
+    var host = context.Configuration.GetValue("OneSwiss:Http:Host", "0.0.0.0");
+    var port = context.Configuration.GetValue("OneSwiss:Http:Port", 7002);
 
     options.Listen(IPAddress.Parse(host), port);
 });
 
 builder.Services.AddWindowsService(options =>
 {
-    options.ServiceName = "OnecMonitor";
+    options.ServiceName = "OneSwiss";
 });
 builder.Services.AddSystemd();
 
@@ -43,7 +45,10 @@ builder.Services.AddResponseCompression(opts =>
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(options =>
+    {
+        options.RootComponents.RegisterForJavaScript<StepWidget>(identifier: "StepWidget");
+    });
 builder.Services.AddMudServices();
 
 builder.Services.AddSingleton<FilesProvider>();
