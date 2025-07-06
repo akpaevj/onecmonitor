@@ -1,4 +1,4 @@
-using OnecMonitor.Common.Models;
+using OneSwiss.Common.Models;
 
 namespace OnecMonitor.Server.ViewModels.Dbms;
 

@@ -361,9 +361,13 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-onecmonitor-server/package-lock.json
-onecmonitor-server/om-server.db
-onecmonitor-agent/om-agent.db
-onecmonitor-server/wwwroot/
+onecmonitor-server/*
+oneswiss-server/package-lock.json
+oneswiss-server/om-server*
+oneswiss-agent/om-agent*
+oneswiss-server/wwwroot/
+oneswiss-server/Data/*
+oneswiss-server/appsettings.Development.json
+oneswiss-agent/appsettings.Development.json
 Publish/
 .idea/

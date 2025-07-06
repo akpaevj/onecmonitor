@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using OnecMonitor.Common.Extensions;
-using OnecMonitor.Common.Models.MaintenanceTasks;
+using OneSwiss.Common.Extensions;
+using OneSwiss.Common.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.ViewModels.MaintenanceTasks;
 
@@ -37,6 +37,9 @@ public class MaintenanceStepViewModel
     [ValidateNever] 
     [JsonPropertyName("message")]
     public string Message { get; set; } = string.Empty;
+    [ValidateNever] 
+    [JsonPropertyName("commandLineArguments")]
+    public string CommandLineArguments { get; set; } = string.Empty;
     
     [ValidateNever] 
     [JsonPropertyName("fileId")]

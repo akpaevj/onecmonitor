@@ -10,7 +10,7 @@ public class EventLogSettingsEditViewModel
     public Guid? DbmsId { get; set; }
     [ValidateNever] 
     public SelectList AvailableDbms { get; set; } = null!;
-    public string DatabaseName { get; set; } = "onecmonitor";
+    public string DatabaseName { get; set; } = "oneswiss-server";
     public string Table { get; set; } = "eventlog";
     public Guid? CredentialsId { get; set; }
     [ValidateNever] 

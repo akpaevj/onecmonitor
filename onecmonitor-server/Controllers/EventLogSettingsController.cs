@@ -3,14 +3,14 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.DTO;
-using OnecMonitor.Common.Models;
-using OnecMonitor.Common.Storage;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Services;
 using OnecMonitor.Server.ViewModels;
 using OnecMonitor.Server.ViewModels.EventLogSettings;
+using OneSwiss.Common.DTO;
+using OneSwiss.Common.Models;
+using OneSwiss.Common.Storage;
 
 namespace OnecMonitor.Server.Controllers;
 

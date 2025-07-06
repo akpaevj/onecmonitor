@@ -1,0 +1,30 @@
+@page "/errorloggingservice"
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Components.Shared
+@rendermode InteractiveServer
+
+<DatabaseObjectsTable TModel="ErrorReport" TViewModel="ErrorReportViewModel"
+                      NameSelector="@(_ => "отчет об ошибке")"
+                      Route="errorloggingservice"
+                      Title="Журнал сервиса регистрации ошибок"
+                      ItemsSelector="ItemsSelector"
+                      DisableTableActions="true">
+    <ColumnsContent>
+        <MudTh>Дата</MudTh>
+        <MudTh>Конфигурация</MudTh>
+        <MudTh>Версия платформы</MudTh>
+        <MudTh>Пользователь</MudTh>
+    </ColumnsContent>
+    <RowTemplate>
+        <MudTd DataLabel="Дата">@context.Date</MudTd>
+        <MudTd DataLabel="Конфигурация">@context.Configuration</MudTd>
+        <MudTd DataLabel="Версия платформы">@context.PlatformVersion</MudTd>
+        <MudTd DataLabel="Пользователь">@context.UserName</MudTd>
+    </RowTemplate>
+</DatabaseObjectsTable>
+
+@code
+{
+    private static IQueryable<ErrorReport> ItemsSelector(IQueryable<ErrorReport> arg)
+        => arg.OrderByDescending(c => c.CreatedAt);
+}

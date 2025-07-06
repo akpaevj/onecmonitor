@@ -1,5 +1,5 @@
 @using Microsoft.AspNetCore.Mvc.TagHelpers
-@using OnecMonitor.Common.Models.MaintenanceTasks
+@using OneSwiss.Common.Models.MaintenanceTasks
 @model OnecMonitor.Server.ViewModels.MaintenanceTasks.MaintenanceStepViewModel
 
 <form method="post" style="height: 100%">
@@ -24,6 +24,15 @@
             <label class="form-label" asp-for="Message">Сообщение</label>
             <input type="text" class="form-control" asp-for="Message" value="@Model.Message">
             <span asp-validation-for="Message" class="text-danger"></span>
+        </div>
+    }
+    
+    @if (Model.Kind == MaintenanceStepKind.ExecuteOneScript)
+    {
+        <div class="mb-3">
+            <label class="form-label" asp-for="CommandLineArguments">Аргументы командной строки</label>
+            <input type="text" class="form-control" asp-for="CommandLineArguments" value="@Model.CommandLineArguments">
+            <span asp-validation-for="CommandLineArguments" class="text-danger"></span>
         </div>
     }
     

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using OnecMonitor.Common.Models;
+using OneSwiss.Common.Models;
 
 namespace OnecMonitor.Server.ViewModels.Dbms;
 

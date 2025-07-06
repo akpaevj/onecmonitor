@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.DTO;
-using OnecMonitor.Common.Models;
-using OnecMonitor.Common.Storage;
-using OnecMonitor.Common.TechLog;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
+using OneSwiss.Common.DTO;
+using OneSwiss.Common.Models;
+using OneSwiss.Common.Storage;
+using OneSwiss.Common.TechLog;
 
 namespace OnecMonitor.Server.Services
 {

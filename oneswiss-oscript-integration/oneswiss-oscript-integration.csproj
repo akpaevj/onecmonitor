@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <RootNamespace>OneSwiss.OneScript</RootNamespace>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.VisualStudio.Shared.VSCodeDebugProtocol" Version="18.0.10427.1" />
+      <PackageReference Include="OneScript" Version="2.0.0-rc.7" />
+      <PackageReference Include="OneScript.DebugServices" Version="2.0.0-rc.7" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="OneScript.StandardLibrary">
+        <HintPath>..\..\..\.nuget\packages\onescript.standardlibrary\2.0.0-rc.7\lib\net6.0\OneScript.StandardLibrary.dll</HintPath>
+      </Reference>
+      <Reference Include="ScriptEngine.HostedScript">
+        <HintPath>..\..\..\.nuget\packages\onescript.hosting\2.0.0-rc.7\lib\net6.0\ScriptEngine.HostedScript.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Oscript\" />
+    </ItemGroup>
+
+</Project>

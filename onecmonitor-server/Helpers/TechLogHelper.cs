@@ -1,7 +1,7 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.DTO;
-using OnecMonitor.Common.Services;
+using OneSwiss.Common.DTO;
+using OneSwiss.Common.Services;
 
 namespace OnecMonitor.Server.Helpers;
 
@@ -15,6 +15,6 @@ public class TechLogHelper
             .FirstOrDefault();
         
         var settingsDto = settings == null ? new TechLogSettingsDto() : mapper.Map<TechLogSettingsDto>(settings);
-        manager.SetSettings(settingsDto);
+        manager.UpdateSettings(settingsDto);
     }
 }

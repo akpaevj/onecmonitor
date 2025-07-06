@@ -2,13 +2,11 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.Services;
-using OnecMonitor.Common.Storage;
-using OnecMonitor.Common.TechLog;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Services;
 using OnecMonitor.Server.ViewModels.TechLogSeances;
+using OneSwiss.Common.Services;
 
 namespace OnecMonitor.Server.Controllers;
 

@@ -3,12 +3,12 @@ using AutoMapper;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using OnecMonitor.Common.Services;
 using OnecMonitor.Server;
 using OnecMonitor.Server.AutoMapper;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Hubs;
 using OnecMonitor.Server.Services;
+using OneSwiss.Common.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

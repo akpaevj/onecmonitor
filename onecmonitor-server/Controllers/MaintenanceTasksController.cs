@@ -3,13 +3,13 @@ using System.Text.Json.Serialization;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using OnecMonitor.Common.Models.MaintenanceTasks;
 using OnecMonitor.Server.Helpers;
 using OnecMonitor.Server.Models;
 using OnecMonitor.Server.Models.MaintenanceTasks;
 using OnecMonitor.Server.Services;
 using OnecMonitor.Server.ViewModels;
 using OnecMonitor.Server.ViewModels.MaintenanceTasks;
+using OneSwiss.Common.Models.MaintenanceTasks;
 
 namespace OnecMonitor.Server.Controllers;
 

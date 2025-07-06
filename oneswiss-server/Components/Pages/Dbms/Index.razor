@@ -1,0 +1,20 @@
+@page "/dbms"
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+@rendermode InteractiveServer
+
+<DatabaseObjectsTable TModel="Dbms" TViewModel="Dbms"
+                      NameSelector="arg => arg.Name"
+                      Route="dbms"
+                      Title="СУБД">
+    <ColumnsContent>
+        <MudTh>Имя</MudTh>
+        <MudTh>Хост</MudTh>
+        <MudTh>Порт</MudTh>
+    </ColumnsContent>
+    <RowTemplate>
+        <MudTd DataLabel="Имя">@context.Name</MudTd>
+        <MudTd DataLabel="Хост">@context.Host</MudTd>
+        <MudTd DataLabel="Порт">@context.Port</MudTd>
+    </RowTemplate>
+</DatabaseObjectsTable>
