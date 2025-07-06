@@ -13,7 +13,7 @@ var host = Host.CreateDefaultBuilder(args)
     {
         services.AddWindowsService(options =>
         {
-            options.ServiceName = "OnecMonitorAgent";
+            options.ServiceName = "OneSwissAgent";
         });
         services.AddSystemd();
         
@@ -25,7 +25,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<RasHolder>();
         services.AddDbContext<AppDbContext>();
         
-        services.AddTransient<OnecMonitorConnection>();
+        services.AddTransient<OneSwissConnection>();
         
         services.AddScoped<FilesDownloader>();
         services.AddSingleton<MonitorQueue<MaintenanceTaskDto>>();

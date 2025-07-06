@@ -78,7 +78,7 @@ http://localhost:7002/ErrorLoggingService
       "Protocols": "Http1AndHttp2"
     }
   },
-  "OnecMonitor": {
+  "OneSwiss": {
     "Tcp": {
       "Host": "0.0.0.0",
       "Port": 7001
@@ -91,7 +91,7 @@ http://localhost:7002/ErrorLoggingService
 }
 ```
 Где:
-- OnecMonitor
+- OneSwiss
   - Tcp - адрес и порт, по которым сервер будет прослушивать подключающиеся агенты
   - Http - адрес и порт, по которым будет доступна веб-панель управления сервером
     
@@ -108,7 +108,7 @@ http://localhost:7002/ErrorLoggingService
   "Agent": {
     "InstanceName": ""
   },
-  "OnecMonitor": {
+  "OneSwiss": {
     "Host": "127.0.0.1",
     "Port": 7001
   },
@@ -123,9 +123,9 @@ http://localhost:7002/ErrorLoggingService
 Где:  
 - Agent
   - InstanceName - наименование агента, отображаемое в панели управления серверной части. Если не задано - то hostname
-- OnecMonitor - адрес и порт, по которым агент будет стучаться к серверной части
+- OneSwiss - адрес и порт, по которым агент будет стучаться к серверной части
 - PlatformPaths - дополнительные пути, если платформы установлены не в каталогах установки платформы 1С по умолчанию
 - TechLogFolder - служебный каталог сбора технологического журнала, используемый в работе подсистемы сеансов сбора ТЖ.
   Если не указан, то используется стандартный путь:
-  - Windows - %PROGRAMDATA%/onecmonitor/techlog
-  - Linux - /var/log/onecmonitor/techlog
+  - Windows - %PROGRAMDATA%/oneswiss/techlog
+  - Linux - /var/log/oneswiss/techlog

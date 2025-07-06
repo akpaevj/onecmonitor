@@ -4,18 +4,18 @@ using OneSwiss.Common.DTO;
 
 namespace OneSwiss.Agent.Services
 {
-    public class OnecMonitorConnection : ServerConnection
+    public class OneSwissConnection : ServerConnection
     {
         private readonly string _host;
         private readonly int _port;
         private readonly AgentInstance _agent;
         private readonly IHostApplicationLifetime _hostApplicationLifetime;
 
-        public OnecMonitorConnection(
+        public OneSwissConnection(
             IServiceProvider serviceProvider,
             IConfiguration configuration,
             IHostApplicationLifetime hostApplicationLifetime, 
-            ILogger<OnecMonitorConnection> logger) : base(logger)
+            ILogger<OneSwissConnection> logger) : base(logger)
         {
             _hostApplicationLifetime = hostApplicationLifetime;
 
@@ -23,8 +23,8 @@ namespace OneSwiss.Agent.Services
             using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             _agent = appDbContext.AgentInstance.FirstOrDefault()!;
 
-            _host = configuration.GetValue("OnecMonitor:Host", "0.0.0.0");
-            _port = configuration.GetValue("OnecMonitor:Port", 7001);
+            _host = configuration.GetValue("OneSwiss:Host", "0.0.0.0");
+            _port = configuration.GetValue("OneSwiss:Port", 7001);
         }
 
         public async Task Start(bool mainConnection = false)

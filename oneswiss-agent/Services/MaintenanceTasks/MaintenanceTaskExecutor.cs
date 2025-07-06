@@ -15,7 +15,7 @@ namespace OneSwiss.Agent.Services.MaintenanceTasks;
 public class MaintenanceTaskExecutor : BackgroundService
 {
     private readonly AsyncServiceScope _scope;
-    private readonly OnecMonitorConnection _serverConnection;
+    private readonly OneSwissConnection _serverConnection;
     private readonly MonitorQueue<MaintenanceTaskDto> _queue;
     private readonly IServiceProvider _serviceProvider;
     private readonly RasHolder _rasHolder;
@@ -32,7 +32,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         _serviceProvider = serviceProvider;
         _scope = serviceProvider.CreateAsyncScope();
         _queue = queue;
-        _serverConnection = _scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
+        _serverConnection = _scope.ServiceProvider.GetRequiredService<OneSwissConnection>();
         _rasHolder = rasHolder;
         _v8ServicesProvider = v8ServicesProvider;
         _logger = logger;

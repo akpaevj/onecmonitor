@@ -12,9 +12,9 @@ public class FilesDownloader(ILogger<FilesDownloader> logger) : IDisposable
     private readonly List<FileDto> _filesToDownload = [];
     private TaskCompletionSource<Dictionary<Guid, string>> _downloadTcs = null!;
     private readonly Dictionary<Guid, (string Path, Stream Stream)> _files = new();
-    private OnecMonitorConnection _connection;
+    private OneSwissConnection _connection;
     
-    public async Task<Dictionary<Guid, string>> Download(OnecMonitorConnection connection, List<FileDto> files, CancellationToken cancellationToken)
+    public async Task<Dictionary<Guid, string>> Download(OneSwissConnection connection, List<FileDto> files, CancellationToken cancellationToken)
     {
         _connection = connection;
         _filesToDownload.AddRange(files.ToList());

@@ -8,7 +8,7 @@ namespace OneSwiss.Agent.Services
 {
     internal class CommandsWatcher
     {
-        private readonly OnecMonitorConnection _server;
+        private readonly OneSwissConnection _server;
         private readonly MonitorQueue<MaintenanceTaskDto> _maintenanceTasksQueue;
         private readonly TechLogRepositoryManager _techLogRepositoryManager;
         private readonly EventLogRepositoryManager _eventLogRepositoryManager;
@@ -31,7 +31,7 @@ namespace OneSwiss.Agent.Services
         {
             var scope = serviceProvider.CreateAsyncScope();
             _rasHolder = rasHolder;
-            _server = scope.ServiceProvider.GetRequiredService<OnecMonitorConnection>();
+            _server = scope.ServiceProvider.GetRequiredService<OneSwissConnection>();
             _techLogRepositoryManager = techLogRepositoryManager;
             _eventLogRepositoryManager = eventLogRepositoryManager;
             _v8PlatformsProvider = v8PlatformsProvider;
