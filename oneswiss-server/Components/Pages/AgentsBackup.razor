@@ -1,0 +1,191 @@
+@*@page "/"*@
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.SignalR.Client
+@using OneSwiss.Common.DTO
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@using OneSwiss.V8.Platform
+@using OneSwiss.V8.Platform.Services
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject AgentsConnectionsManager AgentsConnectionsManager
+@inject NavigationManager NavManager;
+
+<PageTitle>Агенты монитора</PageTitle>
+
+<MudGrid>
+    <MudItem md="3">
+        <MudPaper>
+            <MudList T="Agent" 
+                     @bind-SelectedValue="_selectedAgent"
+                     @bind-SelectedValue:after="OnAgentSelected" 
+                     SelectionMode="SelectionMode.SingleSelection">
+                <MudListSubheader>
+                    <MudText Typo="Typo.h6">Агенты</MudText>
+                </MudListSubheader>
+                @foreach (var pair in _agents)
+                {
+                    <MudListItem Value="pair.Agent">
+                        <MudBadge Dot="true" Color="@(pair.Connected ? Color.Success : Color.Error)" Class="mx-6 my-4">
+                            <MudText>@pair.Agent.InstanceName</MudText>
+                        </MudBadge>
+                    </MudListItem>
+                }
+            </MudList>
+        </MudPaper>
+    </MudItem>
+    <MudItem md="9">
+        <MudStack>
+            @if (_installedPlatforms.Count > 0 || _isLoading)
+            {
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Установленные платформы</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudDataGrid Loading="_isLoading" T="V8Platform" Items="@_installedPlatforms">
+                            <Columns>
+                                <PropertyColumn Title="Версия" Property="@(arg => arg.Version)"></PropertyColumn>
+                            </Columns>
+                        </MudDataGrid>
+                    </MudCardContent>
+                </MudCard>
+            }
+            @if (_ragentServices.Count > 0 || _isLoading)
+            {
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Службы агентов сервера 1С</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudDataGrid Loading="_isLoading" T="RagentService" Items="@_ragentServices">
+                            <Columns>
+                                <PropertyColumn Title="Имя" Property="@(arg => arg.Name)"></PropertyColumn>
+                                <PropertyColumn Title="Запущена" Property="@(arg => arg.IsActive)"></PropertyColumn>
+                                <PropertyColumn Title="Порт" Property="@(arg => arg.Port)"></PropertyColumn>
+                            </Columns>
+                        </MudDataGrid>
+                    </MudCardContent>
+                </MudCard>
+            }
+            @if (_rasServices.Count > 0 || _isLoading)
+            {
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Службы сервера администрирования 1С</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudDataGrid Loading="_isLoading" T="RasService" Items="@_rasServices">
+                            <Columns>
+                                <PropertyColumn Title="Имя" Property="@(arg => arg.Name)"></PropertyColumn>
+                                <PropertyColumn Title="Запущена" Property="@(arg => arg.IsActive)"></PropertyColumn>
+                                <PropertyColumn Title="Хост агента кластера" Property="@(arg => arg.RagentHost)"></PropertyColumn>
+                                <PropertyColumn Title="Порт агента кластера" Property="@(arg => arg.RagentPort)"></PropertyColumn>
+                                <PropertyColumn Title="Порт" Property="@(arg => arg.Port)"></PropertyColumn>
+                            </Columns>
+                        </MudDataGrid>
+                    </MudCardContent>
+                </MudCard>
+            }
+            @if (_crServerServices.Count > 0 || _isLoading)
+            {
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Службы серверов хранилищ 1С</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudDataGrid Loading="_isLoading" T="CrServer" Items="@_crServerServices">
+                            <Columns>
+                                <PropertyColumn Title="Имя" Property="@(arg => arg.Name)"></PropertyColumn>
+                                <PropertyColumn Title="Запущена" Property="@(arg => arg.IsActive)"></PropertyColumn>
+                                <PropertyColumn Title="Порт" Property="@(arg => arg.Port)"></PropertyColumn>
+                            </Columns>
+                        </MudDataGrid>
+                    </MudCardContent>
+                </MudCard>
+            }
+        </MudStack>
+    </MudItem>
+</MudGrid>
+
+@code {
+    HubConnection? _hubConnection;
+    bool _isLoading = true;
+    List<(Agent Agent, bool Connected)> _agents = [];
+    List<V8Platform> _installedPlatforms = [];
+    List<RagentService> _ragentServices = [];
+    List<RasService> _rasServices = [];
+    List<CrServer> _crServerServices = [];
+    private Agent? _selectedAgent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavManager.ToAbsoluteUri("/agentsHub"))
+            .Build();
+
+        _hubConnection.On("AgentsStateUpdated", async () =>
+        {
+            await UpdateAgents();
+            await InvokeAsync(StateHasChanged);
+        });
+        
+        await _hubConnection.StartAsync();
+        
+        await UpdateAgents();
+    }
+
+    private async Task UpdateAgents()
+    {
+        _isLoading = true;
+
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        
+        var agents = await context.Agents.ToListAsync();
+        _agents = agents.Select(c => (c, AgentsConnectionsManager.GetAgentConnection(c.Id) != null)).ToList();
+
+        if (_selectedAgent != null && agents.FirstOrDefault(c => c.Id == _selectedAgent!.Id) == null)
+            _selectedAgent = null;
+
+        _selectedAgent ??= agents.FirstOrDefault();
+        
+        await OnAgentSelected();
+        
+        _isLoading = false;
+    }
+
+    private async Task OnAgentSelected()
+    {
+        if (_selectedAgent == null)
+        {
+            _installedPlatforms = [];
+            _rasServices = [];
+            _ragentServices = [];
+            _crServerServices = [];
+            
+            return;
+        }
+        
+        _isLoading = true;
+
+        var connection = AgentsConnectionsManager.GetAgentConnection(_selectedAgent.Id);
+        if (connection != null)
+        {
+            _installedPlatforms = await connection.GetInstalledPlatforms(CancellationToken.None);
+            _ragentServices = await connection.GetRagentServices(CancellationToken.None);
+            _rasServices = await connection.GetRasServices(CancellationToken.None);
+            _crServerServices = await connection!.GetCrServerServices(CancellationToken.None);
+        }
+
+        _isLoading = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

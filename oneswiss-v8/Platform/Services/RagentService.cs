@@ -19,4 +19,6 @@ public class RagentService : V8Service
     [Key(5)]
     [DisplayName("Платформа")]
     public V8Platform Platform { get; set; } = null!;
+    [Key(6)] [DisplayName("Тип отладки")] 
+    public RagentDebugType DebugType { get; set; } = RagentDebugType.None;
 }

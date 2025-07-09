@@ -4,13 +4,12 @@
 
 <MudSelect 
     T="T"
-    Label="@Title"
-    Counter="_counter" 
+    Label="@_label"
     MultiSelection="true" 
     SelectedValues="SelectedValues" 
     SelectedValuesChanged="SelectedValuesChangedInternal"
     Variant="Variant.Outlined"
-    Class="@Class"
+    OuterClass="@Class"
     ToStringFunc="arg => NameSelector(arg!)"
     For="For">
     @foreach (var item in Items)
@@ -20,9 +19,8 @@
 </MudSelect>
 
 @code {
-
-    private IReadOnlyCollection<T> _selectedValues = [];
-    private int? _counter;
+    
+    private string _label;
     
     [Parameter] 
     public string Class { get; set; } = string.Empty;
@@ -47,20 +45,18 @@
 
     protected override void OnInitialized()
     {
-        _selectedValues = SelectedValues;
-        UpdateCounter();
+        UpdateLabel();
     }
 
     private async Task SelectedValuesChangedInternal(IEnumerable<T?>? arg)
     {
         SelectedValues = arg?.ToList() ?? [];
         await SelectedValuesChanged.InvokeAsync(SelectedValues);
-        UpdateCounter();
+        UpdateLabel();
     }
 
-    private void UpdateCounter()
+    private void UpdateLabel()
     {
-        _counter = _selectedValues.Count;
+        _label = $"{Title} ({SelectedValues.Count})";
     }
-
 }

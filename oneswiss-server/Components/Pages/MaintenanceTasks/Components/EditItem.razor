@@ -18,7 +18,16 @@
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Models.MaintenanceTasks
 @using OneSwiss.Server.Components.Shared
+@inject IJSRuntime JS
 @rendermode InteractiveServer
+
+<script>
+    function disableWheelPropagation() {
+        document.querySelector('.diagram-canvas').addEventListener('wheel', function(e) {
+            e.preventDefault();
+        }, { passive: false })
+    }
+</script>
 
 <EditDatabaseObject @ref="_editor" T="MaintenanceTask"
                     Id="Id"
@@ -86,13 +95,15 @@
     
     public BlazorDiagram Diagram { get; set; } = null!;
 
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
             return;
         
         _editor.AddAdditionalValidableProperty(nameof(MaintenanceTask.InfoBases));
         _editor.AddAdditionalValidableProperty(nameof(MaintenanceTask.Steps));
+
+        await JS.InvokeVoidAsync("disableWheelPropagation");
     }
     
     private async Task OnInitialize((MaintenanceTask Model, AppDbContext Context) valueTuple)

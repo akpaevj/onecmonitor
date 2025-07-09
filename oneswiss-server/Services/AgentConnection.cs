@@ -141,10 +141,22 @@ namespace OneSwiss.Server.Services
                 MessageType.RagentServices,
                 cancellationToken);
         
+        public async Task<List<CrServer>> GetCrServerServices(CancellationToken cancellationToken)
+            => await Get<List<CrServer>>(
+                MessageType.CrServerServicesRequest, 
+                MessageType.CrServerServices,
+                cancellationToken);
+        
         public async Task<List<RasService>> GetRasServices(CancellationToken cancellationToken)
             => await Get<List<RasService>>(
                 MessageType.RasServicesRequest, 
                 MessageType.RasServices,
+                cancellationToken);
+        
+        public async Task<SystemInfoDto> GetSystemInfo(CancellationToken cancellationToken)
+            => await Get<SystemInfoDto>(
+                MessageType.SystemInfoRequest, 
+                MessageType.SystemInfo,
                 cancellationToken);
         
         public async Task<List<V8InfoBaseSummary>> GetV8InfoBasesSummaries(Cluster cluster, CancellationToken cancellationToken)

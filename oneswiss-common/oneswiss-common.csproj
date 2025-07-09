@@ -42,6 +42,10 @@
 	  </Reference>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
+	</ItemGroup>
+
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <DebugSymbols>False</DebugSymbols>
         <DebugType>None</DebugType>

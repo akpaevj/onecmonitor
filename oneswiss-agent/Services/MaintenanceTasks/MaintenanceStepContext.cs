@@ -25,16 +25,16 @@ public class MaintenanceStepContext
     public CancellationToken CancellationToken { get; set; }
     
     public OnecV8BatchMode GetBatchDesigner() 
-        => new(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}", InfoBase.InfoBaseName);
+        => OnecV8BatchMode.CreateDesignerBatch(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}", InfoBase.InfoBaseName);
 
     public OnecV8BatchMode StartDesignerAgent(string baseDirectoryPath)
     {
-        var batch = new OnecV8BatchMode(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}", InfoBase.InfoBaseName);
+        var batch = OnecV8BatchMode.CreateDesignerBatch(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}", InfoBase.InfoBaseName);
         batch.StartSshAgent(baseDirectoryPath);
 
         return batch;
     }
                             
     public OnecV8BatchMode GetBatchEnterprise() 
-        => new(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}", InfoBase.InfoBaseName, false);
+        => OnecV8BatchMode.CreateEnterpriseBatch(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}", InfoBase.InfoBaseName);
 }

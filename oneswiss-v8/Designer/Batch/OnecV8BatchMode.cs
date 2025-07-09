@@ -6,7 +6,7 @@ namespace OneSwiss.V8.Designer.Batch;
 public sealed class OnecV8BatchMode : IDisposable
 {
     private readonly List<string> _arguments = [];
-    private readonly bool _designerMode;
+    private readonly string _mode;
     private string _outFilePath = string.Empty;
     private readonly ProcessStartInfo _processStartInfo;
     private Process? _process;
@@ -15,18 +15,51 @@ public sealed class OnecV8BatchMode : IDisposable
     public string OutFileContent { get; private set; } = string.Empty;
     public event EventHandler<(int ExitCode, string OutFileContent)>? ProcessExited;
     
-    public OnecV8BatchMode(V8Platform platform, string server, string infoBase, bool designerMode = true)
+    private OnecV8BatchMode(V8Platform platform, string mode)
     {
-        _designerMode = designerMode;
+        _mode = mode;
         _processStartInfo = InitProcessStartInfo(platform);
-        _arguments.Add($"/S{server}\\{infoBase}");
     }
     
-    public OnecV8BatchMode(V8Platform platform, string ibName, bool designerMode = true)
+    public static OnecV8BatchMode CreateDesignerBatch(V8Platform platform, string server, string infoBase)
     {
-        _designerMode = designerMode;
-        _processStartInfo = InitProcessStartInfo(platform);
-        _arguments.Add($"/IBName \"{ibName}\"");
+        var batch = new OnecV8BatchMode(platform, "DESIGNER");
+        batch._arguments.Add($"/S{server}\\{infoBase}");
+
+        return batch;
+    }
+    
+    public static OnecV8BatchMode CreateEnterpriseBatch(V8Platform platform, string server, string infoBase)
+    {
+        var batch = new OnecV8BatchMode(platform, "ENTERPRISE");
+        batch._arguments.Add($"/S{server}\\{infoBase}");
+
+        return batch;
+    }
+    
+    public static OnecV8BatchMode CreateFileDesignerBatch(V8Platform platform, string ibPath)
+    {
+        var batch = new OnecV8BatchMode(platform, "DESIGNER");
+        batch._arguments.Add($"/F\"{ibPath}\"");
+
+        return batch;
+    }
+    
+    public static OnecV8BatchMode CreateEnterpriseBatch(V8Platform platform, string ibPath)
+    {
+        var batch = new OnecV8BatchMode(platform, "ENTERPRISE");
+        batch._arguments.Add($"/F\"{ibPath}\"");
+
+        return batch;
+    }
+
+    public static void CreateFileInfoBase(V8Platform platform, string path)
+    {
+        using var batch = new OnecV8BatchMode(platform, "CREATEINFOBASE");
+        batch._arguments.Add($"/F\"{path}\"");
+        
+        batch.AddBatchModeCommonArgs();
+        batch.Start(true);
     }
 
     public void StartSshAgent(string baseDirectoryPath = "", bool visible = false, bool waitForExit = false)
@@ -98,6 +131,29 @@ public sealed class OnecV8BatchMode : IDisposable
         
         Start(waitForExit);
     }
+
+    /// <summary>
+    /// Выгружает отчет по истории хранилища по указанному пути
+    /// </summary>
+    /// <param name="connectionString">Строка соединения с хранилищем. Указывается в точно таком же виде, как и в конфигураторе</param>
+    /// <param name="user">Пользователь хранилища</param>
+    /// <param name="password">Пароль пользователя хранилища</param>
+    /// <param name="version">Номер версии, с которой начинается строиться отчет. -1 если необходимо выгрузить последнюю версию</param>
+    /// <returns>Читатель отчета хранилища конфигураций</returns>
+    public ConfigRepositoryReportReader GetConfigRepositoryReportReader(string connectionString, string user, string password, int version = 0)
+    {
+        var reportPath = Path.GetTempFileName();
+        
+        _arguments.Add($"/ConfigurationRepositoryF\"{connectionString}\"");
+        _arguments.Add($"/ConfigurationRepositoryN{user}");
+        _arguments.Add($"/ConfigurationRepositoryP{password}");
+        _arguments.Add($"/ConfigurationRepositoryReport\"{reportPath}\"");
+        _arguments.Add("-ReportFormat txt");
+        
+        Start(true);
+
+        return new ConfigRepositoryReportReader(reportPath);
+    }
     
     /// <summary>
     /// !!! Never call it while batch operation is running
@@ -143,15 +199,19 @@ public sealed class OnecV8BatchMode : IDisposable
             CreateNoWindow = true,
             UseShellExecute = false
         };
-        _arguments.Add(_designerMode ? "DESIGNER" : "ENTERPRISE");
+        _arguments.Add(_mode);
 
         return psi;
     }
     
-    private void AddBatchModeCommonArgs(string user, string password, string accessCode = "")
+    private void AddBatchModeCommonArgs(string user = "", string password = "", string accessCode = "")
     {
-        _arguments.Add($"/N{user}");
-        _arguments.Add($"/P{password}");
+        if (user != string.Empty)
+            _arguments.Add($"/N{user}");
+        
+        if (password != string.Empty)
+            _arguments.Add($"/P{password}");
+        
         _arguments.Add("/DisableStartupMessages");
         _arguments.Add("/DisableStartupDialogs");
         

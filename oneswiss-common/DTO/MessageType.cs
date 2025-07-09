@@ -11,20 +11,24 @@
         InstalledPlatforms,
         RagentServices,
         RasServices,
+        CrServerServices,
         ClustersResponse,
         InfoBasesResponse,
         SettingsRequest,
         MaintenanceStepNodeLog,
         V8FileRequest,
+        SystemInfoRequest,
         
         // Server messages
         InstalledPlatformsRequest,
         RagentServicesRequest,
         RasServicesRequest,
+        CrServerServicesRequest,
         ClustersRequest,
         InfoBasesRequest,
         Settings,
         MaintenanceTask,
-        V8FileChunk
+        V8FileChunk,
+        SystemInfo
     }
 }

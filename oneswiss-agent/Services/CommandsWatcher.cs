@@ -1,4 +1,7 @@
-﻿using MessagePack;
+﻿using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using MessagePack;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Common.Services;
@@ -69,6 +72,12 @@ namespace OneSwiss.Agent.Services
                         break;
                     case MessageType.RasServicesRequest:
                         await SendRasServices(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.CrServerServicesRequest:
+                        await SendCrServerServices(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.SystemInfoRequest:
+                        await SendSystemInfo(message, _applicationLifetime.ApplicationStopping);
                         break;
                     case MessageType.Settings:
                         await HandleSettings(message, _applicationLifetime.ApplicationStopping);
@@ -169,6 +178,25 @@ namespace OneSwiss.Agent.Services
         {
             var services = _rasHolder.GetRasServices();
             await _server.Send(MessageType.RasServices, services, message, cancellationToken);
+        }
+        
+        private async Task SendCrServerServices(Message message, CancellationToken cancellationToken)
+        {
+            var services = _v8ServicesProvider.GetCrServerServices();
+            await _server.Send(MessageType.CrServerServices, services, message, cancellationToken);
+        }
+        
+        private async Task SendSystemInfo(Message message, CancellationToken cancellationToken)
+        {
+            var info = new SystemInfoDto
+            {
+                HostName = Environment.MachineName,
+                IpAddresses = (await Dns.GetHostEntryAsync(Dns.GetHostName(), cancellationToken)).AddressList
+                    .Where(c => c.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(c))
+                    .Select(c => c.ToString())
+                    .ToArray()
+            };
+            await _server.Send(MessageType.SystemInfo, info, message, cancellationToken);
         }
     }
 }

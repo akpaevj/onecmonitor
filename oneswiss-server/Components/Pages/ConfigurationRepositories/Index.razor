@@ -1,0 +1,18 @@
+@page "/configurationrepositories"
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+@rendermode InteractiveServer
+
+<DatabaseObjectsTable TModel="ConfigurationRepository" TViewModel="ConfigurationRepository"
+                      NameSelector="arg => arg.Name"
+                      Route="configurationrepositories"
+                      Title="Хранилища конфигураций">
+    <ColumnsContent>
+        <MudTh>Имя</MudTh>
+        <MudTh>Строка подключения</MudTh>
+    </ColumnsContent>
+    <RowTemplate>
+        <MudTd DataLabel="Имя">@context.Name</MudTd>
+        <MudTd DataLabel="Строка подключения">@context.Address</MudTd>
+    </RowTemplate>
+</DatabaseObjectsTable>
