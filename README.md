@@ -10,7 +10,7 @@
 запущенные агенты серверов, определяет адреса, порты, запущенные для агентов экземпляры RAS, подгружает на сервер и обновляет списки кластеров и информационных баз.  
 Если экземпляр RAS не найден в списке служб (демонов), то система автоматически запустит экземпляры RAS для обеспечения собственной работы.
 
-![Agents](./media/agents.png)
+<img width="1920" height="1080" alt="agents" src="https://github.com/user-attachments/assets/c3f55267-7688-45dd-b37c-3c11e21134d8" />
 
 ## Функциональные возможности:
 ### Обслуживание информационных баз:
@@ -46,7 +46,7 @@ https://github.com/user-attachments/assets/44ea7cf8-dac5-4982-872e-06ce4b52b66e
 http://localhost:7002/ErrorLoggingService
 ```
 
-![Error logging](media/error_logging_service.png)
+<img width="1920" height="1080" alt="error_logging_service" src="https://github.com/user-attachments/assets/b3d53110-cdf2-42d3-8a71-56d6b85d7902" />
 
 ### Экспорт технологического журнала:
 Автоматизация сбора и экспорта технологического журнала. Центральными понятиями системы являются:  
@@ -67,7 +67,7 @@ http://localhost:7002/ErrorLoggingService
 СУБД, доступные для экспорта:
 - ClickHouse
 
-![Techlog](media/techlog.png)
+<img width="1920" height="1080" alt="techlog" src="https://github.com/user-attachments/assets/b6e15e20-6164-4c4e-922f-09b673e0e6f7" />
 
 ### Установка и использование:
 #### Сервер
