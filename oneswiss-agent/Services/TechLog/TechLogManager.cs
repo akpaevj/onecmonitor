@@ -1,3 +1,5 @@
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Xml;
 using OneSwiss.Common.DTO;
@@ -82,7 +84,19 @@ public class TechLogManager
                     try
                     {
                         if (!Directory.Exists(logPath))
-                            Directory.CreateDirectory(logPath);
+                        {
+                            var directory = Directory.CreateDirectory(logPath);
+
+                            try
+                            {
+                                SetLogFolderAccessRights(directory);
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.LogError(e, "Ошибка назначения прав на каталог сбора технологического журнала");
+                                return;
+                            }
+                        }
                     }
                     catch (Exception e)
                     {
@@ -124,6 +138,38 @@ public class TechLogManager
 
             await Task.Delay(5000, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private static void SetLogFolderAccessRights(DirectoryInfo directory)
+    {
+        if (!directory.Exists)
+        {
+            directory.Create();
+        }
+        
+#pragma warning disable CA1416
+
+        if (Environment.OSVersion.Platform == PlatformID.Unix)
+            File.SetUnixFileMode(directory.FullName, 
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute);
+        else
+        {
+            var security = directory.GetAccessControl();
+            
+            security.AddAccessRule(
+                new FileSystemAccessRule(
+                    new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+                    FileSystemRights.Modify,
+                    InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit,
+                    PropagationFlags.InheritOnly,
+                    AccessControlType.Allow));
+            
+            directory.SetAccessControl(security);
+        }
+        
+#pragma warning restore CA1416
     }
 
     private string[] GetLogCfgPaths()

@@ -9,12 +9,12 @@ public class EventLogRepositoryManager
 {
     public EventLogSettingsDto? Settings { get; private set; }
 
-    public EventHandler<EventLogSettingsDto>? SettingsChanged;
+    public Func<EventLogSettingsDto, Task>? SettingsChanged = null!;
 
     public void UpdateSettings(EventLogSettingsDto settings)
     {
         Settings = settings;
-        SettingsChanged?.Invoke(this, Settings);
+        SettingsChanged?.Invoke(Settings);
     }
     
     public IEventLogRepository GetInstance()

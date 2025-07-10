@@ -3,6 +3,7 @@ using OneSwiss.Agent.Extensions;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.EventLog;
 using OneSwiss.Common.Models;
+using OneSwiss.Common.Services;
 using OneSwiss.Common.Storage;
 using Timer = System.Timers.Timer;
 
@@ -15,8 +16,8 @@ public class EventLogExporter : IDisposable
     private readonly BatchBlock<EventLogItem>? _eventsBatchBlock;
     private readonly Timer _timer = new(5000);
 
-    public EventLogExporter(IHostApplicationLifetime applicationLifetime)           
-    {   
+    public EventLogExporter(EventLogRepositoryManager repositoryManager, IHostApplicationLifetime applicationLifetime)
+    {
         _senderBlock = new ActionBlock<EventLogItem[]>(async batch => 
             await _repository!.WriteEvents(batch, applicationLifetime.ApplicationStopping));
 
@@ -30,7 +31,7 @@ public class EventLogExporter : IDisposable
         _timer.Elapsed += (_, _) => _eventsBatchBlock!.TriggerBatch();
     }
 
-    public async Task Init(EventLogSettingsDto settings, CancellationToken cancellationToken)
+    public async Task Init(IEventLogRepository repository, EventLogSettingsDto settings, CancellationToken cancellationToken)
     {
         if (_repository != null)
         {
@@ -46,7 +47,7 @@ public class EventLogExporter : IDisposable
             if (settings.Dbms.Type != DbmsType.ClickHouse)
                 throw new Exception("DbmsType must be ClickHouse");
 
-            _repository = new ClickHouseContext(settings.Dbms, settings.Credentials, settings.DatabaseName, settings.Table);
+            _repository = repository;
             await _repository.Connect(cancellationToken);
         
             _timer.Start();

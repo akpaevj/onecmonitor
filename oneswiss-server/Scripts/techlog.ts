@@ -1,5 +1,12 @@
 import * as monaco from 'monaco-editor';
-import {registerBslInMonaco} from "./bsl";
+import hljs from 'highlight.js/lib/core';
+import sql from 'highlight.js/lib/languages/sql';
+
+hljs.registerLanguage('sql', sql);
+
+export function highlight(filter: string): string {
+    return hljs.highlight(filter, { language: 'sql' }).value;
+}
 
 let editor: monaco.editor.IStandaloneCodeEditor;
 

@@ -22,9 +22,21 @@
 <h1 Class="mb-3">@_title</h1>
 
 <MudStack>
-    <MudTextField @bind-Value="_filter" @bind-Value:after="AfterFilterChanged" Placeholder="Выражение WHERE" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Class="mt-0 mb-1"/>
+    <MudTextField @bind-Value="_filter" @bind-Value:after="AfterFilterChanged"
+                  Placeholder="Выражение WHERE"
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  AdornmentColor="Color.Primary"
+                  InputMode="InputMode.search"
+                  Class="mt-0 mb-1">
+        
+    </MudTextField>
     <MudStack Row StretchItems="StretchItems.All" AlignItems="AlignItems.Stretch">
-        <MudTable @ref="_table" Style="width: 100%" T="TjEvent" RowClassFunc="RowClassFunc" @bind-SelectedItem="_selectedItem" ServerData="ServerData" TotalItems="_totalItems">
+        <MudTable @ref="_table" Style="width: 100%" T="TjEvent"
+                  RowClassFunc="RowClassFunc"
+                  @bind-SelectedItem="_selectedItem"
+                  ServerData="ServerData"
+                  TotalItems="_totalItems">
             <HeaderContent>
                 <MudTh>Время</MudTh>
                 <MudTh>Длительность</MudTh>
@@ -33,27 +45,38 @@
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Время">@context.DateTime</MudTd>
-                <MudTd DataLabel="Длительность">@context.Duration</MudTd>
-                <MudTd DataLabel="Имя">@context.EventName</MudTd>
+                <MudTd DataLabel="Длительность">
+                    @context.Duration
+                </MudTd>
+                <MudTd DataLabel="Имя">
+                    <MudStack Row>
+                        <MudIconButton Icon="@Icons.Material.Filled.FilterList" Size="Size.Small"
+                                       OnClick="@(() => AddFilter("EventName", context.EventName))"/>
+                        @context.EventName
+                    </MudStack>
+                </MudTd>
                 <MudTd DataLabel="Уровень">@context.Level</MudTd>
             </RowTemplate>
             <PagerContent>
                 <MudTablePager/>
             </PagerContent>
         </MudTable>
-        @if (_selectedItem != null)
-        {
-            <MudTable T="@(KeyValuePair<string, string>)" Style="width: 100%" Items="@_selectedItem?.Properties">
-                <HeaderContent>
-                    <MudTh>Свойство</MudTh>
-                    <MudTh>Значение</MudTh>
-                </HeaderContent>
-                <RowTemplate Context="properties">
-                    <MudTd DataLabel="Свойство">@properties.Key</MudTd>
-                    <MudTd Style="overflow-wrap: anywhere" DataLabel="Значение">@properties.Value</MudTd>
-                </RowTemplate>
-            </MudTable>
-        }
+        <MudTable T="@(KeyValuePair<string, string>)" Style="width: 100%" Items="@_selectedItem?.Properties">
+            <HeaderContent>
+                <MudTh>Свойство</MudTh>
+                <MudTh>Значение</MudTh>
+            </HeaderContent>
+            <RowTemplate Context="properties">
+                <MudTd DataLabel="Свойство">
+                    <MudStack Row>
+                        <MudIconButton Icon="@Icons.Material.Filled.FilterList" Size="Size.Small"
+                                       OnClick="@(() => AddFilter($"Properties['{properties.Key}']", properties.Value))"/>
+                        @properties.Key
+                    </MudStack>
+                </MudTd>
+                <MudTd Style="overflow-wrap: anywhere" DataLabel="Значение">@properties.Value</MudTd>
+            </RowTemplate>
+        </MudTable>
     </MudStack>
 </MudStack>
 
@@ -99,6 +122,9 @@
             filter = string.IsNullOrEmpty(filter) ? $"SeanceId = toUUID('{Id}')" : $"SeanceId = toUUID('{Id}') and {filter}";
 
             var items = await _techLogRepository!.GetTjEvents(state.PageSize, state.Page * state.PageSize, filter, cancellationToken);
+            
+            if (items.Count > 0)
+                _table.SetSelectedItem(items.First());
         
             return new TableData<TjEvent>
             {
@@ -126,6 +152,18 @@
 
     private async Task AfterFilterChanged()
     {
+        await _table.ReloadServerData();
+    }
+
+    private async Task AddFilter(string key, string value)
+    {
+        var additionalText = $"{key} = '{value}'";
+
+        if (string.IsNullOrEmpty(_filter))
+            _filter = additionalText;
+        else
+            _filter += $" and {additionalText}";
+        
         await _table.ReloadServerData();
     }
 

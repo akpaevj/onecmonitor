@@ -62,6 +62,7 @@ await using (var scope = host.Services.CreateAsyncScope())
 }
 
 host.Services.GetRequiredService<TechLogManager>();
+host.Services.GetRequiredService<EventLogExportManager>();
 
 _ = host.Services.GetRequiredService<CommandsWatcher>()
     .Start(appLifetime.ApplicationStopping).ConfigureAwait(false);

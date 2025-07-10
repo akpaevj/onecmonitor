@@ -16,7 +16,7 @@
     <MudButton Variant="Variant.Filled" ButtonType="ButtonType.Submit" Color="Color.Primary" Class="mb-3">Сохранить</MudButton>
 
     <MudStack>
-        <MudSelect Class="mb-3" Disabled="@true" For="@(() => Model.ClusterId)" @bind-Value="@Model!.ClusterId">
+        <MudSelect Class="mb-3" Disabled="@true" For="@(() => Model!.ClusterId)" @bind-Value="@Model!.ClusterId">
             @foreach (var item in _context!.Clusters.ToList())
             {
                 <MudSelectItem Value="@item.Id">@item.Name</MudSelectItem>
@@ -25,7 +25,7 @@
         <MudTextField Class="mb-3" Disabled="@true" For="@(() => Model!.InfoBaseName)" @bind-Value="@Model!.InfoBaseName"></MudTextField>
         <MudTextField Class="mb-3" For="@(() => Model!.Name)" @bind-Value="@Model!.Name"></MudTextField>
         <MudTextField Class="mb-3" For="@(() => Model!.PublishAddress)" @bind-Value="@Model!.PublishAddress"></MudTextField>
-        <MudSelect Class="mb-3" For="@(() => Model.CredentialsId)" @bind-Value="@Model!.CredentialsId" Clearable="@true">
+        <MudSelect Class="mb-3" For="@(() => Model!.CredentialsId)" @bind-Value="@Model!.CredentialsId" Clearable="@true">
             @foreach (var item in _context!.Credentials.ToList())
             {
                 <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>

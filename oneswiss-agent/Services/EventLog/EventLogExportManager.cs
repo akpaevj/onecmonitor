@@ -5,14 +5,15 @@ using Exception = System.Exception;
 
 namespace OneSwiss.Agent.Services.EventLog;
 
-public class EventLogExportManager(
-    V8ServicesProvider v8ServicesProvider,
-    EventLogExporter exporter,
-    IServiceProvider serviceProvider,
-    EventLogRepositoryManager _repositoryManager,
-    IHostApplicationLifetime applicationLifetime,
-    ILogger<EventLogExportManager> logger) : IDisposable
+public class EventLogExportManager : IDisposable
 {
+    private readonly V8ServicesProvider _v8ServicesProvider;
+    private readonly EventLogExporter _exporter;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IHostApplicationLifetime _applicationLifetime;
+    private readonly ILogger<EventLogExportManager> _logger;
+    private readonly EventLogRepositoryManager _repositoryManager;
+    
     private CancellationTokenSource? _cts;
     private EventLogSettingsDto? _settings;
     private readonly SemaphoreSlim _clstLock = new(1, 1);
@@ -20,11 +21,46 @@ public class EventLogExportManager(
     private readonly SemaphoreSlim _readersLock = new(1, 1);
     private readonly Dictionary<string, EventLogReader> _readers = new();
 
+    public EventLogExportManager(
+        V8ServicesProvider v8ServicesProvider,
+        EventLogExporter exporter,
+        IServiceProvider serviceProvider,
+        EventLogRepositoryManager repositoryManager,
+        IHostApplicationLifetime applicationLifetime,
+        ILogger<EventLogExportManager> logger)
+    {
+        _v8ServicesProvider = v8ServicesProvider;
+        _exporter = exporter;
+        _serviceProvider = serviceProvider;
+        _applicationLifetime = applicationLifetime;
+        _logger = logger;
+        _repositoryManager = repositoryManager;
+            
+        _repositoryManager.SettingsChanged += SettingsChanged;
+    }
+    
+    private async Task SettingsChanged(EventLogSettingsDto settings)
+    {
+        if (_cts != null)
+            await _cts.CancelAsync();
+        
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(_applicationLifetime.ApplicationStopping);
+        
+        await ReleaseReadersAndWatchers(_cts.Token);
+
+        _settings = settings;
+
+        await _exporter.Init(_repositoryManager.GetInstance(), _settings, _cts.Token);
+        
+        if (_settings.Enabled)
+            _ = Start(_cts.Token).ConfigureAwait(false);
+    }
+
     private async Task Start(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            var ragentServices = v8ServicesProvider.GetRagentServices();
+            var ragentServices = _v8ServicesProvider.GetRagentServices();
             
             await _clstLock.WaitAsync(cancellationToken);
             
@@ -47,7 +83,7 @@ public class EventLogExportManager(
                     if (_clstWatchers.Remove(ragent.ClusterCatalog, out _))
                         watcher.Dispose();
                     
-                    logger.LogError(e, "Error while adding cluster to watcher");
+                    _logger.LogError(e, "Error while adding cluster to watcher");
                 }
             }
             
@@ -56,23 +92,6 @@ public class EventLogExportManager(
             await Task.Delay(10000, cancellationToken).ConfigureAwait(false);
         }
     }
-    
-    public async Task UpdateSettings(EventLogSettingsDto settings, CancellationToken cancellationToken)
-    {
-        if (_cts != null)
-            await _cts.CancelAsync();
-        
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(applicationLifetime.ApplicationStopping);
-        
-        await ReleaseReadersAndWatchers(_cts.Token);
-
-        _settings = settings;
-
-        await exporter.Init(_settings, cancellationToken);
-        
-        if (_settings.Enabled)
-            _ = Start(_cts.Token).ConfigureAwait(false);
-    }
 
     private void OnInfoBasesAdded(object? sender, InfoBaseInfo e)
     {
@@ -80,7 +99,7 @@ public class EventLogExportManager(
 
         if (!_readers.ContainsKey(e.LogPath))
         {
-            var reader = new EventLogReader(e, exporter, serviceProvider.GetRequiredService<ILogger<EventLogReader>>());
+            var reader = new EventLogReader(e, _exporter, _serviceProvider.GetRequiredService<ILogger<EventLogReader>>());
             reader.ProcessExited += (_, _) => RemoveReader(e.LogPath);
             
             _readers.TryAdd(e.LogPath, reader);
