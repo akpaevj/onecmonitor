@@ -38,12 +38,12 @@ https://github.com/user-attachments/assets/44ea7cf8-dac5-4982-872e-06ce4b52b66e
 Сервис, позволяющий принимать отчеты об ошибках, формируемых платформой 1С. Доступен просмотр информации о клиенте, сервере,
 описании ошибки, стеке вызова и скриншоте. В настройках обработки ошибок 1С необходимо указывать адрес по шаблону: 
 ```
-{URL}/ErrorLoggingService
+{URL}/api/ErrorLoggingService
 ```  
 
 Пример:
 ```
-http://localhost:7002/ErrorLoggingService
+http://localhost:7002/api/ErrorLoggingService
 ```
 
 <img width="1920" height="1080" alt="error_logging_service" src="https://github.com/user-attachments/assets/b3d53110-cdf2-42d3-8a71-56d6b85d7902" />
