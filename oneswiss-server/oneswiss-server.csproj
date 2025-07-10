@@ -6,7 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>OneSwiss.Server</RootNamespace>
         <Version>0.2.0</Version>
-        <AssemblyVersion>0.2.0</AssemblyVersion>
+        <AssemblyVersion>0.2.1</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>
