@@ -37,7 +37,7 @@ public sealed class OnecV8BatchMode : IDisposable
         return batch;
     }
     
-    public static OnecV8BatchMode CreateFileDesignerBatch(V8Platform platform, string ibPath)
+    public static OnecV8BatchMode CreateDesignerBatch(V8Platform platform, string ibPath)
     {
         var batch = new OnecV8BatchMode(platform, "DESIGNER");
         batch._arguments.Add($"/F\"{ibPath}\"");
@@ -142,17 +142,30 @@ public sealed class OnecV8BatchMode : IDisposable
     /// <returns>Читатель отчета хранилища конфигураций</returns>
     public ConfigRepositoryReportReader GetConfigRepositoryReportReader(string connectionString, string user, string password, int version = 0)
     {
+        AddConfigRepositoryCommonArgs(connectionString, user, password);
+            
         var reportPath = Path.GetTempFileName();
-        
-        _arguments.Add($"/ConfigurationRepositoryF\"{connectionString}\"");
-        _arguments.Add($"/ConfigurationRepositoryN{user}");
-        _arguments.Add($"/ConfigurationRepositoryP{password}");
         _arguments.Add($"/ConfigurationRepositoryReport\"{reportPath}\"");
         _arguments.Add("-ReportFormat txt");
         
         Start(true);
 
         return new ConfigRepositoryReportReader(reportPath);
+    }
+
+    /// <summary>
+    /// Выгружает конфигурацию хранилища в файл
+    /// </summary>
+    /// <param name="path">Путь к файлу выгрузки</param>
+    /// <param name="connectionString">Строка соединения с хранилищем. Указывается в точно таком же виде, как и в конфигураторе</param>
+    /// <param name="user">Пользователь хранилища</param>
+    /// <param name="password">Пароль пользователя хранилища</param>
+    public void DumpConfigRepository(string path, string connectionString, string user, string password)
+    {
+        AddConfigRepositoryCommonArgs(connectionString, user, password);
+        _arguments.Add($"/ConfigurationRepositoryDumpCfg\"{path}\"");
+        
+        Start(true);
     }
     
     /// <summary>
@@ -186,6 +199,13 @@ public sealed class OnecV8BatchMode : IDisposable
             
         if (_process.ExitCode != 0)
             throw new Exception(OutFileContent);
+    }
+
+    private void AddConfigRepositoryCommonArgs(string connectionString, string user, string password)
+    {
+        _arguments.Add($"/ConfigurationRepositoryF\"{connectionString}\"");
+        _arguments.Add($"/ConfigurationRepositoryN{user}");
+        _arguments.Add($"/ConfigurationRepositoryP{password}");
     }
     
     private ProcessStartInfo InitProcessStartInfo(V8Platform platform)

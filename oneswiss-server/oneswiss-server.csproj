@@ -52,5 +52,43 @@
       <None Include="tsconfig.json">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </None>
+      <Content Remove="package.json" />
+      <None Include="package.json">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </None>
+      <Content Remove="package-lock.json" />
+      <None Include="package-lock.json">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </None>
+      <Content Remove="tsconfig.json" />
+      <None Include="tsconfig.json">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)'=='Release'">
+        <Content Remove="appsettings.Development.json" />
+        <None Include="appsettings.Development.json">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="publish\server\win64\web.config" />
+      <_ContentIncludedByDefault Remove="publish\server\linux64\appsettings.json" />
+      <_ContentIncludedByDefault Remove="publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json" />
+      <_ContentIncludedByDefault Remove="publish\server\win64\appsettings.json" />
+      <_ContentIncludedByDefault Remove="publish\server\win64\oneswiss-server.staticwebassets.endpoints.json" />
+      <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\appsettings.json" />
+      <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <DebugSymbols>False</DebugSymbols>
+        <DebugType>none</DebugType>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
+        <NoWarn>$(NoWarn);SA0001</NoWarn>
+    </PropertyGroup>
+    
 </Project>
