@@ -1,0 +1,134 @@
+@page "/files/{id:guid}"
+@page "/files/create"
+@using FluentValidation
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@using OneSwiss.Server.Components.Shared
+@inject ILogger<Edit> Logger
+@inject FilesProvider FilesProvider
+
+<EditDatabaseObject @ref="_editor" T="File"
+                    Id="Id"
+                    NameSelector="@(arg => arg.Name)"
+                    Route="files"
+                    Title="Новый файл"
+                    Validation="_validator.ValidateValue"
+                    AfterValidation="AfterValidation">
+    <MudStack>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" @bind-Value="@_editor.Model!.Name"></MudTextField>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Version)" @bind-Value="@_editor.Model!.Version"></MudTextField>
+        @if (Id == Guid.Empty)
+        {
+            <MudFileUpload T="IBrowserFile" For="@(() => _file)" 
+                           @bind-Files="_file"
+                           @bind-Files:after="AfterBindFiles"
+                           Disabled="isLoading"
+                           Accept=".cf, .cfe, .cfu, .ospx, .epf">
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.CloudUpload">
+                        @{
+                            if (_file == null)
+                            {
+                                <MudText>Загрузить файл</MudText>
+                            }
+                            else if (isLoading)
+                            {
+                                <MudProgressCircular Value="@_loaded">
+                                    <ChildContent>
+                                        @_loaded
+                                    </ChildContent>
+                                </MudProgressCircular>
+                            }
+                            else
+                            {
+                                <MudText>@($"{_file.Name} ({_file.Size / (1024 * 1024)} mb)")</MudText>
+                            }
+                        }
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+        }
+    </MudStack>
+</EditDatabaseObject>
+
+@code
+{
+    private readonly Validator _validator = new();
+    private EditDatabaseObject<File> _editor = null!;
+ 
+    IBrowserFile? _file;
+    private int _loaded;
+    private bool isLoading;
+    
+    [Parameter]
+    public Guid Id { get; set; }
+    
+    class Validator : ModelValidator<File>
+    {
+        public Validator()
+        {
+            RuleFor(c => c.Name)
+                .NotEmpty()
+                .WithMessage("Не заполнено наименование");
+            
+            RuleFor(c => c.Version)
+                .NotEmpty()
+                .WithMessage("Не указана версия");
+            
+            RuleFor(c => c.DataPath)
+                .NotEmpty()
+                .WithMessage("Прикрепите файл")
+                .WithName("_file");
+        }
+    }
+
+    private void AfterBindFiles()
+    {
+        var extension = Path.GetExtension(_file!.Name);
+            
+        if (extension.Equals(".CF", StringComparison.InvariantCultureIgnoreCase))
+            _editor.Model!.FileType = FileType.Cf;
+        else if (extension.Equals(".CFE", StringComparison.InvariantCultureIgnoreCase))
+            _editor.Model!.FileType = FileType.Cfe;
+        else if (extension.Equals(".CFU", StringComparison.InvariantCultureIgnoreCase))
+            _editor.Model!.FileType = FileType.Cfu;
+        else if (extension.Equals(".EPF", StringComparison.InvariantCultureIgnoreCase))
+            _editor.Model!.FileType = FileType.Epf;
+        else if (extension.Equals(".OSPX", StringComparison.InvariantCultureIgnoreCase))
+            _editor.Model!.FileType = FileType.Ospx;
+        
+        _editor.Model!.Name = Path.GetFileNameWithoutExtension(_file!.Name);
+    }
+
+    private async Task AfterValidation(File obj)
+    {
+        var fileName = $"{Guid.NewGuid()}.{obj.FileType.ToString().Replace(".", "").ToLower()}";
+        await using var stream = FilesProvider.OpenDataStream(fileName);
+            
+        await using var uploadStream = _file!.OpenReadStream(long.MaxValue);
+
+        var copied = 0L;
+        var all = uploadStream.Length;
+
+        var buffer = new byte[86400];
+
+        isLoading = true;
+            
+        while (copied < all)
+        {
+            var read = await uploadStream.ReadAsync(buffer, 0, buffer.Length);
+            copied += read;
+
+            await stream.WriteAsync(buffer, 0, read);
+
+            _loaded = (int)(copied / (double)all * 100.0);
+            StateHasChanged();
+        }
+
+        isLoading = false;
+                
+        obj.DataPath = fileName;
+    }
+}

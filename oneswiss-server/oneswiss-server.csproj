@@ -1,0 +1,94 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>OneSwiss.Server</RootNamespace>
+        <Version>0.2.0</Version>
+        <AssemblyVersion>0.2.1</AssemblyVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AutoMapper" Version="14.0.0" />
+        <PackageReference Include="FluentValidation" Version="12.0.0" />
+        <PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
+        <PackageReference Include="Grpc.Tools" Version="2.72.0">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.6" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.6" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.6" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.6" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.6" />
+        <PackageReference Include="MudBlazor" Version="8.8.0" />
+        <PackageReference Include="RestSharp" Version="112.1.0" />
+        <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\oneswiss-common\oneswiss-common.csproj" />
+      <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Telegram.Bot">
+        <HintPath>..\..\..\.nuget\packages\telegram.bot\22.5.1\lib\net6.0\Telegram.Bot.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Data\" />
+      <Folder Include="Migrations\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="tsconfig.json">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </None>
+      <Content Remove="package.json" />
+      <None Include="package.json">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </None>
+      <Content Remove="package-lock.json" />
+      <None Include="package-lock.json">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </None>
+      <Content Remove="tsconfig.json" />
+      <None Include="tsconfig.json">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)'=='Release'">
+        <Content Remove="appsettings.Development.json" />
+        <None Include="appsettings.Development.json">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="publish\server\win64\web.config" />
+      <_ContentIncludedByDefault Remove="publish\server\linux64\appsettings.json" />
+      <_ContentIncludedByDefault Remove="publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json" />
+      <_ContentIncludedByDefault Remove="publish\server\win64\appsettings.json" />
+      <_ContentIncludedByDefault Remove="publish\server\win64\oneswiss-server.staticwebassets.endpoints.json" />
+      <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\appsettings.json" />
+      <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <DebugSymbols>False</DebugSymbols>
+        <DebugType>none</DebugType>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
+        <NoWarn>$(NoWarn);SA0001</NoWarn>
+    </PropertyGroup>
+    
+</Project>

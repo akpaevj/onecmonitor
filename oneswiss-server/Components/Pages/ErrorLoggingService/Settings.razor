@@ -1,0 +1,43 @@
+@page "/errorloggingservice/settings"
+@using FluentValidation
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Components.Shared
+
+<EditDatabaseObject @ref="_editor" T="ErrorLoggingServiceSettings"
+                    Title="Настройки сервиса регистрации ошибок"
+                    Route="errorloggingservice/settings"
+                    SingleObject="true"
+                    Validation="_validator.ValidateValue"
+                    OnInitialize="OnInitialize">
+    <MudStack>
+        <MudSwitch Class="mb-3" Label="Включен" @bind-Value="@_editor.Model!.Enabled" Color="Color.Primary"/>
+        <MudTextField Class="mb-3"  For="@(() => _editor.Model!.Message)" Label="Сообщение пользователю" @bind-Value="@_editor.Model!.Message"/>
+        <MudNumericField Class="mb-3"  For="@(() => _editor.Model!.ReportsTtl)" Label="Удалять ошибки старше (в днях)" @bind-Value="@_editor.Model!.ReportsTtl"/>
+    </MudStack>
+    
+</EditDatabaseObject>
+
+@code
+{
+    private EditDatabaseObject<ErrorLoggingServiceSettings> _editor = null!;
+    private readonly Validator _validator = new();
+
+    private class Validator : ModelValidator<ErrorLoggingServiceSettings>
+    {
+        public Validator()
+        {
+            When(c => c.Enabled, () =>
+            {
+                RuleFor(x => x.Message)
+                    .NotEmpty()
+                    .WithMessage("Не указано сообщение пользователю");
+            });
+        }
+    }
+
+    private static void OnInitialize((ErrorLoggingServiceSettings Model, AppDbContext Context) valueTuple)
+    {
+        if (valueTuple.Model.Id == Guid.Empty)
+            valueTuple.Model.Message = string.Empty;
+    }
+}

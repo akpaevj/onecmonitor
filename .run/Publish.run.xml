@@ -1,0 +1,125 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Publish" type="com.intellij.execution.configurations.multilaunch" factoryName="MultiLaunchConfiguration">
+    <option name="activateToolWindows" value="true" />
+    <rows>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <option name="type" value="immediately" />
+          </ConditionSnapshot>
+        </option>
+        <option name="disableDebugging" value="true" />
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:npm.Build" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <option name="type" value="afterPreviousFinished" />
+          </ConditionSnapshot>
+        </option>
+        <option name="disableDebugging" value="true" />
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:Publish to folder.Publish agent linux64" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <option name="type" value="afterPreviousFinished" />
+          </ConditionSnapshot>
+        </option>
+        <option name="disableDebugging" value="true" />
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:Publish to folder.Publish server linux64" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <option name="type" value="afterPreviousFinished" />
+          </ConditionSnapshot>
+        </option>
+        <option name="disableDebugging" value="true" />
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:Publish to folder.Publish server win64" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <option name="type" value="afterPreviousFinished" />
+          </ConditionSnapshot>
+        </option>
+        <option name="disableDebugging" value="true" />
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:Publish to folder.Publish agent win64" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <option name="type" value="afterPreviousFinished" />
+          </ConditionSnapshot>
+        </option>
+        <option name="disableDebugging" value="true" />
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:Shell Script.Zip server-win64" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <option name="type" value="afterPreviousFinished" />
+          </ConditionSnapshot>
+        </option>
+        <option name="disableDebugging" value="true" />
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:Shell Script.Zip agent-win64" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <option name="type" value="afterPreviousFinished" />
+          </ConditionSnapshot>
+        </option>
+        <option name="disableDebugging" value="true" />
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:Shell Script.Zip agent-linux64" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <option name="type" value="afterPreviousFinished" />
+          </ConditionSnapshot>
+        </option>
+        <option name="disableDebugging" value="true" />
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:Shell Script.Zip server-linux64" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+    </rows>
+    <method v="2" />
+  </configuration>
+</component>

@@ -1,0 +1,62 @@
+
+@using System.Linq.Expressions
+@typeparam T where T : OneSwiss.Server.Models.DatabaseObject
+
+<MudSelect 
+    T="T"
+    Label="@_label"
+    MultiSelection="true" 
+    SelectedValues="SelectedValues" 
+    SelectedValuesChanged="SelectedValuesChangedInternal"
+    Variant="Variant.Outlined"
+    OuterClass="@Class"
+    ToStringFunc="arg => NameSelector(arg!)"
+    For="For">
+    @foreach (var item in Items)
+    {
+        <MudSelectItem T="T" Value="@item">@NameSelector(item)</MudSelectItem>
+    }
+</MudSelect>
+
+@code {
+    
+    private string _label;
+    
+    [Parameter] 
+    public string Class { get; set; } = string.Empty;
+
+    [Parameter] 
+    public string Title { get; set; } = string.Empty;
+    
+    [Parameter] 
+    public List<T> Items { get; set; } = [];
+
+    [Parameter] 
+    public Func<T, string> NameSelector { get; set; } = null!;
+
+    [Parameter] 
+    public List<T> SelectedValues { get; set; } = [];
+    
+    [Parameter]
+    public EventCallback<List<T>> SelectedValuesChanged { get; set; }
+
+    [Parameter]
+    public Expression<Func<T>>? For { get; set; }
+
+    protected override void OnInitialized()
+    {
+        UpdateLabel();
+    }
+
+    private async Task SelectedValuesChangedInternal(IEnumerable<T?>? arg)
+    {
+        SelectedValues = arg?.ToList() ?? [];
+        await SelectedValuesChanged.InvokeAsync(SelectedValues);
+        UpdateLabel();
+    }
+
+    private void UpdateLabel()
+    {
+        _label = $"{Title} ({SelectedValues.Count})";
+    }
+}

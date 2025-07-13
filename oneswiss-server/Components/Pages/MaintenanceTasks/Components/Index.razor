@@ -1,0 +1,115 @@
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models.MaintenanceTasks
+@using OneSwiss.Server.Services
+@using OneSwiss.Server.Components
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject AgentsConnectionsManager AgentsConnectionsManager
+@rendermode InteractiveServer
+
+<DatabaseObjectsTable @ref="_table" TModel="MaintenanceTask" TViewModel="MaintenanceTask"
+                      NameSelector="@(task => task.Description)"
+                      Route="@Route"
+                      Title="@Title"
+                      ItemsSelector="ItemsSelector">
+    <TableActionsContent>
+        <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="CreateFromTemplate" Class="mb-3">Из шаблона</MudButton>
+    </TableActionsContent>
+    <ColumnsContent>
+        <MudTh>Описание</MudTh>
+        @if (!IsTemplate)
+        {
+            <MudTh>Время начала</MudTh>
+            <MudTh>Есть ошибки</MudTh>
+            <MudTh>Время окончания</MudTh>
+        }
+    </ColumnsContent>
+    <RowTemplate>
+        <MudTd DataLabel="Описание">@context.Description</MudTd>
+        @if (!IsTemplate)
+        {
+            <MudTd DataLabel="Время начала">@context.StartDateTime</MudTd>
+            <MudTd Class="@(context.IsFaulted ? "mud-error-text" : "mud-success-text")" DataLabel="Есть ошибки">@context.IsFaulted</MudTd>
+            <MudTd DataLabel="Время окончания">@context.FinishDateTime</MudTd>
+        }
+    </RowTemplate>
+    <RowActionsContent>
+        @if (!context.IsTemplate)
+        {
+            if (context.StartDateTime != DateTime.MinValue)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.ListAlt" OnClick="@(() => NavigateToLog(context))" Color="Color.Warning"/>
+            }
+            else
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" OnClick="@(() => StartTask(context))" Color="Color.Success"/>
+            }
+        }
+        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavManager.NavigateTo($"{Route}/{context.Id}"))" Color="Color.Info"/>
+        @if (context.IsTemplate || context.StartDateTime == DateTime.MinValue || context.FinishDateTime != DateTime.MinValue)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => _table.DeleteItem(context))" Color="Color.Error"/>
+        }
+    </RowActionsContent>
+</DatabaseObjectsTable>
+
+@code
+{
+    private DatabaseObjectsTable<MaintenanceTask, MaintenanceTask> _table = null!;
+    
+    [Parameter] 
+    public bool IsTemplate { get; set; }
+
+    [Parameter] 
+    public string Title { get; set; } = string.Empty;
+    
+    [Parameter] 
+    public string Route { get; set; } = string.Empty;
+
+    public async Task CreateFromTemplate(MouseEventArgs obj)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<SelectTemplateDialog>("Выберите шаблон", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            var templateId = await dialog.GetReturnValueAsync<Guid>();
+            NavManager.NavigateTo($"{Route}/create?templateId={templateId}");
+        }
+    }
+
+    private async Task StartTask(MaintenanceTask item)
+    {
+        await using var context = await _table.GetContext();
+        
+        var task = await context.MaintenanceTasks
+            .AsNoTracking()
+            .Include(c => c.Steps).ThenInclude(c => c.File)
+            .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).ThenInclude(c => c.Credentials)
+            .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).ThenInclude(c => c.Cluster).ThenInclude(c => c.Agent)
+            .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).ThenInclude(c => c.Cluster).ThenInclude(c => c.Credentials)
+            .FirstOrDefaultAsync(c => c.Id == item.Id);
+            
+        var connections = await AgentsConnectionsManager.GetActiveAgentsConnections();
+
+        foreach (var connection in connections)
+            await connection.StartMaintenanceTask(task!);
+        
+        var taskToUpdate = await context.MaintenanceTasks.FindAsync(task!.Id);
+        taskToUpdate!.StartDateTime = DateTime.Now;
+        
+        await context.SaveChangesAsync();
+        
+        NavigateToLog(task);
+    }
+
+    private void NavigateToLog(MaintenanceTask task)
+    {
+        NavManager.NavigateTo($"{Route}/{task.Id}/log");
+    }
+
+    private IQueryable<MaintenanceTask> ItemsSelector(IQueryable<MaintenanceTask> arg)
+        => arg.Where(c => c.IsTemplate == IsTemplate);
+}

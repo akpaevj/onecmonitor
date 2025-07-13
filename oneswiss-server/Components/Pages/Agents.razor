@@ -1,0 +1,236 @@
+@page "/"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.SignalR.Client
+@using OneSwiss.Common.DTO
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@using OneSwiss.V8.Platform
+@using OneSwiss.V8.Platform.Services
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject AgentsConnectionsManager AgentsConnectionsManager
+@inject NavigationManager NavManager;
+
+<PageTitle>Агенты монитора</PageTitle>
+
+<MudStack>
+    @if (_isLoading)
+    {
+        <MudProgressLinear Striped="true" Color="Color.Primary" Indeterminate="true"/>
+    }
+
+    <MudTabs Position="Position.Left" HeaderPosition="TabHeaderPosition.Before" Rounded="true"
+             ApplyEffectsToContainer="true" PanelClass="ps-4" @bind-ActivePanelIndex="_activePanelIndex">
+        <Header>
+            <MudText Align="Align.Center" Class="pa-4" Typo="Typo.h6">Агенты</MudText>
+        </Header>
+        <ChildContent>
+            @foreach (var vm in _items)
+            {
+                <MudTabPanel BadgeDot="true" BadgeColor="@(vm.Connected ? Color.Success : Color.Error)">
+                    <TabContent>
+                        <MudStack Row AlignItems="AlignItems.Center" StretchItems="StretchItems.All">
+                            <MudText Class="mx-3">@vm.Agent.InstanceName</MudText>
+                        </MudStack>
+                    </TabContent>
+                    <ChildContent>
+                        @if (vm.Connected)
+                        {
+                            <MudStack StretchItems="StretchItems.All" Spacing="0">
+                                <MudStack Row StretchItems="StretchItems.All" Class="mb-3">
+                                    @if (vm.InstalledPlatforms.Count > 0)
+                                    {
+                                        <MudDataGrid T="V8Platform" Items="@vm.InstalledPlatforms" Class="pa-2" Elevation="0">
+                                            <ToolBarContent>
+                                                <MudText Typo="Typo.h6">Установленные платформы</MudText>
+                                            </ToolBarContent>
+                                            <Columns>
+                                                <PropertyColumn Title="Версия" Property="@(arg => arg.Version)"></PropertyColumn>
+                                            </Columns>
+                                        </MudDataGrid>
+                                    }
+                                    @if (vm.RagentServices.Count > 0)
+                                    {
+                                        <MudTable T="RagentService" Items="@vm.RagentServices" Bordered="false" Class="pa-2" Elevation="0">
+                                            <ToolBarContent>
+                                                <MudText Typo="Typo.h6">Службы агентов сервера 1С</MudText>
+                                            </ToolBarContent>
+                                            <HeaderContent>
+                                                <MudTh>Имя</MudTh>
+                                                <MudTh>Состояние</MudTh>
+                                                <MudTh>Порт</MudTh>
+                                                <MudTh>Отладка</MudTh>
+                                            </HeaderContent>
+                                            <RowTemplate>
+                                                <MudTd DataLabel="Имя">@context.Name</MudTd>
+                                                <MudTd DataLabel="Состояние">
+                                                    @if (context.IsActive)
+                                                    {
+                                                        <MudIcon Color="Color.Success" Icon="@(Icons.Material.Filled.PlayArrow)"/>
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudIcon Color="Color.Error" Icon="@(Icons.Material.Filled.Stop)"/>
+                                                    }
+                                                </MudTd>
+                                                <MudTd DataLabel="Порт">@context.Port</MudTd>
+                                                <MudTd DataLabel="Отладка">@context.DebugType.GetDisplay()</MudTd>
+                                            </RowTemplate>
+                                        </MudTable>
+                                    }
+                                </MudStack>
+                                <MudStack Row StretchItems="StretchItems.All">
+                                    @if (vm.RasServices.Count > 0)
+                                    {
+                                        <MudTable T="RasService" Items="@vm.RasServices" Bordered="false" Class="pa-2" Elevation="0">
+                                            <ToolBarContent>
+                                                <MudText Typo="Typo.h6">Службы сервера администрирования 1С</MudText>
+                                            </ToolBarContent>
+                                            <HeaderContent>
+                                                <MudTh>Имя</MudTh>
+                                                <MudTh>Состояние</MudTh>
+                                                <MudTh>Хост агента кластера</MudTh>
+                                                <MudTh>Порт агента кластера</MudTh>
+                                                <MudTh>Порт</MudTh>
+                                            </HeaderContent>
+                                            <RowTemplate>
+                                                <MudTd DataLabel="Имя">@context.Name</MudTd>
+                                                <MudTd DataLabel="Состояние">
+                                                    @if (context.IsActive)
+                                                    {
+                                                        <MudIcon Color="Color.Success" Icon="@(Icons.Material.Filled.PlayArrow)"/>
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudIcon Color="Color.Error" Icon="@(Icons.Material.Filled.Stop)"/>
+                                                    }
+                                                </MudTd>
+                                                <MudTd DataLabel="Хост агента кластера">@context.RagentHost</MudTd>
+                                                <MudTd DataLabel="Порт агента кластера">@context.RagentPort</MudTd>
+                                                <MudTd DataLabel="Порт">@context.Port</MudTd>
+                                            </RowTemplate>
+                                        </MudTable>
+                                    }
+                                    @if (vm.CrServerServices.Count > 0)
+                                    {
+                                        <MudTable T="CrServer" Items="@vm.CrServerServices" Bordered="false" Class="pa-2" Elevation="0">
+                                            <ToolBarContent>
+                                                <MudText Typo="Typo.h6">Службы серверов хранилищ 1С</MudText>
+                                            </ToolBarContent>
+                                            <HeaderContent>
+                                                <MudTh>Имя</MudTh>
+                                                <MudTh>Состояние</MudTh>
+                                                <MudTh>Порт</MudTh>
+                                            </HeaderContent>
+                                            <RowTemplate>
+                                                <MudTd DataLabel="Имя">@context.Name</MudTd>
+                                                <MudTd DataLabel="Состояние">
+                                                    @if (context.IsActive)
+                                                    {
+                                                        <MudIcon Color="Color.Success" Icon="@(Icons.Material.Filled.PlayArrow)"/>
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudIcon Color="Color.Error" Icon="@(Icons.Material.Filled.Stop)"/>
+                                                    }
+                                                </MudTd>
+                                                <MudTd DataLabel="Порт">@context.Port</MudTd>
+                                            </RowTemplate>
+                                        </MudTable>
+                                    }
+                                </MudStack>
+                            </MudStack>
+                        }
+                        else
+                        {
+                            <MudPaper Class="d-flex w-100 h-100 px-4 align-center" Elevation="0">
+                                <MudText Align="Align.Center" Class="w-100">Агент отключен</MudText>
+                            </MudPaper>
+                        }
+                    </ChildContent>
+                </MudTabPanel>
+            }
+        </ChildContent>
+    </MudTabs>
+</MudStack>
+
+@code {
+    HubConnection? _hubConnection;
+    private List<AgentTabViewModel> _items = [];
+    private int _activePanelIndex;
+    private bool _isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavManager.ToAbsoluteUri("/agentsHub"))
+            .Build();
+
+        _hubConnection.On("AgentsStateUpdated", UpdateAgents);
+        
+        await _hubConnection.StartAsync();
+        
+        await UpdateAgents();
+    }
+
+    private async Task UpdateAgents()
+    {
+        if (_isLoading)
+            return;
+
+        _isLoading = true;
+        
+        _items.Clear();
+        
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        var agents = await context.Agents.ToListAsync();
+
+        var newItems = new List<AgentTabViewModel>();
+
+        foreach (var agent in agents)
+        {
+            var connection = AgentsConnectionsManager.GetAgentConnection(agent.Id);
+            
+            newItems.Add(new AgentTabViewModel
+            {
+                Agent = agent,
+                Connected = connection != null,
+                SystemInfo = connection is null ? null : await connection.GetSystemInfo(CancellationToken.None),
+                InstalledPlatforms = connection is null ? [] : await connection.GetInstalledPlatforms(CancellationToken.None),
+                CrServerServices = connection is null ? [] : await connection.GetCrServerServices(CancellationToken.None),
+                RasServices = connection is null ? [] : await connection.GetRasServices(CancellationToken.None),
+                RagentServices = connection is null ? [] : await connection.GetRagentServices(CancellationToken.None)
+            });
+        }
+
+        newItems = newItems.OrderBy(c => c.Agent.InstanceName).ToList();
+
+        if (_items.Count > 0)
+        {
+            var newActivePanelIndex = newItems.FindIndex(c => c.Agent.Id == _items[_activePanelIndex].Agent.Id);
+            if (newActivePanelIndex == -1)
+                newActivePanelIndex = 0;
+
+            _activePanelIndex = newActivePanelIndex;
+        }
+        else
+            _activePanelIndex = 0;
+        
+        _items = newItems;
+
+        _isLoading = false;
+        
+        await InvokeAsync(StateHasChanged);
+    }
+
+    class AgentTabViewModel
+    {
+        public Agent Agent { get; set; } = null!;
+        public bool Connected { get; set; }
+        public SystemInfoDto? SystemInfo { get; set; } = null!;
+        public List<V8Platform> InstalledPlatforms { get; set; } = [];
+        public List<RagentService> RagentServices { get; set; } = [];
+        public List<RasService> RasServices { get; set; } = [];
+        public List<CrServer> CrServerServices { get; set; } = [];
+    }
+}

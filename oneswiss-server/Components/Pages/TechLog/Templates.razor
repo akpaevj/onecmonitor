@@ -1,0 +1,9 @@
+@page "/techlog/templates"
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+@rendermode InteractiveServer
+
+<DatabaseObjectsTable TModel="LogTemplate" TViewModel="LogTemplate"
+                      NameSelector="template => template.Name"
+                      Route="techlog/templates"
+                      Title="Шаблоны сбора технологического журнала"/>

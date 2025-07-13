@@ -1,0 +1,18 @@
+@page "/maintenancetasks/{id:guid}"
+@page "/maintenancetasks/create"
+@using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Common.Models.MaintenanceTasks
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Models.MaintenanceTasks
+
+<EditItem Id="Id" 
+          IsTemplate="false" 
+          Title="Новая задача обслуживания" 
+          Route="maintenancetasks"/>
+
+@code
+{
+    [Parameter]
+    public Guid Id { get; set; }
+}

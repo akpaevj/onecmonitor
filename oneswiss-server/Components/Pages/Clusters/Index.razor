@@ -1,0 +1,61 @@
+@page "/clusters"
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Models
+@inject NavigationManager NavManager
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@rendermode InteractiveServer
+
+<PageTitle>Кластеры и информационные базы</PageTitle>
+
+<MudTabs Position="Position.Left" HeaderPosition="TabHeaderPosition.Before" Rounded="true"
+         ApplyEffectsToContainer="true" PanelClass="ps-6 pe-6">
+    <Header>
+        <MudText Align="Align.Center" Class="pt-4 pa-3" Typo="Typo.h6">Кластеры</MudText>
+    </Header>
+    <ChildContent>
+        @foreach (var cluster in _clusters)
+        {
+            <MudTabPanel>
+                <TabContent>
+                    <MudStack Row AlignItems="AlignItems.Center" StretchItems="StretchItems.All">
+                        <MudText>@cluster.Name</MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavManager.NavigateTo($"clusters/{@cluster.Id}"))" Color="Color.Info"/>
+                    </MudStack>
+                </TabContent>
+                <ChildContent>
+                    <MudTable T="InfoBase" Items="@cluster.InfoBases" Hover="true" Class="w-100">
+                        <ToolBarContent>
+                            <MudText Align="Align.Center" Typo="Typo.h6">Информационные базы</MudText>
+                        </ToolBarContent>
+                        <HeaderContent>
+                            <MudTh>Имя</MudTh>
+                            <MudTh></MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Имя">@context.Name</MudTd>
+                            <MudTd>
+                                <MudStack Row>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavManager.NavigateTo($"infobases/{context.Id}"))" Color="Color.Info"/>
+                                </MudStack>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </ChildContent>
+            </MudTabPanel>
+        }
+    </ChildContent>
+</MudTabs>
+
+@code
+{
+    List<Cluster> _clusters = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        _clusters = await context.Clusters
+            .Include(c => c.Agent)
+            .Include(c => c.InfoBases)
+            .ToListAsync();
+    }
+}

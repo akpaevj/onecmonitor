@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "name": "onecmonitor",
+  "private": true,
+  "config": {},
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "monaco-editor": "^0.52.2",
+    "highlight.js": "^11.11.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.5",
+    "typescript": "5.3.3"
+  }
+}

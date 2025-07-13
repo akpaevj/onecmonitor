@@ -1,0 +1,50 @@
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Extensions
+@inject ISnackbar SnackBar
+@typeparam T where T : OneSwiss.Server.Models.DatabaseObject
+
+<MudDialog>
+    <TitleContent>
+        Удаление
+    </TitleContent>
+    <DialogContent>
+        Вы действительно хотите удалить "@ItemName"?
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отменить</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Удалить</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [Parameter] 
+    public Guid Id { get; set; }
+
+    [Parameter] 
+    public string ItemName { get; set; } = string.Empty;
+    
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    private async Task Submit()
+    {
+        try
+        {
+            await using var context = await ContextFactory.CreateDbContextAsync();
+            var item = await context.Set<T>().FindAsync(Id);
+            
+            context.Entry(item!).State = EntityState.Deleted;
+            
+            await context.SaveChangesAsync();
+            
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+            Cancel();
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

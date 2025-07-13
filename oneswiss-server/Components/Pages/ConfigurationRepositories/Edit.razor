@@ -1,0 +1,51 @@
+@page "/configurationrepositories/{id:guid}"
+@page "/configurationrepositories/create"
+@using FluentValidation
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+
+<EditDatabaseObject @ref="_editor" T="ConfigurationRepository"
+                    Id="Id"
+                    Route="configurationrepositories"
+                    Title="Новое хранилище конфигураций"
+                    NameSelector="@(c => c.Name)"
+                    Validation="_validator.ValidateValue">
+    <MudStack>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" Label="Наименование" @bind-Value="@_editor.Model!.Name"></MudTextField>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Address)" Label="Строка подключения" @bind-Value="@_editor.Model!.Address"></MudTextField>
+        <MudSelect Class="mb-3" For="@(() => _editor.Model!.CredentialsId)" Label="Учетные данные" @bind-Value="@_editor.Model!.CredentialsId" Clearable="true">
+            @foreach (var item in _editor.Context!.Credentials.ToList())
+            {
+                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+            }
+        </MudSelect>
+        
+    </MudStack>
+</EditDatabaseObject>
+
+@code
+{
+    private readonly Validator _validator = new();
+    private EditDatabaseObject<ConfigurationRepository> _editor = null!;
+    
+    [Parameter]
+    public Guid Id { get; set; }
+    
+    class Validator : ModelValidator<ConfigurationRepository>
+    {
+        public Validator()
+        {
+            RuleFor(c => c.Name)
+                .NotEmpty()
+                .WithMessage("Не заполнено наименование");
+            
+            RuleFor(c => c.Address)
+                .NotEmpty()
+                .WithMessage("Не заполнена строка подключения");
+            
+            RuleFor(c => c.CredentialsId)
+                .NotEmpty()
+                .WithMessage("Не указаны учетные данные");
+        }
+    }
+}
