@@ -1,4 +1,5 @@
-﻿@inherits LayoutComponentBase
+﻿@using MudBlazor.Utilities
+@inherits LayoutComponentBase
 @inject ISnackbar SnackbarService
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme"/>
@@ -32,6 +33,7 @@
 @code {
     bool _drawerOpen = true;
     bool _isDarkMode = true;
+
     readonly MudTheme _theme = new();
     string _yellowColor = "#ffe016";
 

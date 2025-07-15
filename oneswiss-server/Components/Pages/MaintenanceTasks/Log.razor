@@ -1,4 +1,5 @@
 @page "/maintenancetasks/{id:guid}/log"
+@using Dapper
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Extensions
@@ -13,26 +14,48 @@
 
 <h1 Class="mb-3">Журнал задачи обслуживания</h1>
 
-<MudTabs Outlined="true" Position="Position.Left" Rounded="true" Border="true"
+<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true"
          ApplyEffectsToContainer="true" PanelClass="pa-6">
-    
-    @foreach (var infoBase in _taskInfoBases)
+    <MudTabPanel Text="Общий лог задачи" BadgeDot="true" BadgeColor="_taskLogBadgeColor">
+        <MudTable T="MaintenanceTaskLogItem" Items="_taskLogItems" Style="width: 100%" Class="mb-3" Bordered="true">
+            <HeaderContent>
+                <MudTh>Время</MudTh>
+                <MudTh>Уровень</MudTh>
+                <MudTh>Сообщение</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Время">@context.TimeStamp</MudTd>
+                <MudTd DataLabel="Уровень" Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
+                <MudTd Style="white-space: pre-wrap" DataLabel="Сообщение">@context.Message</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudTabPanel>
+    @if (_infobaseLogItems.Count > 0)
     {
-        var logs = _logItems.TryGetValue(infoBase.Id, out var item) ? item : [];
+        <MudTabPanel Text="Лог по информационным базам"  BadgeDot="true" BadgeColor="_infoBasesLogBadgeColor">
+            <MudTabs Outlined="true" Position="Position.Left" Rounded="true" Border="true"
+                     ApplyEffectsToContainer="true" PanelClass="pa-6">
+    
+                @foreach (var infoBase in _taskInfoBases)
+                {
+                    var logs = _infobaseLogItems.TryGetValue(infoBase.Id, out var item) ? item : [];
         
-        <MudTabPanel Text="@infoBase.Name" BadgeDot="true" BadgeColor="@(GetBadgeColor(logs))">
-            <MudTable T="MaintenanceStepLogItem" Items="logs" Style="width: 100%">
-                <HeaderContent>
-                    <MudTh>Время</MudTh>
-                    <MudTh>Уровень</MudTh>
-                    <MudTh>Сообщение</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Время">@context.TimeStamp</MudTd>
-                    <MudTd DataLabel="Уровень" Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
-                    <MudTd Style="white-space: pre-wrap" DataLabel="Сообщение">@context.Message</MudTd>
-                </RowTemplate>
-            </MudTable>
+                    <MudTabPanel Text="@infoBase.Name" BadgeDot="true" BadgeColor="@(GetBadgeColor(logs))">
+                        <MudTable T="MaintenanceTaskLogItem" Items="logs" Style="width: 100%" Bordered="true">
+                            <HeaderContent>
+                                <MudTh>Время</MudTh>
+                                <MudTh>Уровень</MudTh>
+                                <MudTh>Сообщение</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Время">@context.TimeStamp</MudTd>
+                                <MudTd DataLabel="Уровень" Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
+                                <MudTd Style="white-space: pre-wrap" DataLabel="Сообщение">@context.Message</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudTabPanel>
+                }
+            </MudTabs>
         </MudTabPanel>
     }
 </MudTabs>
@@ -41,12 +64,15 @@
 {
     private bool _isLoading;
     private HubConnection? _hubConnection;
+    private Color _taskLogBadgeColor = Color.Warning;
+    private Color _infoBasesLogBadgeColor = Color.Warning;
     
     [Parameter]
     public Guid Id { get; set; }
-
+    
     private IReadOnlyList<InfoBase> _taskInfoBases = [];
-    private Dictionary<Guid, List<MaintenanceStepLogItem>> _logItems = [];
+    private List<MaintenanceTaskLogItem> _taskLogItems = [];
+    private Dictionary<Guid, List<MaintenanceTaskLogItem>> _infobaseLogItems = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -81,16 +107,26 @@
                 .AsNoTracking()
                 .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase)
                 .Include(c => c.Steps)
-                .ThenInclude(c => c.Logs)
                 .FirstOrDefaultAsync(c => c.Id == Id);
 
+            var infoBasesCount = data!.InfoBases.Count;
+
             _taskInfoBases = data!.InfoBases.Select(c => c.InfoBase).OrderBy(c => c.Name).ToList();
-            _logItems = data.Steps
-                .SelectMany(c => c.Logs)
+            _infobaseLogItems = await context.MaintenanceTaskLogs
+                .AsNoTracking()
+                .Where(c => c.TaskId == data.Id && c.InfoBaseId != null)
                 .GroupBy(c => c.InfoBaseId)
-                .ToDictionary(c => c.Key, i => i
-                    .OrderBy(b => b.TimeStamp)
-                    .ToList());
+                .ToDictionaryAsync(c => (Guid)c.Key!, c => c.OrderBy(i => i.TimeStamp).AsList());
+
+            _taskLogItems = await context.MaintenanceTaskLogs
+                .AsNoTracking()
+                .Where(c => c.TaskId == data.Id && c.StepId == null)
+                .OrderBy(c => c.TimeStamp)
+                .ToListAsync();
+
+            var infoBasesLogs = _infobaseLogItems.SelectMany(c => c.Value).ToList();
+            _taskLogBadgeColor = GetTaskTabBadgeColor(_taskLogItems, infoBasesLogs);
+            _infoBasesLogBadgeColor = GetInfoBasesTabBadgeColor(infoBasesCount, infoBasesLogs);
         }
         catch (Exception e)
         {
@@ -101,8 +137,30 @@
             _isLoading = false;
         }
     }
+    
+    private static Color GetTaskTabBadgeColor(List<MaintenanceTaskLogItem> taskLogs, List<MaintenanceTaskLogItem> stepLogs)
+    {
+        var hasError = taskLogs.Any(c => c.IsError) || stepLogs.Any(c => c.IsError);
+        if (hasError)
+            return Color.Error;
+        
+        var finished = taskLogs.Any(c => c.IsFinish);
 
-    private static Color GetBadgeColor(List<MaintenanceStepLogItem> logs)
+        return finished ? Color.Success : Color.Warning;
+    }
+    
+    private static Color GetInfoBasesTabBadgeColor(int infoBasesCount, List<MaintenanceTaskLogItem> stepLogs)
+    {
+        var hasError = stepLogs.Any(c => c.IsError);
+        if (hasError)
+            return Color.Error;
+        
+        var finished = stepLogs.Count(c => c.IsFinish);
+
+        return finished == infoBasesCount ? Color.Success : Color.Warning;
+    }
+
+    private static Color GetBadgeColor(List<MaintenanceTaskLogItem> logs)
     {
         var hasError = logs.Any(c => c.IsError);
         var finished = logs.Any(c => c.IsFinish);

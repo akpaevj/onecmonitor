@@ -1,6 +1,6 @@
 @page "/configurationrepositories/{id:guid}"
-@page "/configurationrepositories/create"
 @using FluentValidation
+@using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
 
@@ -9,17 +9,40 @@
                     Route="configurationrepositories"
                     Title="Новое хранилище конфигураций"
                     NameSelector="@(c => c.Name)"
-                    Validation="_validator.ValidateValue">
+                    Validation="_validator.ValidateValue"
+                    ModelSelector="ModelSelector"
+                    OnInitialize="OnInitialize">
     <MudStack>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" Label="Наименование" @bind-Value="@_editor.Model!.Name"></MudTextField>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Address)" Label="Строка подключения" @bind-Value="@_editor.Model!.Address"></MudTextField>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" ReadOnly="true" Label="Наименование" @bind-Value="@_editor.Model!.Name"/>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Host)" ReadOnly="true" Label="Хост" @bind-Value="@_editor.Model!.Host"/>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Port)" ReadOnly="true" Label="Порт" @bind-Value="@_editor.Model!.Port"/>
         <MudSelect Class="mb-3" For="@(() => _editor.Model!.CredentialsId)" Label="Учетные данные" @bind-Value="@_editor.Model!.CredentialsId" Clearable="true">
-            @foreach (var item in _editor.Context!.Credentials.ToList())
+            @foreach (var item in _credentials)
             {
                 <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
             }
         </MudSelect>
-        
+        <MudTable T="ConfigurationRepositoryUser" Items="@_editor.Model!.Users">
+            <ToolBarContent>
+                <MudText>Пользователи</MudText>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Имя</MudTh>
+                <MudTh>Пользователь Git</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Имя">@context.Name</MudTd>
+                <MudTd DataLabel="Пользователь Git">@context.GitUser</MudTd>
+            </RowTemplate>
+            <RowEditingTemplate>
+                <MudTd DataLabel="Имя">
+                    <MudText>@context.Name</MudText>
+                </MudTd>
+                <MudTd DataLabel="Пользователь Git">
+                    <MudTextField For="@(() => context.GitUser)" @bind-Value="context.GitUser"/>
+                </MudTd>
+            </RowEditingTemplate>
+        </MudTable>
     </MudStack>
 </EditDatabaseObject>
 
@@ -28,21 +51,23 @@
     private readonly Validator _validator = new();
     private EditDatabaseObject<ConfigurationRepository> _editor = null!;
     
+    private List<Credentials> _credentials;
+    
     [Parameter]
     public Guid Id { get; set; }
+    
+    private async Task OnInitialize((ConfigurationRepository Model, AppDbContext Context) obj)
+    {
+        _credentials = await obj.Context.Credentials.ToListAsync();
+    }
+    
+    private static IQueryable<ConfigurationRepository> ModelSelector(IQueryable<ConfigurationRepository> arg)
+        => arg.Include(c => c.Users);
     
     class Validator : ModelValidator<ConfigurationRepository>
     {
         public Validator()
         {
-            RuleFor(c => c.Name)
-                .NotEmpty()
-                .WithMessage("Не заполнено наименование");
-            
-            RuleFor(c => c.Address)
-                .NotEmpty()
-                .WithMessage("Не заполнена строка подключения");
-            
             RuleFor(c => c.CredentialsId)
                 .NotEmpty()
                 .WithMessage("Не указаны учетные данные");

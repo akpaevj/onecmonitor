@@ -6,28 +6,28 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>OneSwiss.Server</RootNamespace>
         <Version>0.2.0</Version>
-        <AssemblyVersion>0.2.1</AssemblyVersion>
+        <AssemblyVersion>0.2.2</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AutoMapper" Version="14.0.0" />
+        <PackageReference Include="AutoMapper" Version="15.0.1" />
         <PackageReference Include="FluentValidation" Version="12.0.0" />
         <PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
         <PackageReference Include="Grpc.Tools" Version="2.72.0">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.6" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.6" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.6" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6">
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.7" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.7" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.7">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.6" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.6" />
-        <PackageReference Include="MudBlazor" Version="8.8.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.7" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.7" />
+        <PackageReference Include="MudBlazor" Version="8.9.0" />
         <PackageReference Include="RestSharp" Version="112.1.0" />
         <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.3" />
     </ItemGroup>

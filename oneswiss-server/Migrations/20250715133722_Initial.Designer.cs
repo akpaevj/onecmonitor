@@ -10,14 +10,14 @@ using OneSwiss.Server;
 namespace OneSwiss.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250706223339_Initial")]
+    [Migration("20250715133722_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.7");
 
             modelBuilder.Entity("AgentTechLogSeance", b =>
                 {
@@ -125,11 +125,85 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("CommonSettings");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.ConfigurationRepository", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AgentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CredentialsId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InternalId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentId");
+
+                    b.HasIndex("CredentialsId");
+
+                    b.ToTable("ConfigRepositories");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.ConfigurationRepositoryUser", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("GitUser")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InternalId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RepositoryId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepositoryId");
+
+                    b.ToTable("ConfigRepositoryUsers");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.Credentials", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("DefaultConfigRepositoriesAdmin")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("DefaultForClusters")
                         .HasColumnType("INTEGER");
@@ -376,6 +450,9 @@ namespace OneSwiss.Server.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ConfigurationRepositoryId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ExtensionName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -383,6 +460,9 @@ namespace OneSwiss.Server.Migrations
 
                     b.Property<string>("FileId")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("FromConfigRepository")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Kind")
                         .HasColumnType("INTEGER");
@@ -416,48 +496,13 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ConfigurationRepositoryId");
+
                     b.HasIndex("FileId");
 
                     b.HasIndex("MaintenanceTaskId");
 
                     b.ToTable("MaintenanceSteps");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStepLogItem", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("InfoBaseId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsError")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsFinish")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("StepId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("TimeStamp")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InfoBaseId");
-
-                    b.HasIndex("StepId");
-
-                    b.ToTable("MaintenanceStepLogs");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
@@ -486,6 +531,46 @@ namespace OneSwiss.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("MaintenanceTasks");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTaskLogItem", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InfoBaseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsError")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsFinish")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TaskId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("TimeStamp")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InfoBaseId");
+
+                    b.HasIndex("StepId");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("MaintenanceTaskLogs");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.TechLogFilter", b =>
@@ -615,6 +700,34 @@ namespace OneSwiss.Server.Migrations
                     b.Navigation("Credentials");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.ConfigurationRepository", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.Agent", "Agent")
+                        .WithMany()
+                        .HasForeignKey("AgentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
+                        .WithMany()
+                        .HasForeignKey("CredentialsId");
+
+                    b.Navigation("Agent");
+
+                    b.Navigation("Credentials");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.ConfigurationRepositoryUser", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.ConfigurationRepository", "Repository")
+                        .WithMany("Users")
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Repository");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.EventLogSettings", b =>
                 {
                     b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
@@ -668,6 +781,10 @@ namespace OneSwiss.Server.Migrations
 
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
                 {
+                    b.HasOne("OneSwiss.Server.Models.ConfigurationRepository", "ConfigurationRepository")
+                        .WithMany()
+                        .HasForeignKey("ConfigurationRepositoryId");
+
                     b.HasOne("OneSwiss.Server.Models.File", "File")
                         .WithMany()
                         .HasForeignKey("FileId");
@@ -678,28 +795,35 @@ namespace OneSwiss.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("ConfigurationRepository");
+
                     b.Navigation("File");
 
                     b.Navigation("MaintenanceTask");
                 });
 
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStepLogItem", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTaskLogItem", b =>
                 {
                     b.HasOne("OneSwiss.Server.Models.InfoBase", "InfoBase")
                         .WithMany()
                         .HasForeignKey("InfoBaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", "Step")
                         .WithMany("Logs")
                         .HasForeignKey("StepId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", "Task")
+                        .WithMany("Logs")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("InfoBase");
 
                     b.Navigation("Step");
+
+                    b.Navigation("Task");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.TechLogSettings", b =>
@@ -727,6 +851,11 @@ namespace OneSwiss.Server.Migrations
                     b.Navigation("InfoBases");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.ConfigurationRepository", b =>
+                {
+                    b.Navigation("Users");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.Credentials", b =>
                 {
                     b.Navigation("Clusters");
@@ -747,6 +876,8 @@ namespace OneSwiss.Server.Migrations
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
                 {
                     b.Navigation("InfoBases");
+
+                    b.Navigation("Logs");
 
                     b.Navigation("Steps");
                 });

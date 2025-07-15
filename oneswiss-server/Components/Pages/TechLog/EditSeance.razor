@@ -34,7 +34,7 @@
             }
         </MudRadioGroup>
     </MudStack>
-    <MudStack Row Class="mb-3">
+    <MudStack Row Class="mb-3" StretchItems="StretchItems.All" Breakpoint="Breakpoint.MdAndDown">
         <MudDatePicker Label="Дата начала" 
                        For="@(() => _startDate)"
                        @bind-Date="@_startDate" 
@@ -50,7 +50,7 @@
                          @bind-Value="_editor.Model!.Duration" 
                          Disabled="_durationDisabled"/>
     </MudStack>
-    <MudStack Row StretchItems="StretchItems.All">
+    <MudStack Row StretchItems="StretchItems.All" Breakpoint="Breakpoint.SmAndDown">
         <ItemsSelector T="Agent"
                        @bind-SelectedValues="_editor.Model!.Agents"
                        NameSelector="item => item.InstanceName"

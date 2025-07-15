@@ -45,7 +45,8 @@ namespace OneSwiss.Server.Migrations
                     User = table.Column<string>(type: "TEXT", nullable: false),
                     Password = table.Column<string>(type: "TEXT", nullable: false),
                     DefaultForClusters = table.Column<bool>(type: "INTEGER", nullable: false),
-                    DefaultV8Admin = table.Column<bool>(type: "INTEGER", nullable: false)
+                    DefaultV8Admin = table.Column<bool>(type: "INTEGER", nullable: false),
+                    DefaultConfigRepositoriesAdmin = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -197,6 +198,35 @@ namespace OneSwiss.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ConfigRepositories",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    InternalId = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    Host = table.Column<string>(type: "TEXT", nullable: false),
+                    Port = table.Column<int>(type: "INTEGER", nullable: false),
+                    Deleted = table.Column<bool>(type: "INTEGER", nullable: false),
+                    AgentId = table.Column<string>(type: "TEXT", nullable: false),
+                    CredentialsId = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ConfigRepositories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ConfigRepositories_Agents_AgentId",
+                        column: x => x.AgentId,
+                        principalTable: "Agents",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ConfigRepositories_Credentials_CredentialsId",
+                        column: x => x.CredentialsId,
+                        principalTable: "Credentials",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "EventLogSettings",
                 columns: table => new
                 {
@@ -247,41 +277,6 @@ namespace OneSwiss.Server.Migrations
                         column: x => x.DbmsId,
                         principalTable: "Dbms",
                         principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "MaintenanceSteps",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    MaintenanceTaskId = table.Column<string>(type: "TEXT", nullable: false),
-                    Kind = table.Column<int>(type: "INTEGER", nullable: false),
-                    NodeKind = table.Column<int>(type: "INTEGER", nullable: false),
-                    PreviousStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    LeftStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    RightStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    AccessCode = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
-                    Message = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    CommandLineArguments = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: false),
-                    FileId = table.Column<string>(type: "TEXT", nullable: true),
-                    ExtensionName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    PositionX = table.Column<double>(type: "REAL", nullable: false),
-                    PositionY = table.Column<double>(type: "REAL", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MaintenanceSteps", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_MaintenanceSteps_Files_FileId",
-                        column: x => x.FileId,
-                        principalTable: "Files",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_MaintenanceSteps_MaintenanceTasks_MaintenanceTaskId",
-                        column: x => x.MaintenanceTaskId,
-                        principalTable: "MaintenanceTasks",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -361,6 +356,70 @@ namespace OneSwiss.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ConfigRepositoryUsers",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    InternalId = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    GitUser = table.Column<string>(type: "TEXT", nullable: true),
+                    Deleted = table.Column<bool>(type: "INTEGER", nullable: false),
+                    RepositoryId = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ConfigRepositoryUsers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ConfigRepositoryUsers_ConfigRepositories_RepositoryId",
+                        column: x => x.RepositoryId,
+                        principalTable: "ConfigRepositories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MaintenanceSteps",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    MaintenanceTaskId = table.Column<string>(type: "TEXT", nullable: false),
+                    Kind = table.Column<int>(type: "INTEGER", nullable: false),
+                    NodeKind = table.Column<int>(type: "INTEGER", nullable: false),
+                    PreviousStepId = table.Column<string>(type: "TEXT", nullable: true),
+                    LeftStepId = table.Column<string>(type: "TEXT", nullable: true),
+                    RightStepId = table.Column<string>(type: "TEXT", nullable: true),
+                    AccessCode = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
+                    Message = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    CommandLineArguments = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: false),
+                    FromConfigRepository = table.Column<bool>(type: "INTEGER", nullable: false),
+                    ConfigurationRepositoryId = table.Column<string>(type: "TEXT", nullable: true),
+                    FileId = table.Column<string>(type: "TEXT", nullable: true),
+                    ExtensionName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    PositionX = table.Column<double>(type: "REAL", nullable: false),
+                    PositionY = table.Column<double>(type: "REAL", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MaintenanceSteps", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MaintenanceSteps_ConfigRepositories_ConfigurationRepositoryId",
+                        column: x => x.ConfigurationRepositoryId,
+                        principalTable: "ConfigRepositories",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaintenanceSteps_Files_FileId",
+                        column: x => x.FileId,
+                        principalTable: "Files",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaintenanceSteps_MaintenanceTasks_MaintenanceTaskId",
+                        column: x => x.MaintenanceTaskId,
+                        principalTable: "MaintenanceTasks",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "InfoBaseMaintenanceTask",
                 columns: table => new
                 {
@@ -385,7 +444,7 @@ namespace OneSwiss.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MaintenanceStepLogs",
+                name: "MaintenanceTaskLogs",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
@@ -393,22 +452,29 @@ namespace OneSwiss.Server.Migrations
                     IsError = table.Column<bool>(type: "INTEGER", nullable: false),
                     IsFinish = table.Column<bool>(type: "INTEGER", nullable: false),
                     Message = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    InfoBaseId = table.Column<string>(type: "TEXT", nullable: false),
-                    StepId = table.Column<string>(type: "TEXT", nullable: false)
+                    InfoBaseId = table.Column<string>(type: "TEXT", nullable: true),
+                    StepId = table.Column<string>(type: "TEXT", nullable: true),
+                    TaskId = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MaintenanceStepLogs", x => x.Id);
+                    table.PrimaryKey("PK_MaintenanceTaskLogs", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MaintenanceStepLogs_InfoBases_InfoBaseId",
+                        name: "FK_MaintenanceTaskLogs_InfoBases_InfoBaseId",
                         column: x => x.InfoBaseId,
                         principalTable: "InfoBases",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MaintenanceStepLogs_MaintenanceSteps_StepId",
+                        name: "FK_MaintenanceTaskLogs_MaintenanceSteps_StepId",
                         column: x => x.StepId,
                         principalTable: "MaintenanceSteps",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MaintenanceTaskLogs_MaintenanceTasks_TaskId",
+                        column: x => x.TaskId,
+                        principalTable: "MaintenanceTasks",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -427,6 +493,21 @@ namespace OneSwiss.Server.Migrations
                 name: "IX_Clusters_CredentialsId",
                 table: "Clusters",
                 column: "CredentialsId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConfigRepositories_AgentId",
+                table: "ConfigRepositories",
+                column: "AgentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConfigRepositories_CredentialsId",
+                table: "ConfigRepositories",
+                column: "CredentialsId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConfigRepositoryUsers_RepositoryId",
+                table: "ConfigRepositoryUsers",
+                column: "RepositoryId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_EventLogSettings_CredentialsId",
@@ -459,14 +540,9 @@ namespace OneSwiss.Server.Migrations
                 column: "TemplatesId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceStepLogs_InfoBaseId",
-                table: "MaintenanceStepLogs",
-                column: "InfoBaseId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceStepLogs_StepId",
-                table: "MaintenanceStepLogs",
-                column: "StepId");
+                name: "IX_MaintenanceSteps_ConfigurationRepositoryId",
+                table: "MaintenanceSteps",
+                column: "ConfigurationRepositoryId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MaintenanceSteps_FileId",
@@ -477,6 +553,21 @@ namespace OneSwiss.Server.Migrations
                 name: "IX_MaintenanceSteps_MaintenanceTaskId",
                 table: "MaintenanceSteps",
                 column: "MaintenanceTaskId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaintenanceTaskLogs_InfoBaseId",
+                table: "MaintenanceTaskLogs",
+                column: "InfoBaseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaintenanceTaskLogs_StepId",
+                table: "MaintenanceTaskLogs",
+                column: "StepId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaintenanceTaskLogs_TaskId",
+                table: "MaintenanceTaskLogs",
+                column: "TaskId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TechLogSettings_CredentialsId",
@@ -499,6 +590,9 @@ namespace OneSwiss.Server.Migrations
                 name: "CommonSettings");
 
             migrationBuilder.DropTable(
+                name: "ConfigRepositoryUsers");
+
+            migrationBuilder.DropTable(
                 name: "ErrorLoggingServiceSettings");
 
             migrationBuilder.DropTable(
@@ -514,7 +608,7 @@ namespace OneSwiss.Server.Migrations
                 name: "LogTemplateTechLogSeance");
 
             migrationBuilder.DropTable(
-                name: "MaintenanceStepLogs");
+                name: "MaintenanceTaskLogs");
 
             migrationBuilder.DropTable(
                 name: "TechLogFilters");
@@ -539,6 +633,9 @@ namespace OneSwiss.Server.Migrations
 
             migrationBuilder.DropTable(
                 name: "Clusters");
+
+            migrationBuilder.DropTable(
+                name: "ConfigRepositories");
 
             migrationBuilder.DropTable(
                 name: "Files");

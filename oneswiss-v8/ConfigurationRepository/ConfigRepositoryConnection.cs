@@ -1,15 +1,28 @@
 using OneSTools.FileDatabase;
+using OneSTools.FileDatabase.Extensions;
+using OneSwiss.V8.ConfigurationRepository.Models;
 
 namespace OneSwiss.V8.ConfigurationRepository;
 
-public class ConfigurationRepositoryReader(string path) : IDisposable
+public class ConfigRepositoryConnection(string path) : IDisposable
 {
     private readonly FileDatabaseConnection _connection = new(path);
 
-    public List<string> ReadUsers()
+    public Guid ReadId()
     {
         OpenIfNeed();
+        
+        var firstRow = _connection["DEPOT"].Rows.FirstOrDefault();
+        if (firstRow == null)
+            throw new Exception("Таблица DEPOT не содержит записей");
 
+        return firstRow["DEPOTID"].AsGuid();
+    }
+    
+    public List<ConfigRepositoryUser> ReadUsers()
+    {
+        OpenIfNeed();
+        
         var table = _connection.Tables.FirstOrDefault(c => c.Name == "USERS");
         if (table == null)
             throw new Exception("Таблица пользователей не обнаружена");
@@ -18,7 +31,11 @@ public class ConfigurationRepositoryReader(string path) : IDisposable
         if (fieldNumber == -1)
             throw new Exception("Колонка имя пользователя не обнаружена");
 
-        return table.Rows.Select(c => c[fieldNumber].ToString()).ToList()!;
+        return _connection["USERS"].Rows.Select(c => new ConfigRepositoryUser()
+        {
+            Id = c["USERID"].AsGuid(),
+            Name = c["NAME"].AsString()
+        }).Where(c => !string.IsNullOrEmpty(c.Name)).ToList();
     }
 
     private void OpenIfNeed()
