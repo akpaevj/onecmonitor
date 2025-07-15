@@ -5,6 +5,7 @@ using MessagePack;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Common.Services;
+using OneSwiss.V8.ConfigurationRepository;
 using OneSwiss.V8.Platform.RemoteAdministration;
 
 namespace OneSwiss.Agent.Services
@@ -84,6 +85,9 @@ namespace OneSwiss.Agent.Services
                         break;
                     case MessageType.MaintenanceTask:
                         await HandleMaintenanceTask(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.ConfigRepositoryDetailsRequest:
+                        await SendConfigRepositoryDetails(message, _applicationLifetime.ApplicationStopping);
                         break;
                     default:
                         throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
@@ -184,6 +188,26 @@ namespace OneSwiss.Agent.Services
         {
             var services = _v8ServicesProvider.GetCrServerServices();
             await _server.Send(MessageType.CrServerServices, services, message, cancellationToken);
+        }
+        
+        private async Task SendConfigRepositoryDetails(Message message, CancellationToken cancellationToken)
+        {
+            var request = MessagePackSerializer.Deserialize<ConfigRepositoryDetailsRequestDto>(message.Data, cancellationToken: cancellationToken);
+            var crServer = _v8ServicesProvider.GetCrServerForPort(request.CrServerPort);
+
+            using var db = new ConfigRepositoryConnection(Path.Combine(crServer.Directory, request.Repository, "1cv8ddb.1CD"));
+
+            var result = new ConfigRepositoryDetailsDto
+            {
+                Id = db.ReadId(),
+                Users = db.ReadUsers().Select(c => new ConfigRepositoryUserDto
+                {
+                    Id = c.Id,
+                    Name = c.Name
+                }).ToList()
+            };
+            
+            await _server.Send(MessageType.ConfigRepositoryDetails, result, message, cancellationToken);
         }
         
         private async Task SendSystemInfo(Message message, CancellationToken cancellationToken)

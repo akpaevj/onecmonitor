@@ -22,12 +22,14 @@ namespace OneSwiss.Server
         public DbSet<Dbms> Dbms { get; set; }
         public DbSet<TechLogSettings> TechLogSettings { get; set; }
         public DbSet<MaintenanceTask> MaintenanceTasks { get; set; }
+        public DbSet<MaintenanceTaskLogItem> MaintenanceTaskLogs { get; set; }
         public DbSet<MaintenanceStep> MaintenanceSteps { get; set; }
-        public DbSet<MaintenanceStepLogItem> MaintenanceStepLogs { get; set; }
         public DbSet<EventLogSettings> EventLogSettings { get; set; }
         public DbSet<ErrorLoggingServiceSettings> ErrorLoggingServiceSettings { get; set; }
         public DbSet<ErrorReport> ErrorReports { get; set; }
         public DbSet<CommonSettings> CommonSettings { get; set; }
+        public DbSet<ConfigurationRepository> ConfigRepositories { get; set; }
+        public DbSet<ConfigurationRepositoryUser> ConfigRepositoryUsers { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options, IHostEnvironment hostEnvironment) : base(options)
             => SetDbPath(hostEnvironment);

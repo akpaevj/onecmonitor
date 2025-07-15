@@ -18,6 +18,7 @@
         MaintenanceStepNodeLog,
         V8FileRequest,
         SystemInfoRequest,
+        ConfigRepositoryDetailsRequest,
         
         // Server messages
         InstalledPlatformsRequest,
@@ -29,6 +30,7 @@
         Settings,
         MaintenanceTask,
         V8FileChunk,
-        SystemInfo
+        SystemInfo,
+        ConfigRepositoryDetails
     }
 }

@@ -53,7 +53,10 @@ builder.Services.AddMudServices();
 
 builder.Services.AddSingleton<FilesProvider>();
 
-builder.Services.AddAutoMapper(typeof(DtoProfile).Assembly);
+builder.Services.AddAutoMapper(c =>
+{
+    c.AddMaps(typeof(DtoProfile).Assembly);
+});
 
 builder.Services.AddScoped<AdministrationApi>();
 
@@ -68,7 +71,7 @@ builder.Services.AddCors();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<AgentsConnectionsManager>());
 builder.Services.AddSingleton<AgentsConnectionsManager>();
 builder.Services.AddHostedService<ClustersInfoBasesDetector>();
-//builder.Services.AddHostedService<ConfigurationRepositoriesDetector>();
+builder.Services.AddHostedService<ConfigurationRepositoriesDetector>();
 builder.Services.AddHostedService<ErrorReportsCleaner>();
 builder.Services.AddControllers();
 

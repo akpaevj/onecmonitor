@@ -8,34 +8,43 @@
         <MudText>@Node.Step.Kind.GetDisplay()</MudText>
     </MudCardHeader>
     
-    @{
-        if (Node.Step.Kind == MaintenanceStepKind.LockConnections)
+    <MudCardContent>
+        @if (Node.Step.Kind == MaintenanceStepKind.LockConnections)
         {
-            <MudCardContent>
-                <MudTextField Class="mb-1" For="@(() => Node.Step.Message)" @bind-Value="@Node.Step.Message"></MudTextField>
-                <MudTextField For="@(() => Node.Step.AccessCode)" @bind-Value="@Node.Step.AccessCode"></MudTextField>
-            </MudCardContent>
+            <MudTextField Class="mb-1" For="@(() => Node.Step.Message)" @bind-Value="@Node.Step.Message"/>
+            <MudTextField Class="mb-1" For="@(() => Node.Step.AccessCode)" @bind-Value="@Node.Step.AccessCode"/>
+        }
+
+        @if (Node.Step.IsConfigurationUpdating())
+        {
+            <MudSwitch Class="mb-1" Label="Из хранилища" @bind-Value="@Node.Step.FromConfigRepository" Color="Color.Primary"/>
         }
         
-        if (Node.Step.NeeSpecifyExtensionName())
+        @if (Node.Step.NeeSpecifyExtensionName())
         {
-            <MudCardContent Class="mb-1">
-                <MudTextField For="@(() => Node.Step.ExtensionName)" @bind-Value="@Node.Step.ExtensionName"></MudTextField>
-            </MudCardContent>
+            <MudTextField Class="mb-1" For="@(() => Node.Step.ExtensionName)" @bind-Value="@Node.Step.ExtensionName"/>
         }
         
-        if (Node.Step.NeedLoadFiles())
+        @if (Node.Step.NeedSpecifyConfigRepository())
         {
-            <MudCardContent>
-                <MudSelect Class="mb-1" For="@(() => Node.Step.FileId)" @bind-Value="@Node.Step.FileId" Clearable="true">
-                    @foreach (var item in Node.Files)
-                    {
-                        <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
-                    }
-                </MudSelect>
-            </MudCardContent>
+            <MudSelect Class="mb-1" For="@(() => Node.Step.ConfigurationRepositoryId)" @bind-Value="@Node.Step.ConfigurationRepositoryId" Clearable="true">
+                @foreach (var item in Node.Repositories)
+                {
+                    <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
+                }
+            </MudSelect>
         }
-    }
+        
+        @if (Node.Step.NeedLoadFiles())
+        {
+            <MudSelect Class="mb-1" For="@(() => Node.Step.FileId)" @bind-Value="@Node.Step.FileId" Clearable="true">
+                @foreach (var item in Node.Files)
+                {
+                    <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
+                }
+            </MudSelect>
+        }
+    </MudCardContent>
     
     @foreach (var port in Node.Ports)
     {
@@ -43,7 +52,8 @@
     }
 </MudCard>
 
-@code {
+@code 
+{
     [Parameter] 
     public StepNode Node { get; set; } = null!;
 }

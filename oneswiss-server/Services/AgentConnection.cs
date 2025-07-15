@@ -175,6 +175,17 @@ namespace OneSwiss.Server.Services
                 },
                 cancellationToken);
         
+        public async Task<ConfigRepositoryDetailsDto> GetConfigRepositoryDetails(CrServer server, string repository, CancellationToken cancellationToken)
+            => await Get<ConfigRepositoryDetailsRequestDto, ConfigRepositoryDetailsDto>(
+                MessageType.ConfigRepositoryDetailsRequest, 
+                MessageType.ConfigRepositoryDetails,
+                new ConfigRepositoryDetailsRequestDto
+                {
+                  CrServerPort = server.Port,
+                  Repository = repository
+                },
+                cancellationToken);
+        
         public async Task StartMaintenanceTask(MaintenanceTask task, CancellationToken cancellationToken = default)
             => await Send(MessageType.MaintenanceTask, _mapper.Map<MaintenanceTaskDto>(task), cancellationToken);
         
@@ -253,9 +264,9 @@ namespace OneSwiss.Server.Services
         
         private async Task HandleMaintenanceStepLog(Message requestMessage, CancellationToken cancellationToken)
         {
-            var result = ParseMessageData<List<MaintenanceStepLogItemDto>>(requestMessage.Data, cancellationToken);
+            var result = ParseMessageData<List<MaintenanceTaskLogItemDto>>(requestMessage.Data, cancellationToken);
             
-            var log = _mapper.Map<List<MaintenanceStepLogItem>>(result);
+            var log = _mapper.Map<List<MaintenanceTaskLogItem>>(result);
 
             if (log.Count > 0)
             {
@@ -268,25 +279,23 @@ namespace OneSwiss.Server.Services
                 try
                 {
                     log.ForEach(c => c.TimeStamp = c.TimeStamp.AddSeconds(AgentInstance!.UtcOffset));
-                    await dbContext.MaintenanceStepLogs.AddRangeAsync(log, cancellationToken);
+                    await dbContext.MaintenanceTaskLogs.AddRangeAsync(log, cancellationToken);
                     
                     await dbContext.SaveChangesAsync(cancellationToken);
                     
                     var task = await dbContext.MaintenanceTasks
                         .Include(c => c.InfoBases)
                         .FirstOrDefaultAsync(c => c.Id == result[0].TaskId, cancellationToken);
-
-                    var infoBasesCount = task!.InfoBases.Count;
-                    var finishedCount = await dbContext.MaintenanceStepLogs
-                        .AsNoTracking()
-                        .Where(c => c.Step.MaintenanceTask.Id == task.Id && c.IsFinish)
-                        .CountAsync(cancellationToken);
                     
-                    task.IsFaulted = await dbContext.MaintenanceStepLogs
+                    task!.IsFaulted = await dbContext.MaintenanceTaskLogs
                         .AsNoTracking()
-                        .AnyAsync(c => c.Step.MaintenanceTask.Id == task.Id && c.IsError, cancellationToken);
+                        .AnyAsync(c => c.TaskId == task.Id && c.IsError, cancellationToken);
                     
-                    if (infoBasesCount == finishedCount)
+                    var hasTaskFinishLogItem = await dbContext.MaintenanceTaskLogs
+                        .AsNoTracking()
+                        .AnyAsync(c => c.TaskId == task.Id && c.StepId == null && c.IsFinish, cancellationToken);
+                    
+                    if (hasTaskFinishLogItem)
                         task.FinishDateTime = DateTime.Now;
                     
                     await dbContext.SaveChangesAsync(cancellationToken);

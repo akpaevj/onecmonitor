@@ -87,6 +87,7 @@
         var task = await context.MaintenanceTasks
             .AsNoTracking()
             .Include(c => c.Steps).ThenInclude(c => c.File)
+            .Include(c => c.Steps).ThenInclude(c => c.ConfigurationRepository).ThenInclude(c => c.Credentials)
             .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).ThenInclude(c => c.Credentials)
             .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).ThenInclude(c => c.Cluster).ThenInclude(c => c.Agent)
             .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).ThenInclude(c => c.Cluster).ThenInclude(c => c.Credentials)

@@ -4,7 +4,7 @@ using OneSwiss.V8.Platform.Services;
 namespace OneSwiss.Common.DTO;
 
 [MessagePackObject]
-public class ConfigurationRepositoryMeta
+public class ConfigurationRepositoryMetaDto
 {
     [Key(0)]
     public string Name { get; set; } = string.Empty;

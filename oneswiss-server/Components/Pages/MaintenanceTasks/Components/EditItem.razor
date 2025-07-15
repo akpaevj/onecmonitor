@@ -390,6 +390,9 @@
     {
         if (node.Step.NeedLoadFiles())
             node.Files = context.Files.AsNoTracking().Where(c => c.FileType == node.Step.AvailableFileType).ToList();
+        
+        if (node.Step.IsConfigurationUpdating())
+            node.Repositories = context.ConfigRepositories.AsNoTracking().Where(c => !c.Deleted && c.CredentialsId != null).ToList();
 
         node.AddPort(new StepPort(Diagram, node, PortAlignment.BottomRight));
         node.AddPort(new StepPort(Diagram, node, PortAlignment.TopRight));
@@ -423,6 +426,11 @@
                             context.AddFailure(
                                 nameof(context.PropertyPath), 
                                 $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл");
+                        
+                        if (step.NeedSpecifyConfigRepository() && step.ConfigurationRepositoryId == Guid.Empty)
+                            context.AddFailure(
+                                nameof(context.PropertyPath), 
+                                $"В шаге \"{step.Kind.GetDisplay()}\" не указано хранилище");
 
                         if (step.NeeSpecifyExtensionName() && string.IsNullOrEmpty(step.ExtensionName))
                             context.AddFailure(
