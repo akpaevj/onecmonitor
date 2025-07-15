@@ -1,4 +1,5 @@
 @page "/configurationrepositories"
+@using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
 @rendermode InteractiveServer
@@ -6,13 +7,26 @@
 <DatabaseObjectsTable TModel="ConfigurationRepository" TViewModel="ConfigurationRepository"
                       NameSelector="arg => arg.Name"
                       Route="configurationrepositories"
-                      Title="Хранилища конфигураций">
+                      Title="Хранилища конфигураций"
+                      DisableTableActions="true"
+                      ItemsSelector="ItemsSelector">
     <ColumnsContent>
+        <MudTh>Агент</MudTh>
+        <MudTh>Хост</MudTh>
+        <MudTh>Порт</MudTh>
         <MudTh>Имя</MudTh>
-        <MudTh>Строка подключения</MudTh>
     </ColumnsContent>
     <RowTemplate>
+        <MudTd DataLabel="Агент">@context.Agent.InstanceName</MudTd>
         <MudTd DataLabel="Имя">@context.Name</MudTd>
-        <MudTd DataLabel="Строка подключения">@context.Address</MudTd>
+        <MudTd DataLabel="Хост">@context.Host</MudTd>
+        <MudTd DataLabel="Порт">@context.Port</MudTd>
     </RowTemplate>
 </DatabaseObjectsTable>
+
+@code {
+
+    private static IQueryable<ConfigurationRepository> ItemsSelector(IQueryable<ConfigurationRepository> arg)
+        => arg.Include(c => c.Agent);
+
+}

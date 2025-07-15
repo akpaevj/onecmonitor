@@ -6,8 +6,6 @@ namespace OneSwiss.Agent.Services;
 
 public class FilesDownloader(ILogger<FilesDownloader> logger) : IDisposable
 {
-    private const string TempFolder = "onewsiss";
-    
     private readonly object _locker = new();
     private readonly List<FileDto> _filesToDownload = [];
     private TaskCompletionSource<Dictionary<Guid, string>> _downloadTcs = null!;

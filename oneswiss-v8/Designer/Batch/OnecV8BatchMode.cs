@@ -56,9 +56,9 @@ public sealed class OnecV8BatchMode : IDisposable
     public static void CreateFileInfoBase(V8Platform platform, string path)
     {
         using var batch = new OnecV8BatchMode(platform, "CREATEINFOBASE");
-        batch._arguments.Add($"/F\"{path}\"");
+        batch._arguments.Add($"\"File=\"{path}\";\"");
+        batch.AddOutArgument();
         
-        batch.AddBatchModeCommonArgs();
         batch.Start(true);
     }
 
@@ -232,14 +232,24 @@ public sealed class OnecV8BatchMode : IDisposable
         if (password != string.Empty)
             _arguments.Add($"/P{password}");
         
-        _arguments.Add("/DisableStartupMessages");
-        _arguments.Add("/DisableStartupDialogs");
+        DisableStartupDialogAndMessages();
         
         if (!string.IsNullOrEmpty(accessCode))
             _arguments.Add($"/UC{accessCode}");
-        
+
+        AddOutArgument();
+    }
+
+    private void AddOutArgument()
+    {
         _outFilePath = Path.GetTempFileName();
         _arguments.Add($"/Out\"{_outFilePath}\"");
+    }
+
+    private void DisableStartupDialogAndMessages()
+    {
+        _arguments.Add("/DisableStartupMessages");
+        _arguments.Add("/DisableStartupDialogs");
     }
 
     private void Exited(object? sender, EventArgs e)

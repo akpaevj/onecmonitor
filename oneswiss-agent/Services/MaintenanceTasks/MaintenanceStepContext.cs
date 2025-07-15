@@ -17,7 +17,7 @@ public class MaintenanceStepContext
     public MaintenanceStepDto Step { get; set; } = null!;
     public string AccessCode { get; set; } = string.Empty;
     public Dictionary<Guid, string> Files { get; set; } = [];
-    public List<MaintenanceStepLogItemDto> Log { get; set; } = [];
+    public List<MaintenanceTaskLogItemDto> Log { get; set; } = [];
     public Rac Rac { get; set; } = null!;
     public V8Platform Platform { get; set; } = null!;
     public bool UseDesignerAgent { get; set; }

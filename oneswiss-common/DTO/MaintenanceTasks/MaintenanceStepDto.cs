@@ -41,4 +41,10 @@ public class MaintenanceStepDto
     [ContextProperty("ИмяРасширения", "ExtensionName")]
     [Key(10)]
     public string ExtensionName { get; set; } = string.Empty;
+    [ContextProperty("ИзХранилищаКонфигураций", "FromConfigRepository")]
+    [Key(11)] 
+    public bool FromConfigRepository { get; set; }
+    [ContextProperty("ХранилищеКонфигураций", "ConfigRepository")]
+    [Key(12)] 
+    public ConfigurationRepositoryDto? ConfigurationRepository { get; set; }
 }

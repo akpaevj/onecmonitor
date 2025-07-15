@@ -3,7 +3,7 @@ using MessagePack;
 namespace OneSwiss.Common.DTO.MaintenanceTasks;
 
 [MessagePackObject]
-public class MaintenanceStepLogItemDto
+public class MaintenanceTaskLogItemDto
 {
     [Key(0)] 
     public Guid Id { get; set; }
@@ -16,9 +16,9 @@ public class MaintenanceStepLogItemDto
     [Key(4)] 
     public string Message { get; set; } = string.Empty;
     [Key(5)] 
-    public Guid InfoBaseId { get; set; }
+    public Guid? InfoBaseId { get; set; }
     [Key(6)] 
-    public Guid StepId { get; set; }
+    public Guid? StepId { get; set; }
     [Key(7)] 
     public Guid TaskId { get; set; }
 }

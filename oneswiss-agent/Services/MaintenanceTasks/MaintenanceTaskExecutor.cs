@@ -59,73 +59,97 @@ public class MaintenanceTaskExecutor : BackgroundService
 
     private async Task StartMaintenanceTask(MaintenanceTaskDto task, CancellationToken cancellationToken)
     {
-        var v8Files = await SaveTaskV8Files(task, cancellationToken);
+        await SendTaskLog(task, "Начало выполнения задачи", false, false, cancellationToken);
 
-        /*var hasStepsForDesigner = HasStepsForDesigner(task);
-        var canUseDesignerAgent = CanUseDesignerAgent(task);*/
-        var hasStepsForDesigner = true;
-        var canUseDesignerAgent = false;
-        
-        await Parallel.ForEachAsync(task.InfoBases, cancellationToken, async (infoBase, stoppingToken) =>
+        try
         {
-            var log = new List<MaintenanceStepLogItemDto>();
-            
-            var context = new MaintenanceStepContext
+            var v8Files = await SaveTaskV8Files(task, cancellationToken);
+            await DumpConfigRepositories(v8Files, task, cancellationToken);
+
+            /*var hasStepsForDesigner = HasStepsForDesigner(task);
+            var canUseDesignerAgent = CanUseDesignerAgent(task);*/
+            var hasStepsForDesigner = true;
+            var canUseDesignerAgent = false;
+
+            await Parallel.ForEachAsync(task.InfoBases, cancellationToken, async (infoBase, stoppingToken) =>
             {
-                Task = task,
-                InfoBase = infoBase,
-                Log = log,
-                Step = task.Steps.GetRootStep(),
-                UseDesignerAgent = canUseDesignerAgent
-            };
+                var log = new List<MaintenanceTaskLogItemDto>();
 
-            OnecV8BatchMode? agent = null;
-
-            try
-            {
-                var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(infoBase.Cluster.Port);
-                var ras = _rasHolder.GetActiveRasForRagent(ragent);
-
-                context.Rac = Rac.GetRacForRasService(ras);
-                context.Platform = ragent.Platform;
-
-                if (!context.Platform.HasOnecV8)
-                    throw new Exception("Для платформы агента не установлен конфигуратор");
-                
-                var localFilesFolder = Path.Join(Path.GetTempPath(), Guid.NewGuid().ToString(), "0");
-                Directory.CreateDirectory(localFilesFolder);
-                
-                if (hasStepsForDesigner && canUseDesignerAgent)
+                var context = new MaintenanceStepContext
                 {
-                    agent = context.StartDesignerAgent(Path.GetDirectoryName(localFilesFolder)!);
-                
-                    context.DesignerAgentClient = new DesignerAgentClient(
-                        context.InfoBase.Credentials?.User ?? "",
-                        context.InfoBase.Credentials?.Password ?? "");
+                    Task = task,
+                    InfoBase = infoBase,
+                    Log = log,
+                    Step = task.Steps.GetRootStep(),
+                    UseDesignerAgent = canUseDesignerAgent
+                };
 
-                    if (!await context.DesignerAgentClient.WaitAgentAvailable(TimeSpan.FromMinutes(5)))
-                        throw new Exception("Таймаут подключения к агенту конфигуратора");
+                OnecV8BatchMode? agent = null;
 
-                    await context.DesignerAgentClient.Connect(stoppingToken);
-                    await context.DesignerAgentClient.ConnectIb();
-                }
-                
-                // Перекопируем файлы для каждого задания, т.к. 1С на кой-то хрен нужен монопольный доступ к файлам CF, CFE, CFU
-                // и сделаем это обязательно после запуска агента конфигуратора, иначе он затрет их при запуске
-                var localFiles = CopyFilesForInfoBase(v8Files, localFilesFolder);
-                context.Files = localFiles;
-
-                while (!stoppingToken.IsCancellationRequested)
+                try
                 {
-                    if (log.Count > 0)
+                    var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(infoBase.Cluster.Port);
+                    var ras = _rasHolder.GetActiveRasForRagent(ragent);
+
+                    context.Rac = Rac.GetRacForRasService(ras);
+                    context.Platform = ragent.Platform;
+
+                    if (!context.Platform.HasOnecV8)
+                        throw new Exception("Для платформы агента не установлен конфигуратор");
+
+                    var localFilesFolder = Path.Join(Path.GetTempPath(), Guid.NewGuid().ToString(), "0");
+                    Directory.CreateDirectory(localFilesFolder);
+
+                    if (hasStepsForDesigner && canUseDesignerAgent)
                     {
-                        await SendLog(log, stoppingToken);
-                        log.Clear();
+                        agent = context.StartDesignerAgent(Path.GetDirectoryName(localFilesFolder)!);
+
+                        context.DesignerAgentClient = new DesignerAgentClient(
+                            context.InfoBase.Credentials?.User ?? "",
+                            context.InfoBase.Credentials?.Password ?? "");
+
+                        if (!await context.DesignerAgentClient.WaitAgentAvailable(TimeSpan.FromMinutes(5)))
+                            throw new Exception("Таймаут подключения к агенту конфигуратора");
+
+                        await context.DesignerAgentClient.Connect(stoppingToken);
+                        await context.DesignerAgentClient.ConnectIb();
                     }
 
-                    if (context.Step.NodeKind == MaintenanceStepNodeKind.TryCatch)
+                    // Перекопируем файлы для каждого задания, т.к. 1С на кой-то хрен нужен монопольный доступ к файлам CF, CFE, CFU
+                    // и сделаем это обязательно после запуска агента конфигуратора, иначе он затрет их при запуске
+                    var localFiles = CopyFilesForInfoBase(v8Files, localFilesFolder);
+                    context.Files = localFiles;
+
+                    while (!stoppingToken.IsCancellationRequested)
                     {
-                        try
+                        if (log.Count > 0)
+                        {
+                            await SendStepLog(log, stoppingToken);
+                            log.Clear();
+                        }
+
+                        if (context.Step.NodeKind == MaintenanceStepNodeKind.TryCatch)
+                        {
+                            try
+                            {
+                                await HandleTaskStepNode(context);
+
+                                if (context.Step.LeftStepId is not null)
+                                    context.Step = task.Steps.GetStep(context.Step.LeftStepId);
+                                else
+                                    break;
+                            }
+                            catch (Exception e)
+                            {
+                                AddStepLogItem(context, e.ToString(), true);
+
+                                if (context.Step.RightStepId is not null)
+                                    context.Step = task.Steps.GetStep(context.Step.RightStepId);
+                                else
+                                    break;
+                            }
+                        }
+                        else
                         {
                             await HandleTaskStepNode(context);
 
@@ -134,57 +158,46 @@ public class MaintenanceTaskExecutor : BackgroundService
                             else
                                 break;
                         }
-                        catch (Exception e)
-                        {
-                            AddLogItem(context, e.ToString(), true);
-
-                            if (context.Step.RightStepId is not null)
-                                context.Step = task.Steps.GetStep(context.Step.RightStepId);
-                            else
-                                break;
-                        }
                     }
-                    else
-                    {
-                        await HandleTaskStepNode(context);
 
-                        if (context.Step.LeftStepId is not null)
-                            context.Step = task.Steps.GetStep(context.Step.LeftStepId);
-                        else
-                            break;
-                    }
+                    AddStepLogItem(context, "Завершено", false, true);
+                    await SendStepLog(log, stoppingToken);
                 }
-
-                AddLogItem(context, "Завершено", false, true);
-                await SendLog(log, stoppingToken);
-            }
-            catch (Exception e)
-            {
-                AddLogItem(context, e.ToString(), true, true);
-                await SendLog(log, stoppingToken);
-            }
-            finally
-            {
-                if (context.UseDesignerAgent)
+                catch (Exception e)
                 {
-                    try
+                    AddStepLogItem(context, e.ToString(), true, true);
+                    await SendStepLog(log, stoppingToken);
+                }
+                finally
+                {
+                    if (context.UseDesignerAgent)
                     {
-                        context.DesignerAgentClient?.DisconnectIb();
-                    }
-                    catch
-                    {
-                        // ignored
+                        try
+                        {
+                            context.DesignerAgentClient?.DisconnectIb();
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
+
+                        context.DesignerAgentClient?.Dispose();
                     }
 
-                    context.DesignerAgentClient?.Dispose();
+                    agent?.Dispose();
+                    DeleteV8Files(context.Files, true);
                 }
-                    
-                agent?.Dispose();
-                DeleteV8Files(context.Files, true);
-            }
-        });
-        
-        DeleteV8Files(v8Files, false);
+            });
+
+            await SendTaskLog(task, "Удаление временных файлов", false, false, cancellationToken);
+            DeleteV8Files(v8Files, false);
+            
+            await SendTaskLog(task, "Завершение выполнения задачи", false, true, cancellationToken);
+        }
+        catch (Exception e)
+        {
+            await SendTaskLog(task, e.ToString(), true, true, cancellationToken);
+        }
     }
 
     private static Dictionary<Guid, string> CopyFilesForInfoBase(Dictionary<Guid, string> files, string folder)
@@ -205,7 +218,7 @@ public class MaintenanceTaskExecutor : BackgroundService
 
     private static async Task HandleTaskStepNode(MaintenanceStepContext context)
     {
-        AddLogItem(context, $"Обработка шага \"{context.Step.Kind.GetDisplay()}\"");
+        AddStepLogItem(context, $"Обработка шага \"{context.Step.Kind.GetDisplay()}\"");
 
         switch (context.Step.Kind)
         {
@@ -241,9 +254,9 @@ public class MaintenanceTaskExecutor : BackgroundService
         }
     }
     
-    private static void AddLogItem(MaintenanceStepContext context, string message, bool isError = false, bool isFinish = false)
+    private static void AddStepLogItem(MaintenanceStepContext context, string message, bool isError = false, bool isFinish = false)
     {
-        context.Log.Add(new MaintenanceStepLogItemDto
+        context.Log.Add(new MaintenanceTaskLogItemDto
         {
             Id = Guid.NewGuid(),
             Message = message,
@@ -256,8 +269,22 @@ public class MaintenanceTaskExecutor : BackgroundService
         });
     }
     
-    private async Task SendLog(List<MaintenanceStepLogItemDto> log, CancellationToken cancellationToken)
+    private async Task SendStepLog(List<MaintenanceTaskLogItemDto> log, CancellationToken cancellationToken)
         => await _serverConnection.Send(MessageType.MaintenanceStepNodeLog, log, cancellationToken);
+    
+    private async Task SendTaskLog(MaintenanceTaskDto task, string message, bool isError, bool isFinish, CancellationToken cancellationToken)
+        => await _serverConnection.Send(MessageType.MaintenanceStepNodeLog, new List<MaintenanceTaskLogItemDto>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Message = message,
+                IsError = isError,
+                IsFinish = isFinish,
+                TimeStamp = DateTime.Now,
+                TaskId = task.Id
+            }
+        }, cancellationToken);
 
     private async Task<Dictionary<Guid, string>> SaveTaskV8Files(MaintenanceTaskDto task,
         CancellationToken cancellationToken)
@@ -271,7 +298,68 @@ public class MaintenanceTaskExecutor : BackgroundService
             .DistinctBy(c => c.Id)
             .ToList();
 
-        return await downloader.Download(_serverConnection, filesToDownload, cancellationToken);
+        if (filesToDownload.Count == 0)
+            return [];
+        
+        await SendTaskLog(task, "Загрузка файлов для выполнения шагов", false, false, cancellationToken);
+        var result = await downloader.Download(_serverConnection, filesToDownload, cancellationToken);
+        await SendTaskLog(task, "Загрузка файлов для выполнения шагов", false, false, cancellationToken);
+
+        return result;
+    }
+
+    private async Task DumpConfigRepositories(Dictionary<Guid, string> files, MaintenanceTaskDto task, 
+        CancellationToken cancellationToken)
+    {
+        var fromRepsSteps = task.Steps.Where(c => c.FromConfigRepository).ToList();
+        if (fromRepsSteps.Count == 0)
+            return;
+        
+        await SendTaskLog(task, "Выгрузка конфигураций из хранилищ", false, false, cancellationToken);
+        
+        Parallel.ForEach(task.Steps.Where(c => c.FromConfigRepository), step =>
+        {
+            var isExtension = step.Kind == MaintenanceStepKind.LoadExtension;
+            var extension = isExtension ? "cfe" : "cf";
+            
+            var crServer = _v8ServicesProvider.GetCrServerForPort(step.ConfigurationRepository!.Port);
+            var tempIbPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+
+            try
+            {
+                Directory.CreateDirectory(tempIbPath);
+                OnecV8BatchMode.CreateFileInfoBase(crServer.Platform, tempIbPath);
+
+                var configPath = Path.Join(Path.GetTempPath(), $"{Guid.NewGuid()}.{extension}");
+                var address = $"tcp://localhost:{crServer.Port}/{step.ConfigurationRepository.Name}";
+
+                using var batch = OnecV8BatchMode.CreateDesignerBatch(crServer.Platform, tempIbPath);
+                batch.DumpConfigRepository(
+                    configPath,
+                    address,
+                    step.ConfigurationRepository.Credentials!.User,
+                    step.ConfigurationRepository.Credentials!.Password);
+
+                step.File = new FileDto
+                {
+                    Id = Guid.NewGuid(),
+                    Name = address,
+                    Version = "1.0.0.1",
+                    FileExtension = $".{extension}",
+                    IsConfiguration = !isExtension,
+                    IsExtension = isExtension,
+                    Length = new FileInfo(configPath).Length
+                };
+
+                files.Add(step.File.Id, configPath);
+            }
+            finally
+            {
+                Directory.Delete(tempIbPath, true);
+            }
+        });
+        
+        await SendTaskLog(task, "Выгрузка конфигураций из хранилищ завершена", false, false, cancellationToken);
     }
 
     private static void DeleteV8Files(Dictionary<Guid, string> files, bool isLocal)
@@ -363,7 +451,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         if (context.UseDesignerAgent)
         {
             await context.DesignerAgentClient!.LoadExtension(Path.GetFileName(filePath), context.Step.ExtensionName);
-            AddLogItem(context, $"Загрузка расширения \"{context.Step.ExtensionName}\" выполнена");
+            AddStepLogItem(context, $"Загрузка расширения \"{context.Step.ExtensionName}\" выполнена");
             
             context.DesignerAgentClient!.UpdateDbCfgExtension(context.Step.ExtensionName);
             await context.DesignerAgentClient.ReadMessagesTillSuccess(message =>
@@ -380,7 +468,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                 context.AccessCode,
                 true);
         
-            AddLogItem(context, batch.OutFileContent);
+            AddStepLogItem(context, batch.OutFileContent);
         }
     }
     
@@ -394,11 +482,11 @@ public class MaintenanceTaskExecutor : BackgroundService
         var scriptHost = new OneScriptExecutor();
         scriptHost.OnEcho += (_, tuple) =>
         {
-            AddLogItem(context, tuple.Message);
+            AddStepLogItem(context, tuple.Message);
         };
         scriptHost.OnError += (_, ex) =>
         {
-            AddLogItem(context, ex.Message, true);
+            AddStepLogItem(context, ex.Message, true);
         };
 
         var cmdParser = new Parser();
@@ -419,7 +507,7 @@ public class MaintenanceTaskExecutor : BackgroundService
             foreach (var extension in extensionsToDeleting)
             {
                 await context.DesignerAgentClient!.DeleteExtension(extension.Name);
-                AddLogItem(context, $"Расширение \"{extension.Name}\" удалено");
+                AddStepLogItem(context, $"Расширение \"{extension.Name}\" удалено");
             }
         }
         else
@@ -443,7 +531,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                     context.AccessCode,
                     true);
         
-                AddLogItem(context, batchDeleting.OutFileContent);
+                AddStepLogItem(context, batchDeleting.OutFileContent);
             }
         }
     }
@@ -455,7 +543,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         if (context.UseDesignerAgent)
         {
             await context.DesignerAgentClient!.LoadCfg(Path.GetFileName(filePath));
-            AddLogItem(context, "Загрузка конфигурации выполнена");
+            AddStepLogItem(context, "Загрузка конфигурации выполнена");
             
             context.DesignerAgentClient!.UpdateDbCfg();
             await context.DesignerAgentClient.ReadMessagesTillSuccess(message =>
@@ -471,7 +559,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                 context.AccessCode,
                 true);
         
-            AddLogItem(context, batch.OutFileContent);
+            AddStepLogItem(context, batch.OutFileContent);
         }
     }
     
@@ -487,7 +575,7 @@ public class MaintenanceTaskExecutor : BackgroundService
             context.AccessCode,
             true);
         
-        AddLogItem(context, batch.OutFileContent);
+        AddStepLogItem(context, batch.OutFileContent);
     }
 
     private static void StartExternalDataProcessor(MaintenanceStepContext context)
@@ -524,9 +612,9 @@ public class MaintenanceTaskExecutor : BackgroundService
         if (message.Type == "log")
         {
             if (message.Message.StartsWith("(!)"))
-                AddLogItem(context, message.Message[3..], true);
+                AddStepLogItem(context, message.Message[3..], true);
             else
-                AddLogItem(context, message.Message);
+                AddStepLogItem(context, message.Message);
         }
         else
             throw new Exception($"Неожиданный тип сообщения: {message.Type}");

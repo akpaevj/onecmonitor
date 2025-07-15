@@ -31,6 +31,13 @@ public class MaintenanceStep : DatabaseObject
     [Label("Аргументы командной строки")]
     [MaxLength(1000)] 
     public string CommandLineArguments { get; set; } = string.Empty;
+    [Label("Из хранилища")]
+    public bool FromConfigRepository { get; set; }
+    [Label("Хранилище")]
+    public Guid? ConfigurationRepositoryId { get; set; }
+    
+    [ForeignKey(nameof(ConfigurationRepositoryId))]
+    public ConfigurationRepository? ConfigurationRepository { get; set; }
     [Label("Файл")]
     public Guid? FileId { get; set; }
     
@@ -47,14 +54,28 @@ public class MaintenanceStep : DatabaseObject
 
     [ForeignKey(nameof(MaintenanceTaskId))]
     public MaintenanceTask MaintenanceTask { get; set; } = null!;
-    public virtual List<MaintenanceStepLogItem> Logs { get; set; } = [];
+    public virtual List<MaintenanceTaskLogItem> Logs { get; set; } = [];
     
-    public bool NeedLoadFiles()
+    public bool IsConfigurationUpdating()
         => Kind is MaintenanceStepKind.LoadExtension
-            or MaintenanceStepKind.LoadConfiguration
-            or MaintenanceStepKind.ExecuteOneScript
+            or MaintenanceStepKind.LoadConfiguration;
+
+    public bool NeedSpecifyConfigRepository()
+    {
+        return Kind is MaintenanceStepKind.LoadExtension
+            or MaintenanceStepKind.LoadConfiguration && FromConfigRepository;
+    }
+
+    public bool NeedLoadFiles()
+    {
+        if (Kind is MaintenanceStepKind.LoadExtension
+            or MaintenanceStepKind.LoadConfiguration)
+            return !FromConfigRepository;
+        
+        return Kind is MaintenanceStepKind.ExecuteOneScript
             or MaintenanceStepKind.StartExternalDataProcessor
             or MaintenanceStepKind.UpdateConfiguration;
+    }
     
     public bool NeeSpecifyAccessCode()
         => Kind is MaintenanceStepKind.LockConnections;

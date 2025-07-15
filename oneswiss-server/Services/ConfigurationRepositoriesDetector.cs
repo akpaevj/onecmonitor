@@ -1,5 +1,7 @@
+using System.Collections.Concurrent;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using OneSwiss.Server.Models;
 
 namespace OneSwiss.Server.Services;
 
@@ -24,34 +26,99 @@ public class ConfigurationRepositoriesDetector(
                         await using var scope = serviceProvider.CreateAsyncScope();
                         await using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                         
-                        await appDbContext.Database.BeginTransactionAsync(token);
+                        var removedReps = await appDbContext.ConfigRepositories.Select(c => c.InternalId).ToListAsync(token);
 
                         try
                         {
-                            /*var defaultAdmin = await appDbContext.Credentials
+                            var defaultAdmin = await appDbContext.Credentials
                                 .AsNoTracking()
-                                .FirstOrDefaultAsync(c => c.DefaultConfigRepositoryAdmin, token);
-                            
+                                .FirstOrDefaultAsync(c => c.DefaultConfigRepositoriesAdmin, token);
+
+                            var sysInfo = await connection.GetSystemInfo(token);
                             var crServices = await connection.GetCrServerServices(token);
                             
-                            var receivedIds = crServices.SelectMany(c => c.InternalIds.Values).ToList();
-                            var existIds = await appDbContext.ConfigurationRepositories.AsNoTracking().Select(c => c.Id).ToListAsync(token);
+                            foreach (var crService in crServices)
+                            {
+                                foreach (var repository in crService.Reporitories)
+                                {
+                                    var details = await connection.GetConfigRepositoryDetails(crService, repository, token);
+                                    
+                                    removedReps.Remove(details.Id);
+                                    
+                                    var foundRep =
+                                        await appDbContext.ConfigRepositories.FirstOrDefaultAsync(
+                                            c => c.InternalId == details.Id, token);
+                                    
+                                    if (foundRep == null)
+                                    {
+                                        var id = Guid.NewGuid();
+                                        
+                                        await appDbContext.ConfigRepositories.AddAsync(new ConfigurationRepository
+                                        {
+                                            Id = id,
+                                            InternalId = details.Id,
+                                            Name = repository,
+                                            Host = sysInfo.HostName,
+                                            Port = crService.Port,
+                                            AgentId = connection.AgentInstance!.Id,
+                                            CredentialsId = defaultAdmin?.Id
+                                        }, token);
 
-                            var addedIds = receivedIds.Except(existIds);
-                            var removedIds = existIds.Except(receivedIds);
-                            var toUpdateIds = receivedIds.Intersect(existIds);
+                                        foreach (var configUser in details.Users)
+                                        {
+                                            await appDbContext.ConfigRepositoryUsers.AddAsync(new ConfigurationRepositoryUser
+                                            {
+                                                Id = Guid.NewGuid(),
+                                                Name = configUser.Name,
+                                                InternalId = configUser.Id,
+                                                RepositoryId = id
+                                            }, token);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        foundRep.Name = repository;
+                                        foundRep.Host = sysInfo.HostName;
+                                        foundRep.Port = crService.Port;
+                                        foundRep.AgentId = connection.AgentInstance!.Id;
+                                        
+                                        // Сначала отметим удаленных
+                                        var existIds = details.Users.Select(c => c.Id).ToList();
+                                        var deletedUsers = await appDbContext.ConfigRepositoryUsers
+                                            .Where(c => !existIds.Contains(c.Id)).ToListAsync(token);
+                                        deletedUsers.ForEach(c => c.Deleted = true);
+                                        
+                                        // теперь добавим новых и обновим существующих
+                                        foreach (var configUser in details.Users)
+                                        {
+                                            var foundUser = await appDbContext.ConfigRepositoryUsers
+                                                .FirstOrDefaultAsync(c => c.InternalId == configUser.Id,
+                                                    cancellationToken: token);
+                                            if (foundUser == null)
+                                                await appDbContext.ConfigRepositoryUsers.AddAsync(new ConfigurationRepositoryUser
+                                                {
+                                                    InternalId = configUser.Id,
+                                                    Name = configUser.Name,
+                                                    RepositoryId = foundRep.Id,
+                                                    Deleted = false,
+                                                    GitUser = string.Empty,
+                                                    Id = Guid.NewGuid()
+                                                }, token);
+                                            else
+                                                foundUser.Name = configUser.Name;
+                                        }
+                                    }
+                                }
+                            }
 
-                            var removed = await appDbContext.ConfigurationRepositories
-                                .Where(c => removedIds.Contains(c.Id))
-                                .ToListAsync(token);
-                            appDbContext.ConfigurationRepositories.RemoveRange(removed);*/
-
+                            var deleted = await appDbContext.ConfigRepositories
+                                .Where(c => removedReps.Contains(c.InternalId)).ToListAsync(token);
+                            deleted.ForEach(c => c.Deleted = true);
+                            
                             await appDbContext.SaveChangesAsync(token);
-                            await appDbContext.Database.CommitTransactionAsync(token);
                         }
                         catch (Exception e)
                         {
-                            await appDbContext.Database.RollbackTransactionAsync(token);
                             logger.LogError(e, $"Ошибка получения списка хранилищ конфигураций. Агент: {connection.AgentInstance!.InstanceName}");
                         }
                     });

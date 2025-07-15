@@ -25,8 +25,6 @@ public class ClustersInfoBasesDetector(
                     {
                         await using var scope = serviceProvider.CreateAsyncScope();
                         await using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                        
-                        await appDbContext.Database.BeginTransactionAsync(token);
 
                         try
                         {
@@ -112,11 +110,10 @@ public class ClustersInfoBasesDetector(
                             }
 
                             await appDbContext.SaveChangesAsync(token);
-                            await appDbContext.Database.CommitTransactionAsync(stoppingToken);
                         }
                         catch (Exception e)
                         {
-                            await appDbContext.Database.RollbackTransactionAsync(stoppingToken);
+                            await appDbContext.Database.RollbackTransactionAsync(token);
                             logger.LogError(e, $"Ошибка получения списка кластеров. Агент: {connection.AgentInstance!.InstanceName}");
                         }
                     });
