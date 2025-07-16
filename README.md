@@ -1,5 +1,12 @@
 # OneSwiss
 
+<h2 style="vertical-align: baseline;">
+  <sup>Публикация на   </sup>
+  <a href="https://infostart.ru/1c/tools/2433900">
+    <img alt="infostart" src="https://github.com/user-attachments/assets/56530981-51ed-45b0-86fc-66f62c153286" />
+  </a>
+</div>
+
 ## Система обслуживания и мониторинга информационных баз 1С
 
 Кроссплатформенный программный комплекс, состоящий из:    
@@ -157,10 +164,3 @@ http://localhost:7002/api/ErrorLoggingService
   Если не указан, то используется стандартный путь:
   - Windows - %PROGRAMDATA%/oneswiss/techlog
   - Linux - /var/log/oneswiss/techlog
-    
-<h2 style="vertical-align: baseline;">
-  <sup>Публикация на   </sup>
-  <a href="https://infostart.ru/1c/tools/2433900">
-    <img alt="infostart" src="https://github.com/user-attachments/assets/56530981-51ed-45b0-86fc-66f62c153286" />
-  </a>
-</div>
