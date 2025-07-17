@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace OneSwiss.Server.Dto.ErrorLoggingService;
@@ -24,4 +25,18 @@ public class ReportRoot
     public ReportScreenshot? Screenshot { get; set; }
     [JsonPropertyName("additionalInfo")]
     public string? AdditionalInfo { get; set; } = string.Empty;
+
+    public string GetStack()
+    {
+        var stackBuilder = new StringBuilder();
+        var prefix = "";
+
+        foreach (var item in ErrorInfo.ApplicationErrorInfo.Stack)
+        {
+            stackBuilder.AppendLine($"{prefix}{item.Module} : {item.Line} : {item.Code.Trim()}");
+            prefix += "\t";
+        }
+
+        return stackBuilder.ToString();
+    }
 }

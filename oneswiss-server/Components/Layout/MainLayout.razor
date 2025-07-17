@@ -9,18 +9,20 @@
 <MudLayout>
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="DrawerToggle" />
-        <MudText Class="ms-2" Typo="Typo.h5" Style="@($"color:{_yellowColor}")">One</MudText>
+        <MudText Class="ms-2" Typo="Typo.h5" Style="@($"color:{YellowColor}")">One</MudText>
         <MudText Typo="Typo.h5">Sw</MudText>
-        <MudText Typo="Typo.h5" Style="@($"color:{_yellowColor}")">i</MudText>
+        <MudText Typo="Typo.h5" Style="@($"color:{YellowColor}")">i</MudText>
         <MudText Typo="Typo.h5">ss</MudText>
         <MudSpacer></MudSpacer>
         <MudSwitch Color="Color.Primary" @bind-Value="@_isDarkMode" ThumbIcon="@(_isDarkMode ? Icons.Material.Outlined.LightMode : Icons.Material.Outlined.DarkMode)"></MudSwitch>
     </MudAppBar>
     <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-        <NavMenu/>
+        <NavMenu @ref="_navMenu"/>
     </MudDrawer>
     <MudMainContent Class="pt-20 pa-5">
-        @Body
+        <CascadingValue Name="NavMenu" Value="_navMenu">
+            @Body
+        </CascadingValue>
     </MudMainContent>
 </MudLayout>
 
@@ -31,11 +33,12 @@
 </div>
 
 @code {
+    NavMenu? _navMenu;
     bool _drawerOpen = true;
     bool _isDarkMode = true;
 
     readonly MudTheme _theme = new();
-    string _yellowColor = "#ffe016";
+    private const string YellowColor = "#ffe016";
 
     void DrawerToggle()
     {

@@ -5,7 +5,7 @@
 @using OneSwiss.Common.Models
 @using OneSwiss.Server.Models
 
-<EditDatabaseObject @ref="_editor" T="Dbms"
+<EditDatabaseForm @ref="_editor" T="Dbms"
                     Id="Id"
                     NameSelector="@(arg => arg.Name)"
                     Route="dbms"
@@ -19,12 +19,12 @@
         <MudTextField Class="mb-3" For="@(() => _editor.Model!.Host)" Label="Хост" @bind-Value="@_editor.Model!.Host"/>
         <MudNumericField Label="Порт" For="@(() => _editor.Model!.Port)" @bind-Value="@_editor.Model!.Port"/>
     </MudStack>
-</EditDatabaseObject>
+</EditDatabaseForm>
 
 @code
 {
     private readonly Validator _validator = new();
-    private EditDatabaseObject<Dbms> _editor = null!;
+    private EditDatabaseForm<Dbms> _editor = null!;
     
     [Parameter]
     public Guid Id { get; set; }

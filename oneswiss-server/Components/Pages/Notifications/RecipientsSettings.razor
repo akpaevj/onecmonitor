@@ -1,0 +1,143 @@
+@using FluentValidation
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Server.Components.Layout
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Helpers
+@inject ISnackbar SnackBar
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@implements IDisposable
+
+<MudText Typo="Typo.h6" Class="mb-3">Получатели уведомлений</MudText>
+
+<MudStack>
+    <MudTable T="NotificationRecipient" 
+              Items="@_items" 
+              @bind-SelectedItems="_selectedItems" 
+              MultiSelection="true"
+              SelectOnRowClick="false"
+              Dense="true">
+        <ToolBarContent>
+            <MudStack Row Spacing="3">
+                <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="AddNewRecipient">Добавить</MudButton>
+                @if (_selectedItems.Count > 0)
+                {
+                    <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error" OnClick="DeleteRecipients">Удалить</MudButton>
+                }
+            </MudStack>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTd>Канал</MudTd>
+            <MudTd>Получатель</MudTd>
+            <MudTd>Типы уведомлений</MudTd>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Канал">
+                <MudSelect For="@(() => context.Channel)" @bind-Value="@context.Channel">
+                    @foreach (var item in Enum.GetValues<NotificationChannel>())
+                    {
+                        <MudSelectItem Value="item">@item</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudTd>
+            <MudTd DataLabel="Получатель">
+                <MudTextField For="@(() => context.SendTo)" @bind-Value="@context.SendTo"></MudTextField>
+            </MudTd>
+            <MudTd DataLabel="Типы уведомлений">
+                <ItemsSelector T="NotificationType"
+                               @bind-SelectedValues="@context.NotificationTypes"
+                               NameSelector="@(item => item.GetDisplay())"
+                               Items="Enum.GetValues<NotificationType>().ToList()"/>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+    
+    <MudStack Breakpoint="Breakpoint.SmAndDown" AlignItems="AlignItems.End">
+        <MudSpacer/>
+        <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="Save">Сохранить</MudButton>
+    </MudStack>
+    
+</MudStack>
+
+@code
+{
+    private AppDbContext? _context;
+    private List<NotificationRecipient> _items = [];
+    private HashSet<NotificationRecipient> _selectedItems = [];
+    
+    [CascadingParameter(Name = "NavMenu")]
+    public NavMenu NavMenu { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _context = await ContextFactory.CreateDbContextAsync();
+        await UpdateItems();
+    }
+
+    private async Task Save()
+    {
+        if (Validate())
+        {
+            ModelHelper.UpdateDbSet(_items, _context!);
+            
+            await _context!.SaveChangesAsync();
+            SnackBar.ShowSuccess("Объект записан");
+            await NavMenu.NotifyStateHasChanged();
+        }
+        else
+            SnackBar.ShowError("Объект не записан");
+    }
+
+    private void AddNewRecipient()
+    {
+        _items.Add(new NotificationRecipient
+        {
+            Id = Guid.NewGuid(),
+            Channel = NotificationChannel.Telegram
+        });
+    }
+
+    private async Task UpdateItems()
+    {
+        _items = await _context!.NotificationRecipients.ToListAsync();
+    }
+
+    private void DeleteRecipients()
+    {
+        foreach (var selectedItem in _selectedItems)
+            _items.Remove(selectedItem);
+    }
+
+    private bool Validate()
+    {
+        var valid = true;
+        
+        for (var index = 0; index < _items.Count; index++)
+        {
+            var notificationRecipient = _items[index];
+
+            switch (notificationRecipient.Channel)
+            {
+                case NotificationChannel.Telegram
+                    when string.IsNullOrEmpty(notificationRecipient.SendTo):
+                    valid = false;
+                    SnackBar.ShowError($"В строке {index + 1} не указан идентификатор пользователя");
+                    break;
+                case NotificationChannel.WebHook
+                    when !Uri.TryCreate(notificationRecipient.SendTo, UriKind.Absolute, out _):
+                    valid = false;
+                    SnackBar.ShowError($"В строке {index + 1} указан невалидный URI");
+                    break;
+            }
+        }
+
+        return valid;
+    }
+
+    public void Dispose()
+    {
+        _context?.Dispose();
+    }
+}

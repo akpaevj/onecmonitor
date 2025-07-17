@@ -1,6 +1,6 @@
 
 @using System.Linq.Expressions
-@typeparam T where T : OneSwiss.Server.Models.DatabaseObject
+@typeparam T
 
 <MudSelect 
     T="T"
@@ -11,6 +11,8 @@
     Variant="Variant.Outlined"
     OuterClass="@Class"
     ToStringFunc="arg => NameSelector(arg!)"
+    SelectAll="true"
+    SelectAllText="Выделить все"
     For="For">
     @foreach (var item in Items)
     {
@@ -20,13 +22,13 @@
 
 @code {
     
-    private string _label;
+    private string? _label;
     
     [Parameter] 
     public string Class { get; set; } = string.Empty;
 
     [Parameter] 
-    public string Title { get; set; } = string.Empty;
+    public string? Title { get; set; } = string.Empty;
     
     [Parameter] 
     public List<T> Items { get; set; } = [];
@@ -35,7 +37,7 @@
     public Func<T, string> NameSelector { get; set; } = null!;
 
     [Parameter] 
-    public List<T> SelectedValues { get; set; } = [];
+    public List<T>? SelectedValues { get; set; } = [];
     
     [Parameter]
     public EventCallback<List<T>> SelectedValuesChanged { get; set; }
@@ -57,6 +59,6 @@
 
     private void UpdateLabel()
     {
-        _label = $"{Title} ({SelectedValues.Count})";
+        _label = string.IsNullOrEmpty(Title) ? $"Выбрано: {SelectedValues?.Count ?? 0}" : $"{Title} ({SelectedValues?.Count ?? 0})";
     }
 }

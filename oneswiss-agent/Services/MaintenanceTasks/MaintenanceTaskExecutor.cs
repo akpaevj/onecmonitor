@@ -303,7 +303,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         
         await SendTaskLog(task, "Загрузка файлов для выполнения шагов", false, false, cancellationToken);
         var result = await downloader.Download(_serverConnection, filesToDownload, cancellationToken);
-        await SendTaskLog(task, "Загрузка файлов для выполнения шагов", false, false, cancellationToken);
+        await SendTaskLog(task, "Загрузка файлов для выполнения шагов завершена", false, false, cancellationToken);
 
         return result;
     }

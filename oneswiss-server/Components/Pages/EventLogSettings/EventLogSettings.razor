@@ -1,4 +1,3 @@
-@page "/eventlog/settings"
 @using System.Text.RegularExpressions
 @using FluentValidation
 @using global::AutoMapper
@@ -13,10 +12,9 @@
 @inject IMapper Mapper
 @inject ISnackbar SnackBar
 
-<EditDatabaseObject @ref="_editor" T="EventLogSettings"
-                    SingleObject="true"
-                    Title="Настройки экспорта журнала регистрации"
-                    Route="eventlog/settings"
+<MudText Typo="Typo.h6" Class="mb-3">Сервис экспорта журнала регистрации</MudText>
+
+<SettingsForm @ref="_editor" T="Models.EventLogSettings"
                     Validation="@_validator.ValidateValue"
                     AfterSave="AfterSave"
                     OnInitialize="OnInitialize">
@@ -38,23 +36,23 @@
         </MudSelect>
         <MudTextField Class="mb-3" For="@(() => _editor.Model!.InfoBaseNameRegex)" Label="Шаблон регулярного выражения для имени ИБ" @bind-Value="@_editor.Model!.InfoBaseNameRegex"></MudTextField>
     </MudStack>
-</EditDatabaseObject>
+</SettingsForm>
 
 @code
 {
     private CancellationTokenSource? _cts;
-    private EditDatabaseObject<EventLogSettings> _editor = null!;
+    private SettingsForm<Models.EventLogSettings> _editor = null!;
     private readonly Validator _validator = new();
 
     private List<Credentials> _credentials;
     
-    private async Task OnInitialize((EventLogSettings Model, AppDbContext Context) obj)
+    private async Task OnInitialize((Models.EventLogSettings Model, AppDbContext Context) obj)
     {
         _cts = new CancellationTokenSource();
         _credentials = await obj.Context.Credentials.ToListAsync();
     }
     
-    private async Task AfterSave(EventLogSettings obj)
+    private async Task AfterSave(Models.EventLogSettings obj)
     {
         if (!obj.Enabled)
             return;
@@ -105,7 +103,7 @@
         _cts?.Dispose();
     }
     
-    private class Validator : ModelValidator<EventLogSettings>
+    private class Validator : ModelValidator<Models.EventLogSettings>
     {
         public Validator()
         {

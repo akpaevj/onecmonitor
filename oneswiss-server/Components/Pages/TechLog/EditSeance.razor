@@ -9,7 +9,7 @@
 @using OneSwiss.Server.Services
 @inject AgentsConnectionsManager AgentsConnectionsManager 
 
-<EditDatabaseObject @ref="_editor" T="TechLogSeance" Id="Id"
+<EditDatabaseForm @ref="_editor" T="TechLogSeance" Id="Id"
                     NameSelector="item => item.Description"
                     Route="techlog/seances"
                     Title="Новый сеанс сбора технологического журнала"
@@ -62,12 +62,12 @@
                        Items="@_editor.Context!.LogTemplates.ToList()"
                        Title="Шаблоны сбора"/>
     </MudStack>
-</EditDatabaseObject>
+</EditDatabaseForm>
 
 @code
 {
     private readonly Validator _validator = new();
-    private EditDatabaseObject<TechLogSeance> _editor = null!;
+    private EditDatabaseForm<TechLogSeance> _editor = null!;
     private bool _startDateTimeDisabled;
     private bool _durationDisabled;
 

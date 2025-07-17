@@ -51,12 +51,12 @@ builder.Services.AddRazorComponents()
     });
 builder.Services.AddMudServices();
 
+builder.Services.AddSingleton<NotificationsService>();
+builder.Services.AddHostedService<NotificationsProcessor>();
+
 builder.Services.AddSingleton<FilesProvider>();
 
-builder.Services.AddAutoMapper(c =>
-{
-    c.AddMaps(typeof(DtoProfile).Assembly);
-});
+builder.Services.AddAutoMapper(_ => { }, typeof(DtoProfile).Assembly);
 
 builder.Services.AddScoped<AdministrationApi>();
 

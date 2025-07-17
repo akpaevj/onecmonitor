@@ -1,0 +1,51 @@
+@using FluentValidation
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Services
+
+<MudText Typo="Typo.h6" Class="mb-3">Бот Telegram</MudText>
+
+<SettingsForm @ref="_editor" T="Models.TelegramBotSettings"
+                    Validation="@_validator.ValidateValue">
+    <MudStack>
+        <MudTextField Class="mb-3" 
+                      For="@(() => _editor.Model!.Token)" 
+                      Label="Токен"
+                      InputType="@_tokenInput" 
+                      Adornment="Adornment.End"
+                      AdornmentIcon="@_tokenInputIcon" 
+                      OnAdornmentClick="ShowHideToken"
+                      @bind-Value="@_editor.Model!.Token"/>
+    </MudStack>
+</SettingsForm>
+
+@code
+{
+    private SettingsForm<Models.TelegramBotSettings> _editor = null!;
+    private readonly Validator _validator = new();
+    private InputType _tokenInput = InputType.Password;
+    private string _tokenInputIcon = Icons.Material.Filled.VisibilityOff;
+    
+    private class Validator : ModelValidator<Models.TelegramBotSettings>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Token)
+                .MustAsync(async (token, cancellationToken) => 
+                    string.IsNullOrEmpty(token) || await NotificationsService.CheckTelegramBotTokenIsValid(token, cancellationToken))
+                .WithMessage("Невалидный токен или API недоступен");
+        }
+    }
+    
+    void ShowHideToken()
+    {
+        @if (_tokenInput == InputType.Text)
+        {
+            _tokenInputIcon = Icons.Material.Filled.VisibilityOff;
+            _tokenInput = InputType.Password;
+        }
+        else {
+            _tokenInputIcon = Icons.Material.Filled.Visibility;
+            _tokenInput = InputType.Text;
+        }
+    }
+}

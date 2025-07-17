@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using OneSwiss.Server.Dto.ErrorLoggingService;
 using OneSwiss.Server.Helpers;
 using OneSwiss.Server.Models;
+using OneSwiss.Server.Services;
 
 namespace OneSwiss.Server.ApiControllers;
 
@@ -13,6 +14,7 @@ namespace OneSwiss.Server.ApiControllers;
 [Route("api/[controller]")]
 public class ErrorLoggingServiceController(
     AppDbContext dbContext, 
+    NotificationsService  notificationsService,
     ILogger<ErrorLoggingServiceController> logger) : ControllerBase
 {
     [HttpPost("getInfo")]
@@ -71,6 +73,8 @@ public class ErrorLoggingServiceController(
         
                 dbContext.ErrorReports.Add(model);
                 await dbContext.SaveChangesAsync(cancellationToken);
+                
+                await notificationsService.QueueErrorReportReceived(model.Id, cancellationToken);
             }
         }
         catch (Exception e)

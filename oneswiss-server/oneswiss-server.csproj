@@ -5,7 +5,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>OneSwiss.Server</RootNamespace>
-        <Version>0.2.0</Version>
+        <Version>0.2.3</Version>
         <AssemblyVersion>0.2.2</AssemblyVersion>
     </PropertyGroup>
 
@@ -81,6 +81,7 @@
       <_ContentIncludedByDefault Remove="publish\server\win64\oneswiss-server.staticwebassets.endpoints.json" />
       <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\appsettings.json" />
       <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json" />
+      <_ContentIncludedByDefault Remove="Components\Pages\Common\Settings.razor" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Release'">

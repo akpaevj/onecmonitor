@@ -23,20 +23,6 @@ namespace OneSwiss.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CommonSettings",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    TelegramBotToken = table.Column<string>(type: "TEXT", nullable: false),
-                    NotifyMaintenanceTaskCompleted = table.Column<bool>(type: "INTEGER", nullable: false),
-                    NotifyMaintenanceTaskInfoBaseCompleted = table.Column<bool>(type: "INTEGER", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CommonSettings", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Credentials",
                 columns: table => new
                 {
@@ -141,6 +127,37 @@ namespace OneSwiss.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "NotificationRecipients",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Channel = table.Column<int>(type: "INTEGER", nullable: false),
+                    SendTo = table.Column<string>(type: "TEXT", nullable: false),
+                    NotificationTypes = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_NotificationRecipients", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<long>(type: "INTEGER", nullable: false),
+                    Message = table.Column<string>(type: "TEXT", nullable: false),
+                    Channel = table.Column<int>(type: "INTEGER", nullable: false),
+                    Recipient = table.Column<string>(type: "TEXT", nullable: false),
+                    Additionalinfo = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TechLogFilters",
                 columns: table => new
                 {
@@ -167,6 +184,18 @@ namespace OneSwiss.Server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_TechLogSeances", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TelegramBotSettings",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Token = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TelegramBotSettings", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -587,9 +616,6 @@ namespace OneSwiss.Server.Migrations
                 name: "AgentTechLogSeance");
 
             migrationBuilder.DropTable(
-                name: "CommonSettings");
-
-            migrationBuilder.DropTable(
                 name: "ConfigRepositoryUsers");
 
             migrationBuilder.DropTable(
@@ -611,10 +637,19 @@ namespace OneSwiss.Server.Migrations
                 name: "MaintenanceTaskLogs");
 
             migrationBuilder.DropTable(
+                name: "NotificationRecipients");
+
+            migrationBuilder.DropTable(
+                name: "Notifications");
+
+            migrationBuilder.DropTable(
                 name: "TechLogFilters");
 
             migrationBuilder.DropTable(
                 name: "TechLogSettings");
+
+            migrationBuilder.DropTable(
+                name: "TelegramBotSettings");
 
             migrationBuilder.DropTable(
                 name: "LogTemplates");

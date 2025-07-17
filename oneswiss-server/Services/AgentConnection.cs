@@ -20,6 +20,7 @@ namespace OneSwiss.Server.Services
     {
         private readonly IMapper _mapper;
         private readonly IServiceProvider _serviceProvider;
+        private readonly NotificationsService _notificationsService;
         private readonly ILogger<AgentConnection> _logger;
 
         public Guid ConnectionId { get; }
@@ -47,6 +48,7 @@ namespace OneSwiss.Server.Services
             ConnectionId = Guid.NewGuid();
             _mapper = serviceProvider.GetRequiredService<IMapper>();
             _serviceProvider = serviceProvider;
+            _notificationsService = serviceProvider.GetRequiredService<NotificationsService>();
             _logger = logger;
         }
 
@@ -302,6 +304,9 @@ namespace OneSwiss.Server.Services
                     await dbContext.Database.CommitTransactionAsync(cancellationToken);
                     
                     await SendOk(requestMessage, cancellationToken);
+                    
+                    if (hasTaskFinishLogItem)
+                        await _notificationsService.QueueMaintenanceTaskCompleted(task.Id, cancellationToken);
 
                     await taskLogHub.Clients.Group(task.Id.ToString()).SendAsync("LogUpdated", cancellationToken: cancellationToken);
                 }
