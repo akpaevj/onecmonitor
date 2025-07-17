@@ -261,6 +261,10 @@ namespace OneSwiss.Server.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<byte[]>("Hash")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
                     b.Property<string>("Report")
                         .IsRequired()
                         .HasColumnType("TEXT");

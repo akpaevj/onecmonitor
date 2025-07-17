@@ -10,7 +10,7 @@ using OneSwiss.Server;
 namespace OneSwiss.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250717082134_Initial")]
+    [Migration("20250717155702_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -263,6 +263,10 @@ namespace OneSwiss.Server.Migrations
 
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Hash")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
 
                     b.Property<string>("Report")
                         .IsRequired()

@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
@@ -18,10 +19,17 @@ public class ErrorLoggingServiceController(
     ILogger<ErrorLoggingServiceController> logger) : ControllerBase
 {
     [HttpPost("getInfo")]
-    public IActionResult GetInfo([FromBody]GetInfoRequest request)
+    public async Task<IActionResult> GetInfo([FromBody]GetInfoRequest request, CancellationToken cancellationToken)
     {
-        var settings = dbContext.ErrorLoggingServiceSettings.AsNoTracking().FirstOrDefault();
+        var settings = await dbContext.ErrorLoggingServiceSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
         var needSend = settings?.Enabled ?? false;
+
+        if (needSend)
+        {
+            // Если отправлять надо, то найдем, была ли такая ошибка 
+            var hash = GetHash(request.ClientStackHash ?? "", request.AppStackHash ?? "");
+            needSend = !await dbContext.ErrorReports.AnyAsync(c => c.Hash == hash, cancellationToken);
+        }
         
         var content = JsonSerializer.Serialize(new GetInfoResponse
         {
@@ -58,11 +66,13 @@ public class ErrorLoggingServiceController(
                 logger.LogError($"Ошибка разбора отчета об ошибке:\n {reportData}");
             else
             {
+                // Сначала найдем отчет с таким же хешем
                 var model = new ErrorReport
                 {
                     Id = Guid.NewGuid(),
                     CreatedAt = DateTime.Now,
-                    Report = reportData
+                    Report = reportData,
+                    Hash = GetHash(report.ErrorInfo.SystemErrorInfo.ClientStackHash, report.ErrorInfo.ApplicationErrorInfo.StackHash)
                 };
 
                 if (report.Screenshot?.File != null)
@@ -70,10 +80,10 @@ public class ErrorLoggingServiceController(
                     var screenshotPath = Path.Combine(unpackingPath, report.Screenshot.File);
                     model.Screenshot = await System.IO.File.ReadAllBytesAsync(screenshotPath, cancellationToken);
                 }
-        
+
                 dbContext.ErrorReports.Add(model);
-                await dbContext.SaveChangesAsync(cancellationToken);
                 
+                await dbContext.SaveChangesAsync(cancellationToken);
                 await notificationsService.QueueErrorReportReceived(model.Id, cancellationToken);
             }
         }
@@ -83,5 +93,11 @@ public class ErrorLoggingServiceController(
         }
 
         return new EmptyResult();
+    }
+
+    private static byte[] GetHash(params string[] data)
+    {
+        var str = string.Join("", data);
+        return MD5.HashData(Encoding.UTF8.GetBytes(str));
     }
 }

@@ -75,7 +75,8 @@ namespace OneSwiss.Server.Migrations
                     Id = table.Column<string>(type: "TEXT", nullable: false),
                     CreatedAt = table.Column<long>(type: "INTEGER", nullable: false),
                     Report = table.Column<string>(type: "TEXT", nullable: false),
-                    Screenshot = table.Column<byte[]>(type: "BLOB", nullable: false)
+                    Screenshot = table.Column<byte[]>(type: "BLOB", nullable: false),
+                    Hash = table.Column<byte[]>(type: "BLOB", nullable: false)
                 },
                 constraints: table =>
                 {
