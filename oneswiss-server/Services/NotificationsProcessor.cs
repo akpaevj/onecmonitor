@@ -65,15 +65,15 @@ public class NotificationsProcessor(IDbContextFactory<AppDbContext> dbContextFac
         Notification notification, 
         CancellationToken cancellationToken)
     {
+        await botClient.SendMessage(chatId, notification.Message, ParseMode.MarkdownV2, cancellationToken: cancellationToken);
+        
         var item = context.ErrorReports.AsNoTracking().FirstOrDefault(x => x.Id == Guid.Parse(notification.Additionalinfo));
-        if (item == null || item.Screenshot.Length == 0)
-            await botClient.SendMessage(chatId, notification.Message, ParseMode.MarkdownV2, cancellationToken: cancellationToken);
-        else
+        if (item is { Screenshot.Length: > 0 })
         {
             using var memoryStream = new MemoryStream(item.Screenshot);
             var file = InputFile.FromStream(memoryStream);
 
-            await botClient.SendPhoto(chatId, file, caption: notification.Message, ParseMode.MarkdownV2, cancellationToken: cancellationToken);
+            await botClient.SendPhoto(chatId, file, cancellationToken: cancellationToken);
         }
     }
 
