@@ -4,7 +4,7 @@
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
 
-<EditDatabaseObject @ref="_editor" T="ConfigurationRepository"
+<EditDatabaseForm @ref="_editor" T="ConfigurationRepository"
                     Id="Id"
                     Route="configurationrepositories"
                     Title="Новое хранилище конфигураций"
@@ -44,12 +44,12 @@
             </RowEditingTemplate>
         </MudTable>
     </MudStack>
-</EditDatabaseObject>
+</EditDatabaseForm>
 
 @code
 {
     private readonly Validator _validator = new();
-    private EditDatabaseObject<ConfigurationRepository> _editor = null!;
+    private EditDatabaseForm<ConfigurationRepository> _editor = null!;
     
     private List<Credentials> _credentials;
     

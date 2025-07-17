@@ -29,7 +29,7 @@
     }
 </script>
 
-<EditDatabaseObject @ref="_editor" T="MaintenanceTask"
+<EditDatabaseForm @ref="_editor" T="MaintenanceTask"
                     Id="Id"
                     NameSelector="@(arg => arg.Description)"
                     Title="@Title"
@@ -69,13 +69,13 @@
         </MudPaper>
     </MudStack>
     
-</EditDatabaseObject>
+</EditDatabaseForm>
 
 @code
 {
     private List<InfoBase> _selectedInfoBases;
     private readonly Validator _validator = new();
-    private EditDatabaseObject<MaintenanceTask> _editor = null!;
+    private EditDatabaseForm<MaintenanceTask> _editor = null!;
     private bool _editable;
     
     [Parameter]

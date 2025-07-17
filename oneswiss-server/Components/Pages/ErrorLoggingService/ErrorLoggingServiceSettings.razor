@@ -1,12 +1,7 @@
-@page "/errorloggingservice/settings"
 @using FluentValidation
-@using OneSwiss.Server.Models
 @using OneSwiss.Server.Components.Shared
 
-<EditDatabaseObject @ref="_editor" T="ErrorLoggingServiceSettings"
-                    Title="Настройки сервиса регистрации ошибок"
-                    Route="errorloggingservice/settings"
-                    SingleObject="true"
+<SettingsForm @ref="_editor" T="Models.ErrorLoggingServiceSettings"
                     Validation="_validator.ValidateValue"
                     OnInitialize="OnInitialize">
     <MudStack>
@@ -15,14 +10,14 @@
         <MudNumericField Class="mb-3"  For="@(() => _editor.Model!.ReportsTtl)" Label="Удалять ошибки старше (в днях)" @bind-Value="@_editor.Model!.ReportsTtl"/>
     </MudStack>
     
-</EditDatabaseObject>
+</SettingsForm>
 
 @code
 {
-    private EditDatabaseObject<ErrorLoggingServiceSettings> _editor = null!;
+    private SettingsForm<Models.ErrorLoggingServiceSettings> _editor = null!;
     private readonly Validator _validator = new();
 
-    private class Validator : ModelValidator<ErrorLoggingServiceSettings>
+    private class Validator : ModelValidator<Models.ErrorLoggingServiceSettings>
     {
         public Validator()
         {
@@ -35,7 +30,7 @@
         }
     }
 
-    private static void OnInitialize((ErrorLoggingServiceSettings Model, AppDbContext Context) valueTuple)
+    private static void OnInitialize((Models.ErrorLoggingServiceSettings Model, AppDbContext Context) valueTuple)
     {
         if (valueTuple.Model.Id == Guid.Empty)
             valueTuple.Model.Message = string.Empty;

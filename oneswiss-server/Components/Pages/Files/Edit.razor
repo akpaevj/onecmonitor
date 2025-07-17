@@ -7,7 +7,7 @@
 @inject ILogger<Edit> Logger
 @inject FilesProvider FilesProvider
 
-<EditDatabaseObject @ref="_editor" T="File"
+<EditDatabaseForm @ref="_editor" T="File"
                     Id="Id"
                     NameSelector="@(arg => arg.Name)"
                     Route="files"
@@ -51,12 +51,12 @@
             </MudFileUpload>
         }
     </MudStack>
-</EditDatabaseObject>
+</EditDatabaseForm>
 
 @code
 {
     private readonly Validator _validator = new();
-    private EditDatabaseObject<File> _editor = null!;
+    private EditDatabaseForm<File> _editor = null!;
  
     IBrowserFile? _file;
     private int _loaded;

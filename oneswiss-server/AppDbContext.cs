@@ -27,9 +27,11 @@ namespace OneSwiss.Server
         public DbSet<EventLogSettings> EventLogSettings { get; set; }
         public DbSet<ErrorLoggingServiceSettings> ErrorLoggingServiceSettings { get; set; }
         public DbSet<ErrorReport> ErrorReports { get; set; }
-        public DbSet<CommonSettings> CommonSettings { get; set; }
         public DbSet<ConfigurationRepository> ConfigRepositories { get; set; }
         public DbSet<ConfigurationRepositoryUser> ConfigRepositoryUsers { get; set; }
+        public DbSet<TelegramBotSettings> TelegramBotSettings { get; set; }
+        public DbSet<NotificationRecipient> NotificationRecipients { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options, IHostEnvironment hostEnvironment) : base(options)
             => SetDbPath(hostEnvironment);

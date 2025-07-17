@@ -5,21 +5,18 @@
 @using OneSwiss.Common.DTO
 @using OneSwiss.Common.Services
 @using OneSwiss.Common.Storage
-@using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Extensions
-@using OneSwiss.Server.Helpers
 @inject AgentsConnectionsManager AgentsConnectionsManager 
 @inject TechLogRepositoryManager TechLogRepositoryManager
 @inject IMapper Mapper
 @inject ISnackbar SnackBar
 @implements IDisposable
 
-<EditDatabaseObject @ref="_editor" T="TechLogSettings"
-                    SingleObject="true"
-                    Title="Настройки экспорта технологического журнала"
-                    Route="techlog/settings"
+<MudText Typo="Typo.h6" Class="mb-3">Сервис экспорта технологического журнала</MudText>
+
+<SettingsForm @ref="_editor" T="Models.TechLogSettings"
                     Validation="@_validator.ValidateValue"
                     AfterSave="AfterSave">
     <MudStack>
@@ -39,12 +36,12 @@
             }
         </MudSelect>
     </MudStack>
-</EditDatabaseObject>
+</SettingsForm>
 
 @code
 {
     private CancellationTokenSource? _cts;
-    private EditDatabaseObject<TechLogSettings> _editor = null!;
+    private SettingsForm<Models.TechLogSettings> _editor = null!;
     private readonly Validator _validator = new();
 
     protected override void OnInitialized()
@@ -52,7 +49,7 @@
         _cts = new CancellationTokenSource();
     }
 
-    private class Validator : ModelValidator<TechLogSettings>
+    private class Validator : ModelValidator<Models.TechLogSettings>
     {
         public Validator()
         {
@@ -96,7 +93,7 @@
         await context.InitTechLogTable(_cts!.Token);
     }
     
-    private async Task AfterSave(TechLogSettings obj)
+    private async Task AfterSave(Models.TechLogSettings obj)
     {
         if (!obj.Enabled)
             return;

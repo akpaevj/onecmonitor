@@ -4,7 +4,7 @@
 @using OneSwiss.Server.Components.Shared
 @inject IJSRuntime JS
 
-<EditDatabaseObject @ref="_editor" T="LogTemplate" Id="Id"
+<EditDatabaseForm @ref="_editor" T="LogTemplate" Id="Id"
                     NameSelector="template => template.Name"
                     Route="techlog/templates"
                     Title="Новый шаблон сбора технологического журнала"
@@ -14,11 +14,11 @@
                       Required="true" RequiredError="Не заполнено наименование"/>
         <div id="container" class="w-100" style="height: 500px"></div>
     </MudStack>
-</EditDatabaseObject>
+</EditDatabaseForm>
 
 @code
 {
-    private EditDatabaseObject<LogTemplate> _editor = null!;
+    private EditDatabaseForm<LogTemplate> _editor = null!;
 
     [Parameter]
     public Guid Id { get; set; }

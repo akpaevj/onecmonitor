@@ -101,27 +101,6 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("Clusters");
                 });
 
-            modelBuilder.Entity("OneSwiss.Server.Models.CommonSettings", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("NotifyMaintenanceTaskCompleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("NotifyMaintenanceTaskInfoBaseCompleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("TelegramBotToken")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("CommonSettings");
-                });
-
             modelBuilder.Entity("OneSwiss.Server.Models.ConfigurationRepository", b =>
                 {
                     b.Property<string>("Id")
@@ -570,6 +549,60 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("MaintenanceTaskLogs");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.Notification", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Additionalinfo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Recipient")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.NotificationRecipient", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("INTEGER");
+
+                    b.PrimitiveCollection<string>("NotificationTypes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SendTo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NotificationRecipients");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.TechLogFilter", b =>
                 {
                     b.Property<string>("Id")
@@ -650,6 +683,21 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("TechLogSettings");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.TelegramBotSettings", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TelegramBotSettings");
+                });
+
             modelBuilder.Entity("AgentTechLogSeance", b =>
                 {
                     b.HasOne("OneSwiss.Server.Models.Agent", null)
@@ -706,7 +754,7 @@ namespace OneSwiss.Server.Migrations
                         .IsRequired();
 
                     b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
-                        .WithMany()
+                        .WithMany("ConfigurationRepositories")
                         .HasForeignKey("CredentialsId");
 
                     b.Navigation("Agent");
@@ -856,6 +904,8 @@ namespace OneSwiss.Server.Migrations
             modelBuilder.Entity("OneSwiss.Server.Models.Credentials", b =>
                 {
                     b.Navigation("Clusters");
+
+                    b.Navigation("ConfigurationRepositories");
 
                     b.Navigation("InfoBases");
                 });

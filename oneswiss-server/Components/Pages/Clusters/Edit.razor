@@ -2,7 +2,7 @@
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
 
-<EditDatabaseObject @ref="_editor" T="Cluster" 
+<EditDatabaseForm @ref="_editor" T="Cluster" 
                     Id="Id"
                     NameSelector="@(arg => arg.Name)"
                     Route="clusters">
@@ -24,11 +24,11 @@
         </MudSelect>
         
     </MudStack>
-</EditDatabaseObject>
+</EditDatabaseForm>
 
 @code
 {
-    private EditDatabaseObject<Cluster> _editor = null!;
+    private EditDatabaseForm<Cluster> _editor = null!;
     
     [Parameter]
     public Guid Id { get; set; }

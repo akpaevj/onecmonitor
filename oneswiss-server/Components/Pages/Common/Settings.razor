@@ -1,0 +1,25 @@
+@page "/settings"
+@using OneSwiss.Server.Components.Pages.TechLog
+@using OneSwiss.Server.Components.Pages.EventLogSettings
+@using OneSwiss.Server.Components.Pages.ErrorLoggingService
+@using OneSwiss.Server.Components.Pages.Notifications
+
+<PageTitle>Настройки</PageTitle>
+
+<MudTabs Position="Position.Top" Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+    <MudTabPanel Text="Технологический журнал">
+        <TechLogSettings/>
+    </MudTabPanel>
+    <MudTabPanel Text="Журнал регистрации">
+        <EventLogSettings/>
+    </MudTabPanel>
+    <MudTabPanel Text="Сервис регистрации ошибок">
+        <ErrorLoggingServiceSettings/>
+    </MudTabPanel>
+    <MudTabPanel Text="Уведомления">
+        <MudStack>
+            <TelegramBotSettings/>
+            <RecipientsSettings/>
+        </MudStack>
+    </MudTabPanel>
+</MudTabs>

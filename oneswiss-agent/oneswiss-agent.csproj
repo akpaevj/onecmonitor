@@ -11,7 +11,7 @@
 	<Authors>Akpaev E.A.</Authors>
 	<Company>Akpaev E.A.</Company>
 	<AssemblyVersion>0.2.2</AssemblyVersion>
-	<Version>0.2.0</Version>
+	<Version>0.2.3</Version>
   </PropertyGroup>
 
   <ItemGroup>
