@@ -1,0 +1,47 @@
+@page "/techlog/seances/{seanceId:guid}/log/{eventId:guid}/tdeadlockgraph"
+@using System.Text.Json
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@inject TechLogAnalyzer TechLogAnalyzer
+@inject IJSRuntime Js
+@rendermode InteractiveServer
+
+<PageTitle>Граф взаимоблокировки на управляемых блокировках</PageTitle>
+
+<h1 Class="mb-3">Граф взаимоблокировки на управляемых блокировках</h1>
+
+<div id="timeline-container"></div>
+
+<MudStack Class="mt-3">
+    @foreach (var item in _items)
+    {
+        <MudCard hidden Class="@($"details-{item.Key}")">
+            <MudCardHeader>
+                <MudText>Контекст</MudText>
+            </MudCardHeader>
+            <MudCardContent>
+                <pre><code>@item.Value.Event!.Properties["Context"]</code></pre>
+            </MudCardContent>
+        </MudCard>
+    }
+</MudStack>
+
+@code {
+    private Dictionary<Guid, LockWaitingGraphMember> _items = [];
+    
+    [Parameter]
+    public Guid SeanceId { get; set; }
+    [Parameter]
+    public Guid EventId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _items = await TechLogAnalyzer.GetLockWaitingGraph(EventId, CancellationToken.None);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Js.InvokeVoidAsync("OM.initLockWaitingTimeline", JsonSerializer.Serialize(_items));
+    }
+
+}

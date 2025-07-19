@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Threading.Channels;
 
 namespace OneSwiss.V8.Platform;
 
@@ -7,11 +8,9 @@ public class Ibcmd : IDisposable
     private readonly List<string> _arguments = [];
     private readonly ProcessStartInfo _processStartInfo;
     private Process? _process;
-
-    /// <summary>
-    /// Очередное прочитанное событие журнала регистрации
-    /// </summary>
-    public event EventHandler<string>? EventLogItemRead;
+    
+    public Channel<string> EventsChannel { get; } = Channel.CreateBounded<string>(100000);
+    
     /// <summary>
     /// Событие завершения процесса ibcmd. В качестве аргумента события передается код возврата
     /// </summary>
@@ -38,32 +37,36 @@ public class Ibcmd : IDisposable
     /// <param name="startDateTime">Дата, с которой необходимо начать чтение журнала</param>
     public void ExportEventLog(string logPath, DateTime? startDateTime = null)
     {
-        var outPath = Path.GetTempFileName();
         var fromArg = startDateTime == null ? "" : $"--from={startDateTime.Value:YYYY-MM-DDTHH:mm:ss.ffffff}";
-        _arguments.Add($"eventlog export --format=json {fromArg} --out=\"{outPath}\" --skip-root \"{logPath}\"");
+        _arguments.Add($"eventlog export --format=json {fromArg} --skip-root \"{logPath}\"");
         
         Start();
         
-        Task.Run(() =>
+        Task.Run(async () =>
         {
-            using var stream = new FileStream(outPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(stream);
-            
-            while (_process?.HasExited == false)
+            try
             {
-                var line = reader.ReadLine();
-                
-                if (!string.IsNullOrEmpty(line))
-                    EventLogItemRead?.Invoke(this, line);
+                using var reader = _process!.StandardOutput;
+
+                while (!reader.EndOfStream)
+                {
+                    var line = await reader.ReadLineAsync();
+
+                    if (!string.IsNullOrEmpty(line))
+                        await EventsChannel.Writer.WriteAsync(line);
+                }
             }
-            
-            File.Delete(outPath);
+            finally
+            {
+                EventsChannel.Writer.Complete();
+            }
         }).ConfigureAwait(false);
     }
     
     private void Start(bool waitForExit = false)
     {
         _processStartInfo.Arguments = string.Join(" ", _arguments);
+        _processStartInfo.RedirectStandardOutput = true;
         
         _process = new Process();
         _process.StartInfo = _processStartInfo;
@@ -98,7 +101,7 @@ public class Ibcmd : IDisposable
             using var errorStream = _process?.StandardError;
             error = errorStream?.ReadToEnd() ?? string.Empty;
         }
-            
+        
         ProcessExited?.Invoke(this, (_process?.ExitCode ?? 0, error));
     }
 

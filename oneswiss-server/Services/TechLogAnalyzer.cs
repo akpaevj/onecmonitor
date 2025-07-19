@@ -1,41 +1,35 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using OneSwiss.Common.DTO;
+﻿using System.Text.RegularExpressions;
 using OneSwiss.Common.Models;
-using OneSwiss.Common.Storage;
+using OneSwiss.Common.Services;
 using OneSwiss.Common.TechLog;
 using OneSwiss.Server.Helpers;
 using OneSwiss.Server.Models;
 
 namespace OneSwiss.Server.Services
 {
-    public class TechLogAnalyzer(IServiceProvider serviceProvider, IMapper mapper, ILogger<TechLogAnalyzer> logger)
+    public partial class TechLogAnalyzer(TechLogRepositoryManager techLogRepositoryManager)
     {
-        private ITechLogRepository? _repository;
-
         public async Task<List<CallGraphMember>> GetCallEventsChain(Guid id, CancellationToken cancellationToken)
         {
-            await InitConnection(cancellationToken);
+            using var dbContext = techLogRepositoryManager.GetInstance();
             
             var chain = new List<CallGraphMember>();
 
-            var tjEvent = await _repository.GetTjEvent($"Id = '{id}'", cancellationToken);
+            var tjEvent = await dbContext.GetTjEvent($"Id = '{id}'", cancellationToken);
 
             if (tjEvent == null)
                 throw new Exception($"Tech log event with id {id} is not found");
 
             if (tjEvent.EventName == "SCALL")
-                await CompleteWithNestedCalls(tjEvent, chain, cancellationToken);
+                await CompleteWithNestedCalls(dbContext, tjEvent, chain, cancellationToken);
             else
-                await CompleteWithNestedScalls(tjEvent, chain, cancellationToken);
+                await CompleteWithNestedScalls(dbContext, tjEvent, chain, cancellationToken);
 
             return chain;
         }
 
-        private async Task CompleteWithNestedCalls(TjEvent tjEvent, List<CallGraphMember> chain, CancellationToken cancellationToken)
+        private async Task CompleteWithNestedCalls(ITechLogRepository dbContext, TjEvent tjEvent, List<CallGraphMember> chain, CancellationToken cancellationToken)
         {
-            await InitConnection(cancellationToken);
-            
             if (chain.FirstOrDefault(c => c.Event!.Id == tjEvent.Id) == null)
                 chain.Add(new CallGraphMember(tjEvent));
             else
@@ -49,21 +43,19 @@ namespace OneSwiss.Server.Services
                 and Id != toUUID('{tjEvent.Id}')
             """;
 
-            var call = await _repository.GetTjEvent(filter, cancellationToken);
+            var call = await dbContext.GetTjEvent(filter, cancellationToken);
 
             if (call != null)
             {
-                await CompleteWithNestedScalls(call, chain, cancellationToken);
+                await CompleteWithNestedScalls(dbContext, call, chain, cancellationToken);
 
                 if (!call.Properties.ContainsKey("Context") && call.TClientId != 0 && call.TComputerName.Length > 0)
-                    call.Properties["Context"] = await GetCallContext(call, cancellationToken);
+                    call.Properties["Context"] = await GetCallContext(dbContext, call, cancellationToken);
             }
         }
 
-        private async Task<string> GetCallContext(TjEvent tjEvent, CancellationToken cancellationToken)
+        private static async Task<string> GetCallContext(ITechLogRepository dbContext, TjEvent tjEvent, CancellationToken cancellationToken)
         {
-            await InitConnection(cancellationToken);
-            
             var filter =
             $"""
                 TClientId = {tjEvent.TClientId}
@@ -73,7 +65,7 @@ namespace OneSwiss.Server.Services
                 DateTime
             """;
 
-            var fields = new string[]
+            var fields = new[]
             {
                 "EventName",
                 "Properties['Context'] as Context"
@@ -84,7 +76,7 @@ namespace OneSwiss.Server.Services
                 EventName = "",
                 Context = ""
             };
-            var item = await _repository.GetTjEventProperties(filter, fields, c, cancellationToken);
+            var item = await dbContext.GetTjEventProperties(filter, fields, c, cancellationToken);
 
             if (item != null && item.EventName == "Context")
                 return item.Context;
@@ -92,10 +84,8 @@ namespace OneSwiss.Server.Services
                 return "";
         }
 
-        private async Task CompleteWithNestedScalls(TjEvent tjEvent, List<CallGraphMember> chain, CancellationToken cancellationToken)
+        private async Task CompleteWithNestedScalls(ITechLogRepository dbContext, TjEvent tjEvent, List<CallGraphMember> chain, CancellationToken cancellationToken)
         {
-            await InitConnection(cancellationToken);
-            
             if (chain.FirstOrDefault(c => c.Event!.Id == tjEvent.Id) == null)
                 chain.Add(new CallGraphMember(tjEvent));
             else
@@ -113,51 +103,62 @@ namespace OneSwiss.Server.Services
                     StartDateTime
                 """;
 
-            var items = await _repository.GetTjEvents(filter, cancellationToken);
+            var items = await dbContext.GetTjEvents(filter, cancellationToken);
 
-            foreach(var item in items)
-            {
-                if (chain.FirstOrDefault(c => c.Event?.Id == item.Id) == null)
-                    await CompleteWithNestedCalls(item, chain, cancellationToken);
-            }
+            foreach (var item in items.Where(item => chain.FirstOrDefault(c => c.Event?.Id == item.Id) == null))
+                await CompleteWithNestedCalls(dbContext, item, chain, cancellationToken);
         }
 
         public async Task<Dictionary<Guid, LockWaitingGraphMember>> GetLockWaitingGraph(Guid id, CancellationToken cancellationToken)
         {
-            await InitConnection(cancellationToken);
+            using var dbContext = techLogRepositoryManager.GetInstance();
             
             var graph = new Dictionary<Guid, LockWaitingGraphMember>();
 
-            var tjEvent = await _repository.GetTjEvent($"Id = '{id}'", cancellationToken);
+            var tjEvent = await dbContext.GetTjEvent($"Id = '{id}'", cancellationToken);
 
             if (tjEvent == null)
                 graph.Add(id, new LockWaitingGraphMember());
             else
             {
-                if (tjEvent.EventName == "TLOCK")
-                    await FillLockWaitingGraphVertices(tjEvent, LockWaitingTimelineMemberType.Victim, graph, cancellationToken);
-                else if (tjEvent.EventName == "TTIMEOUT")
+                switch (tjEvent.EventName)
                 {
-                    var tlock = await FindTimeoutVictim(tjEvent, cancellationToken);
+                    case "TDEADLOCK":
+                    {
+                        var tlock = await FindDeadlockVictim(dbContext, tjEvent, cancellationToken);
 
-                    if (tlock == null)
-                        graph.Add(id, new LockWaitingGraphMember());
-                    else
-                        await FillLockWaitingGraphVertices(tlock, LockWaitingTimelineMemberType.Victim, graph, cancellationToken);
+                        if (tlock == null)
+                            graph.Add(id, new LockWaitingGraphMember());
+                        else
+                            await FillLockWaitingGraphVertices(dbContext, tlock, LockWaitingTimelineMemberType.Victim, graph, cancellationToken);
+                        break;
+                    }
+                    case "TLOCK":
+                        await FillLockWaitingGraphVertices(dbContext, tjEvent, LockWaitingTimelineMemberType.Victim, graph, cancellationToken);
+                        break;
+                    case "TTIMEOUT":
+                    {
+                        var tlock = await FindTimeoutVictim(dbContext, tjEvent, cancellationToken);
+
+                        if (tlock == null)
+                            graph.Add(id, new LockWaitingGraphMember());
+                        else
+                            await FillLockWaitingGraphVertices(dbContext, tlock, LockWaitingTimelineMemberType.Victim, graph, cancellationToken);
+                        break;
+                    }
                 }
             }
 
             return graph;
         }
 
-        private async Task FillLockWaitingGraphVertices(
+        private static async Task FillLockWaitingGraphVertices(
+            ITechLogRepository dbContext,
             TjEvent tlock,
             LockWaitingTimelineMemberType memberType,
             Dictionary<Guid, LockWaitingGraphMember> graph,
             CancellationToken cancellationToken)
         {
-            await InitConnection(cancellationToken);
-            
             // check this tlock doesn't exist in the graph, otherwise next code might cause cycle queries
             if (graph.ContainsKey(tlock.Id))
                 return;
@@ -169,14 +170,11 @@ namespace OneSwiss.Server.Services
 
             graph.Add(tlock.Id, vertex);
 
-            var endTransactionEvent = await GetEndTransactionEvent(tlock, cancellationToken);
+            var endTransactionEvent = await GetEndTransactionEvent(dbContext, tlock, cancellationToken);
 
-            if (endTransactionEvent == null)
-                vertex.LockAffectEndDateTime = tlock.DateTime;
-            else
-                vertex.LockAffectEndDateTime = endTransactionEvent.DateTime;
+            vertex.LockAffectEndDateTime = endTransactionEvent?.DateTime ?? tlock.DateTime;
 
-            var uncompatibleLocks = ClickHouseHelper.SerializeArray(GetUncompatibleLocks(tlock));
+            var incompatibleLocks = ClickHouseHelper.SerializeArray(GetIncompatibleLocks(tlock));
 
             foreach (var culpritConnectionId in tlock.WaitConnections)
             {
@@ -184,18 +182,18 @@ namespace OneSwiss.Server.Services
                 $"""
                     EventName = 'TLOCK'
                     and PProcessName = '{tlock.PProcessName}'
-                    and TConnectId = {culpritConnectionId}
-                    and hasAny(Locks, {uncompatibleLocks})
+                    and TConnectId = '{culpritConnectionId}'
+                    and hasAny(Locks, {incompatibleLocks})
                     and DateTime <= toDateTime64('{ClickHouseHelper.SerializeDateTime(tlock.DateTime)}', 6, 'UTC')
                 ORDER BY
                     DateTime DESC
                 """;
 
-                var culpritTlock = await _repository.GetTjEvent(culpritFilter, cancellationToken);
+                var culpritTlock = await dbContext.GetTjEvent(culpritFilter, cancellationToken);
 
                 if (culpritTlock != null)
                 {
-                    await FillLockWaitingGraphVertices(culpritTlock, GetMemberType(LockWaitingTimelineMemberType.DirectCulprit, memberType), graph, cancellationToken);
+                    await FillLockWaitingGraphVertices(dbContext, culpritTlock, GetMemberType(LockWaitingTimelineMemberType.DirectCulprit, memberType), graph, cancellationToken);
                     vertex.DirectCulprits.Add(culpritTlock.Id);
                 }
                 else
@@ -204,18 +202,18 @@ namespace OneSwiss.Server.Services
                     $"""
                         EventName = 'TLOCK'
                         and PProcessName = '{tlock.PProcessName}'
-                        and TConnectId = {culpritConnectionId}
-                        and hasAny(Locks, {uncompatibleLocks})
+                        and TConnectId = '{culpritConnectionId}'
+                        and hasAny(Locks, {incompatibleLocks})
                         and DateTime >= toDateTime64('{ClickHouseHelper.SerializeDateTime(tlock.DateTime)}', 6, 'UTC')
                     ORDER BY
                         DateTime
                     """;
 
-                    culpritTlock = await _repository.GetTjEvent(culpritFilter, cancellationToken);
+                    culpritTlock = await dbContext.GetTjEvent(culpritFilter, cancellationToken);
 
                     if (culpritTlock != null)
                     {
-                        await FillLockWaitingGraphVertices(culpritTlock, GetMemberType(LockWaitingTimelineMemberType.DirectCulprit, memberType), graph, cancellationToken);
+                        await FillLockWaitingGraphVertices(dbContext, culpritTlock, GetMemberType(LockWaitingTimelineMemberType.DirectCulprit, memberType), graph, cancellationToken);
                         vertex.DirectCulprits.Add(culpritTlock.Id);
                     }
                     else
@@ -235,18 +233,18 @@ namespace OneSwiss.Server.Services
                 $"""
                     EventName = 'TLOCK'
                     and PProcessName = '{tlock.PProcessName}'
-                    and hasAny(Locks, {uncompatibleLocks})
+                    and hasAny(Locks, {incompatibleLocks})
                     and DateTime BETWEEN 
                         toDateTime64('{ClickHouseHelper.SerializeDateTime(tlock.StartDateTime)}', 6, 'UTC') 
                         and toDateTime64('{ClickHouseHelper.SerializeDateTime(vertex.LockAffectEndDateTime)}', 6, 'UTC')
                     and Id != '{tlock.Id}'
                 """;
 
-            var indirectCulprits = await _repository.GetTjEvents(indirectCulpritsFilter, cancellationToken);
+            var indirectCulprits = await dbContext.GetTjEvents(indirectCulpritsFilter, cancellationToken);
 
             foreach (var indirectCulprit in indirectCulprits)
             {
-                await FillLockWaitingGraphVertices(indirectCulprit, GetMemberType(LockWaitingTimelineMemberType.IndirectCulprit, memberType), graph, cancellationToken);
+                await FillLockWaitingGraphVertices(dbContext, indirectCulprit, GetMemberType(LockWaitingTimelineMemberType.IndirectCulprit, memberType), graph, cancellationToken);
                 vertex.IndirectCulprits.Add(indirectCulprit.Id);
             }
         }
@@ -254,7 +252,7 @@ namespace OneSwiss.Server.Services
         private static LockWaitingTimelineMemberType GetMemberType(LockWaitingTimelineMemberType target, LockWaitingTimelineMemberType current)
             => current == LockWaitingTimelineMemberType.IndirectCulprit ? LockWaitingTimelineMemberType.IndirectCulprit : target;
 
-        private static string[] GetUncompatibleLocks(TjEvent tlock)
+        private static string[] GetIncompatibleLocks(TjEvent tlock)
         {
             var list = new List<string>();
 
@@ -272,10 +270,8 @@ namespace OneSwiss.Server.Services
             return list.ToArray();
         }
 
-        private async Task<TjEvent?> GetEndTransactionEvent(TjEvent tlock, CancellationToken cancellationToken)
+        private static async Task<TjEvent?> GetEndTransactionEvent(ITechLogRepository dbContext, TjEvent tlock, CancellationToken cancellationToken)
         {
-            await InitConnection(cancellationToken);
-            
             var filter =
                 $"""
                     EventName = 'SDBL'
@@ -290,7 +286,7 @@ namespace OneSwiss.Server.Services
 
             try
             {
-                return await _repository.GetTjEvent(filter, cancellationToken);
+                return await dbContext.GetTjEvent(filter, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -298,7 +294,7 @@ namespace OneSwiss.Server.Services
             }
         }
 
-        private async Task<TjEvent?> FindTimeoutVictim(TjEvent tjEvent, CancellationToken cancellationToken = default)
+        private static async Task<TjEvent?> FindTimeoutVictim(ITechLogRepository dbContext, TjEvent tjEvent, CancellationToken cancellationToken = default)
         {
             var filter =
                 $"""
@@ -311,33 +307,42 @@ namespace OneSwiss.Server.Services
 
             try
             {
-                return await _repository.GetTjEvent(filter, cancellationToken);
+                return await dbContext.GetTjEvent(filter, cancellationToken);
             }
             catch (Exception ex)
             {
                 throw new Exception("Failed to find timeout victim", ex);
             }
         }
-
-        private async Task InitConnection(CancellationToken cancellationToken)
+        
+        private static async Task<TjEvent?> FindDeadlockVictim(ITechLogRepository dbContext, TjEvent tjEvent, CancellationToken cancellationToken = default)
         {
-            if (_repository != null)
-                return;
+            var intersections = tjEvent.Properties["DeadlockConnectionIntersections"];
+            var victimTConnectId = intersections[..intersections.IndexOf(' ')];
+            var connectId = Regex.Match(intersections, @"(?<=^\d+\s)\d+", RegexOptions.ExplicitCapture).Value;
             
-            await using var scope = serviceProvider.CreateAsyncScope();
-            await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            
-            var settings =
-                await dbContext.TechLogSettings
-                    .AsNoTracking()
-                    .Include(c => c.Dbms)
-                    .Include(c => c.Credentials)
-                    .FirstOrDefaultAsync(cancellationToken) ?? new TechLogSettings();
+            var filter =
+                $"""
+                     EventName = 'TLOCK'
+                     and PProcessName = '{tjEvent.PProcessName}'
+                     and TConnectId = '{victimTConnectId}'
+                     and has(WaitConnections, {connectId})
+                     and DateTime > toDateTime64('{ClickHouseHelper.SerializeDateTime(tjEvent.DateTime)}', 6, 'UTC')
+                 ORDER BY
+                    DateTime
+                 """;
 
-            var dtoSettings = mapper.Map<TechLogSettingsDto>(settings);
-            
-            _repository = new ClickHouseContext(dtoSettings.Dbms, dtoSettings.Credentials, dtoSettings.DatabaseName, dtoSettings.Table);
-            await _repository.Connect(cancellationToken);
+            try
+            {
+                return await dbContext.GetTjEvent(filter, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to find tdeadlock victim", ex);
+            }
         }
+
+        [GeneratedRegex(@"(?<=^\d+\s)\d+", RegexOptions.ExplicitCapture)]
+        private static partial Regex MyRegex();
     }
 }

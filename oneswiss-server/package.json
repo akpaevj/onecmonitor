@@ -8,10 +8,14 @@
   },
   "dependencies": {
     "monaco-editor": "^0.52.2",
-    "highlight.js": "^11.11.1"
+    "highlight.js": "^11.11.1",
+    "chart.js": "^4.5.0",
+    "vis-timeline": "^8.1.0",
+    "vis-network": "^10.0.1"
   },
   "devDependencies": {
     "esbuild": "0.25.5",
-    "typescript": "5.3.3"
+    "typescript": "5.3.3",
+    "@types/vis": "^4.21.27"
   }
 }

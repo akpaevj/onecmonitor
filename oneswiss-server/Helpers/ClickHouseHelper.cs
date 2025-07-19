@@ -13,7 +13,7 @@ namespace OneSwiss.Server.Helpers
 
             builder.Append('[');
 
-            for (int i = 0; i < items.Length; i++)
+            for (var i = 0; i < items.Length; i++)
             {
                 builder.Append(items[i]);
 
@@ -32,7 +32,7 @@ namespace OneSwiss.Server.Helpers
 
             builder.Append('[');
 
-            for (int i = 0; i < items.Length; i++)
+            for (var i = 0; i < items.Length; i++)
             {
                 builder.Append('\'');
                 builder.Append(items[i]);

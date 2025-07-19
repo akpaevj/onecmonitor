@@ -1,20 +1,21 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using OneSwiss.Common.Helpers;
 
 namespace OneSwiss.Common.Converters.Json
 {
     public class DateTimeToUtcDateTime64 : JsonConverter<DateTime>
     {
-        public override DateTime ReadJson(JsonReader reader, Type objectType, DateTime existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var s = (string)reader.Value!;
+            var s = reader.ValueSpan;
 
-            return DateTime.SpecifyKind(DateTime.Parse(s), DateTimeKind.Utc);
+            return DateTime.SpecifyKind(DateTime.Parse(s.ToString()), DateTimeKind.Utc);
         }
 
-        public override void WriteJson(JsonWriter writer, DateTime value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
         {
-            writer.WriteValue(ClickHouseHelper.SerializeDateTime(value));
+            //writer .WriteString(value);
         }
     }
 }

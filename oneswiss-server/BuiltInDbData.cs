@@ -41,8 +41,11 @@ public static class BuiltInDbData
             <log history="1">
                 <event>
                     <eq property="name" value="SDBL"/>
-                    <eq property="Func1" value="CommitTransaction"/>
-                    <eq property="Func1" value="RollbackTransaction"/>
+                    <eq property="Func" value="RollbackTransaction"/>
+                </event>
+                <event>
+                    <eq property="name" value="SDBL"/>
+                    <eq property="Func" value="CommitTransaction"/>
                 </event>
                 <event>
                     <eq property="name" value="TLOCK"/>
@@ -65,8 +68,11 @@ public static class BuiltInDbData
             <log history="1">
                 <event>
                     <eq property="name" value="SDBL"/>
-                    <eq property="Func1" value="CommitTransaction"/>
-                    <eq property="Func1" value="RollbackTransaction"/>
+                    <eq property="Func" value="RollbackTransaction"/>
+                </event>
+                <event>
+                    <eq property="name" value="SDBL"/>
+                    <eq property="Func" value="CommitTransaction"/>
                 </event>
                 <event>
                     <eq property="name" value="TLOCK"/>
@@ -102,8 +108,11 @@ public static class BuiltInDbData
             <log history="1">
                 <event>
                     <eq property="name" value="SDBL"/>
-                    <eq property="Func1" value="CommitTransaction"/>
-                    <eq property="Func1" value="RollbackTransaction"/>
+                    <eq property="Func" value="RollbackTransaction"/>
+                </event>
+                <event>
+                    <eq property="name" value="SDBL"/>
+                    <eq property="Func" value="CommitTransaction"/>
                 </event>
                 <event>
                     <eq property="name" value="TLOCK"/>

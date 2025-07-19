@@ -104,7 +104,7 @@ public class EventLogExportManager : IDisposable
             
             _readers.TryAdd(e.LogPath, reader);
         
-            reader.Start();
+            _ = reader.Start();
         }
 
         _readersLock.Release();

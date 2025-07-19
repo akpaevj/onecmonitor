@@ -61,9 +61,10 @@ public class ClstWatcher : IDisposable
 
             var elPath = Path.Combine(_ragent.ClusterCatalog, infoBaseNode[0], "1Cv8Log");
             string name = infoBaseNode[5];
+            string id = infoBaseNode[0];
                 
             if (_regex.IsMatch(name))
-                items.Add(elPath, new InfoBaseInfo(_ragent.Platform, elPath, name));
+                items.Add(elPath, new InfoBaseInfo(_ragent.Platform, elPath, name, id));
         }
 
         return items;

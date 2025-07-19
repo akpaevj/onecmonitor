@@ -9,6 +9,7 @@
     "moduleResolution": "node",
     "sourceRoot": "Scripts",
     "mapRoot": "wwwroot",
+    "sourceMap": true,
     "typeRoots": [
       "node_modules/@types"
     ]

@@ -1,13 +1,16 @@
 @page "/techlog/seances/{id:guid}/log"
 @using Microsoft.EntityFrameworkCore
+@using OneSwiss.Common.Extensions
 @using OneSwiss.Common.Models
 @using OneSwiss.Common.Services
 @using OneSwiss.Common.TechLog
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
 @inject TechLogRepositoryManager RepositoryManager
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @inject ISnackbar SnackBar
+@inject NavigationManager NavManager
 @implements IDisposable
 @rendermode InteractiveServer
 
@@ -52,7 +55,22 @@
                     <MudStack Row>
                         <MudIconButton Icon="@Icons.Material.Filled.FilterList" Size="Size.Small"
                                        OnClick="@(() => AddFilter("EventName", context.EventName))"/>
-                        @context.EventName
+                        @{
+                            var analyzes = GetAvailableAnalyzes(context);
+                            if (analyzes.Length > 0)
+                            {
+                                <MudMenu Label="@context.EventName" Color="Color.Primary" Variant="Variant.Text" EndIcon="@Icons.Material.Filled.KeyboardArrowDown">
+                                    @foreach (var analyze in analyzes)
+                                    {
+                                        <MudMenuItem Label="@analyze.GetDisplay()" OnClick="@(() => ShowAnalyze(context, analyze))"></MudMenuItem>
+                                    }
+                                </MudMenu>
+                            }
+                            else
+                            {
+                                <MudText>@context.EventName</MudText>
+                            }
+                        }
                     </MudStack>
                 </MudTd>
                 <MudTd DataLabel="Уровень">@context.Level</MudTd>
@@ -94,7 +112,8 @@
     private TechLogSeance? _seance;
     private MudTable<TjEvent> _table;
 
-    [Parameter] public Guid Id { get; set; }
+    [Parameter] 
+    public Guid Id { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -167,4 +186,16 @@
         await _table.ReloadServerData();
     }
 
+    private static TjEventAnalyzeType[] GetAvailableAnalyzes(TjEvent tjEvent)
+        => tjEvent.EventName switch
+        {
+            "TDEADLOCK" => [TjEventAnalyzeType.DeadlockOnManagedLocksGraph],
+            _ => []
+        };
+
+    private void ShowAnalyze(TjEvent tjEvent, TjEventAnalyzeType type)
+    {
+        if (type == TjEventAnalyzeType.DeadlockOnManagedLocksGraph)
+            NavManager.NavigateTo($"/techlog/seances/{Id}/log/{tjEvent.Id}/tdeadlockgraph");
+    }
 }

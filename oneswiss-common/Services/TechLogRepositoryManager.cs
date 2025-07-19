@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.Models;
@@ -8,7 +9,7 @@ namespace OneSwiss.Common.Services;
 
 public class TechLogRepositoryManager
 {
-    public TechLogSettingsDto? Settings { get; private set; }
+    private TechLogSettingsDto? Settings { get; set; }
 
     public EventHandler<TechLogSettingsDto>? SettingsChanged;
 

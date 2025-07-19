@@ -23,16 +23,7 @@
         <MudCardContent>
             @{
                 var error = _model!.ErrorInfo.ApplicationErrorInfo.Errors[0];
-                    
-                var stackBuilder = new StringBuilder();
-                var prefix = "";
-
-                foreach (var item in _model.ErrorInfo.ApplicationErrorInfo.Stack)
-                {
-                    stackBuilder.AppendLine($"{prefix}{item.Module} : {item.Line} : {item.Code.Trim()}");
-                    prefix += "\t";
-                }
-                    
+                
                 <MudStack>
                     <MudText>@error.Text</MudText>
                     <MudStack Row>
@@ -41,7 +32,7 @@
                             <MudChip Value="@category"></MudChip>
                         }
                     </MudStack>
-                    <pre><code style="overflow-wrap: break-word">@stackBuilder.ToString()</code></pre>
+                    <pre><code style="overflow-wrap: break-word">@_model.GetStack()</code></pre>
                 </MudStack>
             }
         </MudCardContent>

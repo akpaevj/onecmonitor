@@ -35,3 +35,15 @@
 .w-100 {
     width: 100%;
 }
+
+.om-victim-bg {
+    background-color: #ffb9b9!important;
+}
+
+.om-direct-culprit-bg {
+    background-color: #b3d3ff!important;
+}
+
+.om-indirect-culprit-bg {
+    background-color: #e2b2ff!important;
+}

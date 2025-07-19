@@ -10,27 +10,31 @@ public class EventLogReader(InfoBaseInfo infoBaseInfo, EventLogExporter exporter
 
     public event EventHandler<(int, string)>? ProcessExited;
 
-    public void Start()
+    public async Task Start()
     {
         _ibcmd = new Ibcmd(infoBaseInfo.Platform);
-        _ibcmd.EventLogItemRead += EventLogItemHandler;
         _ibcmd.ProcessExited += (sender, i) => ProcessExited?.Invoke(sender, i);
         
         _ibcmd.ExportEventLog(infoBaseInfo.LogPath);
-    }
 
-    private void EventLogItemHandler(object? sender, string eventData)
-    {
-        try
+        while (true)
         {
-            var item = JsonSerializer.Deserialize<EventLogItem>(eventData);
-            item!.InfoBaseName = infoBaseInfo.Name;
+            if (_ibcmd.EventsChannel.Reader.Completion.IsCompleted && _ibcmd.EventsChannel.Reader.Count == 0)
+                return;
             
-            exporter.Send(item);
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, $"Ошибка десериализации события: {eventData}");
+            var line = await _ibcmd.EventsChannel.Reader.ReadAsync();
+            
+            try
+            {
+                var item = JsonSerializer.Deserialize<EventLogItem>(line);
+                item!.InfoBaseName = infoBaseInfo.Name;
+            
+                exporter.Send(item);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, $"Ошибка десериализации события: {line}");
+            }
         }
     }
 
