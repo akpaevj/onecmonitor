@@ -21,6 +21,7 @@ namespace OneSwiss.Agent.Services
         private readonly ILogger<CommandsWatcher> _logger;
         private readonly V8PlatformsProvider _v8PlatformsProvider;
         private readonly V8ServicesProvider _v8ServicesProvider;
+        private readonly EdtInstallationsProvider _edtPInstallationsProvider;
 
         public CommandsWatcher(
             IServiceProvider serviceProvider,
@@ -31,6 +32,7 @@ namespace OneSwiss.Agent.Services
             IHostApplicationLifetime appLifetime,
             V8PlatformsProvider v8PlatformsProvider,
             V8ServicesProvider v8ServicesProvider,
+            EdtInstallationsProvider edtPInstallationsProvider,
             ILogger<CommandsWatcher> logger) 
         {
             var scope = serviceProvider.CreateAsyncScope();
@@ -40,6 +42,7 @@ namespace OneSwiss.Agent.Services
             _eventLogRepositoryManager = eventLogRepositoryManager;
             _v8PlatformsProvider = v8PlatformsProvider;
             _v8ServicesProvider = v8ServicesProvider;
+            _edtPInstallationsProvider = edtPInstallationsProvider;
             _maintenanceTasksQueue = maintenanceTasksQueue;
             _applicationLifetime = appLifetime;
             _logger = logger;
@@ -88,6 +91,9 @@ namespace OneSwiss.Agent.Services
                         break;
                     case MessageType.ConfigRepositoryDetailsRequest:
                         await SendConfigRepositoryDetails(message, _applicationLifetime.ApplicationStopping);
+                        break;
+                    case MessageType.EdtInstallationsRequest:
+                        await SendEdtInstallations(message, _applicationLifetime.ApplicationStopping);
                         break;
                     default:
                         throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
@@ -188,6 +194,12 @@ namespace OneSwiss.Agent.Services
         {
             var services = _v8ServicesProvider.GetCrServerServices();
             await _server.Send(MessageType.CrServerServices, services, message, cancellationToken);
+        }
+        
+        private async Task SendEdtInstallations(Message message, CancellationToken cancellationToken)
+        {
+            var items = _edtPInstallationsProvider.GetInstallations();
+            await _server.Send(MessageType.EdtInstallations, items, message, cancellationToken);
         }
         
         private async Task SendConfigRepositoryDetails(Message message, CancellationToken cancellationToken)

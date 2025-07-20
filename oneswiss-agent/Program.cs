@@ -21,6 +21,7 @@ var host = Host.CreateDefaultBuilder(args)
         
         services.AddSingleton<V8PlatformsProvider>();
         services.AddSingleton<V8ServicesProvider>();
+        services.AddSingleton<EdtInstallationsProvider>();
         
         services.AddSingleton<RasHolder>();
         services.AddDbContext<AppDbContext>();

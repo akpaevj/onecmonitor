@@ -10,6 +10,7 @@ using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Server.Hubs;
 using OneSwiss.Server.Models;
 using OneSwiss.Server.Models.MaintenanceTasks;
+using OneSwiss.V8.Edt;
 using OneSwiss.V8.Platform;
 using OneSwiss.V8.Platform.RemoteAdministration;
 using OneSwiss.V8.Platform.Services;
@@ -159,6 +160,12 @@ namespace OneSwiss.Server.Services
             => await Get<SystemInfoDto>(
                 MessageType.SystemInfoRequest, 
                 MessageType.SystemInfo,
+                cancellationToken);
+        
+        public async Task<List<EdtInstallation>> GetEdtInstallations(CancellationToken cancellationToken)
+            => await Get<List<EdtInstallation>>(
+                MessageType.EdtInstallationsRequest, 
+                MessageType.EdtInstallations,
                 cancellationToken);
         
         public async Task<List<V8InfoBaseSummary>> GetV8InfoBasesSummaries(Cluster cluster, CancellationToken cancellationToken)
