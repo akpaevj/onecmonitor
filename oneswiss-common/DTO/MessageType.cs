@@ -19,6 +19,7 @@
         V8FileRequest,
         SystemInfoRequest,
         ConfigRepositoryDetailsRequest,
+        EdtInstallationsRequest,
         
         // Server messages
         InstalledPlatformsRequest,
@@ -31,6 +32,7 @@
         MaintenanceTask,
         V8FileChunk,
         SystemInfo,
-        ConfigRepositoryDetails
+        ConfigRepositoryDetails,
+        EdtInstallations
     }
 }

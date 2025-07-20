@@ -5,6 +5,7 @@
 @using OneSwiss.Common.Extensions
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
+@using OneSwiss.V8.Edt
 @using OneSwiss.V8.Platform
 @using OneSwiss.V8.Platform.Services
 @inject IDbContextFactory<AppDbContext> ContextFactory
@@ -37,10 +38,10 @@
                         @if (vm.Connected)
                         {
                             <MudStack StretchItems="StretchItems.All" Spacing="0">
-                                <MudStack Row StretchItems="StretchItems.All" Class="mb-3">
+                                <MudStack Row StretchItems="StretchItems.All" Class="mb-3" Breakpoint="Breakpoint.MdAndDown">
                                     @if (vm.InstalledPlatforms.Count > 0)
                                     {
-                                        <MudDataGrid T="V8Platform" Items="@vm.InstalledPlatforms" Class="pa-2" Elevation="0">
+                                        <MudDataGrid T="V8Platform" Items="@vm.InstalledPlatforms" Class="pa-2" Elevation="1">
                                             <ToolBarContent>
                                                 <MudText Typo="Typo.h6">Установленные платформы</MudText>
                                             </ToolBarContent>
@@ -51,7 +52,7 @@
                                     }
                                     @if (vm.RagentServices.Count > 0)
                                     {
-                                        <MudTable T="RagentService" Items="@vm.RagentServices" Bordered="false" Class="pa-2" Elevation="0">
+                                        <MudTable T="RagentService" Items="@vm.RagentServices" Class="pa-2" Elevation="1">
                                             <ToolBarContent>
                                                 <MudText Typo="Typo.h6">Службы агентов сервера 1С</MudText>
                                             </ToolBarContent>
@@ -79,10 +80,10 @@
                                         </MudTable>
                                     }
                                 </MudStack>
-                                <MudStack Row StretchItems="StretchItems.All">
+                                <MudStack Row Class="mb-3" StretchItems="StretchItems.All" Breakpoint="Breakpoint.MdAndDown">
                                     @if (vm.RasServices.Count > 0)
                                     {
-                                        <MudTable T="RasService" Items="@vm.RasServices" Bordered="false" Class="pa-2" Elevation="0">
+                                        <MudTable T="RasService" Items="@vm.RasServices" Class="pa-2" Elevation="1">
                                             <ToolBarContent>
                                                 <MudText Typo="Typo.h6">Службы сервера администрирования 1С</MudText>
                                             </ToolBarContent>
@@ -113,7 +114,7 @@
                                     }
                                     @if (vm.CrServerServices.Count > 0)
                                     {
-                                        <MudTable T="CrServer" Items="@vm.CrServerServices" Bordered="false" Class="pa-2" Elevation="0">
+                                        <MudTable T="CrServer" Items="@vm.CrServerServices" Class="pa-2" Elevation="1">
                                             <ToolBarContent>
                                                 <MudText Typo="Typo.h6">Службы серверов хранилищ 1С</MudText>
                                             </ToolBarContent>
@@ -139,6 +140,29 @@
                                         </MudTable>
                                     }
                                 </MudStack>
+                                @if (vm.EdtInstallations.Count > 0)
+                                {
+                                    <MudTable T="EdtInstallation" Items="@vm.EdtInstallations" Class="pa-2" Elevation="1">
+                                        <ToolBarContent>
+                                            <MudText Typo="Typo.h6">Установленные EDT</MudText>
+                                        </ToolBarContent>
+                                        <HeaderContent>
+                                            <MudTh>Версия</MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate>
+                                            <MudTd DataLabel="Имя">
+                                                @if (context.FromStarter)
+                                                {
+                                                    <MudText>@($"{context.Version} (стартер)")</MudText>
+                                                }
+                                                else
+                                                {
+                                                    <MudText>@context.Version</MudText>
+                                                }
+                                            </MudTd>
+                                        </RowTemplate>
+                                    </MudTable>
+                                }
                             </MudStack>
                         }
                         else
@@ -199,7 +223,8 @@
                 InstalledPlatforms = connection is null ? [] : await connection.GetInstalledPlatforms(CancellationToken.None),
                 CrServerServices = connection is null ? [] : await connection.GetCrServerServices(CancellationToken.None),
                 RasServices = connection is null ? [] : await connection.GetRasServices(CancellationToken.None),
-                RagentServices = connection is null ? [] : await connection.GetRagentServices(CancellationToken.None)
+                RagentServices = connection is null ? [] : await connection.GetRagentServices(CancellationToken.None),
+                EdtInstallations = connection is null ? [] : await connection.GetEdtInstallations(CancellationToken.None)
             });
         }
 
@@ -232,5 +257,6 @@
         public List<RagentService> RagentServices { get; set; } = [];
         public List<RasService> RasServices { get; set; } = [];
         public List<CrServer> CrServerServices { get; set; } = [];
+        public List<EdtInstallation> EdtInstallations { get; set; } = [];
     }
 }
