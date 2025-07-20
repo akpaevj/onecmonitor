@@ -8,7 +8,7 @@ public static class EdtDiscoverer
         
         var allPaths = additionalPaths.Concat(GetDefaultPaths());
 
-        foreach (var item in allPaths)
+        foreach (var item in allPaths.Where(c => Directory.Exists(c.Path)))
         {
             var edtRunnerName = "1cedt" + (Environment.OSVersion.Platform == PlatformID.Win32NT ? ".exe" : "");
             var versionsDirectories = Directory.EnumerateDirectories(item.Path);
