@@ -136,6 +136,7 @@ public static partial class V8Services
                         Port = port == null ? RagentDefaultPort : int.Parse(port),
                         RegPort = regPort == null ? RagentDefaultRegPort : int.Parse(regPort),
                         ClusterCatalog = clusterCatalog,
+                        DebugType = RecognizeDebugType(args)
                     };
                 
                     items.Add(service);
