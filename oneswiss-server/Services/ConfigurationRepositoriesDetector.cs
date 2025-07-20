@@ -26,7 +26,10 @@ public class ConfigurationRepositoriesDetector(
                         await using var scope = serviceProvider.CreateAsyncScope();
                         await using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                         
-                        var removedReps = await appDbContext.ConfigRepositories.Select(c => c.InternalId).ToListAsync(token);
+                        var removedReps = await appDbContext.ConfigRepositories
+                            .Where(c => c.AgentId == connection.AgentInstance!.Id)
+                            .Select(c => c.InternalId)
+                            .ToListAsync(token);
 
                         try
                         {
@@ -85,7 +88,8 @@ public class ConfigurationRepositoriesDetector(
                                         // Сначала отметим удаленных
                                         var existIds = details.Users.Select(c => c.Id).ToList();
                                         var deletedUsers = await appDbContext.ConfigRepositoryUsers
-                                            .Where(c => !existIds.Contains(c.Id)).ToListAsync(token);
+                                            .Where(c => c.Repository.AgentId == connection.AgentInstance.Id && !existIds.Contains(c.Id))
+                                            .ToListAsync(token);
                                         deletedUsers.ForEach(c => c.Deleted = true);
                                         
                                         // теперь добавим новых и обновим существующих

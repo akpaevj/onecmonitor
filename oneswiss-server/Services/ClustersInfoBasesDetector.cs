@@ -38,7 +38,7 @@ public class ClustersInfoBasesDetector(
                                     .AsNoTracking()
                                     .FirstOrDefaultAsync(c => c.DefaultV8Admin, token);
 
-                                var dbClusters = await appDbContext.Clusters.ToListAsync(token);
+                                var dbClusters = await appDbContext.Clusters.Where(c => c.AgentId == connection.AgentInstance!.Id).ToListAsync(token);
                                 var agentClusters = await connection.GetV8Clusters(token);
 
                                 dbClusters.ExceptBy(agentClusters.Select(c => c.Id), i => i.ClusterInternalId).ToList().ForEach(
@@ -70,6 +70,7 @@ public class ClustersInfoBasesDetector(
 
                                 var clusters = await appDbContext.Clusters
                                     .AsNoTracking()
+                                    .Where(c => c.AgentId == connection.AgentInstance!.Id)
                                     .Include(c => c.Credentials)
                                     .ToListAsync(token);
 
