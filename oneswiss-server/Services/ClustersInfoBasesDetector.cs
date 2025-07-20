@@ -15,118 +15,132 @@ public class ClustersInfoBasesDetector(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var connections = await connectionsManager.GetActiveAgentsConnections(stoppingToken);
-
-            if (connections.Count > 0)
+            try
             {
-                try
+                var connections = await connectionsManager.GetActiveAgentsConnections(stoppingToken);
+
+                if (connections.Count > 0)
                 {
-                    await Parallel.ForEachAsync(connections, stoppingToken, async (connection, token) =>
+                    try
                     {
-                        await using var scope = serviceProvider.CreateAsyncScope();
-                        await using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-                        try
+                        await Parallel.ForEachAsync(connections, stoppingToken, async (connection, token) =>
                         {
-                            var defaultClusterAdminCredentials = await appDbContext.Credentials
-                                .AsNoTracking()
-                                .FirstOrDefaultAsync(c => c.DefaultForClusters, token);
+                            await using var scope = serviceProvider.CreateAsyncScope();
+                            await using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-                            var defaultInfoBaseAdminCredentials = await appDbContext.Credentials
-                                .AsNoTracking()
-                                .FirstOrDefaultAsync(c => c.DefaultV8Admin, token);
-
-                            var dbClusters = await appDbContext.Clusters.ToListAsync(token);
-                            var agentClusters = await connection.GetV8Clusters(token);
-
-                            dbClusters.ExceptBy(agentClusters.Select(c => c.Id), i => i.ClusterInternalId).ToList().ForEach(
-                                c => appDbContext.Clusters.Remove(c));
-
-                            agentClusters.ExceptBy(dbClusters.Select(c => c.ClusterInternalId), i => i.Id).ToList().ForEach(c =>
+                            try
                             {
-                                var item = mapper.Map<Cluster>(c);
-                                item.Id = Guid.NewGuid();
-                                item.AgentId = connection.AgentInstance!.Id;
-                                item.CredentialsId = defaultClusterAdminCredentials?.Id;
-                                
-                                appDbContext.Clusters.Add(item);
-                            });
+                                var defaultClusterAdminCredentials = await appDbContext.Credentials
+                                    .AsNoTracking()
+                                    .FirstOrDefaultAsync(c => c.DefaultForClusters, token);
 
-                            agentClusters.ForEach(cluster =>
-                            {
-                                var dbCluster = dbClusters.FirstOrDefault(c => c.ClusterInternalId == cluster.Id);
-                                if (dbCluster == null)
-                                    return;
+                                var defaultInfoBaseAdminCredentials = await appDbContext.Credentials
+                                    .AsNoTracking()
+                                    .FirstOrDefaultAsync(c => c.DefaultV8Admin, token);
 
-                                mapper.Map(cluster, dbCluster);
-                                dbCluster.AgentId = connection.AgentInstance!.Id;
+                                var dbClusters = await appDbContext.Clusters.ToListAsync(token);
+                                var agentClusters = await connection.GetV8Clusters(token);
 
-                                appDbContext.Clusters.Update(dbCluster);
-                            });
+                                dbClusters.ExceptBy(agentClusters.Select(c => c.Id), i => i.ClusterInternalId).ToList().ForEach(
+                                    c => appDbContext.Clusters.Remove(c));
 
-                            await appDbContext.SaveChangesAsync(token);
-
-                            var clusters = await appDbContext.Clusters.AsNoTracking().ToListAsync(token);
-
-                            foreach (var cluster in clusters)
-                            {
-                                try
+                                agentClusters.ExceptBy(dbClusters.Select(c => c.ClusterInternalId), i => i.Id).ToList().ForEach(c =>
                                 {
-                                    var dbInfoBases = await appDbContext.InfoBases.Where(c => c.ClusterId == cluster.Id).ToListAsync(token);
-                                    var agentInfoBases = await connection.GetV8InfoBasesSummaries(cluster, token);
+                                    var item = mapper.Map<Cluster>(c);
+                                    item.Id = Guid.NewGuid();
+                                    item.AgentId = connection.AgentInstance!.Id;
+                                    item.CredentialsId = defaultClusterAdminCredentials?.Id;
                                     
-                                    dbInfoBases.ExceptBy(agentInfoBases.Select(c => c.Id), i => i.InfoBaseInternalId).ToList().ForEach(
-                                        c => appDbContext.InfoBases.Remove(c));
+                                    appDbContext.Clusters.Add(item);
+                                });
 
-                                    agentInfoBases.ExceptBy(dbInfoBases.Select(c => c.InfoBaseInternalId), i => i.Id).ToList().ForEach(c =>
-                                    {
-                                        var item = mapper.Map<InfoBase>(c);
-                                        item.Id = Guid.NewGuid();
-                                        item.Name = item.InfoBaseName;
-                                        item.ClusterId = cluster.Id;
-                                        item.CredentialsId = defaultInfoBaseAdminCredentials?.Id;
-                                        item.PublishAddress = "http://localhost";
-                                        
-                                        appDbContext.InfoBases.Add(item);
-                                    });
-                                    
-                                    agentInfoBases.ForEach(infoBase =>
-                                    {
-                                        var dbInfoBase = dbInfoBases.FirstOrDefault(c => c.InfoBaseInternalId == infoBase.Id);
-                                        if (dbInfoBase == null)
-                                            return;
-                                        
-                                        mapper.Map(infoBase, dbInfoBase);
-                                        dbInfoBase.ClusterId = cluster.Id;
-
-                                        appDbContext.InfoBases.Update(dbInfoBase);
-                                    });
-                                }
-                                catch (Exception e)
+                                agentClusters.ForEach(cluster =>
                                 {
-                                    logger.LogError(e, 
-                                        $"Ошибка получения списка информационных баз. Агент: {connection.AgentInstance!.InstanceName}. Кластер: {cluster.Name}");
+                                    var dbCluster = dbClusters.FirstOrDefault(c => c.ClusterInternalId == cluster.Id);
+                                    if (dbCluster == null)
+                                        return;
+
+                                    mapper.Map(cluster, dbCluster);
+                                    dbCluster.AgentId = connection.AgentInstance!.Id;
+
+                                    appDbContext.Clusters.Update(dbCluster);
+                                });
+
+                                await appDbContext.SaveChangesAsync(token);
+
+                                var clusters = await appDbContext.Clusters
+                                    .AsNoTracking()
+                                    .Include(c => c.Credentials)
+                                    .ToListAsync(token);
+
+                                foreach (var cluster in clusters)
+                                {
+                                    try
+                                    {
+                                        var dbInfoBases = await appDbContext.InfoBases.Where(c => c.ClusterId == cluster.Id).ToListAsync(token);
+                                        var agentInfoBases = await connection.GetV8InfoBasesSummaries(cluster, token);
+                                        
+                                        dbInfoBases.ExceptBy(agentInfoBases.Select(c => c.Id), i => i.InfoBaseInternalId).ToList().ForEach(
+                                            c => appDbContext.InfoBases.Remove(c));
+
+                                        agentInfoBases.ExceptBy(dbInfoBases.Select(c => c.InfoBaseInternalId), i => i.Id).ToList().ForEach(c =>
+                                        {
+                                            var item = mapper.Map<InfoBase>(c);
+                                            item.Id = Guid.NewGuid();
+                                            item.Name = item.InfoBaseName;
+                                            item.ClusterId = cluster.Id;
+                                            item.CredentialsId = defaultInfoBaseAdminCredentials?.Id;
+                                            item.PublishAddress = "http://localhost";
+                                            
+                                            appDbContext.InfoBases.Add(item);
+                                        });
+                                        
+                                        agentInfoBases.ForEach(infoBase =>
+                                        {
+                                            var dbInfoBase = dbInfoBases.FirstOrDefault(c => c.InfoBaseInternalId == infoBase.Id);
+                                            if (dbInfoBase == null)
+                                                return;
+                                            
+                                            mapper.Map(infoBase, dbInfoBase);
+                                            dbInfoBase.ClusterId = cluster.Id;
+
+                                            appDbContext.InfoBases.Update(dbInfoBase);
+                                        });
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        logger.LogError(e, 
+                                            $"Ошибка получения списка информационных баз. Агент: {connection.AgentInstance!.InstanceName}. Кластер: {cluster.Name}");
+                                    }
                                 }
+
+                                await appDbContext.SaveChangesAsync(token);
                             }
-
-                            await appDbContext.SaveChangesAsync(token);
-                        }
-                        catch (Exception e)
-                        {
-                            await appDbContext.Database.RollbackTransactionAsync(token);
-                            logger.LogError(e, $"Ошибка получения списка кластеров. Агент: {connection.AgentInstance!.InstanceName}");
-                        }
-                    });
+                            catch (Exception e)
+                            {
+                                await appDbContext.Database.RollbackTransactionAsync(token);
+                                logger.LogError(e, $"Ошибка получения списка кластеров. Агент: {connection.AgentInstance!.InstanceName}");
+                            }
+                        });
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        // ignore
+                    }
+                    
+                    await Task.Delay(60 * 1000, stoppingToken);
                 }
-                catch (TaskCanceledException)
-                {
-                    // ignore
-                }
-                
+                else
+                    await Task.Delay(5 * 1000, stoppingToken);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Ошибка обновления списка кластеров и информационных баз");
+            }
+            finally
+            {
                 await Task.Delay(60 * 1000, stoppingToken);
             }
-            else
-                await Task.Delay(5 * 1000, stoppingToken);
         }
     }
 }
