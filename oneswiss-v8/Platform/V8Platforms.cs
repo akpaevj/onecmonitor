@@ -10,7 +10,7 @@ public static partial class V8Platforms
         if (additionalPaths != null)
             paths = paths.Concat(additionalPaths).Distinct().ToArray();
         
-        return GetInstalledPlatformsInternal(paths);
+        return GetInstalledPlatformsInternal(paths).OrderBy(c => c.Version).ToList();
     }
 
     private static List<V8Platform> GetInstalledPlatformsInternal(string[] paths)

@@ -67,7 +67,7 @@ public class RasHolder(V8ServicesProvider v8ServicesProvider) : IDisposable
 
         var serviceModel = new RasService
         {
-            Name = "RAS (OnecMonitor)",
+            Name = "RAS (запущен OneSwiss)",
             Platform = ragent.Platform,
             IsActive = true,
             Port = port,
