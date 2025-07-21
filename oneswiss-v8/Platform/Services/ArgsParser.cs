@@ -1,21 +1,112 @@
+using OneSTools.FileDatabase.Extensions;
+
 namespace OneSwiss.V8.Platform.Services;
 
-public record ArgsKeyValue(string Key, string Value);
+public class Args
+{
+    public List<ArgsItem> Items { get; } = [];
+    
+    public int ItemsCount => Items.Count;
+
+    public void AddOption(string name)
+        => Items.Add(new ArgsOption { Option = name });
+    
+    public void AddValue(string value)
+        => Items.Add(new ArgsValue { Value = value });
+    
+    public void AddParameter(string key, string value)
+        => Items.Add(new ArgsParameter { Key = key, Value = value });
+
+    public ArgsOption? ItemByIndexAsOption(int index)
+    {
+        var item = Items[index];
+        
+        if (item is ArgsOption option)
+            return option;
+
+        return null;
+    }
+    
+    public ArgsValue? ItemByIndexAsValue(int index)
+    {
+        var item = Items[index];
+        
+        if (item is ArgsValue value)
+            return value;
+
+        return null;
+    }
+    
+    public ArgsParameter? ItemByIndexAsParameter(int index)
+    {
+        var item = Items[index];
+        
+        if (item is ArgsParameter parameter)
+            return parameter;
+
+        return null;
+    }
+    
+    public bool HasOption(string optionName)
+        => Items.FirstOrDefault(item =>
+            item is ArgsOption option &&
+            option.Option.Equals(optionName, StringComparison.CurrentCultureIgnoreCase)) is not null;
+
+    public bool HasParameter(string parameterNameLong, string parameterNameShort, out string? value)
+    {
+        if (Items.FirstOrDefault(item => 
+                item is ArgsParameter argsParameter &&
+                (argsParameter.Key.Equals(parameterNameLong, StringComparison.CurrentCultureIgnoreCase) ||
+                 argsParameter.Key.Equals(parameterNameShort, StringComparison.CurrentCultureIgnoreCase))) is not
+            ArgsParameter parameter)
+        {
+            value = null;
+            return false;
+        }
+
+        value = parameter.Value;
+        return true;
+    }
+    
+    public bool HasParameter(string parameterNameLong, out string? value)
+    {
+        if (Items.FirstOrDefault(item => 
+                item is ArgsParameter argsParameter &&
+                argsParameter.Key.Equals(parameterNameLong, StringComparison.CurrentCultureIgnoreCase)) is not
+            ArgsParameter parameter)
+        {
+            value = null;
+            return false;
+        }
+
+        value = parameter.Value;
+        return true;
+    }
+}
+
+public abstract record ArgsItem;
+
+public record ArgsOption : ArgsItem
+{
+    public string Option { get; set; } = string.Empty;
+}
+
+public record ArgsValue : ArgsItem
+{
+    public string Value { get; set; } = string.Empty;
+}
+
+public record ArgsParameter : ArgsItem
+{
+    public string Key { get; init; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
+}
 
 public static class ArgsParser
 {
-    public static string? GetOptionValue(this ArgsKeyValue[] args, string longKey, string shortKey)
+    public static Args ParsePairs(string commandLine)
     {
-        var arg = args.FirstOrDefault(a => a.Key == longKey);
-        return arg != null ? arg.Value : args.FirstOrDefault(a => a.Key == shortKey)?.Value;
-    }
-
-    public static string? GetOptionValue(this ArgsKeyValue[] args, string key)
-        => args.FirstOrDefault(a => a.Key == key)?.Value;
-    
-    public static ArgsKeyValue[] ParsePairs(string commandLine)
-    {
-        var items = new List<ArgsKeyValue>();
+        var result = new Args();
         
         var args = Parse(commandLine);
 
@@ -26,9 +117,18 @@ public static class ArgsParser
         {
             if (keyRead)
             {
-                items.Add(new ArgsKeyValue(key, argItem));
-                keyRead = false;
-                key = string.Empty;
+                if (argItem.StartsWith('-'))
+                {
+                    result.AddOption(key.TrimStart('-'));
+                    keyRead = true;
+                    key = argItem;
+                }
+                else
+                {
+                    result.AddParameter(key.TrimStart('-'), argItem);
+                    keyRead = false;
+                    key = string.Empty;
+                }
             }
             else
             {
@@ -40,13 +140,13 @@ public static class ArgsParser
                     {
                         var kv = key.Split('=', 2);
                         
-                        items.Add(new ArgsKeyValue(kv[0], kv[1]));
+                        result.AddParameter(kv[0].TrimStart('-'), kv[1]);
                         keyRead = false;
                         key = string.Empty;
                     }
                     else
                     {
-                        items.Add(new ArgsKeyValue("", key));
+                        result.AddOption(key);
                         keyRead = false;
                         key = string.Empty;
                     }
@@ -58,14 +158,21 @@ public static class ArgsParser
                 }
                 else
                 {
-                    items.Add(new ArgsKeyValue(key, argItem));
+                    if (string.IsNullOrEmpty(key))
+                        result.AddValue(argItem);
+                    else
+                        result.AddParameter(key, argItem);
+                    
                     keyRead = false;
                     key = string.Empty;
                 }
             }
         }
+        
+        if (keyRead && !string.IsNullOrEmpty(key))
+            result.AddOption(key.TrimStart('-'));
 
-        return items.ToArray();
+        return result;
     }
 
     private static string[] Parse(string commandLine)

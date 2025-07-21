@@ -20,5 +20,5 @@ public class CrServer : V8Service
 
     [Key(5)] 
     [DisplayName("Список хранилищ")] 
-    public List<string> Reporitories { get; set; } = [];
+    public List<string> Repositories { get; set; } = [];
 }

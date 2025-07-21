@@ -68,15 +68,16 @@ public static partial class V8Services
                 continue;
             
             var args = ArgsParser.ParsePairs(exec);
-            if (args.Length < 1)
+            if (args.ItemsCount < 1)
                 continue;
 
-            // Если путь к исполняемому файлу службы не включает в себя путь одной из установленных платформ, то это не служба 1С 
-            var isOnecService = platforms.Any(c => args[0].Value.Contains(c.PlatformPath));
+            // Если путь к исполняемому файлу службы не включает в себя путь одной из установленных платформ, то это не служба 1С
+            var executablePath = args.ItemByIndexAsValue(0)!.Value;
+            
+            var isOnecService = platforms.Any(c => executablePath.Contains(c.PlatformPath));
             if (!isOnecService)
                 continue;
             
-            var executablePath = args[0].Value;
             var executable = Path.GetFileNameWithoutExtension(executablePath);
             var platformPath = Path.GetDirectoryName(Path.GetDirectoryName(executablePath));
             var description = v8Service.DisplayName;
@@ -87,75 +88,41 @@ public static partial class V8Services
             {
                 case "ras":
                 {
-                    var port = args.GetOptionValue("port", "p");
-
                     var service = new RasService
                     {
                         Name = description,
                         IsActive = isActive,
-                        Platform = platforms.GetByPath(platformPath!)!,
-                        Port = port == null ? RasDefaultPort : int.Parse(port)
+                        Platform = platforms.GetByPath(platformPath!)!
                     };
-                
-                    var last = args.Last();
-                    if (string.IsNullOrEmpty(last.Key) && last.Value != "cluster" && last.Value != "c")
-                    {
-                        if (last.Value.Contains(':'))
-                        {
-                            var kv = last.Value.Split(':');
-                            service.RagentHost = kv[0];
-                            service.RagentPort = int.Parse(kv[1]);
-                        }
-                        else
-                        {
-                            service.RagentHost = last.Value;
-                            service.RagentPort = RagentDefaultPort;
-                        }
-                    }
-                    else
-                    {
-                        service.RagentHost = "localhost";
-                        service.RagentPort = RagentDefaultPort;
-                    }
+                    FillRasFromArgs(service, args);
                 
                     items.Add(service);
                     break;
                 }
                 case "ragent":
                 {
-                    var port = args.GetOptionValue("port");
-                    var regPort = args.GetOptionValue("regport");
-                    var clusterCatalog = args.GetOptionValue("d");
-                    clusterCatalog = Path.Combine(clusterCatalog!, $"reg_{regPort}");
-                
                     var service = new RagentService
                     {
                         Name = description,
                         IsActive = isActive,
-                        Platform = platforms.GetByPath(platformPath!)!,
-                        Port = port == null ? RagentDefaultPort : int.Parse(port),
-                        RegPort = regPort == null ? RagentDefaultRegPort : int.Parse(regPort),
-                        ClusterCatalog = clusterCatalog,
-                        DebugType = RecognizeDebugType(args)
+                        Platform = platforms.GetByPath(platformPath!)!
                     };
+                    FillRagentFromArgs(service, args);
                 
                     items.Add(service);
                     break;
                 }
                 case "crserver":
                 {
-                    var port = args.GetOptionValue("port");
-                    var directory = args.GetOptionValue("d");
-                    
                     var service = new CrServer
                     {
                         Name = description,
                         IsActive = isActive,
-                        Platform = platforms.GetByPath(platformPath!)!,
-                        Port = port == null ? CrServerDefaultPort : int.Parse(port),
-                        Directory = directory!,
-                        Reporitories = GetCrServerRepositories(directory!)
+                        Platform = platforms.GetByPath(platformPath!)!
                     };
+                    FillCrServerFromArgs(service, args);
+
+                    service.Repositories = GetCrServerRepositories(service.Directory);
                 
                     items.Add(service);
                     break;
@@ -215,18 +182,21 @@ public static partial class V8Services
                 
             var name = ServiceNameRegex().Match(line).Value.Trim();
             var execStart = RunCommandWithBash($"systemctl show {name} -p ExecStart");
-            var argv = ArgvRegex().Match(execStart).Value.Trim();
             
-            var args = ResolveArgs(name, ArgsParser.ParsePairs(argv));
-            if (args.Length < 1)
+            var argv = ArgvRegex().Match(execStart).Value.Trim();
+            var args = ArgsParser.ParsePairs(argv);
+            ResolveArgs(name, args);
+            
+            if (args.ItemsCount < 1)
                 continue;
 
             // Если путь к исполняемому файлу службы не включает в себя путь одной из установленных платформ, то это не служба 1С 
-            var isOnecService = platforms.Any(c => args[0].Value.Contains(c.PlatformPath));
+            var executablePath = args.ItemByIndexAsValue(0)!.Value;
+            
+            var isOnecService = platforms.Any(c => executablePath.Contains(c.PlatformPath));
             if (!isOnecService)
                 continue;
             
-            var executablePath = args[0].Value;
             var executable = Path.GetFileName(executablePath);
             var platformPath = Path.GetDirectoryName(executablePath);
             var description = RunCommandWithBash($"systemctl show {name} -p Description").Replace("Description=", "").Trim();
@@ -247,81 +217,39 @@ public static partial class V8Services
             {
                 case "ras":
                 {
-                    var port = args.GetOptionValue("port", "p");
-
                     var service = new RasService
                     {
                         Name = description,
                         IsActive = isActive,
                         Platform = platforms.GetByPath(platformPath!)!,
-                        Port = port == null ? RasDefaultPort : int.Parse(port)
                     };
-                
-                    var last = args.Last();
-                    if (string.IsNullOrEmpty(last.Key) && last.Value != "cluster" && last.Value != "c")
-                    {
-                        if (last.Value.Contains(':'))
-                        {
-                            var kv = last.Value.Split(':');
-                            service.RagentHost = kv[0];
-                            service.RagentPort = int.Parse(kv[1]);
-                        }
-                        else
-                        {
-                            service.RagentHost = last.Value == string.Empty ? "localhost" : last.Value;
-                            service.RagentPort = RagentDefaultPort;
-                        }
-                    }
-                    else
-                    {
-                        service.RagentHost = "localhost";
-                        service.RagentPort = RagentDefaultPort;
-                    }
+                    FillRasFromArgs(service, args);
                 
                     items.Add(service);
                     break;
                 }
                 case "ragent":
                 {
-                    var port = args.GetOptionValue("port");
-                    var regPort = args.GetOptionValue("regport");
-                    
-                    var clusterCatalog = args.GetOptionValue("d");
-                    if (string.IsNullOrEmpty(clusterCatalog))
-                    {
-                        var user = GetVariableValue(name, "User");
-                        clusterCatalog = Path.Join("/home", user, ".1cv8/");
-                    }
-                    clusterCatalog = Path.Combine(clusterCatalog, $"reg_{regPort}");
-                
                     var service = new RagentService
                     {
                         Name = description,
                         IsActive = isActive,
-                        Platform = platforms.GetByPath(platformPath!)!,
-                        Port = port == null ? RagentDefaultPort : int.Parse(port),
-                        RegPort = regPort == null ? RagentDefaultRegPort : int.Parse(regPort),
-                        ClusterCatalog = clusterCatalog,
-                        DebugType = RecognizeDebugType(args)
+                        Platform = platforms.GetByPath(platformPath!)!
                     };
+                    FillRagentFromArgs(service, args);
                 
                     items.Add(service);
                     break;
                 }
                 case "crserver":
                 {
-                    var port = args.GetOptionValue("port");
-                    var directory = args.GetOptionValue("d");
-
                     var service = new CrServer
                     {
                         Name = description,
                         IsActive = isActive,
-                        Platform = platforms.GetByPath(platformPath!)!,
-                        Port = port == null ? CrServerDefaultPort : int.Parse(port),
-                        Directory = directory!,
-                        Reporitories = GetCrServerRepositories(directory!)
+                        Platform = platforms.GetByPath(platformPath!)!
                     };
+                    FillCrServerFromArgs(service, args);
                     
                     items.Add(service);
                     break;
@@ -332,22 +260,46 @@ public static partial class V8Services
         return items;
     }
 
-    private static RagentDebugType RecognizeDebugType(ArgsKeyValue[] args)
+    private static RagentDebugType RecognizeDebugType(Args args)
     {
-        if (args.Select(c => c.Value.ToUpper()).Contains("-DEBUG")) 
-            return args.Select(c => c.Value.ToUpper()).Contains("-HTTP") ? RagentDebugType.Http : RagentDebugType.Tcp;
+        if (args.HasOption("debug"))
+            return args.HasOption("http") ?  RagentDebugType.Http : RagentDebugType.Tcp;
 
         return RagentDebugType.None;
     }
 
-    private static ArgsKeyValue[] ResolveArgs(string serviceName, ArgsKeyValue[] args)
-        => args.Select(argsKeyValue => argsKeyValue.Value.StartsWith("$") switch
+    private static void ResolveArgs(string serviceName, Args args)
+    {
+        var result = new Args();
+        
+        args.Items.ForEach(argsItem =>
+        {
+            switch (argsItem)
             {
-                true => argsKeyValue with { Value = GetExecStartArgValue(serviceName, argsKeyValue.Value) ?? string.Empty },
-                _ => argsKeyValue
-            })
-            .Where(newArgsKeyValue => !string.IsNullOrEmpty(newArgsKeyValue.Key) || !string.IsNullOrEmpty(newArgsKeyValue.Value))
-            .ToArray();
+                case ArgsValue value when value.Value.StartsWith('$'):
+                    value.Value = GetExecStartArgValue(serviceName, value.Value) ?? string.Empty;
+
+                    if (!string.IsNullOrEmpty(value.Value.Trim()))
+                    {
+                        if (value.Value.StartsWith('-'))
+                            result.AddOption(value.Value.TrimStart('-'));
+                        else
+                            result.Items.Add(value);
+                    }
+                    break;
+                case ArgsParameter parameter when parameter.Value.StartsWith('$'):
+                    parameter.Value = GetExecStartArgValue(serviceName, parameter.Value)?.TrimStart('-') ?? string.Empty;
+                    result.Items.Add(parameter);
+                    break;
+                default:
+                    result.Items.Add(argsItem);
+                    break;
+            }
+        });
+        
+        args.Items.Clear();
+        args.Items.AddRange(result.Items);
+    }
     
     private static string? GetExecStartArgValue(string name, string? argument)
     {
@@ -378,7 +330,7 @@ public static partial class V8Services
             return [];
 
         return Directory
-            .GetDirectories(directory!)
+            .GetDirectories(directory)
             .Select(Path.GetFileName)
             .ToList()!;
     }
@@ -424,6 +376,85 @@ public static partial class V8Services
 
         process.Close();
         return output;
+    }
+
+    public static void FillRasFromArgs(RasService service, Args args)
+    {
+        if (args.HasParameter("port", "p", out var port) && int.TryParse(port, out var portInt))
+            service.Port = portInt;
+        else
+            service.Port = RasDefaultPort;
+
+        var lastArgsItem = args.Items.LastOrDefault();
+
+        if (lastArgsItem is ArgsValue value)
+        {
+            var clusterAddress = value.Value;
+            
+            if (clusterAddress.Contains(':'))
+            {
+                var kv = clusterAddress.Split(':');
+                service.RagentHost = kv[0];
+                service.RagentPort = int.Parse(kv[1]);
+            }
+            else
+            {
+                service.RagentHost = clusterAddress;
+                service.RagentPort = RagentDefaultPort;
+            }
+        }
+        else
+        {
+            service.RagentHost = "localhost";
+            service.RagentPort = RagentDefaultPort;
+        }
+    }
+
+    public static void FillRagentFromArgs(RagentService service, Args args)
+    {
+        if (args.HasParameter("port", "p", out var port) && int.TryParse(port, out var portInt))
+            service.Port = portInt;
+        else
+            service.Port = RagentDefaultPort;
+        
+        if (args.HasParameter("regport", out var regPort) && int.TryParse(regPort, out var regPortInt))
+            service.RegPort = regPortInt;
+        else
+            service.RegPort = RagentDefaultRegPort;
+        
+        service.ClusterCatalog = GetClusterCatalog(service.Name, service.RegPort, args);
+        service.DebugType = RecognizeDebugType(args);
+    }
+
+    private static string GetClusterCatalog(string serviceName, int regPort, Args args)
+    {
+        args.HasParameter("d", out var clusterCatalog);
+        
+        if (Environment.OSVersion.Platform != PlatformID.Win32NT && string.IsNullOrEmpty(clusterCatalog))
+        {
+            var user = GetVariableValue(serviceName, "User");
+            clusterCatalog = Path.Join("/home", user, ".1cv8/");
+        }
+            
+        clusterCatalog = Path.Combine(clusterCatalog!, $"reg_{regPort}");
+
+        return clusterCatalog;
+
+    }
+
+    public static void FillCrServerFromArgs(CrServer service, Args args)
+    {
+        if (args.HasParameter("port", out var port) && int.TryParse(port, out var portInt))
+            service.Port = portInt;
+        else
+            service.Port = CrServerDefaultPort;
+
+        if (args.HasParameter("d", out var directory))
+            service.Directory = directory!;
+        else
+            throw new Exception("Ошибка определения директории службы сервера хранилищ");
+        
+        service.Repositories = GetCrServerRepositories(service.Directory);
     }
 
     [GeneratedRegex(@".*?(?=\s)", RegexOptions.ExplicitCapture)]

@@ -42,7 +42,7 @@ public class ConfigurationRepositoriesDetector(
                             
                             foreach (var crService in crServices)
                             {
-                                foreach (var repository in crService.Reporitories)
+                                foreach (var repository in crService.Repositories)
                                 {
                                     var details = await connection.GetConfigRepositoryDetails(crService, repository, token);
                                     

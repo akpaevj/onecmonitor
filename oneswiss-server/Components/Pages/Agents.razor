@@ -38,7 +38,7 @@
                         @if (vm.Connected)
                         {
                             <MudStack StretchItems="StretchItems.All" Spacing="0">
-                                <MudStack Row StretchItems="StretchItems.All" Class="mb-3" Breakpoint="Breakpoint.MdAndDown">
+                                <MudStack Row StretchItems="StretchItems.All" Breakpoint="Breakpoint.MdAndDown">
                                     @if (vm.InstalledPlatforms.Count > 0)
                                     {
                                         <MudDataGrid T="V8Platform" Items="@vm.InstalledPlatforms" Class="pa-2" Elevation="1">
@@ -80,7 +80,7 @@
                                         </MudTable>
                                     }
                                 </MudStack>
-                                <MudStack Row Class="mb-3" StretchItems="StretchItems.All" Breakpoint="Breakpoint.MdAndDown">
+                                <MudStack Row Class="mt-3" StretchItems="StretchItems.All" Breakpoint="Breakpoint.MdAndDown">
                                     @if (vm.RasServices.Count > 0)
                                     {
                                         <MudTable T="RasService" Items="@vm.RasServices" Class="pa-2" Elevation="1">
@@ -142,7 +142,7 @@
                                 </MudStack>
                                 @if (vm.EdtInstallations.Count > 0)
                                 {
-                                    <MudTable T="EdtInstallation" Items="@vm.EdtInstallations" Class="pa-2" Elevation="1">
+                                    <MudTable T="EdtInstallation" Items="@vm.EdtInstallations" Class="pa-2 mt-3" Elevation="1">
                                         <ToolBarContent>
                                             <MudText Typo="Typo.h6">Установленные EDT</MudText>
                                         </ToolBarContent>
