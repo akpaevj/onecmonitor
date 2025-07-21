@@ -42,6 +42,8 @@ public class ConfigurationRepositoriesDetector(
                             
                             foreach (var crService in crServices)
                             {
+                                logger.LogDebug($"Попытка получения хранилищ конфигураций из {connection.AgentInstance!.Id}:{crService.Name}");
+                                
                                 foreach (var repository in crService.Repositories)
                                 {
                                     var details = await connection.GetConfigRepositoryDetails(crService, repository, token);

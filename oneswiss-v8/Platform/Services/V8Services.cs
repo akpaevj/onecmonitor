@@ -64,9 +64,6 @@ public static partial class V8Services
             if (exec == null)
                 continue;
             
-            if (!CheckExecContainsV8ServiceExecutable(exec))
-                continue;
-            
             var args = ArgsParser.ParsePairs(exec);
             if (args.ItemsCount < 1)
                 continue;

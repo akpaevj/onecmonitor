@@ -13,15 +13,15 @@
                       ShowDeleteButton="false">
     <ColumnsContent>
         <MudTh>Агент</MudTh>
+        <MudTh>Имя</MudTh>
         <MudTh>Хост</MudTh>
         <MudTh>Порт</MudTh>
-        <MudTh>Имя</MudTh>
     </ColumnsContent>
     <RowTemplate>
         <MudTd DataLabel="Агент">@context.Agent.InstanceName</MudTd>
-        <MudTd DataLabel="Имя">@context.Name</MudTd>
-        <MudTd DataLabel="Хост">@context.Host</MudTd>
-        <MudTd DataLabel="Порт">@context.Port</MudTd>
+        <MudTd DataLabel="Порт">@context.Name</MudTd>
+        <MudTd DataLabel="Имя">@context.Host</MudTd>
+        <MudTd DataLabel="Хост">@context.Port</MudTd>
     </RowTemplate>
 </DatabaseObjectsTable>
 
