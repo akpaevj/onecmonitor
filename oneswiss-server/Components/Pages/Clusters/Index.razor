@@ -18,12 +18,12 @@
             <MudTabPanel>
                 <TabContent>
                     <MudStack Row AlignItems="AlignItems.Center" StretchItems="StretchItems.All">
-                        <MudText>@cluster.Name</MudText>
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavManager.NavigateTo($"clusters/{@cluster.Id}"))" Color="Color.Info"/>
+                        <MudText>@cluster.Name (@cluster.Agent.InstanceName)</MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavManager.NavigateTo($"clusters/{cluster.Id}"))" Color="Color.Info"/>
                     </MudStack>
                 </TabContent>
                 <ChildContent>
-                    <MudTable T="InfoBase" Items="@cluster.InfoBases" Hover="true" Class="w-100">
+                    <MudTable T="InfoBase" Items="@cluster.InfoBases" Hover="true" Class="w-100" Dense="true">
                         <ToolBarContent>
                             <MudText Align="Align.Center" Typo="Typo.h6">Информационные базы</MudText>
                         </ToolBarContent>
