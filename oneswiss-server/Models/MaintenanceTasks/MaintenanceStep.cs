@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using MudBlazor;
 using OneSwiss.Common.Models.MaintenanceTasks;
 
@@ -87,6 +88,7 @@ public class MaintenanceStep : DatabaseObject
         => Kind is MaintenanceStepKind.LoadExtension
             or MaintenanceStepKind.DeleteExtension;
     
+    [JsonIgnore]
     public FileType AvailableFileType
         // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
         => Kind switch

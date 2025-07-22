@@ -51,6 +51,10 @@
         {
             <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => _table.DeleteItem(context))" Color="Color.Error"/>
         }
+        @if (RowActionsContent != null)
+        {
+            @RowActionsContent.Invoke(context)
+        }
     </RowActionsContent>
 </DatabaseObjectsTable>
 
@@ -66,6 +70,9 @@
     
     [Parameter] 
     public string Route { get; set; } = string.Empty;
+    
+    [Parameter] 
+    public RenderFragment<MaintenanceTask>? RowActionsContent { get; set; }
 
     public async Task CreateFromTemplate(MouseEventArgs obj)
     {

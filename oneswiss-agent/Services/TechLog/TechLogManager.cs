@@ -180,7 +180,11 @@ public class TechLogManager
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
             paths = paths.Select(c => Path.GetDirectoryName(c)!).Distinct().ToArray();
 
-        return paths.Select(c => Path.Combine(c, "conf", "logcfg.xml")).ToArray();
+        // Where в данном случае обязательно, т.к. если путь установки версий платформы отличается от стандартного, то conf будет только в одном каталоге
+        return paths
+            .Select(c => Path.Combine(c, "conf", "logcfg.xml"))
+            .Where(c => Directory.Exists(Path.GetDirectoryName(c)))
+            .ToArray();
     }
     
     private async Task WriteTextToFile(string path, string text, CancellationToken cancellationToken)

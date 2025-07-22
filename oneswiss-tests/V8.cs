@@ -39,6 +39,43 @@ public class V8
     }
     
     [Test]
+    public void ArgsParserWindows2Test()
+    {
+        const string argsStr = """
+                               "D:\Program Files\1cv8\8.3.25.1560\bin\ragent.exe" -srvc -agent -regport 2541 -port 2540 -range 2560:2590 -d "D:\srvinfo2541"  -debug -http -DebugServerPort 2550
+                               """;
+        var args = ArgsParser.ParsePairs(argsStr);
+
+        Assert.That(args.ItemsCount, Is.EqualTo(10));
+        
+        Assert.Multiple(() =>
+        {
+            Assert.That(args.ItemByIndexAsValue(0)!.Value, Is.EqualTo(@"D:\Program Files\1cv8\8.3.25.1560\bin\ragent.exe"));
+
+            Assert.That(args.HasOption("srvc"), Is.True);
+            Assert.That(args.HasOption("agent"), Is.True);
+            
+            Assert.That(args.HasParameter("regport", out var value), Is.True);
+            Assert.That(value, Is.EqualTo("2541"));
+            
+            Assert.That(args.HasParameter("port", out value), Is.True);
+            Assert.That(value, Is.EqualTo("2540"));
+            
+            Assert.That(args.HasParameter("range", out value), Is.True);
+            Assert.That(value, Is.EqualTo("2560:2590"));
+            
+            Assert.That(args.HasParameter("d", out value), Is.True);
+            Assert.That(value, Is.EqualTo(@"D:\srvinfo2541"));
+            
+            Assert.That(args.HasOption("debug"), Is.True);
+            Assert.That(args.HasOption("http"), Is.True);
+            
+            Assert.That(args.HasParameter("DebugServerPort", out value), Is.True);
+            Assert.That(value, Is.EqualTo("2550"));
+        });
+    }
+    
+    [Test]
     public void FillRasFromWindowsServiceArgsTest()
     {
         const string args = @"C:\Program Files\1cv8\8.3.27.1644\bin\ras.exe cluster --service --port=1600 localhost:1740";

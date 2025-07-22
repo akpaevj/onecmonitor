@@ -54,14 +54,14 @@ public class TechLogFoldersManager : IDisposable
             {
                 Directory.Delete(folder, true);
                 _foldersForDeleting.Remove(folder);
-                _logger.LogTrace($"Каталог шаблона {folder} удален");
+                _logger.LogTrace("Каталог шаблона {Folder} удален", folder);
                 
                 var seanceFolder = Path.GetDirectoryName(folder)!;
 
                 if (Directory.GetDirectories(seanceFolder).Length == 0)
                 {
                     Directory.Delete(seanceFolder);
-                    _logger.LogTrace($"Каталог сеанса {seanceFolder} удален");
+                    _logger.LogTrace("Каталог сеанса {SeanceFolder} удален", seanceFolder);
                 }
             }
             catch

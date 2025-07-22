@@ -27,7 +27,7 @@
         <MudText>Режим запуска:</MudText>
         <MudRadioGroup T="TechLogSeanceStartMode" 
                        @bind-Value="_editor.Model!.StartMode"
-                       @bind-Value:after="SetAvailability">
+                       @bind-Value:after="OnChangeStartMode">
             @foreach (var item in Enum.GetValues<TechLogSeanceStartMode>())
             {
                 <MudRadio Value="@item">@item.GetDisplay()</MudRadio>
@@ -116,8 +116,28 @@
         _durationDisabled = obj.StartMode == TechLogSeanceStartMode.Monitor;
     }
 
-    private void SetAvailability()
-        => SetAvailabilityInternal(_editor.Model!);
+    private void ChangeStartTime()
+    {
+        switch (_editor.Model!.StartMode)
+        {
+            case TechLogSeanceStartMode.Scheduled:
+                _startDate = DateTime.Now;
+                _startTime = DateTime.Now.AddMinutes(30).TimeOfDay;
+                break;
+            case TechLogSeanceStartMode.Immediately:
+            case TechLogSeanceStartMode.Monitor:
+            default:
+                _startDate = DateTime.MinValue;
+                _startTime = TimeSpan.Zero;
+                break;
+        }
+    }
+
+    private void OnChangeStartMode()
+    {
+        ChangeStartTime();
+        SetAvailabilityInternal(_editor.Model!);
+    }
     
     private async Task AfterSave(TechLogSeance obj)
         => await RaiseUpdateSettings(CancellationToken.None);
@@ -132,6 +152,9 @@
     
     private void SetStartDateTime()
         =>  _editor.Model!.StartDateTime = (_startDate ?? DateTime.MinValue).Date.Add(_startTime ?? TimeSpan.Zero);
+    
+    private static IQueryable<TechLogSeance> ModelSelector(IQueryable<TechLogSeance> arg)
+        => arg.Include(c => c.Agents).Include(c => c.Templates);
     
     private class Validator : ModelValidator<TechLogSeance>
     {
@@ -165,7 +188,4 @@
             });
         }
     }
-
-    private IQueryable<TechLogSeance> ModelSelector(IQueryable<TechLogSeance> arg)
-        => arg.Include(c => c.Agents).Include(c => c.Templates);
 }

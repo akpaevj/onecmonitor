@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using OneSwiss.Common.Models.MaintenanceTasks;
+using OneSwiss.Server.Models.MaintenanceTasks;
 
 namespace OneSwiss.Server;
 
