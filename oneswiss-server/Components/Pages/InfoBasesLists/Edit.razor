@@ -1,0 +1,152 @@
+@page "/infobaseslists/lists/{id:guid}"
+@page "/infobaseslists/lists/create"
+@using System.Data
+@using FluentValidation
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Helpers
+@using OneSwiss.Server.Models
+
+<EditDatabaseForm @ref="_editor" T="InfoBaseList"
+                    Id="Id"
+                    Route="infobaseslists/lists"
+                    Title="Новый список общих информационных баз"
+                    NameSelector="@(c => c.Description)"
+                    ModelSelector="ModelSelector"
+                    BeforeValidation="BeforeValidation"
+                    Validation="_validator.ValidateValue">
+    <MudStack>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Description)" Label="Описание" @bind-Value="@_editor.Model!.Description"/>
+        <MudTable T="InfoBasesListItem" 
+                  Class="mb-3"
+                  Items="@_editor.Model!.InfoBases" 
+                      @bind-SelectedItems="_selectedItems" 
+                      MultiSelection="true"
+                      SelectOnRowClick="false"
+                      Dense="true">
+                <ToolBarContent>
+                    <MudStack Row Spacing="3">
+                        <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="Add">Добавить</MudButton>
+                        @if (_selectedItems.Count > 0)
+                        {
+                            <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error" OnClick="Delete">Удалить</MudButton>
+                        }
+                    </MudStack>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTd>Тип</MudTd>
+                    <MudTd>Строка соединения</MudTd>
+                    <MudTd>Имя</MudTd>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Тип">
+                        <MudSelect For="@(() => context.Type)" @bind-Value="@context.Type">
+                            @foreach (var item in Enum.GetValues<InfoBaseConnectionType>())
+                            {
+                                <MudSelectItem Value="item">@item.GetDisplay()</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudTd>
+                    <MudTd DataLabel="Строка соединения">
+                        <MudTextField For="@(() => context.ConnectionString)" @bind-Value="@context.ConnectionString"></MudTextField>
+                    </MudTd>
+                    <MudTd DataLabel="Имя">
+                        <MudTextField For="@(() => context.Name)" @bind-Value="@context.Name"></MudTextField>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+            <ItemsSelector T="OnecClient"
+                           @bind-SelectedValues="@_editor.Model!.OnecClients"
+                           Items="@_editor.Context!.OnecClients.ToList()"
+                           Title="Пользователи"
+                           NameSelector="item => item.Name"/>
+    </MudStack>
+</EditDatabaseForm>
+
+@code
+{
+    private readonly Validator _validator = new();
+    private EditDatabaseForm<InfoBaseList> _editor = null!;
+    private HashSet<InfoBasesListItem> _selectedItems = [];
+
+    /// <summary>
+    /// Идентификатор элемента
+    /// </summary>
+    [Parameter]
+    public Guid Id { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+        
+        _editor.AddAdditionalValidableProperty(nameof(InfoBaseList.InfoBases));
+    }
+
+    private static IQueryable<InfoBaseList> ModelSelector(IQueryable<InfoBaseList> arg)
+        => arg
+            .Include(c => c.InfoBases)
+            .Include(c => c.OnecClients);
+
+    private void Add()
+    {
+        _editor.Model!.InfoBases.Add(new InfoBasesListItem
+        {
+            Id = Guid.NewGuid(),
+            Type = InfoBaseConnectionType.Server
+        });
+        
+        StateHasChanged();
+    }
+
+    private void Delete()
+    {
+        foreach (var selectedItem in _selectedItems)
+            _editor.Model!.InfoBases.Remove(selectedItem);
+        
+        StateHasChanged();
+    }
+
+    private void BeforeValidation(InfoBaseList obj)
+    {
+        // Обновляем список при каждом изменении модели
+        _editor.Model!.ListId = Guid.NewGuid().ToString();
+        
+        // Обновим текст для отдачи клиентам
+        foreach (var infoBasesListItem in _editor.Model!.InfoBases)
+        {
+            infoBasesListItem.IBasesContent =
+                $"[{infoBasesListItem.Name}]\n" +
+                $"{infoBasesListItem.ConnectionString};\n" +
+                $"ID={Id}";
+        }
+        
+        ModelHelper.UpdateModelItems(_editor.Model!.InfoBases, obj.InfoBases);
+        ModelHelper.UpdateModelItems(_editor.Model!.OnecClients, obj.OnecClients);
+    }
+    
+    class Validator : ModelValidator<InfoBaseList>
+    {
+        public Validator()
+        {
+            RuleFor(c => c.Description)
+                .NotEmpty()
+                .WithMessage("Не заполнено описание");
+            
+            RuleForEach(item => item.InfoBases)
+                .Custom((lisItem, context) =>
+                {
+                    if (string.IsNullOrEmpty(lisItem.ConnectionString))
+                        context.AddFailure(
+                            nameof(context.PropertyPath), 
+                            $"В строке {context.InstanceToValidate.InfoBases.IndexOf(lisItem) + 1} не указана строка соединения с информационной базой");
+                        
+                    if (string.IsNullOrEmpty(lisItem.Name))
+                        context.AddFailure(
+                            nameof(context.PropertyPath), 
+                            $"В строке {context.InstanceToValidate.InfoBases.IndexOf(lisItem) + 1} не указано наименование информационной базы в списке");
+                });
+        }
+    }
+}

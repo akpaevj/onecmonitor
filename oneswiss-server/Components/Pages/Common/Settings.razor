@@ -3,6 +3,7 @@
 @using OneSwiss.Server.Components.Pages.EventLogSettings
 @using OneSwiss.Server.Components.Pages.ErrorLoggingService
 @using OneSwiss.Server.Components.Pages.Notifications
+@using OneSwiss.Server.Components.Pages.Ldap
 
 <PageTitle>Настройки</PageTitle>
 
@@ -15,6 +16,9 @@
     </MudTabPanel>
     <MudTabPanel Text="Сервис регистрации ошибок">
         <ErrorLoggingServiceSettings/>
+    </MudTabPanel>
+    <MudTabPanel Text="Интеграция LDAP">
+        <LdapSettings/>
     </MudTabPanel>
     <MudTabPanel Text="Уведомления">
         <MudStack>

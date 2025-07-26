@@ -1,0 +1,76 @@
+@page "/ldap/settings"
+@using FluentValidation
+@using global::AutoMapper
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Services
+@inject IMapper Mapper
+@inject ISnackbar SnackBar
+@implements IDisposable
+
+<SettingsForm @ref="_editor" T="Models.LdapSettings"
+              Validation="@_validator.ValidateValue"
+              AfterSave="AfterSave">
+    <MudStack>
+        <MudSwitch Class="mb-3" Label="Включена" For="@(() => _editor.Model!.Enabled)" @bind-Value="@_editor.Model!.Enabled" Color="Color.Primary"/>
+        <MudTextField Class="mb-3" Label="Адрес сервера" For="@(() => _editor.Model!.Server)" @bind-Value="@_editor.Model!.Server"/>
+        <MudSelect Class="mb-3" Label="Учетные данные" For="@(() => _editor.Model!.CredentialsId)" @bind-Value="@_editor.Model!.CredentialsId" Clearable="true">
+            @foreach (var item in _editor.Context!.Credentials.ToList())
+            {
+                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+            }
+        </MudSelect>
+    </MudStack>
+</SettingsForm>
+
+@code
+{
+    private CancellationTokenSource? _cts;
+    private SettingsForm<Models.LdapSettings> _editor = null!;
+    private readonly Validator _validator = new();
+
+    protected override void OnInitialized()
+    {
+        _cts = new CancellationTokenSource();
+    }
+
+    private class Validator : ModelValidator<Models.LdapSettings>
+    {
+        public Validator()
+        {
+            When(c => c.Enabled, () =>
+            {
+                RuleFor(x => x.Server)
+                    .NotEmpty()
+                    .WithMessage("Не указан адрес сервера");
+                
+                RuleFor(x => x.CredentialsId)
+                    .NotEmpty()
+                    .WithMessage("Не указаны учетные данные");
+            });
+        }
+    }
+    
+    private void AfterSave(Models.LdapSettings obj)
+    {
+        if (!obj.Enabled)
+            return;
+
+        try
+        {
+            using var connection = LdapService.CreateConnection(obj);
+            connection.Bind();
+            
+            SnackBar.ShowSuccess("Успешная проверка подключения");
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Dispose();
+    }
+}

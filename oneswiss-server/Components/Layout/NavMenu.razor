@@ -18,6 +18,10 @@
     <MudNavLink hidden="@_errorLoggingServiceDisabled" Class="mb-1" Href="/errorLoggingService" Icon="@Icons.Material.Filled.BugReport" IconColor="Color.Error">
         Сервис регистрации ошибок
     </MudNavLink>
+    <MudNavGroup hidden="@_ldapIntegrationEnabled" Class="mb-1" Title="Списки ИБ" Icon="@Icons.Material.Filled.ListAlt" IconColor="Color.Success">
+        <MudNavLink Href="/infobaseslists/lists">Списки</MudNavLink>
+        <MudNavLink Href="/infobaseslists/users">Пользователи</MudNavLink>
+    </MudNavGroup>
     <MudNavGroup Title="Общее" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">
         <MudNavLink Href="settings">Настройки</MudNavLink>
         <MudNavLink Href="credentials">Учетные данные</MudNavLink>
@@ -28,6 +32,7 @@
 @code {
     private bool _techLogDisabled = true;
     private bool _errorLoggingServiceDisabled = true;
+    private bool _ldapIntegrationEnabled = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -43,6 +48,9 @@
         
         var tls = await context.TechLogSettings.FirstOrDefaultAsync();
         _techLogDisabled = !tls?.Enabled ?? true;
+        
+        var lie = await context.LdapSettings.FirstOrDefaultAsync();
+        _ldapIntegrationEnabled = !lie?.Enabled ?? true;
     }
 
     public async Task NotifyStateHasChanged()

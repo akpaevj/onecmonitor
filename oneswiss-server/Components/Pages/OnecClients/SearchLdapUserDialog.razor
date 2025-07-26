@@ -1,0 +1,72 @@
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@inject IServiceProvider ServiceProvider
+@inject ISnackbar SnackBar
+
+<MudDialog>
+    <TitleContent>
+        Поиск пользователя LDAP
+    </TitleContent>
+    <DialogContent>
+        <MudStack>
+            <MudTextField T="string" Label="Поиск" @bind-Value="_searchTerm" @bind-Value:after="AfterSearchTermChanged"
+                          AdornmentIcon="@Icons.Material.Filled.Search" OnAdornmentClick="OnClickSearchButton" Adornment="Adornment.End" AdornmentColor="Color.Primary" />
+            <MudList T="LdapUser">
+                @foreach (var user in _users)
+                {
+                    <MudListItem OnClick="@(() => OnClickUser(user))" Text="@user.DisplayName"/>
+                }
+            </MudList>
+        </MudStack>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    private string _searchTerm = string.Empty;
+    private List<LdapUser> _users = [];
+    
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] 
+    public Guid Id { get; set; }
+    
+    private async Task AfterSearchTermChanged()
+    {
+        await UpdateUsers();
+    }
+
+    private async Task UpdateUsers()
+    {
+        if (string.IsNullOrEmpty(_searchTerm))
+            _users = [];
+        else
+        {
+            await using var scope = ServiceProvider.CreateAsyncScope();
+            
+            try
+            {
+                using var connection = scope.ServiceProvider.GetRequiredService<LdapService>();
+                _users = connection.SearchUsers(_searchTerm);
+            }
+            catch (Exception e)
+            {
+                SnackBar.ShowError(e);
+            }
+        }
+    }
+
+    private async Task OnClickSearchButton()
+    {
+        await UpdateUsers();
+    }
+
+    private void OnClickUser(LdapUser user)
+    {
+        MudDialog.Close(DialogResult.Ok(user));
+    }
+
+}

@@ -4,7 +4,7 @@ namespace OneSwiss.Server.Extensions;
 
 public static class SnackBarExtensions
 {
-    private static void ShowMessage(
+    public static void ShowMessage(
         this ISnackbar snackbar, 
         string message, 
         Severity severity = Severity.Info, 

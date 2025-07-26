@@ -1,0 +1,62 @@
+@page "/infobaseslists/users"
+@using System.DirectoryServices.Protocols
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@inject LdapService LdapProvider
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject IDialogService DialogService
+@inject ISnackbar SnackBar
+@rendermode InteractiveServer
+
+<DatabaseObjectsTable @ref="_table" TModel="OnecClient" TViewModel="OnecClient"
+                      NameSelector="arg => arg.Name"
+                      Route="infobaseslists/users"
+                      Title="Пользователи 1С"
+                      DisableStandardTableActions="true">
+    <TableActionsContent>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="AddFromLdap" Class="mb-3">Добавить из домена</MudButton>
+    </TableActionsContent>
+    <ColumnsContent>
+        <MudTh>Имя</MudTh>
+    </ColumnsContent>
+    <RowTemplate>
+        <MudTd DataLabel="Имя">@context.Name</MudTd>
+    </RowTemplate>
+</DatabaseObjectsTable>
+
+@code {
+    private DatabaseObjectsTable<OnecClient, OnecClient>? _table;
+
+    private async Task AddFromLdap()
+    {
+        var dialog = await DialogService.ShowAsync<SearchLdapUserDialog>();
+        var ldapUser = await dialog.GetReturnValueAsync<LdapUser>();
+        
+        if (ldapUser == null)
+            return;
+
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        var onecClient = await context.OnecClients.AsNoTracking().FirstOrDefaultAsync(c => c.InternalId == ldapUser.Sid);
+        if (onecClient == null)
+        {
+            await context.OnecClients.AddAsync(new OnecClient()
+            {
+                InternalId = ldapUser.Sid!,
+                Id = Guid.NewGuid(),
+                Name = ldapUser.DisplayName!
+            });
+
+            await context.SaveChangesAsync();
+            SnackBar.ShowSuccess($"Пользователь \"{ldapUser.DisplayName}\" успешно добавлен");
+
+            await _table.UpdateItems();
+        }
+        else
+        {
+            SnackBar.ShowMessage($"Пользователь \"{ldapUser.DisplayName}\" уже существует", Severity.Warning);
+        }
+    }
+}

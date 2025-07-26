@@ -1,0 +1,52 @@
+@page "/infobaseslists/users/{id:guid}"
+@page "/infobaseslists/users/create"
+@using System.Data
+@using FluentValidation
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Helpers
+@using OneSwiss.Server.Models
+
+<EditDatabaseForm @ref="_editor" T="OnecClient"
+                    Id="Id"
+                    Route="infobaseslists/users"
+                    Title="Новый пользователь 1С"
+                    NameSelector="@(c => c.Name)"
+                    ModelSelector="ModelSelector"
+                    Validation="_validator.ValidateValue">
+    <MudStack>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" Label="Имя" @bind-Value="@_editor.Model!.Name"/>
+        <MudSelect Class="mb-3" Label="Список информационных баз" @bind-Value="@_editor.Model!.InfoBasesListId" Clearable="@true">
+            @foreach (var item in _editor.Context!.InfoBasesLists.ToList())
+            {
+                <MudSelectItem Value="@((Guid?)item.Id)">@item.Description</MudSelectItem>
+            }
+        </MudSelect>
+    </MudStack>
+</EditDatabaseForm>
+
+@code
+{
+    private readonly Validator _validator = new();
+    private EditDatabaseForm<OnecClient> _editor = null!;
+    
+    /// <summary>
+    /// Идентификатор элемента
+    /// </summary>
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private static IQueryable<OnecClient> ModelSelector(IQueryable<OnecClient> arg)
+        => arg
+            .Include(c => c.InfoBasesList);
+
+    class Validator : ModelValidator<OnecClient>
+    {
+        public Validator()
+        {
+            RuleFor(c => c.Name)
+                .NotEmpty()
+                .WithMessage("Не заполнено имя");
+        }
+    }
+}

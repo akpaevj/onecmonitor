@@ -1,0 +1,16 @@
+@page "/infobaseslists/lists"
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+@rendermode InteractiveServer
+
+<DatabaseObjectsTable TModel="InfoBaseList" TViewModel="InfoBaseList"
+                      NameSelector="arg => arg.Description"
+                      Route="infobaseslists/lists"
+                      Title="Списки общих информационных баз">
+    <ColumnsContent>
+        <MudTh>Описание</MudTh>
+    </ColumnsContent>
+    <RowTemplate>
+        <MudTd DataLabel="Описание">@context.Description</MudTd>
+    </RowTemplate>
+</DatabaseObjectsTable>

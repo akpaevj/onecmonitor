@@ -1,6 +1,12 @@
 using System.Net;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -13,6 +19,7 @@ using OneSwiss.Server.Components;
 using OneSwiss.Server.Components.Pages.MaintenanceTasks;
 using OneSwiss.Server.Helpers;
 using OneSwiss.Server.Hubs;
+using OneSwiss.Server.Models;
 using OneSwiss.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +34,20 @@ builder.WebHost.ConfigureKestrel((context, options) =>
     var port = context.Configuration.GetValue("OneSwiss:Http:Port", 7002);
 
     options.Listen(IPAddress.Parse(host), port);
+});
+
+builder.Services
+    .AddAuthentication(NegotiateDefaults.AuthenticationScheme)
+    .AddNegotiate();
+
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthorization(opt =>
+{
+    opt.AddPolicy("WebCommonInfoBases", policy =>
+    {
+        policy.AddAuthenticationSchemes(NegotiateDefaults.AuthenticationScheme);
+        policy.RequireAuthenticatedUser();
+    });
 });
 
 builder.Services.AddWindowsService(options =>
@@ -73,6 +94,9 @@ builder.Services.AddSingleton<AgentsConnectionsManager>();
 builder.Services.AddHostedService<ClustersInfoBasesDetector>();
 builder.Services.AddHostedService<ConfigurationRepositoriesDetector>();
 builder.Services.AddHostedService<ErrorReportsCleaner>();
+
+builder.Services.AddScoped<LdapService>();
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -94,14 +118,17 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/Data"
 });
 
-app.UseWebSockets();
-
 app.UseResponseCompression();
+
+app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseAntiforgery();
 
+app.UseWebSockets();
 app.MapStaticAssets();
-
 app.MapControllers();
 
 app.MapRazorComponents<App>()
@@ -113,7 +140,6 @@ app.MapHub<MaintenanceTaskLogHub>("/taskLogHub");
 await using (var scope = app.Services.CreateAsyncScope())
 {
     await using var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    //await db.Database.EnsureDeletedAsync();
     await db.Database.MigrateAsync();
 }
 

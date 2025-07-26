@@ -17,6 +17,8 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="Kerberos.NET" Version="4.6.77" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="9.0.7" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.7" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
@@ -28,7 +30,9 @@
         <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.7" />
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.7" />
         <PackageReference Include="MudBlazor" Version="8.9.0" />
+        <PackageReference Include="Novell.Directory.Ldap.NETStandard" Version="4.0.0" />
         <PackageReference Include="RestSharp" Version="112.1.0" />
+        <PackageReference Include="System.DirectoryServices.Protocols" Version="9.0.7" />
         <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.3" />
     </ItemGroup>
 
@@ -82,6 +86,44 @@
       <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\appsettings.json" />
       <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json" />
       <_ContentIncludedByDefault Remove="Components\Pages\Common\Settings.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\AccessDenied.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ConfirmEmail.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ConfirmEmailChange.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ExternalLogin.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ForgotPassword.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ForgotPasswordConfirmation.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\InvalidPasswordReset.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\InvalidUser.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Lockout.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Login.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\LoginWith2fa.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\LoginWithRecoveryCode.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ChangePassword.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\DeletePersonalData.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Disable2fa.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Email.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\EnableAuthenticator.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ExternalLogins.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\GenerateRecoveryCodes.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Index.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\PersonalData.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ResetAuthenticator.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\SetPassword.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\TwoFactorAuthentication.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\_Imports.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Register.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\RegisterConfirmation.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ResendEmailConfirmation.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ResetPassword.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ResetPasswordConfirmation.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\_Imports.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\ExternalLoginPicker.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\ManageLayout.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\ManageNavMenu.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\RedirectToLogin.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\ShowRecoveryCodes.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\StatusMessage.razor" />
+      <_ContentIncludedByDefault Remove="Components\Pages\Ldap\LdapSettings.razor" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Release'">

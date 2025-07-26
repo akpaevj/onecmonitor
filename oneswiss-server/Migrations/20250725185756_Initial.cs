@@ -99,6 +99,19 @@ namespace OneSwiss.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "InfoBasesLists",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    ListId = table.Column<string>(type: "TEXT", nullable: false),
+                    Description = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InfoBasesLists", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "LogTemplates",
                 columns: table => new
                 {
@@ -257,6 +270,25 @@ namespace OneSwiss.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "LdapSettings",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Enabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Server = table.Column<string>(type: "TEXT", nullable: false),
+                    CredentialsId = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LdapSettings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LdapSettings_Credentials_CredentialsId",
+                        column: x => x.CredentialsId,
+                        principalTable: "Credentials",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "EventLogSettings",
                 columns: table => new
                 {
@@ -306,6 +338,46 @@ namespace OneSwiss.Server.Migrations
                         name: "FK_TechLogSettings_Dbms_DbmsId",
                         column: x => x.DbmsId,
                         principalTable: "Dbms",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "InfoBasesListItem",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    ConnectionString = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    IBasesContent = table.Column<string>(type: "TEXT", nullable: false),
+                    InfoBaseListId = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InfoBasesListItem", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_InfoBasesListItem_InfoBasesLists_InfoBaseListId",
+                        column: x => x.InfoBaseListId,
+                        principalTable: "InfoBasesLists",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OnecClients",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    InternalId = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    InfoBasesListId = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OnecClients", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OnecClients_InfoBasesLists_InfoBasesListId",
+                        column: x => x.InfoBasesListId,
+                        principalTable: "InfoBasesLists",
                         principalColumn: "Id");
                 });
 
@@ -565,6 +637,16 @@ namespace OneSwiss.Server.Migrations
                 column: "CredentialsId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_InfoBasesListItem_InfoBaseListId",
+                table: "InfoBasesListItem",
+                column: "InfoBaseListId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LdapSettings_CredentialsId",
+                table: "LdapSettings",
+                column: "CredentialsId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_LogTemplateTechLogSeance_TemplatesId",
                 table: "LogTemplateTechLogSeance",
                 column: "TemplatesId");
@@ -600,6 +682,11 @@ namespace OneSwiss.Server.Migrations
                 column: "TaskId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_OnecClients_InfoBasesListId",
+                table: "OnecClients",
+                column: "InfoBasesListId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TechLogSettings_CredentialsId",
                 table: "TechLogSettings",
                 column: "CredentialsId");
@@ -632,6 +719,12 @@ namespace OneSwiss.Server.Migrations
                 name: "InfoBaseMaintenanceTask");
 
             migrationBuilder.DropTable(
+                name: "InfoBasesListItem");
+
+            migrationBuilder.DropTable(
+                name: "LdapSettings");
+
+            migrationBuilder.DropTable(
                 name: "LogTemplateTechLogSeance");
 
             migrationBuilder.DropTable(
@@ -642,6 +735,9 @@ namespace OneSwiss.Server.Migrations
 
             migrationBuilder.DropTable(
                 name: "Notifications");
+
+            migrationBuilder.DropTable(
+                name: "OnecClients");
 
             migrationBuilder.DropTable(
                 name: "TechLogFilters");
@@ -663,6 +759,9 @@ namespace OneSwiss.Server.Migrations
 
             migrationBuilder.DropTable(
                 name: "MaintenanceSteps");
+
+            migrationBuilder.DropTable(
+                name: "InfoBasesLists");
 
             migrationBuilder.DropTable(
                 name: "Dbms");

@@ -380,6 +380,79 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("InfoBases");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.InfoBaseList", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ListId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("InfoBasesLists");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.InfoBasesListItem", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConnectionString")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IBasesContent")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InfoBaseListId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InfoBaseListId");
+
+                    b.ToTable("InfoBasesListItem");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.LdapSettings", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CredentialsId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Server")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CredentialsId");
+
+                    b.ToTable("LdapSettings");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.LogTemplate", b =>
                 {
                     b.Property<string>("Id")
@@ -607,6 +680,30 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("NotificationRecipients");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.OnecClient", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InfoBasesListId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InternalId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InfoBasesListId");
+
+                    b.ToTable("OnecClients");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.TechLogFilter", b =>
                 {
                     b.Property<string>("Id")
@@ -809,6 +906,22 @@ namespace OneSwiss.Server.Migrations
                     b.Navigation("Credentials");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.InfoBasesListItem", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.InfoBaseList", null)
+                        .WithMany("InfoBases")
+                        .HasForeignKey("InfoBaseListId");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.LdapSettings", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
+                        .WithMany()
+                        .HasForeignKey("CredentialsId");
+
+                    b.Navigation("Credentials");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.InfoBaseMaintenanceTask", b =>
                 {
                     b.HasOne("OneSwiss.Server.Models.InfoBase", "InfoBase")
@@ -875,6 +988,15 @@ namespace OneSwiss.Server.Migrations
                     b.Navigation("Task");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.OnecClient", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.InfoBaseList", "InfoBasesList")
+                        .WithMany("OnecClients")
+                        .HasForeignKey("InfoBasesListId");
+
+                    b.Navigation("InfoBasesList");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.TechLogSettings", b =>
                 {
                     b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
@@ -917,6 +1039,13 @@ namespace OneSwiss.Server.Migrations
             modelBuilder.Entity("OneSwiss.Server.Models.InfoBase", b =>
                 {
                     b.Navigation("MaintenanceTasks");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.InfoBaseList", b =>
+                {
+                    b.Navigation("InfoBases");
+
+                    b.Navigation("OnecClients");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>

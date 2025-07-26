@@ -18,7 +18,10 @@
 @if (!DisableTableActions)
 {
     <MudStack Row AlignItems="AlignItems.Start">
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="@(() => NavManager.NavigateTo($"{Route}/create"))" Class="mb-3">Добавить</MudButton>
+        @if (!DisableStandardTableActions)
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="@(() => NavManager.NavigateTo($"{Route}/create"))" Class="mb-3">Добавить</MudButton>
+        }
         @if (TableActionsContent != null)
         {
             @TableActionsContent
@@ -89,6 +92,9 @@
     public bool DisableTableActions { get; set; }
     
     [Parameter] 
+    public bool DisableStandardTableActions { get; set; }
+    
+    [Parameter] 
     public RenderFragment? TableActionsContent { get; set; }
 
     [Parameter]
@@ -155,7 +161,7 @@
     public async Task<AppDbContext> GetContext()
         => await ContextFactory.CreateDbContextAsync();
 
-    private async Task UpdateItems()
+    public async Task UpdateItems()
     {
         if (_isLoading)
             return;
