@@ -48,14 +48,6 @@ public class TechLogManager
         
             if (settings.Enabled)
                 _ = Start(settings, _cts.Token).ConfigureAwait(false);
-            else
-            {
-                foreach (var removedPath in _foldersManager.LogFolders)
-                    await _foldersManager.RemoveFolder(removedPath, _applicationLifetime.ApplicationStopping);
-                
-                foreach (var removedPath in GetLogCfgPaths())
-                    DeleteFile(removedPath, _applicationLifetime.ApplicationStopping);
-            }
         }
         catch (Exception e)
         {
