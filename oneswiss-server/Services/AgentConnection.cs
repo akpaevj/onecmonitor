@@ -227,6 +227,16 @@ namespace OneSwiss.Server.Services
                 _mapper.Map<ClusterDto>(cluster),
                 cancellationToken);
         
+        public async Task CloseV8Sessions(Cluster cluster, List<string> sessionsIds, CancellationToken cancellationToken)
+            => await Send(
+                MessageType.CloseV8SessionsRequest, 
+                new CloseV8SessionsRequestDto
+                {
+                    Cluster = _mapper.Map<ClusterDto>(cluster),
+                    SessionsIds = sessionsIds
+                } ,
+                cancellationToken);
+        
         public async Task<ConfigRepositoryDetailsDto> GetConfigRepositoryDetails(CrServer server, string repository, CancellationToken cancellationToken)
             => await Get<ConfigRepositoryDetailsRequestDto, ConfigRepositoryDetailsDto>(
                 MessageType.ConfigRepositoryDetailsRequest, 

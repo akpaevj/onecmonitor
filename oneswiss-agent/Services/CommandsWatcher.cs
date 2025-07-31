@@ -116,6 +116,9 @@ namespace OneSwiss.Agent.Services
                     case MessageType.EdtInstallationsRequest:
                         await SendEdtInstallations(message, _applicationLifetime.ApplicationStopping);
                         break;
+                    case MessageType.CloseV8SessionsRequest:
+                        await CloseV8Sessions(message, _applicationLifetime.ApplicationStopping);
+                        break;
                     default:
                         throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
                 }
@@ -330,6 +333,33 @@ namespace OneSwiss.Agent.Services
         {
             var items = _edtPInstallationsProvider.GetInstallations();
             await _server.Send(MessageType.EdtInstallations, items, message, cancellationToken);
+        }
+        
+        private async Task CloseV8Sessions(Message message, CancellationToken cancellationToken)
+        {
+            var request = MessagePackSerializer.Deserialize<CloseV8SessionsRequestDto>(message.Data, cancellationToken: cancellationToken);
+            
+            var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(request.Cluster.Port);
+            var ras = _rasHolder.GetActiveRasForRagent(ragent);
+            var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+            foreach (var requestSessionsId in request.SessionsIds ?? [])
+            {
+                try
+                {
+                    await rac.TerminateSession(
+                        request.Cluster.ClusterInternalId, 
+                        requestSessionsId,
+                        request.Cluster.Credentials?.User ?? "",
+                        request.Cluster.Credentials?.Password ?? "");
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning(e, "Ошибка закрытия соединения");
+                }
+            }
+            
+            await _server.SendOk(message, cancellationToken);
         }
         
         private async Task SendConfigRepositoryDetails(Message message, CancellationToken cancellationToken)
