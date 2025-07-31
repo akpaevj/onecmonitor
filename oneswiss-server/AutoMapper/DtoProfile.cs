@@ -15,7 +15,8 @@ public class DtoProfile : Profile
     {
         CreateMap<Credentials, CredentialsDto>().ReverseMap();
 
-        CreateMap<Cluster, ClusterDto>().ReverseMap();
+        CreateMap<Cluster, ClusterDto>() .ReverseMap();
+        CreateMap<V8ClusterDetails, V8ClusterDetails>().ReverseMap();
 
         CreateMap<Dbms, DbmsDto>().ReverseMap();
 
@@ -37,8 +38,9 @@ public class DtoProfile : Profile
             .AfterMap<FileMappingAction>();
 
         CreateMap<InfoBase, InfoBaseDto>().ReverseMap();
+        CreateMap<V8InfoBaseDetails, V8InfoBaseDetails>().ReverseMap();
         
-        CreateMap<V8InfoBaseSummary, InfoBase>()
+        CreateMap<V8InfoBase, InfoBase>()
             .ForMember(c => c.Id, opt => opt.Ignore())
             .ForMember(c => c.InfoBaseInternalId, opt => opt.MapFrom(src => src.Id))
             .ForMember(c => c.InfoBaseName, opt => opt.MapFrom(src => src.Name));

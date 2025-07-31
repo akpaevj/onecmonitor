@@ -1,0 +1,100 @@
+@inject AgentsConnectionsManager AgentsConnectionsManager
+@inject ISnackbar Snackbar
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@using OneSwiss.V8.Platform.RemoteAdministration
+
+@if (_isLoading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary"/>
+}
+else
+{
+    <MudDataGrid T="V8Session" Height="calc(100vh - 130px)" FixedHeader="true" Items="_items" HorizontalScrollbar="true" Filterable="true" SortMode="SortMode.Multiple" Dense="true" Hover="true">
+        <Columns>
+            <PropertyColumn Property="arg => arg.InfoBase.Name" Title="Инф. база"/>
+            <PropertyColumn Property="arg => arg.SessionId" Title="Номер сеанса"/>
+            <PropertyColumn Property="arg => arg.StartedAt" Title="Время начала"/>
+            <PropertyColumn Property="arg => arg.LastActiveAt" Title="Последняя активность"/>
+            <PropertyColumn Property="arg => arg.Host" Title="Хост"/>
+            <PropertyColumn Property="arg => arg.UserName" Title="Пользователь"/>
+            <PropertyColumn Property="arg => arg.AppId" Title="Приложение"/>
+            <PropertyColumn Property="arg => arg.Locale" Title="Язык"/>
+            <PropertyColumn Property="arg => arg.Process.Pid" Title="Процесс"/>
+            <PropertyColumn Property="arg => arg.Connection.ConnId" Title="Соединение"/>
+            <PropertyColumn Property="arg => arg.DbProcInfo" Title="Соединение c СУБД"/>
+            <PropertyColumn Property="arg => arg.DbProcTook" Title="Захвачено СУБД"/>
+            <PropertyColumn Property="arg => arg.BlockedByDbms" Title="Заблокировано СУБД"/>
+            <PropertyColumn Property="arg => arg.BlockedByLs" Title="Захвачено упр."/>
+            <PropertyColumn Property="arg => arg.DurationCurrentDbms" Title="Время вызова СУБД (тек.)"/>
+            <PropertyColumn Property="arg => arg.DurationLast5MinDbms" Title="Время вызова СУБД (5 мин.)"/>
+            <PropertyColumn Property="arg => arg.DurationAllDbms" Title="Время вызова СУБД (всего)"/>
+            <PropertyColumn Property="arg => arg.DbmsBytesLast5Min" Title="Данных СУБД (5 мин.)"/>
+            <PropertyColumn Property="arg => arg.DbmsBytesAll" Title="Данных СУБД (всего)"/>
+            <PropertyColumn Property="arg => arg.DurationCurrent" Title="Время вызова (тек.)"/>
+            <PropertyColumn Property="arg => arg.DurationLast5Min" Title="Время вызова (5 мин.)"/>
+            <PropertyColumn Property="arg => arg.DurationAll" Title="Время вызова (всего)"/>
+            <PropertyColumn Property="arg => arg.CallsLast5Min" Title="Кол-во вызовов (5 мин.)"/>
+            <PropertyColumn Property="arg => arg.CallsAll" Title="Кол-во вызовов (всего)"/>
+            <PropertyColumn Property="arg => arg.BytesLast5Min" Title="Объем данных (5 мин.)"/>
+            <PropertyColumn Property="arg => arg.BytesAll" Title="Объем данных (всего)"/>
+            <PropertyColumn Property="arg => arg.MemoryCurrent" Title="Память (тек.)"/>
+            <PropertyColumn Property="arg => arg.MemoryLast5Min" Title="Память (5 мин.)"/>
+            <PropertyColumn Property="arg => arg.MemoryTotal" Title="Память (всего)"/>
+            <PropertyColumn Property="arg => arg.ReadCurrent" Title="Чтение (тек.)"/>
+            <PropertyColumn Property="arg => arg.ReadLast5Min" Title="Чтение (5 мин.)"/>
+            <PropertyColumn Property="arg => arg.ReadTotal" Title="Чтение (всего)"/>
+            <PropertyColumn Property="arg => arg.WriteCurrent" Title="Запись (тек.)"/>
+            <PropertyColumn Property="arg => arg.WriteLast5Min" Title="Запись (5 мин.)"/>
+            <PropertyColumn Property="arg => arg.WriteTotal" Title="Запись (всего)"/>
+            <PropertyColumn Property="arg => arg.Hibernate" Title="Спящий"/>
+            <PropertyColumn Property="arg => arg.HibernateSessionTerminateTime" Title="Завершить через"/>
+            <PropertyColumn Property="arg => arg.DurationCurrentService" Title="Время вызова сервиса (тек.)"/>
+            <PropertyColumn Property="arg => arg.CurrentServiceName" Title="Тек. сервис"/>
+            <PropertyColumn Property="arg => arg.DurationLast5MinService" Title="Время вызова сервисов (5 мин.)"/>
+            <PropertyColumn Property="arg => arg.DurationAllService" Title="Время вызова сервисов (всего)"/>
+            <PropertyColumn Property="arg => arg.CpuTimeCurrent" Title="Проц. время (тек.)"/>
+            <PropertyColumn Property="arg => arg.CpuTimeLast5Min" Title="Проц. время (5 мин.)"/>
+            <PropertyColumn Property="arg => arg.CpuTimeTotal" Title="Проц. время (всего)"/>
+            <PropertyColumn Property="arg => arg.ClientIp" Title="IP"/>
+            <PropertyColumn Property="arg => arg.DataSeparation" Title="Разделители"/>
+        </Columns>
+    </MudDataGrid>
+}
+
+@code {
+    private bool _isLoading;
+    private IEnumerable<V8Session> _items = [];
+
+    [Parameter] 
+    public Models.Cluster Cluster { get; set; } = null!;
+    
+    [Parameter] 
+    public Models.InfoBase? InfoBase { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateItems();
+    }
+
+    private async Task UpdateItems()
+    {
+        if (_isLoading)
+            return;
+
+        _isLoading = true;
+
+        try
+        {
+            var connection = AgentsConnectionsManager.GetAgentConnection(Cluster.AgentId);
+            _items = await connection!.GetV8Sessions(Cluster, InfoBase, CancellationToken.None);
+        }
+        catch (Exception e)
+        {
+            Snackbar.ShowError(e);
+        }
+
+        _isLoading = false;
+    }
+}

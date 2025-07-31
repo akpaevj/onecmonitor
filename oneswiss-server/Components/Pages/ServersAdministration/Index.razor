@@ -1,0 +1,242 @@
+@page "/"
+@using Blazor.Diagrams.Core.Models.Base
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Components.Pages.ServersAdministration.Cluster
+@using OneSwiss.Server.Components.Pages.ServersAdministration.InfoBase
+@using OneSwiss.Server.Components.Pages.ServersAdministration.Process
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@inject NavigationManager NavManager
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject AgentsConnectionsManager AgentsConnectionsManager
+@rendermode InteractiveServer
+
+<PageTitle>Администрирование серверов</PageTitle>
+
+<MudGrid>
+    <MudItem xs="12" md="3">
+        <MudPaper Class="pa-4">
+            <TreeView @bind-SelectedItem="_selectedItem" @ref="_tree" @bind-Items="_items"/>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="9">
+        @if (_selectedItem is { Item.DynamicComponentType: not null })
+        {
+            <DynamicComponent 
+                @ref="_dynamicComponent" 
+                @key="_selectedItem.Item.Id" 
+                Type="_selectedItem.Item.DynamicComponentType" 
+                Parameters="_selectedItem.Item.Parameters"/>
+        }
+    </MudItem>
+</MudGrid>
+
+@code
+{
+    HubConnection? _hubConnection;
+    private IReadOnlyCollection<TreeItem> _items = [];
+    private TreeView _tree;
+    private TreeViewItem? _selectedItem;
+    private DynamicComponent _dynamicComponent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavManager.ToAbsoluteUri("/agentsHub"))
+            .Build();
+
+        _hubConnection.On("AgentsStateUpdated", async () =>
+        {
+            await UpdateItems();
+            await InvokeAsync(StateHasChanged);
+        });
+        
+        await _hubConnection.StartAsync();
+
+        await UpdateItems();
+    }
+
+    private async Task UpdateItems()
+    {
+        _items = await LoadAgents();
+    }
+    
+    private async Task<List<TreeItem>> LoadAgents()
+    {
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        var agents = await context.Agents.AsNoTracking().ToListAsync();
+        
+        return agents.Select(c =>
+        {
+            var agentIsConnected = AgentsConnectionsManager.GetAgentConnection(c.Id) != null;
+            
+            return new TreeItem(c.Id.ToString())
+            {
+                Text = c.InstanceName,
+                AdornmentIcon = Icons.Material.Filled.SupportAgent,
+                AdornmentIconColor = agentIsConnected ? Color.Success : Color.Error,
+                LoadChildrenFunc = () => LoadClusters(c, agentIsConnected),
+                DynamicComponentType = typeof(AgentInfo),
+                Parameters = new Dictionary<string, object> { { "Id", c.Id } }
+            };
+        }).ToList();
+    }
+    
+    private async Task<List<TreeItem>> LoadClusters(Agent agent, bool agentIsConnected)
+    {
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        var items = await context.Clusters
+            .AsNoTracking()
+            .Include(c => c.Credentials)
+            .Where(c => c.AgentId == agent.Id).ToListAsync();
+        
+        return items.Select(c => new TreeItem(c.Id.ToString())
+        {
+            Text = c.Name,
+            AdornmentIcon = Icons.Material.Filled.AccountTree,
+            AdornmentIconColor = Color.Warning,
+            LoadChildrenFunc = () => LoadClusterChildren(c, agentIsConnected),
+            DynamicComponentType = typeof(ClusterDetails), 
+            Parameters = new Dictionary<string, object> { { "Id", c.Id }, { "AgentIsConnected", agentIsConnected } }
+        }).ToList();
+    }
+    
+    private Task<List<TreeItem>> LoadClusterChildren(Models.Cluster cluster, bool agentIsConnected)
+    {
+        var result = new List<TreeItem>
+        {
+            new($"{cluster.Id}a09b5620-ebd2-4935-bc35-1572c99f7ac0")
+            {
+                Text = "Информационные базы",
+                AdornmentIcon = Icons.Material.Filled.Dataset,
+                AdornmentIconColor = Color.Info,
+                LoadChildrenFunc = () => LoadInfoBases(cluster, agentIsConnected)
+            }
+        };
+
+        if (!agentIsConnected) 
+            return Task.FromResult(result);
+        
+        result.Add(new TreeItem($"{cluster.Id}b25e2c62-5296-4672-888b-8904dcba5882")
+        {
+            Text = "Рабочие процессы",
+            AdornmentIcon = Icons.Material.Filled.WorkHistory,
+            AdornmentIconColor = Color.Tertiary,
+            LoadChildrenFunc = () => LoadV8Processes(cluster)
+        });
+            
+        result.Add(new TreeItem($"{cluster.Id}730fd344-b3f0-4f4c-bf2e-42cdcf0ff2f4")
+        {
+            Text = "Сеансы",
+            AdornmentIcon = Icons.Material.Filled.PersonPin,
+            AdornmentIconColor = Color.Secondary,
+            DynamicComponentType = typeof(Sessions),
+            Parameters = new Dictionary<string, object> { { "Cluster", cluster } }
+        });
+            
+        /*result.AddRange(
+        [
+            new TreeItemData<SidebarItem>
+            {
+                Expandable = false,
+                Visible = false,
+                Text = "Рабочие серверы",
+                Icon = Icons.Material.Filled.Work,
+                Value = new SidebarItem($"{cluster.Id}5d123301-afdd-4a85-bf56-e4e4f21bea89")
+            },
+            new TreeItemData<SidebarItem>
+            {
+                Expandable = false,
+                Visible = false,
+                Text = "Администраторы",
+                Icon = Icons.Material.Filled.Password,
+                Value = new SidebarItem($"{cluster.Id}c82ea9d3-9438-424e-a786-4872315eb9c4")
+            },
+            new TreeItemData<SidebarItem>
+            {
+                Expandable = false,
+                Visible = false,
+                Text = "Менеджеры кластера",
+                Icon = Icons.Material.Filled.ManageAccounts,
+                Value = new SidebarItem($"{cluster.Id}4c95da0e-f1a1-4be2-9291-d979105429ed")
+            },
+            new TreeItemData<SidebarItem>
+            {
+                Expandable = false,
+                Text = "Блокировки",
+                Visible = false,
+                Icon = Icons.Material.Filled.Lock,
+                Value = new SidebarItem($"{cluster.Id}f42c1518-48fa-41b7-b354-92b3d7c6e8a6")
+            },
+            new TreeItemData<SidebarItem>
+            {
+                Expandable = false,
+                Text = "Соединения",
+                Visible = false,
+                Icon = Icons.Material.Filled.PrivateConnectivity,
+                Value = new SidebarItem($"{cluster.Id}aeb3aa97-1c14-40ab-a2ad-d39cd8789cb5")
+            },
+            new TreeItemData<SidebarItem>
+            {
+                Expandable = false,
+                Visible = false,
+                Text = "Профили безопасности",
+                Icon = Icons.Material.Filled.Security,
+                Value = new SidebarItem($"{cluster.Id}c0c25fcf-4021-4828-a764-35ff2122d762")
+            }
+        ]);*/
+
+        return Task.FromResult(result);
+    }
+    
+    private async Task<List<TreeItem>> LoadInfoBases(Models.Cluster cluster, bool agentIsConnected)
+    {
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        var items = await context.InfoBases
+            .AsNoTracking()
+            .Include(c => c.Cluster.Credentials)
+            .Include(c => c.Credentials)
+            .Where(c => c.ClusterId == cluster.Id)
+            .ToListAsync();
+        
+        return items.Select(c => new TreeItem(c.Id.ToString())
+        {
+            Text = c.Name,
+            AdornmentIcon = Icons.Material.Filled.Dataset,
+            AdornmentIconColor = Color.Info,
+            LoadChildrenFunc = () => LoadInfoBaseChildren(c),
+            DynamicComponentType = typeof(InfoBaseDetails),
+            Parameters = new Dictionary<string, object> { { "Id", c.Id }, { "AgentIsConnected", agentIsConnected } },
+        }).ToList();
+    }
+    
+    private static Task<List<TreeItem>> LoadInfoBaseChildren(Models.InfoBase infoBase)
+        =>
+            Task.FromResult<List<TreeItem>>([
+                new TreeItem($"{infoBase.Id}730fd344-b3f0-4f4c-bf2e-42cdcf0ff2f4")
+                {
+                    Text = "Сеансы",
+                    AdornmentIcon = Icons.Material.Filled.PersonPin,
+                    AdornmentIconColor = Color.Secondary,
+                    DynamicComponentType = typeof(Sessions),
+                    Parameters = new Dictionary<string, object> { { "Cluster", infoBase.Cluster }, { "InfoBase", infoBase } } 
+                }
+            ]);
+    
+    private async Task<List<TreeItem>> LoadV8Processes(Models.Cluster cluster)
+    {
+        var connection = AgentsConnectionsManager.GetAgentConnection(cluster.AgentId);
+        var processes = await connection!.GetV8Processes(cluster, CancellationToken.None);
+        
+        return processes.Select(c => new TreeItem(c.Id.ToString())
+        {
+            Text = $"{c.Host} ({c.Pid})",
+            AdornmentIcon = Icons.Material.Filled.WorkHistory,
+            AdornmentIconColor = Color.Tertiary,
+            DynamicComponentType = typeof(V8ProcessDetails),
+            Parameters = new Dictionary<string, object>{ { "ClusterId", cluster.Id }, { "Id", Guid.Parse(c.Id) } }
+        }).ToList();
+    }
+}

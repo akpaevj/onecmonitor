@@ -10,8 +10,8 @@
 	<Configurations>Debug;Release;Debug agent;Debug server</Configurations>
 	<Authors>Akpaev E.A.</Authors>
 	<Company>Akpaev E.A.</Company>
-	<AssemblyVersion>0.2.6</AssemblyVersion>
-	<Version>0.2.6</Version>
+	<AssemblyVersion>0.2.7</AssemblyVersion>
+	<Version>0.2.7</Version>
   </PropertyGroup>
 
   <ItemGroup>

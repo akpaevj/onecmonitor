@@ -58,8 +58,6 @@ builder.Services.AddSingleton<FilesProvider>();
 
 builder.Services.AddAutoMapper(_ => { }, typeof(DtoProfile).Assembly);
 
-builder.Services.AddScoped<AdministrationApi>();
-
 builder.Services.AddSingleton<TechLogRepositoryManager>();
 builder.Services.AddSingleton<EventLogRepositoryManager>();
 

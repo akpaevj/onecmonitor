@@ -7,16 +7,11 @@
 @attribute [CascadingTypeParameter(nameof(T))]
 @typeparam T where T : OneSwiss.Server.Models.DatabaseObject, new()
 
-<PageTitle>@_title</PageTitle>
-
-<MudText Typo="Typo.h4" Class="mb-3">@_title</MudText>
-
 <MudStack Row AlignItems="AlignItems.Start" Class="mb-3">
     @if (Editable)
     {
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Class="mb-3">Сохранить</MudButton>
     }
-    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="NavigateBack" Class="mb-3">Назад</MudButton>
 </MudStack>
 
 <MudForm @ref="Form" Model="Model!" Validation="Validation" Disabled="@(!Editable)">
@@ -27,11 +22,10 @@
 
 @code
 {
-    private string _title = string.Empty;
     private readonly List<string> _additionalValidableProperties = [];
     private MudForm Form { get; set; } = null!;
 
-    public AppDbContext? Context { get; private set; }
+    public AppDbContext? Context { get; set; }
     public T? Model { get; set; }
     
     /// <summary>
@@ -45,30 +39,6 @@
     /// </summary>
     [Parameter]
     public bool Editable { get; set; } = true;
-    
-    /// <summary>
-    /// необходимо отображать кнопку назад
-    /// </summary>
-    [Parameter]
-    public bool ShowBackButton { get; set; } = true;
-    
-    /// <summary>
-    /// Начальный заголовок формы
-    /// </summary>
-    [Parameter]
-    public string Title { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Функция, возвращающая представление элемента
-    /// </summary>
-    [Parameter] 
-    public Func<T, string> NameSelector { get; set; } = null!;
-
-    /// <summary>
-    /// URI к моделям. Если список моделей находится по пути /credentials, то параметр должен иметь значение credentials
-    /// </summary>
-    [Parameter] 
-    public string Route { get; set; } = string.Empty;
     
     /// <summary>
     /// Содержимое формы редактирования
@@ -113,30 +83,22 @@
     public EventCallback<(T Model, AppDbContext Context)> OnInitialize { get; set; }
     
     /// <summary>
-    /// Дополнительные действия при инициализации
+    /// Дополнительные действия при валидации
     /// </summary>
     [Parameter]
     public Func<object, string, Task<IEnumerable<string>>>? Validation { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        _title = Title;
-
         try
         {
             Context = await ContextFactory.CreateDbContextAsync();
-
             Model = await GetModel();
-                
-            if (Id != Guid.Empty)
-                _title = NameSelector(Model!);
-            
             await OnInitialize.InvokeAsync((Model!, Context));
         }
         catch (Exception e)
         {
             SnackBar.ShowError(e);
-            NavigateBack();
         }
     }
     
@@ -189,8 +151,6 @@
             await AfterSave.InvokeAsync(model ?? Model!);
             
             SnackBar.ShowSuccess("Объект записан", false);
-            
-            NavigateBack();
         }
         catch (Exception e)
         {
@@ -215,9 +175,6 @@
 
         return item;
     }
-    
-    private void NavigateBack()
-        => NavigationManager.NavigateTo($"/{Route}");
 
     public void Dispose()
         => Context?.Dispose();

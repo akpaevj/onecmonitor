@@ -5,8 +5,8 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>OneSwiss.Server</RootNamespace>
-        <Version>0.2.6</Version>
-        <AssemblyVersion>0.2.6</AssemblyVersion>
+        <Version>0.2.7</Version>
+        <AssemblyVersion>0.2.7</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -27,7 +27,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.7" />
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.7" />
-        <PackageReference Include="MudBlazor" Version="8.9.0" />
+        <PackageReference Include="MudBlazor" Version="8.10.0" />
         <PackageReference Include="RestSharp" Version="112.1.0" />
         <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.3" />
     </ItemGroup>
@@ -82,6 +82,8 @@
       <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\appsettings.json" />
       <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json" />
       <_ContentIncludedByDefault Remove="Components\Pages\Common\Settings.razor" />
+      <_ContentIncludedByDefault Remove="Components\Pages\Clusters\Index.razor" />
+      <_ContentIncludedByDefault Remove="Components\Pages\InfoBases\Edit.razor" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Release'">

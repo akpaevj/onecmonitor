@@ -1,0 +1,83 @@
+<CascadingValue Value="@this" IsFixed="true">
+    <MudStack Spacing="0" AlignItems="AlignItems.Start" StretchItems="StretchItems.All">
+        @foreach (var item in Items)
+        {
+            <TreeViewItem Item="item"/>
+        }
+    </MudStack>
+</CascadingValue>
+
+@code 
+{
+    private readonly List<TreeViewItem> _leafs = [];
+
+    [Parameter]
+    public IReadOnlyCollection<TreeItem> Items { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<IReadOnlyCollection<TreeItem>?> ItemsChanged { get; set; }
+
+    [Parameter]
+    public TreeViewItem? SelectedItem { get; set; }
+    [Parameter]
+    public EventCallback<TreeViewItem?> SelectedItemChanged { get; set; }
+
+    public async Task SelectItem(TreeViewItem item)
+    {
+        foreach (var treeViewItem in _leafs)
+        {
+            treeViewItem.Item.IsSelected = treeViewItem == item;
+            await treeViewItem.UpdateVisualState();
+        }
+        
+        SelectedItem = item;
+        await SelectedItemChanged.InvokeAsync(SelectedItem);
+    }
+    
+    public async Task SelectItemById(string id)
+    {
+        foreach (var treeViewItem in _leafs)
+        {
+            treeViewItem.Item.IsSelected = treeViewItem.Item.Id == id;
+            if (!treeViewItem.Item.IsSelected) 
+                continue;
+            
+            SelectedItem = treeViewItem;
+            await SelectedItemChanged.InvokeAsync(SelectedItem);
+        }
+    }
+
+    public async Task UpdateBranchState(string id)
+    {
+        var item = _leafs.FirstOrDefault(c => c.Item.Id == id);
+
+        if (item != null)
+        {
+            await item.UpdateFullState();
+            await UpdateChildrenState(item.Item.Id);
+        }
+    }
+
+    private async Task UpdateChildrenState(string id)
+    {
+        var children = _leafs.Where(c => c.Item.Parent?.Id == id).ToList();
+        if (children.Count == 0)
+            return;
+
+        foreach (var child in children)
+        {
+            await child.UpdateFullState();
+            await UpdateChildrenState(child.Item.Id);
+        }
+    }
+
+    public void RegisterItem(TreeViewItem item)
+    {
+        _leafs.Add(item);
+    }
+    
+    public void UnregisterItem(TreeViewItem item)
+    {
+        _leafs.Remove(item);
+    }
+}
