@@ -82,8 +82,11 @@
     
     private async Task CloseSessions()
     {
+        if (_isLoading)
+            return;
+        
         var connection = AgentsConnectionsManager.GetAgentConnection(Cluster.AgentId);
-        if (connection == null)
+        if (connection == null || _selectedItems.Count == 0)
             return;
 
         try
