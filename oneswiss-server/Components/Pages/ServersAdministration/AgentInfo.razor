@@ -1,0 +1,226 @@
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.SignalR.Client
+@using OneSwiss.Common.DTO
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+@using OneSwiss.V8.Edt
+@using OneSwiss.V8.Platform
+@using OneSwiss.V8.Platform.Services
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject AgentsConnectionsManager AgentsConnectionsManager
+@implements OneSwiss.Server.Components.Shared.IStateChangeable
+
+@if (_isLoading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary"></MudProgressLinear>
+}
+else
+{
+    @if (_connected)
+    {
+        <MudStack StretchItems="StretchItems.All" AlignItems="AlignItems.Stretch" Spacing="0">
+            @if (_systemInfo != null)
+            {
+                <MudSimpleTable Class="pa-2" Elevation="1" Dense="true">
+                    <thead>
+                    <tr>
+                        <th>Параметр</th>
+                        <th>Значение</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>Имя хоста</td>
+                        <td>@_systemInfo!.HostName</td>
+                    </tr>
+                    @for (var i = 0; i < _systemInfo.IpAddresses.Length; i++)
+                    {
+                        <tr>
+                            <td>IP адрес (@i)</td>
+                            <td>@_systemInfo.IpAddresses[i]</td>
+                        </tr>
+                    }
+                    </tbody>
+                </MudSimpleTable>
+            }
+            <MudStack Class="mt-3" Row StretchItems="StretchItems.All" Breakpoint="Breakpoint.MdAndDown">
+                @if (_installedPlatforms.Count > 0)
+                {
+                    <MudDataGrid T="V8Platform" Items="_installedPlatforms" Class="pa-2" Elevation="1" Dense="true">
+                        <ToolBarContent>
+                            <MudText Typo="Typo.h6">Установленные платформы</MudText>
+                        </ToolBarContent>
+                        <Columns>
+                            <PropertyColumn Title="Версия" Property="@(arg => arg.Version)"></PropertyColumn>
+                        </Columns>
+                    </MudDataGrid>
+                }
+                @if (_ragentServices.Count > 0)
+                {
+                    <MudTable T="RagentService" Items="_ragentServices" Class="pa-2" Elevation="1" Dense="true">
+                        <ToolBarContent>
+                            <MudText Typo="Typo.h6">Службы агентов сервера 1С</MudText>
+                        </ToolBarContent>
+                        <HeaderContent>
+                            <MudTh>Имя</MudTh>
+                            <MudTh>Состояние</MudTh>
+                            <MudTh>Порт</MudTh>
+                            <MudTh>Отладка</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Имя">@context.Name</MudTd>
+                            <MudTd DataLabel="Состояние">
+                                @if (context.IsActive)
+                                {
+                                    <MudIcon Color="Color.Success" Icon="@(Icons.Material.Filled.PlayArrow)"/>
+                                }
+                                else
+                                {
+                                    <MudIcon Color="Color.Error" Icon="@(Icons.Material.Filled.Stop)"/>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Порт">@context.Port</MudTd>
+                            <MudTd DataLabel="Отладка">@context.DebugType.GetDisplay()</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudStack>
+            <MudStack Row Class="mt-3" StretchItems="StretchItems.All" Breakpoint="Breakpoint.MdAndDown">
+                @if (_rasServices.Count > 0)
+                {
+                    <MudTable T="RasService" Items="_rasServices" Class="pa-2" Elevation="1" Dense="true">
+                        <ToolBarContent>
+                            <MudText Typo="Typo.h6">Службы и процессы сервера администрирования 1С</MudText>
+                        </ToolBarContent>
+                        <HeaderContent>
+                            <MudTh>Имя</MudTh>
+                            <MudTh>Состояние</MudTh>
+                            <MudTh>Хост агента кластера</MudTh>
+                            <MudTh>Порт агента кластера</MudTh>
+                            <MudTh>Порт</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Имя">@context.Name</MudTd>
+                            <MudTd DataLabel="Состояние">
+                                @if (context.IsActive)
+                                {
+                                    <MudIcon Color="Color.Success" Icon="@(Icons.Material.Filled.PlayArrow)"/>
+                                }
+                                else
+                                {
+                                    <MudIcon Color="Color.Error" Icon="@(Icons.Material.Filled.Stop)"/>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Хост агента кластера">@context.RagentHost</MudTd>
+                            <MudTd DataLabel="Порт агента кластера">@context.RagentPort</MudTd>
+                            <MudTd DataLabel="Порт">@context.Port</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                @if (_crServerServices.Count > 0)
+                {
+                    <MudTable T="CrServer" Items="_crServerServices" Class="pa-2" Elevation="1" Dense="true">
+                        <ToolBarContent>
+                            <MudText Typo="Typo.h6">Службы серверов хранилищ 1С</MudText>
+                        </ToolBarContent>
+                        <HeaderContent>
+                            <MudTh>Имя</MudTh>
+                            <MudTh>Состояние</MudTh>
+                            <MudTh>Порт</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Имя">@context.Name</MudTd>
+                            <MudTd DataLabel="Состояние">
+                                @if (context.IsActive)
+                                {
+                                    <MudIcon Color="Color.Success" Icon="@(Icons.Material.Filled.PlayArrow)"/>
+                                }
+                                else
+                                {
+                                    <MudIcon Color="Color.Error" Icon="@(Icons.Material.Filled.Stop)"/>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Порт">@context.Port</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudStack>
+            @if (_edtInstallations.Count > 0)
+            {
+                <MudTable T="EdtInstallation" Items="_edtInstallations" Class="pa-2 mt-3" Elevation="1" Dense="true">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Установленные EDT</MudText>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Версия</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Версия">
+                            @if (context.FromStarter)
+                            {
+                                <MudText>@($"{context.Version} (стартер)")</MudText>
+                            }
+                            else
+                            {
+                                <MudText>@context.Version</MudText>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudStack>
+    }
+    else
+    {
+        <AgentIsNotConnected/>
+    }
+}
+
+@code {
+    private bool _connected;
+    private SystemInfoDto? _systemInfo;
+    private List<V8Platform> _installedPlatforms = [];
+    private List<RagentService> _ragentServices = [];
+    private List<RasService> _rasServices = [];
+    private List<CrServer> _crServerServices = [];
+    private List<EdtInstallation> _edtInstallations = [];
+    
+    private bool _isLoading;
+    
+    [Parameter]
+    public Guid Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+        => await UpdateAgentInfo();
+
+    private async Task UpdateAgentInfo()
+    {
+        if (_isLoading)
+            return;
+
+        _isLoading = true;
+        
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        
+        var agent = await context.Agents.FirstOrDefaultAsync(c => c.Id == Id);
+        var connection = AgentsConnectionsManager.GetAgentConnection(agent!.Id);
+        
+        _connected = connection != null;
+        _systemInfo = connection is null ? null : await connection.GetSystemInfo(CancellationToken.None);
+        _installedPlatforms = connection is null ? [] : await connection.GetInstalledPlatforms(CancellationToken.None);
+        _crServerServices = connection is null ? [] : await connection.GetCrServerServices(CancellationToken.None);
+        _rasServices = connection is null ? [] : await connection.GetRasServices(CancellationToken.None);
+        _ragentServices = connection is null ? [] : await connection.GetRagentServices(CancellationToken.None);
+        _edtInstallations = connection is null ? [] : await connection.GetEdtInstallations(CancellationToken.None);
+
+        _isLoading = false;
+        
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task UpdateState()
+    {
+        await UpdateAgentInfo();
+    }
+}

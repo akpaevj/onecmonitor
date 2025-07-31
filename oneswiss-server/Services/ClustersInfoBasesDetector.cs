@@ -79,7 +79,7 @@ public class ClustersInfoBasesDetector(
                                     try
                                     {
                                         var dbInfoBases = await appDbContext.InfoBases.Where(c => c.ClusterId == cluster.Id).ToListAsync(token);
-                                        var agentInfoBases = await connection.GetV8InfoBasesSummaries(cluster, token);
+                                        var agentInfoBases = await connection.GetV8InfoBases(cluster, token);
                                         
                                         dbInfoBases.ExceptBy(agentInfoBases.Select(c => c.Id), i => i.InfoBaseInternalId).ToList().ForEach(
                                             c => appDbContext.InfoBases.Remove(c));

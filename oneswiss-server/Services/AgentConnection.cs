@@ -138,6 +138,23 @@ namespace OneSwiss.Server.Services
                 MessageType.ClustersResponse,
                 cancellationToken);
         
+        public async Task<V8ClusterDetails> GetV8ClusterDetails(Cluster cluster, CancellationToken cancellationToken)
+            => await Get<ClusterDto, V8ClusterDetails>(
+                MessageType.ClusterDetailsRequest, 
+                MessageType.ClusterDetailsResponse,
+                _mapper.Map<ClusterDto>(cluster),
+                cancellationToken);
+        
+        public async Task ChangeClusterParameters(Cluster cluster, Dictionary<string, string> parameters, CancellationToken cancellationToken)
+            => await Send(
+                MessageType.ChangeClusterParametersRequest,
+                new ChangeClusterObjectParametersRequestDto<ClusterDto>
+                {
+                    Item = _mapper.Map<ClusterDto>(cluster),
+                    Parameters = parameters
+                },
+                cancellationToken);
+        
         public async Task<List<RagentService>> GetRagentServices(CancellationToken cancellationToken)
             => await Get<List<RagentService>>(
                 MessageType.RagentServicesRequest, 
@@ -168,20 +185,46 @@ namespace OneSwiss.Server.Services
                 MessageType.EdtInstallations,
                 cancellationToken);
         
-        public async Task<List<V8InfoBaseSummary>> GetV8InfoBasesSummaries(Cluster cluster, CancellationToken cancellationToken)
-            => await Get<InfoBasesRequestDto, List<V8InfoBaseSummary>>(
+        public async Task<List<V8InfoBase>> GetV8InfoBases(Cluster cluster, CancellationToken cancellationToken)
+            => await Get<ClusterDto, List<V8InfoBase>>(
                 MessageType.InfoBasesRequest, 
                 MessageType.InfoBasesResponse,
-                new InfoBasesRequestDto
+                _mapper.Map<ClusterDto>(cluster),
+                cancellationToken);
+        
+        public async Task<V8InfoBaseDetails> GetV8InfoBaseDetails(InfoBase infoBase, CancellationToken cancellationToken)
+            => await Get<InfoBaseDto, V8InfoBaseDetails>(
+                MessageType.InfoBaseDetailsRequest, 
+                MessageType.InfoBaseDetailsResponse,
+                _mapper.Map<InfoBaseDto>(infoBase),
+                cancellationToken);
+        
+        public async Task ChangeInfoBaseParameters(InfoBase item, Dictionary<string, string> parameters, CancellationToken cancellationToken)
+            => await Send(
+                MessageType.ChangeInfoBaseParametersRequest,
+                new ChangeClusterObjectParametersRequestDto<InfoBaseDto>
                 {
-                    Cluster = new ClusterDto
-                    {
-                        Id = cluster.ClusterInternalId,
-                        Host = cluster.Host,
-                        Port = cluster.Port,
-                        Credentials = cluster.Credentials == null ? null : _mapper.Map<CredentialsDto>(cluster.Credentials)
-                    }
+                    Item = _mapper.Map<InfoBaseDto>(item),
+                    Parameters = parameters
                 },
+                cancellationToken);
+        
+        public async Task<List<V8Session>> GetV8Sessions(Cluster cluster, InfoBase? infoBase, CancellationToken cancellationToken)
+            => await Get<V8SessionsRequestDto, List<V8Session>>(
+                MessageType.V8SessionsRequest, 
+                MessageType.V8SessionsResponse,
+                new V8SessionsRequestDto
+                {
+                    Cluster = _mapper.Map<ClusterDto>(cluster),
+                    InfoBase = infoBase == null ? null : _mapper.Map<InfoBaseDto>(infoBase)
+                },
+                cancellationToken);
+        
+        public async Task<List<V8Process>> GetV8Processes(Cluster cluster, CancellationToken cancellationToken)
+            => await Get<ClusterDto, List<V8Process>>(
+                MessageType.V8ProcessesRequest, 
+                MessageType.V8ProcessesResponse,
+                _mapper.Map<ClusterDto>(cluster),
                 cancellationToken);
         
         public async Task<ConfigRepositoryDetailsDto> GetConfigRepositoryDetails(CrServer server, string repository, CancellationToken cancellationToken)

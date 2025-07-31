@@ -19,10 +19,7 @@ public class InfoBaseDto
     [ContextProperty("УчетныеДанные", "Credentials")]
     [Key(3)] 
     public CredentialsDto? Credentials { get; set; }
-    [ContextProperty("АдресПубликации", "PublishAddress")]
-    [Key(4)] 
-    public string PublishAddress { get; set; } = string.Empty;
     [ContextProperty("Кластер", "Cluster")]
-    [Key(5)] 
+    [Key(4)] 
     public required ClusterDto Cluster { get; set; }
 }

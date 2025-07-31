@@ -21,14 +21,17 @@ public class MaintenanceTaskExecutor : BackgroundService
     private readonly RasHolder _rasHolder;
     private readonly V8ServicesProvider _v8ServicesProvider;
     private readonly ILogger<MaintenanceTaskExecutor> _logger;
+    private readonly ILogger<Rac> _racLogger;
     
     public MaintenanceTaskExecutor(
         IServiceProvider serviceProvider, 
         MonitorQueue<MaintenanceTaskDto> queue,
         RasHolder rasHolder,
         V8ServicesProvider v8ServicesProvider,
-        ILogger<MaintenanceTaskExecutor> logger) 
+        ILogger<MaintenanceTaskExecutor> logger,
+        ILogger<Rac> racLogger)
     {
+        _racLogger = racLogger;
         _serviceProvider = serviceProvider;
         _scope = serviceProvider.CreateAsyncScope();
         _queue = queue;
@@ -91,7 +94,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                     var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(infoBase.Cluster.Port);
                     var ras = _rasHolder.GetActiveRasForRagent(ragent);
 
-                    context.Rac = Rac.GetRacForRasService(ras);
+                    context.Rac = Rac.GetRacForRasService(_racLogger, ras);
                     context.Platform = ragent.Platform;
 
                     if (!context.Platform.HasOnecV8)
@@ -223,13 +226,13 @@ public class MaintenanceTaskExecutor : BackgroundService
         switch (context.Step.Kind)
         {
             case MaintenanceStepKind.LockConnections:
-                LockConnections(context);
+                await LockConnections(context);
                 break;
             case MaintenanceStepKind.CloseConnections:
-                CloseConnections(context);
+                await CloseConnections(context);
                 break;
             case MaintenanceStepKind.UnlockConnections:
-                UnlockConnections(context);
+                await UnlockConnections(context);
                 break;
             case MaintenanceStepKind.LoadExtension:
                 await LoadExtension(context);
@@ -390,9 +393,9 @@ public class MaintenanceTaskExecutor : BackgroundService
         }
     }
 
-    private static void LockConnections(MaintenanceStepContext context)
+    private static async Task LockConnections(MaintenanceStepContext context)
     {
-        context.Rac.BlockConnections(
+        await context.Rac.BlockConnections(
             context.InfoBase.Cluster.ClusterInternalId, 
             context.InfoBase.InfoBaseInternalId,
             context.Step.AccessCode,
@@ -405,37 +408,38 @@ public class MaintenanceTaskExecutor : BackgroundService
         context.AccessCode = context.Step.AccessCode;
     }
     
-    private static void CloseConnections(MaintenanceStepContext context)
+    private static async Task CloseConnections(MaintenanceStepContext context)
     {
-        var sessions = context.Rac.GetInfoBaseSessions(
+        var sessions = await context.Rac.GetInfoBaseSessions(
             context.InfoBase.Cluster.ClusterInternalId, 
             context.InfoBase.InfoBaseInternalId,
             context.InfoBase.Cluster.Credentials?.User ?? "",
             context.InfoBase.Cluster.Credentials?.Password ?? "");
         
-        sessions
+        var toClose = sessions
             .Where(c => !c.AppId.Contains("RAS", StringComparison.CurrentCultureIgnoreCase))
-            .ToList()
-            .ForEach(s =>
+            .ToList();
+
+        foreach (var v8Session in toClose)
+        {
+            try
             {
-                try
-                {
-                    context.Rac.TerminateSession(
-                        context.InfoBase.Cluster.ClusterInternalId, 
-                        s.Id,
-                        context.InfoBase.Cluster.Credentials?.User ?? "",
-                        context.InfoBase.Cluster.Credentials?.Password ?? "");
-                }
-                catch
-                {
-                    // Игнорируем, т.к. сеанс уже мог быть закрыт, мог быть повисшим и т.п.
-                }
-            });
+                await context.Rac.TerminateSession(
+                    context.InfoBase.Cluster.ClusterInternalId, 
+                    v8Session.Id,
+                    context.InfoBase.Cluster.Credentials?.User ?? "",
+                    context.InfoBase.Cluster.Credentials?.Password ?? "");
+            }
+            catch
+            {
+                // Игнорируем, т.к. сеанс уже мог быть закрыт, мог быть повисшим и т.п.
+            }
+        }
     }
     
-    private static void UnlockConnections(MaintenanceStepContext context)
+    private static async Task UnlockConnections(MaintenanceStepContext context)
     {
-        context.Rac.UnblockConnections(
+        await context.Rac.UnblockConnections(
             context.InfoBase.Cluster.ClusterInternalId, 
             context.InfoBase.InfoBaseInternalId,
             context.InfoBase.Cluster.Credentials?.User ?? "",
