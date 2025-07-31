@@ -43,6 +43,7 @@
         V8FileChunk,
         SystemInfo,
         ConfigRepositoryDetails,
-        EdtInstallations
+        EdtInstallations,
+        CloseV8SessionsRequest
     }
 }
