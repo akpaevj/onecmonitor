@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace OneSwiss.Server.Models;
 
 public class ConfigurationRepository : DatabaseObject
@@ -11,6 +13,7 @@ public class ConfigurationRepository : DatabaseObject
     public Guid? CredentialsId { get; set; }
     
     public Agent Agent { get; set; }
+    [DeleteBehavior(DeleteBehavior.SetNull)]
     public Credentials? Credentials { get; set; }
     
     public List<ConfigurationRepositoryUser> Users { get; set; }

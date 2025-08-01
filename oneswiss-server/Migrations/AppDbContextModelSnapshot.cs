@@ -742,7 +742,8 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
                         .WithMany("Clusters")
-                        .HasForeignKey("CredentialsId");
+                        .HasForeignKey("CredentialsId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Agent");
 
@@ -759,7 +760,8 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
                         .WithMany("ConfigurationRepositories")
-                        .HasForeignKey("CredentialsId");
+                        .HasForeignKey("CredentialsId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Agent");
 
@@ -802,7 +804,8 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
                         .WithMany("InfoBases")
-                        .HasForeignKey("CredentialsId");
+                        .HasForeignKey("CredentialsId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Cluster");
 

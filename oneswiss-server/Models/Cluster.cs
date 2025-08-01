@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 
 namespace OneSwiss.Server.Models;
@@ -21,6 +22,7 @@ public class Cluster : DatabaseObject
     public Guid? CredentialsId { get; set; }
     
     public virtual Agent Agent { get; set; } = null!;
+    [DeleteBehavior(DeleteBehavior.SetNull)]
     public virtual Credentials? Credentials { get; set; }
     public virtual List<InfoBase> InfoBases { get; set; } = [];
 }

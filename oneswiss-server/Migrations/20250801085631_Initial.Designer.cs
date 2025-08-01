@@ -10,7 +10,7 @@ using OneSwiss.Server;
 namespace OneSwiss.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250717155702_Initial")]
+    [Migration("20250801085631_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -745,7 +745,8 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
                         .WithMany("Clusters")
-                        .HasForeignKey("CredentialsId");
+                        .HasForeignKey("CredentialsId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Agent");
 
@@ -762,7 +763,8 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
                         .WithMany("ConfigurationRepositories")
-                        .HasForeignKey("CredentialsId");
+                        .HasForeignKey("CredentialsId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Agent");
 
@@ -805,7 +807,8 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
                         .WithMany("InfoBases")
-                        .HasForeignKey("CredentialsId");
+                        .HasForeignKey("CredentialsId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Cluster");
 

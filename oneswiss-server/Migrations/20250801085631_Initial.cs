@@ -224,7 +224,8 @@ namespace OneSwiss.Server.Migrations
                         name: "FK_Clusters_Credentials_CredentialsId",
                         column: x => x.CredentialsId,
                         principalTable: "Credentials",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -253,7 +254,8 @@ namespace OneSwiss.Server.Migrations
                         name: "FK_ConfigRepositories_Credentials_CredentialsId",
                         column: x => x.CredentialsId,
                         principalTable: "Credentials",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -382,7 +384,8 @@ namespace OneSwiss.Server.Migrations
                         name: "FK_InfoBases_Credentials_CredentialsId",
                         column: x => x.CredentialsId,
                         principalTable: "Credentials",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(

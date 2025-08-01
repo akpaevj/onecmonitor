@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 using OneSwiss.Server.Models.MaintenanceTasks;
 
@@ -18,6 +19,7 @@ public class InfoBase : DatabaseObject
     [Label("Кластер")]
     public Guid ClusterId { get; set; }
     
+    [DeleteBehavior(DeleteBehavior.SetNull)]
     public virtual Credentials? Credentials { get; set; }
     public virtual Cluster Cluster { get; set; } = null!;
     

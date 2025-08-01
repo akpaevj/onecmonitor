@@ -18,7 +18,7 @@
 <MudGrid>
     <MudItem xs="12" md="3">
         <MudPaper Class="pa-4">
-            <TreeView @bind-SelectedItem="_selectedItem" @ref="_tree" @bind-Items="_items"/>
+            <TreeView @bind-SelectedItem="_selectedItem" @bind-Items="_items"/>
         </MudPaper>
     </MudItem>
     <MudItem xs="12" md="9">
@@ -37,7 +37,6 @@
 {
     HubConnection? _hubConnection;
     private IReadOnlyCollection<TreeItem> _items = [];
-    private TreeView _tree;
     private TreeViewItem? _selectedItem;
     private DynamicComponent _dynamicComponent;
 

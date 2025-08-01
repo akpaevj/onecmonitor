@@ -9,7 +9,7 @@ public class ConfigurationRepositoriesDetector(
     AgentsConnectionsManager connectionsManager,
     IMapper mapper,
     IServiceProvider serviceProvider,
-    ILogger<ClustersInfoBasesDetector> logger) : BackgroundService
+    ILogger<ConfigurationRepositoriesDetector> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
