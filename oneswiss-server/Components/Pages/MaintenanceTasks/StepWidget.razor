@@ -56,4 +56,7 @@
 {
     [Parameter] 
     public StepNode Node { get; set; } = null!;
+
+    protected override bool ShouldRender()
+        => false;
 }
