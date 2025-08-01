@@ -7,5 +7,7 @@ public enum NotificationType
     [Display(Name = "Завершение задачи обслуживания")]
     MaintenanceTaskCompleted,
     [Display(Name = "Получен отчет об ошибке")]
-    ErrorReportReceived
+    ErrorReportReceived,
+    [Display(Name = "Пользовательское уведомление")]
+    Custom
 }

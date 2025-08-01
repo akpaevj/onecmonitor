@@ -9,7 +9,8 @@ public class OscriptIntegrationContext(
     V8PlatformsProvider platformsProvider, 
     V8ServicesProvider servicesProvider,
     RasHolder rasHolder,
-    EdtInstallationsProvider edtInstallationsProvider) : AutoContext<OscriptIntegrationContext>
+    EdtInstallationsProvider edtInstallationsProvider, 
+    OneSwissConnection serverConnection) : AutoContext<OscriptIntegrationContext>
 {
     [ContextProperty("ПровайдерПлатформ", "PlatformsProvider", CanWrite = false)]
     public V8PlatformsProviderWrapper PlatformsProvider { get; } = new(platformsProvider);
@@ -22,4 +23,7 @@ public class OscriptIntegrationContext(
     
     [ContextProperty("ПровайдерИнсталляцийEdt", "EdtInstallationsProvider", CanWrite = false)]
     public EdtInstallationsProviderWrapper EdtInstallationsProvider { get; } = new(edtInstallationsProvider);
+    
+    [ContextProperty("Сервер", "Server", CanWrite = false)]
+    public OneSwissConnectionWrapper Server { get; } = new(serverConnection);
 }

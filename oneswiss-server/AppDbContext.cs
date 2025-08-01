@@ -32,6 +32,7 @@ namespace OneSwiss.Server
         public DbSet<TelegramBotSettings> TelegramBotSettings { get; set; }
         public DbSet<NotificationRecipient> NotificationRecipients { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<CustomNotification> CustomNotifications { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options, IHostEnvironment hostEnvironment) : base(options)
             => SetDbPath(hostEnvironment);

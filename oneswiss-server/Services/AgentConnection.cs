@@ -74,6 +74,9 @@ namespace OneSwiss.Server.Services
                         case MessageType.V8FileRequest:
                             await SendFile(message, cancellationToken);
                             break;
+                        case MessageType.QueueNotificationRequest:
+                            await QueueCustomNotification(message, cancellationToken);
+                            break;
                         default:
                             throw new Exception($"Получено неожиданное сообщение: {message.Header.Type}");
                     }
@@ -409,6 +412,14 @@ namespace OneSwiss.Server.Services
                 await Send(MessageType.V8FileChunk, chunk, cancellationToken);
                 sent += read;
             }
+            
+            await SendOk(message, cancellationToken);
+        }
+
+        private async Task QueueCustomNotification(Message message, CancellationToken cancellationToken)
+        {
+            var notification = ParseMessageData<NotificationDto>(message.Data, cancellationToken);
+            await _notificationsService.QueueCustomNotification(notification.Key, notification.Message, cancellationToken);
             
             await SendOk(message, cancellationToken);
         }

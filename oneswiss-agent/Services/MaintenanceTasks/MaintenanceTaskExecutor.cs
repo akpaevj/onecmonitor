@@ -22,7 +22,7 @@ public class MaintenanceTaskExecutor : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly RasHolder _rasHolder;
     private readonly V8ServicesProvider _v8ServicesProvider;
-    private OscriptIntegrationGlobalContext _oscriptIntegrationGlobalContext;
+    private readonly OscriptIntegrationGlobalContext _oscriptIntegrationGlobalContext;
     private readonly ILogger<MaintenanceTaskExecutor> _logger;
     private readonly ILogger<Rac> _racLogger;
     

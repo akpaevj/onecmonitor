@@ -70,6 +70,37 @@ public class NotificationsService(IDbContextFactory<AppDbContext> dbContextFacto
         
         await QueueNotification(dbContext, NotificationType.MaintenanceTaskCompleted, message, cancellationToken);
     }
+    
+    public async Task QueueCustomNotification(string key, string message, CancellationToken cancellationToken)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        
+        try
+        {
+            var recipients = await dbContext.NotificationRecipients
+                .Where(c => c.CustomNotifications.FirstOrDefault(i => i.Key == key) != null)
+                .ToListAsync(cancellationToken);
+
+            foreach (var recipient in recipients)
+            {
+                await dbContext.Notifications.AddAsync(new Notification
+                {
+                    Id = Guid.NewGuid(),
+                    CreatedAt = DateTime.Now,
+                    Type = NotificationType.Custom,
+                    Recipient = recipient.SendTo,
+                    Channel = recipient.Channel,
+                    Message = message
+                }, cancellationToken);
+            }
+        
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Ошибка при добавлении уведомлений");
+        }
+    }
 
     private async Task QueueNotification(AppDbContext dbContext, NotificationType notificationType, string message, CancellationToken cancellationToken, string addInfo = "")
     {
