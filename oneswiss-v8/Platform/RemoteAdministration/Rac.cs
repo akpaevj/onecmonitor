@@ -300,46 +300,12 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     private async Task<string> StartRacAndGetOutput(string command, int commandTimeout)
     {
         if (!platform.HasRac)
-            throw new Exception($"{platform.PlatformPath} doesn't contain 1cv8 executable");
-        
-        var psi = new ProcessStartInfo
-        {
-            FileName = platform.RacPath,
-            RedirectStandardOutput = true,
-            RedirectStandardInput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true,
-            UseShellExecute = false,
-            Arguments = $"{host}:{port} {command}"
-        };
+            throw new Exception($"{platform.PlatformPath} не содержит исполняемого файла rac");
 
-        using var process = new Process();
-        process.StartInfo = psi;
+        var result = await ProcessRunner.RunAsync(platform.RacPath, $"{host}:{port} {command}", null, TimeSpan.FromSeconds(commandTimeout));
+        if (result.ExitCode != 0)
+            throw new Exception($"Ошибка выполнения команды RAC: {result.Error}");
         
-        logger.LogTrace("Запуск процесса RAC");
-
-        if (!process.Start())
-        {
-            process.Close();
-            throw new Exception($"Ошибка запуска {psi.FileName}");
-        }
-        
-        using var outputStream = process.StandardOutput.ReadToEndAsync();
-        using var errorStream = process.StandardError.ReadToEndAsync();
-        
-        if (process.WaitForExit(TimeSpan.FromSeconds(60)) && process.ExitCode != 0)
-        {
-            var error = await errorStream;
-            process.Close();
-            
-            throw new Exception($"Ошибка выполнения команды RAC: {error}");
-        }
-        
-        var output = await outputStream;
-        process.Close();
-        
-        logger.LogTrace("Процесс RAC закрыт");
-        
-        return output;
+        return result.Output;
     }
 }

@@ -32,6 +32,7 @@
             <MudTd>Канал</MudTd>
             <MudTd>Получатель</MudTd>
             <MudTd>Типы уведомлений</MudTd>
+            <MudTd>Пользовательские уведомления</MudTd>
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Канал">
@@ -50,6 +51,12 @@
                                @bind-SelectedValues="@context.NotificationTypes"
                                NameSelector="@(item => item.GetDisplay())"
                                Items="Enum.GetValues<NotificationType>().ToList()"/>
+            </MudTd>
+            <MudTd DataLabel="Пользовательские уведомления">
+                <ItemsSelector T="CustomNotification"
+                               @bind-SelectedValues="@context.CustomNotifications"
+                               NameSelector="@(item => item.Key)"
+                               Items="@(_context?.CustomNotifications.ToList() ?? [])"/>
             </MudTd>
         </RowTemplate>
     </MudTable>
@@ -101,7 +108,9 @@
 
     private async Task UpdateItems()
     {
-        _items = await _context!.NotificationRecipients.ToListAsync();
+        _items = await _context!.NotificationRecipients
+            .Include(c => c.CustomNotifications)
+            .ToListAsync();
     }
 
     private void DeleteRecipients()

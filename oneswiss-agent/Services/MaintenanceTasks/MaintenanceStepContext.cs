@@ -8,10 +8,8 @@ using OneSwiss.V8.Platform.RemoteAdministration;
 
 namespace OneSwiss.Agent.Services.MaintenanceTasks;
 
-[ContextClass("КонтекстШагаОбслуживания", "MaintenanceStepContext")]
 public class MaintenanceStepContext
 {
-    [ContextProperty("ЗадачаОбслуживания", "MaintenanceTask")]
     public MaintenanceTaskDto Task { get; set; } = null!;
     public InfoBaseDto InfoBase { get; set; } = null!;
     public MaintenanceStepDto Step { get; set; } = null!;
@@ -22,7 +20,6 @@ public class MaintenanceStepContext
     public V8Platform Platform { get; set; } = null!;
     public bool UseDesignerAgent { get; set; }
     public DesignerAgentClient? DesignerAgentClient { get; set; }
-    public CancellationToken CancellationToken { get; set; }
     
     public OnecV8BatchMode GetBatchDesigner() 
         => OnecV8BatchMode.CreateDesignerBatch(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}", InfoBase.InfoBaseName);

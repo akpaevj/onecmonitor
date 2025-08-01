@@ -1,6 +1,6 @@
 using System.Xml.Serialization;
 
-namespace OneSwiss.OneScript.Oscript;
+namespace OneSwiss.OneScript;
 
 public class OpmMetadataRoot
 {

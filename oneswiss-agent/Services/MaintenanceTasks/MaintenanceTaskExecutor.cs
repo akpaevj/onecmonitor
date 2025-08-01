@@ -1,6 +1,7 @@
 using System.CommandLine.Parsing;
 using System.Text.RegularExpressions;
 using OneSwiss.Agent.Extensions;
+using OneSwiss.Agent.Oscript;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Common.Extensions;
@@ -9,6 +10,7 @@ using OneSwiss.OneScript;
 using OneSwiss.V8.Designer.Agent;
 using OneSwiss.V8.Designer.Batch;
 using OneSwiss.V8.Platform.RemoteAdministration;
+using ScriptEngine.Hosting;
 
 namespace OneSwiss.Agent.Services.MaintenanceTasks;
 
@@ -20,6 +22,7 @@ public class MaintenanceTaskExecutor : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly RasHolder _rasHolder;
     private readonly V8ServicesProvider _v8ServicesProvider;
+    private readonly OscriptIntegrationGlobalContext _oscriptIntegrationGlobalContext;
     private readonly ILogger<MaintenanceTaskExecutor> _logger;
     private readonly ILogger<Rac> _racLogger;
     
@@ -28,10 +31,12 @@ public class MaintenanceTaskExecutor : BackgroundService
         MonitorQueue<MaintenanceTaskDto> queue,
         RasHolder rasHolder,
         V8ServicesProvider v8ServicesProvider,
+        OscriptIntegrationGlobalContext oscriptIntegrationGlobalContext,
         ILogger<MaintenanceTaskExecutor> logger,
         ILogger<Rac> racLogger)
     {
         _racLogger = racLogger;
+        _oscriptIntegrationGlobalContext = oscriptIntegrationGlobalContext;
         _serviceProvider = serviceProvider;
         _scope = serviceProvider.CreateAsyncScope();
         _queue = queue;
@@ -219,7 +224,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         return result;
     }
 
-    private static async Task HandleTaskStepNode(MaintenanceStepContext context)
+    private async Task HandleTaskStepNode(MaintenanceStepContext context)
     {
         AddStepLogItem(context, $"Обработка шага \"{context.Step.Kind.GetDisplay()}\"");
 
@@ -478,7 +483,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         }
     }
     
-    private static void ExecuteOneScript(MaintenanceStepContext context)
+    private void ExecuteOneScript(MaintenanceStepContext context)
     {
         var scriptPath = Directory.CreateTempSubdirectory().FullName;
         
@@ -498,7 +503,11 @@ public class MaintenanceTaskExecutor : BackgroundService
         var cmdParser = new Parser();
         var parsingResult = cmdParser.Parse(context.Step.CommandLineArguments);
         
-        scriptHost.ExecutePackageScript(scriptPath, opmMetadata!, []);
+        scriptHost.ExecutePackageScript(scriptPath, opmMetadata!, [], e =>
+        {
+            e.AddAssembly(typeof(OscriptIntegrationGlobalContext).Assembly);
+            e.AddGlobalContext(_oscriptIntegrationGlobalContext);
+        });
         
         Directory.Delete(scriptPath, true);
     }

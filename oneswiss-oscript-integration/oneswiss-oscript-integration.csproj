@@ -23,7 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Oscript\" />
+      <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
     </ItemGroup>
 
 </Project>

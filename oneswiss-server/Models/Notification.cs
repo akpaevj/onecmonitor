@@ -10,4 +10,5 @@ public class Notification : DatabaseObject
     public NotificationChannel Channel { get; set; }
     public string Recipient  { get; set; } = string.Empty;
     public string Additionalinfo { get; set; } = string.Empty;
+    public List<string> CustomNotificationsKeys { get; set; } = [];
 }

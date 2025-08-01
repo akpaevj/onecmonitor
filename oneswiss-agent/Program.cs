@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OneSwiss.Agent;
 using OneSwiss.Agent.Models;
+using OneSwiss.Agent.Oscript;
 using OneSwiss.Agent.Services;
 using OneSwiss.Agent.Services.EventLog;
 using OneSwiss.Agent.Services.MaintenanceTasks;
@@ -43,6 +44,9 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<TechLogManager>();
         
         services.AddSingleton<CommandsWatcher>();
+        
+        services.AddSingleton<OscriptIntegrationContext>();
+        services.AddSingleton<OscriptIntegrationGlobalContext>();
     })
 .Build();
 

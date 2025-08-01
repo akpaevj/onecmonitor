@@ -12,5 +12,7 @@ public class EdtInstallation
     [Key(2)]
     public bool HasEdtCli { get; set; }
     [Key(3)]
+    public string EdtCliPath { get; set; }
+    [Key(4)]
     public bool FromStarter { get; set; }
 }

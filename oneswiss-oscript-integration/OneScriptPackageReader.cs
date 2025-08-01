@@ -1,6 +1,5 @@
 using System.IO.Compression;
 using System.Xml.Serialization;
-using OneSwiss.OneScript.Oscript;
 
 namespace OneSwiss.OneScript;
 

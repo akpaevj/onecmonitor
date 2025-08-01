@@ -24,6 +24,7 @@
         SystemInfoRequest,
         ConfigRepositoryDetailsRequest,
         EdtInstallationsRequest,
+        QueueNotificationRequest,
         
         // Server messages
         InstalledPlatformsRequest,
