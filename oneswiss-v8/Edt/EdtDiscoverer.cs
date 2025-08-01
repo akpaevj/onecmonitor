@@ -38,14 +38,19 @@ public static class EdtDiscoverer
                     var version = kv[1].Trim();
                     
                     var edtCliPath = Path.Join(binPath, "1cedtcli" + (Environment.OSVersion.Platform == PlatformID.Win32NT ? ".exe" : ""));
-                    
-                    items.Add(new EdtInstallation
+
+                    var edtItem = new EdtInstallation
                     {
                         Version = version,
                         HasEdtCli = File.Exists(edtCliPath),
                         Path = binPath,
                         FromStarter = item.IsStarter
-                    });
+                    };
+                    
+                    if (edtItem.HasEdtCli)
+                        edtItem.EdtCliPath = edtCliPath;
+                    
+                    items.Add(edtItem);
                     
                     break;
                 }

@@ -1,10 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using OneScript.Sources;
 using OneScript.StandardLibrary;
-using OneSwiss.OneScript.Oscript;
+using OneSwiss.V8.Platform;
 using ScriptEngine;
 using ScriptEngine.HostedScript;
 using ScriptEngine.Hosting;
+using ExecutionContext = ScriptEngine.Machine.ExecutionContext;
 
 namespace OneSwiss.OneScript;
 
@@ -14,13 +16,13 @@ public class OneScriptExecutor : IHostApplication
     public EventHandler<Exception>? OnError = null;
     private string[] _args;
     
-    public void ExecutePackageScript(string path, OpmMetadata metadata, string[] args)
+    public void ExecutePackageScript(string path, OpmMetadata metadata, string[] args, Action<ExecutionContext> engineBuilder)
     {
         _args = args;
         var executablePath = Path.Combine(path, metadata.Executable);
         var librariesPath = Path.Combine(path, "oscript_modules");
         
-        using var engine = CreateEngine(librariesPath);
+        using var engine = CreateEngine(librariesPath, engineBuilder);
         engine.Initialize();
 
         var source = SourceCodeBuilder
@@ -35,7 +37,7 @@ public class OneScriptExecutor : IHostApplication
             throw new Exception("Ошибка выполнения скрипта");
     }
 
-    private static HostedScriptEngine CreateEngine(string librariesPath)
+    private static HostedScriptEngine CreateEngine(string librariesPath, Action<ExecutionContext> engineBuilder)
     {
         var builder = DefaultEngineBuilder
             .Create()
@@ -44,6 +46,8 @@ public class OneScriptExecutor : IHostApplication
             .SetupEnvironment(e =>
             {
                 e.AddStandardLibrary();
+                e.AddAssembly(typeof(OneScriptExecutor).Assembly);
+                engineBuilder.Invoke(e);
             });
 
         builder.Services.RegisterSingleton<IDependencyResolver>(new FileSystemDependencyResolver
