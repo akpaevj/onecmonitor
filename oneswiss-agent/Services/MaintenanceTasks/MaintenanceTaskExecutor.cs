@@ -414,7 +414,9 @@ public class MaintenanceTaskExecutor : BackgroundService
             context.InfoBase.Cluster.ClusterInternalId, 
             context.InfoBase.InfoBaseInternalId,
             context.InfoBase.Cluster.Credentials?.User ?? "",
-            context.InfoBase.Cluster.Credentials?.Password ?? "");
+            context.InfoBase.Cluster.Credentials?.Password ?? "",
+            context.InfoBase.Credentials?.User ?? "",
+            context.InfoBase.Credentials?.Password ?? "");
         
         var toClose = sessions
             .Where(c => !c.AppId.Contains("RAS", StringComparison.CurrentCultureIgnoreCase))

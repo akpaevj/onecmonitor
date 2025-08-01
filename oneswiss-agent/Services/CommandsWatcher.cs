@@ -267,7 +267,9 @@ namespace OneSwiss.Agent.Services
                     request.Cluster.ClusterInternalId,
                     request.InfoBase.InfoBaseInternalId,
                     request.Cluster.Credentials?.User ?? "", 
-                    request.Cluster.Credentials?.Password ?? "")
+                    request.Cluster.Credentials?.Password ?? "",
+                    request.InfoBase.Credentials?.User ?? "",
+                    request.InfoBase.Credentials?.Password ?? "")
             };
             
             await _server.Send(MessageType.V8SessionsResponse, result, message,

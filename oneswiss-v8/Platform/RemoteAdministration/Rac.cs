@@ -151,7 +151,9 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         string clusterId,
         string infoBaseId,
         string clusterUser = "",
-        string clusterPassword = "")
+        string clusterPassword = "",
+        string user = "",
+        string password = "")
     {
         var infoBases = (await GetInfoBases(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
         var processes = (await GetClusterProcesses(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
@@ -159,7 +161,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка соединений информационной базы из RAS");
         
         var items = (await GetOutputItems(
-                $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId}", 20))
+                $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}", 20))
             .ToRacObjects<V8Connection>(["process", "infobase"],
                 (f, c) => FillV8Connection(infoBases, processes, f, c));
         
@@ -230,11 +232,11 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     }
 
     public async Task<List<V8Session>> GetInfoBaseSessions(string clusterId, string infoBaseId, string clusterUser = "",
-        string clusterPassword = "")
+        string clusterPassword = "", string user = "", string password = "")
     {
         var infoBases = (await GetInfoBases(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
         var processes = (await GetClusterProcesses(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
-        var connections = (await GetInfoBaseConnections(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
+        var connections = (await GetInfoBaseConnections(clusterId, infoBaseId, clusterUser, clusterPassword, user, password)).ToDictionary(c => c.Id, c => c);
         
         logger.LogTrace("Запрос списка сеансов информационной базы из RAS");
         
