@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using OneScript.DebugServices;
 using OneScript.Sources;
 using OneScript.StandardLibrary;
 using OneSwiss.V8.Platform;
@@ -23,7 +24,6 @@ public class OneScriptExecutor : IHostApplication
         var librariesPath = Path.Combine(path, "oscript_modules");
         
         using var engine = CreateEngine(librariesPath, engineBuilder);
-        engine.Initialize();
 
         var source = SourceCodeBuilder
             .Create()
