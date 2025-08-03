@@ -46,9 +46,14 @@
     
     [Parameter] 
     public TreeItem Item { get; set; } = null!;
+    
+    [Parameter] 
+    public bool IsSelected { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        Item.IsSelected = IsSelected;
+        
         Tree?.RegisterItem(this);
         await UpdateFullState();
     }
@@ -104,7 +109,7 @@
     public void SelectItem()
     {
         if (Item.IsSelectable)
-            Tree?.SelectItem(this);
+            Tree?.SelectItem(Item);
     }
 
     private async Task SetItemExpanded(bool value)

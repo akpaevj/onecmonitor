@@ -2,7 +2,7 @@
     <MudStack Spacing="0" AlignItems="AlignItems.Start" StretchItems="StretchItems.All">
         @foreach (var item in Items)
         {
-            <TreeViewItem Item="item"/>
+            <TreeViewItem IsSelected="SelectedItem?.Id == item.Id" Item="item"/>
         }
     </MudStack>
 </CascadingValue>
@@ -18,18 +18,18 @@
     public EventCallback<IReadOnlyCollection<TreeItem>?> ItemsChanged { get; set; }
 
     [Parameter]
-    public TreeViewItem? SelectedItem { get; set; }
+    public TreeItem? SelectedItem { get; set; }
     [Parameter]
-    public EventCallback<TreeViewItem?> SelectedItemChanged { get; set; }
+    public EventCallback<TreeItem?> SelectedItemChanged { get; set; }
 
-    public async Task SelectItem(TreeViewItem item)
+    public async Task SelectItem(TreeItem item)
     {
         foreach (var treeViewItem in _leafs)
         {
-            treeViewItem.Item.IsSelected = treeViewItem == item;
+            treeViewItem.Item.IsSelected = treeViewItem.Item.Id == item.Id;
             await treeViewItem.UpdateVisualState();
         }
-        
+
         SelectedItem = item;
         await SelectedItemChanged.InvokeAsync(SelectedItem);
     }
@@ -42,7 +42,7 @@
             if (!treeViewItem.Item.IsSelected) 
                 continue;
             
-            SelectedItem = treeViewItem;
+            SelectedItem = treeViewItem.Item;
             await SelectedItemChanged.InvokeAsync(SelectedItem);
         }
     }
