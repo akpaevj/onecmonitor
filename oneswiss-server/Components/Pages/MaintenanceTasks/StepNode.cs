@@ -17,63 +17,6 @@ public class StepNode : NodeModel
         {
             Kind = kind
         };
-
-        switch (Step.Kind)
-        {
-            case MaintenanceStepKind.DeleteExtension:
-                Step.DeleteExtensionStep = new DeleteExtensionStep
-                {
-                    Id = Guid.NewGuid()
-                };
-                break;
-            case MaintenanceStepKind.ExecuteOneScript:
-                Step.ExecuteOneScriptStep = new ExecuteOneScriptStep
-                {
-                    Id = Guid.NewGuid()
-                };
-                break;
-            case MaintenanceStepKind.LockConnections:
-                Step.LockConnectionsStep = new LockConnectionsStep
-                {
-                    Id = Guid.NewGuid()
-                };
-                break;
-            case MaintenanceStepKind.LoadExtension:
-                Step.LoadExtensionStep = new LoadExtensionStep
-                {
-                    Id = Guid.NewGuid()
-                };
-                break;
-            case MaintenanceStepKind.UpdateConfiguration:
-                Step.UpdateConfigurationStep = new UpdateConfigurationStep
-                {
-                    Id = Guid.NewGuid()
-                };
-                break;
-            case MaintenanceStepKind.LoadConfiguration:
-                Step.LoadConfigurationStep = new LoadConfigurationStep
-                {
-                    Id = Guid.NewGuid()
-                };
-                break;
-            case MaintenanceStepKind.StartExternalDataProcessor:
-                Step.StartExternalDataProcessorStep = new StartExternalDataProcessorStep
-                {
-                    Id = Guid.NewGuid()
-                };
-                break;
-            case MaintenanceStepKind.CopyInfoBase:
-                Step.CopyInfoBaseStep = new CopyInfoBaseStep
-                {
-                    Id = Guid.NewGuid()
-                };
-                break;
-            case MaintenanceStepKind.CloseConnections:
-            case MaintenanceStepKind.UnlockConnections:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
     }
     
     public StepNode(MaintenanceStep step, Point? position = null) : base(position)

@@ -621,21 +621,21 @@ namespace OneSwiss.Server.Migrations
                 name: "InfoBaseMaintenanceTask",
                 columns: table => new
                 {
-                    InfoBaseId = table.Column<string>(type: "TEXT", nullable: false),
-                    MaintenanceTaskId = table.Column<string>(type: "TEXT", nullable: false)
+                    InfoBasesId = table.Column<string>(type: "TEXT", nullable: false),
+                    MaintenanceTasksId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_InfoBaseMaintenanceTask", x => new { x.InfoBaseId, x.MaintenanceTaskId });
+                    table.PrimaryKey("PK_InfoBaseMaintenanceTask", x => new { x.InfoBasesId, x.MaintenanceTasksId });
                     table.ForeignKey(
-                        name: "FK_InfoBaseMaintenanceTask_InfoBases_InfoBaseId",
-                        column: x => x.InfoBaseId,
+                        name: "FK_InfoBaseMaintenanceTask_InfoBases_InfoBasesId",
+                        column: x => x.InfoBasesId,
                         principalTable: "InfoBases",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_InfoBaseMaintenanceTask_MaintenanceTasks_MaintenanceTaskId",
-                        column: x => x.MaintenanceTaskId,
+                        name: "FK_InfoBaseMaintenanceTask_MaintenanceTasks_MaintenanceTasksId",
+                        column: x => x.MaintenanceTasksId,
                         principalTable: "MaintenanceTasks",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -646,6 +646,7 @@ namespace OneSwiss.Server.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
+                    StepId = table.Column<string>(type: "TEXT", nullable: false),
                     MaintenanceTaskId = table.Column<string>(type: "TEXT", nullable: false),
                     Kind = table.Column<int>(type: "INTEGER", nullable: false),
                     NodeKind = table.Column<int>(type: "INTEGER", nullable: false),
@@ -826,9 +827,9 @@ namespace OneSwiss.Server.Migrations
                 column: "FileId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_InfoBaseMaintenanceTask_MaintenanceTaskId",
+                name: "IX_InfoBaseMaintenanceTask_MaintenanceTasksId",
                 table: "InfoBaseMaintenanceTask",
-                column: "MaintenanceTaskId");
+                column: "MaintenanceTasksId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_InfoBases_ClusterId",

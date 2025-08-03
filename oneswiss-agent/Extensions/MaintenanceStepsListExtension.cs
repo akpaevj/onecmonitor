@@ -8,5 +8,5 @@ public static class MaintenanceStepsListExtension
         => items.SingleOrDefault(s => s.PreviousStepId is null)!;
     
     public static MaintenanceStepDto GetStep(this List<MaintenanceStepDto> items, Guid? stepId)
-        => items.SingleOrDefault(s => s.Id == stepId)!;
+        => items.SingleOrDefault(s => s.StepId == stepId)!;
 }

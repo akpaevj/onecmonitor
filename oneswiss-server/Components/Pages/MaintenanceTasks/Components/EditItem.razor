@@ -57,7 +57,7 @@
             {
                 <ItemsSelector T="InfoBase"
                                Class="w-100"
-                               @bind-SelectedValues="_selectedInfoBases"
+                               @bind-SelectedValues="_editor.Model!.InfoBases"
                                Items="@_editor.Context!.InfoBases.ToList()"
                                Title="Информационные базы"
                                NameSelector="item => item.Name"/>
@@ -86,7 +86,6 @@
 
 @code
 {
-    private List<InfoBase> _selectedInfoBases;
     private readonly Validator _validator = new();
     private EditDatabaseForm<MaintenanceTask> _editor = null!;
     private bool _editable;
@@ -122,7 +121,6 @@
     private async Task OnInitialize((MaintenanceTask Model, AppDbContext Context) valueTuple)
     {
         _editable = valueTuple.Model.StartDateTime == DateTime.MinValue;
-        UpdateSelectedInfoBases(valueTuple.Model);
         
         InitDiagram();
         
@@ -131,16 +129,11 @@
         
         ModelToDiagram(valueTuple.Model, valueTuple.Context);
     }
-
-    private void UpdateSelectedInfoBases(MaintenanceTask task)
-    {
-        _selectedInfoBases = task.InfoBases.Select(c => c.InfoBase).ToList();
-    }
     
     private static IQueryable<MaintenanceTask> ModelSelector(IQueryable<MaintenanceTask> arg)
         => arg
             .Include(c => c.Agents)
-            .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase)
+            .Include(c => c.InfoBases)
             .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
             .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep)
             .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep)
@@ -152,11 +145,6 @@
     
     private void BeforeValidation(MaintenanceTask obj)
     {
-        obj.InfoBases = _selectedInfoBases.Select(c => new InfoBaseMaintenanceTask
-        {
-            InfoBaseId = c.Id,
-            MaintenanceTaskId = obj.Id
-        }).ToList();
         obj.IsTemplate = IsTemplate;
         
         DiagramToModel(obj);
@@ -172,12 +160,9 @@
     private async Task InitModelFromTemplate(MaintenanceTask task, AppDbContext context)
     {
         // Запомним уже сформированный для модели id
-        var id = task.Id;
-        
         var template = (await context.MaintenanceTasks
-            .AsNoTracking()
             .Include(c => c.Agents)
-            .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase)
+            .Include(c => c.InfoBases)
             .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
             .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep)
             .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep)
@@ -187,59 +172,19 @@
             .Include(c => c.Steps).ThenInclude(c => c.DeleteExtensionStep)
             .Include(c => c.Steps).ThenInclude(c => c.LockConnectionsStep)
             .FirstOrDefaultAsync(c => c.Id == TemplateId))!;
-
-        task.Id = id;
+        
         task.Description = template.Description;
         task.IsTemplate = IsTemplate;
         task.CommonDestination = template.CommonDestination;
         task.Agents = template.Agents;
-        UpdateSelectedInfoBases(template);
-        task.Steps.AddRange(template.Steps);
-        
-        // Очистим все id, чтобы не перезатереть сам шаблон при записи
-        task.Steps.ForEach(c =>
-        {
-            var currentId = c.Id;
-            var newId = Guid.NewGuid();
-                
-            task.Steps.ForEach(i =>
-            {
-                if (i.PreviousStepId == currentId)
-                    i.PreviousStepId = newId;
-                    
-                if (i.LeftStepId == currentId)
-                    i.LeftStepId = newId;
-                    
-                if (i.RightStepId == currentId)
-                    i.RightStepId = newId;
+        task.InfoBases = template.InfoBases;
 
-                if (i.CopyInfoBaseStep != null)
-                    i.CopyInfoBaseStep.Id = Guid.NewGuid();
-                
-                if (i.DeleteExtensionStep != null)
-                    i.DeleteExtensionStep.Id = Guid.NewGuid();
-                
-                if (i.ExecuteOneScriptStep != null)
-                    i.ExecuteOneScriptStep.Id = Guid.NewGuid();
-                
-                if (i.LoadConfigurationStep != null)
-                    i.LoadConfigurationStep.Id = Guid.NewGuid();
-                
-                if (i.LoadExtensionStep != null)
-                    i.LoadExtensionStep.Id = Guid.NewGuid();
-                
-                if (i.LockConnectionsStep != null)
-                    i.LockConnectionsStep.Id = Guid.NewGuid();
-                
-                if (i.UpdateConfigurationStep != null)
-                    i.UpdateConfigurationStep.Id = Guid.NewGuid();
-                
-                if (i.StartExternalDataProcessorStep != null)
-                    i.StartExternalDataProcessorStep.Id = Guid.NewGuid();
-            });
-                
-            c.Id = newId;
-        });
+        var newSteps = template.Steps;
+        newSteps.ForEach(c => c.Id = Guid.Empty);
+            
+        await context.MaintenanceSteps.AddRangeAsync(newSteps);
+        
+        task.Steps.AddRange(newSteps);
     }
     
     private void InitDiagram()
@@ -276,7 +221,7 @@
             
             Diagram.Controls.AddFor(model).Add(new RemoveControl(0.5, 1));
 
-            if (stepNode.Step.Id != Guid.Empty) 
+            if (stepNode.Step.StepId != Guid.Empty) 
                 return;
             
             model.Changed += OnNodeChanged;
@@ -287,13 +232,7 @@
 
     private static void InitNewNode(StepNode node)
     {
-        node.Step.Id = Guid.NewGuid();
-
-        if (node.Step.Kind == MaintenanceStepKind.CopyInfoBase)
-            node.Step.CopyInfoBaseStep = new CopyInfoBaseStep
-            {
-                Id = Guid.NewGuid()
-            };
+        node.Step.StepId = Guid.NewGuid();
     }
     
     private void DiagramToModel(MaintenanceTask task)
@@ -326,18 +265,18 @@
                 var step2Node = step2!.Parent as StepNode;
 
                 if (step1.Alignment == PortAlignment.Left)
-                    step1Node!.Step.PreviousStepId = step2Node!.Step.Id;
+                    step1Node!.Step.PreviousStepId = step2Node!.Step.StepId;
                 else if (step1.Alignment == PortAlignment.TopRight)
-                    step1Node!.Step.LeftStepId = step2Node!.Step.Id;
+                    step1Node!.Step.LeftStepId = step2Node!.Step.StepId;
                 else if (step1.Alignment == PortAlignment.BottomRight)
-                    step1Node!.Step.RightStepId = step2Node!.Step.Id;
+                    step1Node!.Step.RightStepId = step2Node!.Step.StepId;
                 
                 if (step2.Alignment == PortAlignment.Left)
-                    step2Node!.Step.PreviousStepId = step1Node!.Step.Id;
+                    step2Node!.Step.PreviousStepId = step1Node!.Step.StepId;
                 else if (step2.Alignment == PortAlignment.TopRight)
-                    step2Node!.Step.LeftStepId = step1Node!.Step.Id;
+                    step2Node!.Step.LeftStepId = step1Node!.Step.StepId;
                 else if (step2.Alignment == PortAlignment.BottomRight)
-                    step2Node!.Step.RightStepId = step1Node!.Step.Id;
+                    step2Node!.Step.RightStepId = step1Node!.Step.StepId;
             }
 
             step.NodeKind = step is { LeftStepId: not null, RightStepId: not null } 
@@ -367,7 +306,7 @@
             if (step.PreviousStepId == null) 
                 continue;
             
-            var secondPort = GetSecondPort(step.Id);
+            var secondPort = GetSecondPort(step.StepId);
             Diagram.Links.Add(new LinkModel(secondPort, node.GetPort(PortAlignment.Left)!));
         }
 

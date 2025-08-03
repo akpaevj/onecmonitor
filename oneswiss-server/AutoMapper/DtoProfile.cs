@@ -56,7 +56,6 @@ public class DtoProfile : Profile
         CreateMap<MaintenanceStep, MaintenanceStepDto>().ReverseMap();
         
         CreateMap<MaintenanceTask, MaintenanceTaskDto>()
-            .ForMember(c => c.InfoBases, opt => opt.MapFrom(src => src.InfoBases.Select(c => c.InfoBase)))
             .ReverseMap();
         CreateMap<MaintenanceTaskLogItem, MaintenanceTaskLogItemDto>().ReverseMap();
     }

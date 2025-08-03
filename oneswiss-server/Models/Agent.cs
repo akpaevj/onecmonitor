@@ -11,7 +11,6 @@ namespace OneSwiss.Server.Models
         
         public virtual List<Cluster> Clusters { get; set; } = [];
         public virtual List<TechLogSeance> TechLogSeances { get; set; } = [];
-        [DeleteBehavior(DeleteBehavior.SetNull)]
         public virtual List<MaintenanceTask> MaintenanceTasks { get; set; } = [];
 
         public override bool Equals(object? obj)

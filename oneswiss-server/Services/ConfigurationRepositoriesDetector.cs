@@ -73,7 +73,6 @@ public class ConfigurationRepositoriesDetector(
                                         {
                                             await appDbContext.ConfigRepositoryUsers.AddAsync(new ConfigurationRepositoryUser
                                             {
-                                                Id = Guid.NewGuid(),
                                                 Name = configUser.Name,
                                                 InternalId = configUser.Id,
                                                 RepositoryId = id

@@ -105,13 +105,13 @@
 
             var data = await context.MaintenanceTasks
                 .AsNoTracking()
-                .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase)
+                .Include(c => c.InfoBases)
                 .Include(c => c.Steps)
                 .FirstOrDefaultAsync(c => c.Id == Id);
 
             var infoBasesCount = data!.InfoBases.Count;
 
-            _taskInfoBases = data!.InfoBases.Select(c => c.InfoBase).OrderBy(c => c.Name).ToList();
+            _taskInfoBases = data.InfoBases.OrderBy(c => c.Name).ToList();
             _infobaseLogItems = await context.MaintenanceTaskLogs
                 .AsNoTracking()
                 .Where(c => c.TaskId == data.Id && c.InfoBaseId != null)

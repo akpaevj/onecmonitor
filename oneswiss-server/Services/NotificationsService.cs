@@ -85,7 +85,6 @@ public class NotificationsService(IDbContextFactory<AppDbContext> dbContextFacto
             {
                 await dbContext.Notifications.AddAsync(new Notification
                 {
-                    Id = Guid.NewGuid(),
                     CreatedAt = DateTime.Now,
                     Type = NotificationType.Custom,
                     Recipient = recipient.SendTo,

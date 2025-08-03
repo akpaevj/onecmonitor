@@ -763,7 +763,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         using var batch = context.GetBatchDesigner();
         batch.UpdateConfiguration(
             filePath, 
-            context.InfoBase.Credentials?.User ?? "", 
+            context.InfoBase!.Credentials?.User ?? "", 
             context.InfoBase.Credentials?.Password ?? "", 
             context.AccessCode,
             true);

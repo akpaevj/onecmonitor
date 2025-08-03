@@ -8,6 +8,7 @@ namespace OneSwiss.Server.Models.MaintenanceTasks;
 
 public class MaintenanceStep : DatabaseObject
 {
+    public Guid StepId { get; set; }
     public Guid MaintenanceTaskId { get; set; }
     public MaintenanceStepKind Kind { get; set; }
     public MaintenanceStepNodeKind NodeKind { get; set; }
@@ -30,30 +31,30 @@ public class MaintenanceStep : DatabaseObject
 
     [ForeignKey(nameof(MaintenanceTaskId))]
     public MaintenanceTask MaintenanceTask { get; set; } = null!;
-    
+
     [ForeignKey(nameof(CopyInfoBaseStepId))]
-    public CopyInfoBaseStep? CopyInfoBaseStep { get; set; }
+    public CopyInfoBaseStep? CopyInfoBaseStep { get; set; } = new();
     
     [ForeignKey(nameof(ExecuteOneScriptStepId))]
-    public ExecuteOneScriptStep? ExecuteOneScriptStep { get; set; }
+    public ExecuteOneScriptStep? ExecuteOneScriptStep { get; set; } = new();
     
     [ForeignKey(nameof(StartExternalDataProcessorStepId))]
-    public StartExternalDataProcessorStep? StartExternalDataProcessorStep { get; set; }
+    public StartExternalDataProcessorStep? StartExternalDataProcessorStep { get; set; } = new();
     
     [ForeignKey(nameof(UpdateConfigurationStepId))]
-    public UpdateConfigurationStep? UpdateConfigurationStep { get; set; }
+    public UpdateConfigurationStep? UpdateConfigurationStep { get; set; } = new();
     
     [ForeignKey(nameof(LoadExtensionStepId))]
-    public LoadExtensionStep? LoadExtensionStep { get; set; }
+    public LoadExtensionStep? LoadExtensionStep { get; set; } = new();
     
     [ForeignKey(nameof(DeleteExtensionStepId))]
-    public DeleteExtensionStep? DeleteExtensionStep { get; set; }
+    public DeleteExtensionStep? DeleteExtensionStep { get; set; } = new();
     
     [ForeignKey(nameof(LoadConfigurationStepId))]
-    public LoadConfigurationStep? LoadConfigurationStep { get; set; }
+    public LoadConfigurationStep? LoadConfigurationStep { get; set; } = new();
     
     [ForeignKey(nameof(LockConnectionsStepId))]
-    public LockConnectionsStep? LockConnectionsStep { get; set; }
+    public LockConnectionsStep? LockConnectionsStep { get; set; } = new();
     
     public virtual List<MaintenanceTaskLogItem> Logs { get; set; } = [];
 }

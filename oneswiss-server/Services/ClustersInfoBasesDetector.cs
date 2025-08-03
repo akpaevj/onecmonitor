@@ -47,7 +47,6 @@ public class ClustersInfoBasesDetector(
                                 agentClusters.ExceptBy(dbClusters.Select(c => c.ClusterInternalId), i => i.Id).ToList().ForEach(c =>
                                 {
                                     var item = mapper.Map<Cluster>(c);
-                                    item.Id = Guid.NewGuid();
                                     item.AgentId = connection.AgentInstance!.Id;
                                     item.CredentialsId = defaultClusterAdminCredentials?.Id;
                                     
@@ -87,7 +86,6 @@ public class ClustersInfoBasesDetector(
                                         agentInfoBases.ExceptBy(dbInfoBases.Select(c => c.InfoBaseInternalId), i => i.Id).ToList().ForEach(c =>
                                         {
                                             var item = mapper.Map<InfoBase>(c);
-                                            item.Id = Guid.NewGuid();
                                             item.Name = item.InfoBaseName;
                                             item.ClusterId = cluster.Id;
                                             item.CredentialsId = defaultInfoBaseAdminCredentials?.Id;

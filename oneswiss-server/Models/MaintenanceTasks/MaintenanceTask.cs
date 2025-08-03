@@ -22,6 +22,6 @@ public class MaintenanceTask : DatabaseObject
     
     public virtual List<MaintenanceStep> Steps { get; set; } = [];
     public virtual List<Agent> Agents { get; set; } = [];
-    public virtual List<InfoBaseMaintenanceTask> InfoBases { get; set; } = [];
+    public virtual List<InfoBase> InfoBases { get; set; } = [];
     public virtual List<MaintenanceTaskLogItem> Logs { get; set; } = [];
 }
