@@ -45,9 +45,17 @@ public class DtoProfile : Profile
             .ForMember(c => c.InfoBaseInternalId, opt => opt.MapFrom(src => src.Id))
             .ForMember(c => c.InfoBaseName, opt => opt.MapFrom(src => src.Name));
 
+        CreateMap<CopyInfoBaseStep, CopyInfoBaseStepDto>().ReverseMap();
+        CreateMap<LoadConfigurationStep, LoadConfigurationStepDto>().ReverseMap();
+        CreateMap<LoadExtensionStep, LoadExtensionStepDto>().ReverseMap();
+        CreateMap<UpdateConfigurationStep, UpdateConfigurationStepDto>().ReverseMap();
+        CreateMap<ExecuteOneScriptStep, ExecuteOneScriptStepDto>().ReverseMap();
+        CreateMap<StartExternalDataProcessorStep, StartExternalDataProcessorStepDto>().ReverseMap();
+        CreateMap<LockConnectionsStep, LockConnectionsStepDto>().ReverseMap();
+        CreateMap<DeleteExtensionStep, DeleteExtensionStepDto>().ReverseMap();
         CreateMap<MaintenanceStep, MaintenanceStepDto>().ReverseMap();
+        
         CreateMap<MaintenanceTask, MaintenanceTaskDto>()
-            .ForMember(c => c.InfoBases, opt => opt.MapFrom(src => src.InfoBases.Select(c => c.InfoBase)))
             .ReverseMap();
         CreateMap<MaintenanceTaskLogItem, MaintenanceTaskLogItemDto>().ReverseMap();
     }

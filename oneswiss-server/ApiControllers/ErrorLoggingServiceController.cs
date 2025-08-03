@@ -69,7 +69,6 @@ public class ErrorLoggingServiceController(
                 // Сначала найдем отчет с таким же хешем
                 var model = new ErrorReport
                 {
-                    Id = Guid.NewGuid(),
                     CreatedAt = DateTime.Now,
                     Report = reportData,
                     Hash = GetHash(report.ErrorInfo.SystemErrorInfo.ClientStackHash, report.ErrorInfo.ApplicationErrorInfo.StackHash)

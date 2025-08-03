@@ -10,8 +10,6 @@ namespace OneSwiss.Server.Components.Pages.MaintenanceTasks;
 public class StepNode : NodeModel
 {
     public MaintenanceStep Step { get; set; }
-    public List<File> Files { get; set; } = [];
-    public List<ConfigurationRepository> Repositories { get; set; } = [];
 
     public StepNode(MaintenanceStepKind kind, Point? position = null) : base(position)
     {

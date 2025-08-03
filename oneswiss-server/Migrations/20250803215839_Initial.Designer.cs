@@ -10,7 +10,7 @@ using OneSwiss.Server;
 namespace OneSwiss.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250801085631_Initial")]
+    [Migration("20250803215839_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -18,6 +18,21 @@ namespace OneSwiss.Server.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.7");
+
+            modelBuilder.Entity("AgentMaintenanceTask", b =>
+                {
+                    b.Property<string>("AgentsId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MaintenanceTasksId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("AgentsId", "MaintenanceTasksId");
+
+                    b.HasIndex("MaintenanceTasksId");
+
+                    b.ToTable("AgentMaintenanceTask");
+                });
 
             modelBuilder.Entity("AgentTechLogSeance", b =>
                 {
@@ -32,6 +47,21 @@ namespace OneSwiss.Server.Migrations
                     b.HasIndex("TechLogSeancesId");
 
                     b.ToTable("AgentTechLogSeance");
+                });
+
+            modelBuilder.Entity("InfoBaseMaintenanceTask", b =>
+                {
+                    b.Property<string>("InfoBasesId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MaintenanceTasksId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("InfoBasesId", "MaintenanceTasksId");
+
+                    b.HasIndex("MaintenanceTasksId");
+
+                    b.ToTable("InfoBaseMaintenanceTask");
                 });
 
             modelBuilder.Entity("LogTemplateTechLogSeance", b =>
@@ -205,6 +235,31 @@ namespace OneSwiss.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Credentials");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.CustomNotification", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationRecipientId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NotificationRecipientId");
+
+                    b.ToTable("CustomNotifications");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.Dbms", b =>
@@ -402,35 +457,104 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("LogTemplates");
                 });
 
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.InfoBaseMaintenanceTask", b =>
-                {
-                    b.Property<string>("InfoBaseId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("MaintenanceTaskId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("InfoBaseId", "MaintenanceTaskId");
-
-                    b.HasIndex("MaintenanceTaskId");
-
-                    b.ToTable("InfoBaseMaintenanceTask");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.CopyInfoBaseStep", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("AccessCode")
-                        .IsRequired()
-                        .HasMaxLength(20)
+                    b.Property<string>("DestinationCredentialsId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("CommandLineArguments")
+                    b.Property<string>("DestinationInfoBaseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceCredentialsId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceInfoBaseId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DestinationCredentialsId");
+
+                    b.HasIndex("DestinationInfoBaseId");
+
+                    b.HasIndex("SourceCredentialsId");
+
+                    b.HasIndex("SourceInfoBaseId");
+
+                    b.ToTable("CopyInfoBaseSteps");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.DeleteExtensionStep", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExtensionName")
                         .IsRequired()
-                        .HasMaxLength(1000)
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeleteExtensionSteps");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.ExecuteOneScriptStep", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("DebugMode")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ExecutablePath")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileId");
+
+                    b.ToTable("ExecuteOneScriptSteps");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.LoadConfigurationStep", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConfigurationRepositoryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("FromConfigRepository")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConfigurationRepositoryId");
+
+                    b.HasIndex("FileId");
+
+                    b.ToTable("LoadConfigurationSteps");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.LoadExtensionStep", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ConfigurationRepositoryId")
@@ -447,19 +571,68 @@ namespace OneSwiss.Server.Migrations
                     b.Property<bool>("FromConfigRepository")
                         .HasColumnType("INTEGER");
 
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConfigurationRepositoryId");
+
+                    b.HasIndex("FileId");
+
+                    b.ToTable("LoadExtensionSteps");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.LockConnectionsStep", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AccessCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LockConnectionsSteps");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CopyInfoBaseStepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeleteExtensionStepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExecuteOneScriptStepId")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Kind")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LeftStepId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("MaintenanceTaskId")
-                        .IsRequired()
+                    b.Property<string>("LoadConfigurationStepId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Message")
+                    b.Property<string>("LoadExtensionStepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LockConnectionsStepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MaintenanceTaskId")
                         .IsRequired()
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("NodeKind")
@@ -477,13 +650,35 @@ namespace OneSwiss.Server.Migrations
                     b.Property<string>("RightStepId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("StartExternalDataProcessorStepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StepId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdateConfigurationStepId")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ConfigurationRepositoryId");
+                    b.HasIndex("CopyInfoBaseStepId");
 
-                    b.HasIndex("FileId");
+                    b.HasIndex("DeleteExtensionStepId");
+
+                    b.HasIndex("ExecuteOneScriptStepId");
+
+                    b.HasIndex("LoadConfigurationStepId");
+
+                    b.HasIndex("LoadExtensionStepId");
+
+                    b.HasIndex("LockConnectionsStepId");
 
                     b.HasIndex("MaintenanceTaskId");
+
+                    b.HasIndex("StartExternalDataProcessorStepId");
+
+                    b.HasIndex("UpdateConfigurationStepId");
 
                     b.ToTable("MaintenanceSteps");
                 });
@@ -493,6 +688,9 @@ namespace OneSwiss.Server.Migrations
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("CommonDestination")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -556,6 +754,38 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("MaintenanceTaskLogs");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.StartExternalDataProcessorStep", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileId");
+
+                    b.ToTable("StartExternalDataProcessorSteps");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.UpdateConfigurationStep", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileId");
+
+                    b.ToTable("UpdateConfigurationSteps");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.Notification", b =>
                 {
                     b.Property<string>("Id")
@@ -571,6 +801,10 @@ namespace OneSwiss.Server.Migrations
 
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
+
+                    b.PrimitiveCollection<string>("CustomNotificationsKeys")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Message")
                         .IsRequired()
@@ -705,6 +939,21 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("TelegramBotSettings");
                 });
 
+            modelBuilder.Entity("AgentMaintenanceTask", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.Agent", null)
+                        .WithMany()
+                        .HasForeignKey("AgentsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", null)
+                        .WithMany()
+                        .HasForeignKey("MaintenanceTasksId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AgentTechLogSeance", b =>
                 {
                     b.HasOne("OneSwiss.Server.Models.Agent", null)
@@ -716,6 +965,21 @@ namespace OneSwiss.Server.Migrations
                     b.HasOne("OneSwiss.Server.Models.TechLogSeance", null)
                         .WithMany()
                         .HasForeignKey("TechLogSeancesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("InfoBaseMaintenanceTask", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.InfoBase", null)
+                        .WithMany()
+                        .HasForeignKey("InfoBasesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", null)
+                        .WithMany()
+                        .HasForeignKey("MaintenanceTasksId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -782,6 +1046,13 @@ namespace OneSwiss.Server.Migrations
                     b.Navigation("Repository");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.CustomNotification", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.NotificationRecipient", null)
+                        .WithMany("CustomNotifications")
+                        .HasForeignKey("NotificationRecipientId");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.EventLogSettings", b =>
                 {
                     b.HasOne("OneSwiss.Server.Models.Credentials", "Credentials")
@@ -815,26 +1086,43 @@ namespace OneSwiss.Server.Migrations
                     b.Navigation("Credentials");
                 });
 
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.InfoBaseMaintenanceTask", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.CopyInfoBaseStep", b =>
                 {
-                    b.HasOne("OneSwiss.Server.Models.InfoBase", "InfoBase")
-                        .WithMany("MaintenanceTasks")
-                        .HasForeignKey("InfoBaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("OneSwiss.Server.Models.Credentials", "DestinationCredentials")
+                        .WithMany()
+                        .HasForeignKey("DestinationCredentialsId");
 
-                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", "MaintenanceTask")
-                        .WithMany("InfoBases")
-                        .HasForeignKey("MaintenanceTaskId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("OneSwiss.Server.Models.InfoBase", "DestinationInfoBase")
+                        .WithMany()
+                        .HasForeignKey("DestinationInfoBaseId");
 
-                    b.Navigation("InfoBase");
+                    b.HasOne("OneSwiss.Server.Models.Credentials", "SourceCredentials")
+                        .WithMany()
+                        .HasForeignKey("SourceCredentialsId");
 
-                    b.Navigation("MaintenanceTask");
+                    b.HasOne("OneSwiss.Server.Models.InfoBase", "SourceInfoBase")
+                        .WithMany()
+                        .HasForeignKey("SourceInfoBaseId");
+
+                    b.Navigation("DestinationCredentials");
+
+                    b.Navigation("DestinationInfoBase");
+
+                    b.Navigation("SourceCredentials");
+
+                    b.Navigation("SourceInfoBase");
                 });
 
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.ExecuteOneScriptStep", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.File", "File")
+                        .WithMany()
+                        .HasForeignKey("FileId");
+
+                    b.Navigation("File");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.LoadConfigurationStep", b =>
                 {
                     b.HasOne("OneSwiss.Server.Models.ConfigurationRepository", "ConfigurationRepository")
                         .WithMany()
@@ -844,17 +1132,83 @@ namespace OneSwiss.Server.Migrations
                         .WithMany()
                         .HasForeignKey("FileId");
 
+                    b.Navigation("ConfigurationRepository");
+
+                    b.Navigation("File");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.LoadExtensionStep", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.ConfigurationRepository", "ConfigurationRepository")
+                        .WithMany()
+                        .HasForeignKey("ConfigurationRepositoryId");
+
+                    b.HasOne("OneSwiss.Server.Models.File", "File")
+                        .WithMany()
+                        .HasForeignKey("FileId");
+
+                    b.Navigation("ConfigurationRepository");
+
+                    b.Navigation("File");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.CopyInfoBaseStep", "CopyInfoBaseStep")
+                        .WithMany()
+                        .HasForeignKey("CopyInfoBaseStepId");
+
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.DeleteExtensionStep", "DeleteExtensionStep")
+                        .WithMany()
+                        .HasForeignKey("DeleteExtensionStepId");
+
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.ExecuteOneScriptStep", "ExecuteOneScriptStep")
+                        .WithMany()
+                        .HasForeignKey("ExecuteOneScriptStepId");
+
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.LoadConfigurationStep", "LoadConfigurationStep")
+                        .WithMany()
+                        .HasForeignKey("LoadConfigurationStepId");
+
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.LoadExtensionStep", "LoadExtensionStep")
+                        .WithMany()
+                        .HasForeignKey("LoadExtensionStepId");
+
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.LockConnectionsStep", "LockConnectionsStep")
+                        .WithMany()
+                        .HasForeignKey("LockConnectionsStepId");
+
                     b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", "MaintenanceTask")
                         .WithMany("Steps")
                         .HasForeignKey("MaintenanceTaskId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ConfigurationRepository");
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.StartExternalDataProcessorStep", "StartExternalDataProcessorStep")
+                        .WithMany()
+                        .HasForeignKey("StartExternalDataProcessorStepId");
 
-                    b.Navigation("File");
+                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.UpdateConfigurationStep", "UpdateConfigurationStep")
+                        .WithMany()
+                        .HasForeignKey("UpdateConfigurationStepId");
+
+                    b.Navigation("CopyInfoBaseStep");
+
+                    b.Navigation("DeleteExtensionStep");
+
+                    b.Navigation("ExecuteOneScriptStep");
+
+                    b.Navigation("LoadConfigurationStep");
+
+                    b.Navigation("LoadExtensionStep");
+
+                    b.Navigation("LockConnectionsStep");
 
                     b.Navigation("MaintenanceTask");
+
+                    b.Navigation("StartExternalDataProcessorStep");
+
+                    b.Navigation("UpdateConfigurationStep");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTaskLogItem", b =>
@@ -879,6 +1233,24 @@ namespace OneSwiss.Server.Migrations
                     b.Navigation("Step");
 
                     b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.StartExternalDataProcessorStep", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.File", "File")
+                        .WithMany()
+                        .HasForeignKey("FileId");
+
+                    b.Navigation("File");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.UpdateConfigurationStep", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.File", "File")
+                        .WithMany()
+                        .HasForeignKey("FileId");
+
+                    b.Navigation("File");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.TechLogSettings", b =>
@@ -920,11 +1292,6 @@ namespace OneSwiss.Server.Migrations
                     b.Navigation("InfoBases");
                 });
 
-            modelBuilder.Entity("OneSwiss.Server.Models.InfoBase", b =>
-                {
-                    b.Navigation("MaintenanceTasks");
-                });
-
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
                 {
                     b.Navigation("Logs");
@@ -932,11 +1299,14 @@ namespace OneSwiss.Server.Migrations
 
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
                 {
-                    b.Navigation("InfoBases");
-
                     b.Navigation("Logs");
 
                     b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.NotificationRecipient", b =>
+                {
+                    b.Navigation("CustomNotifications");
                 });
 #pragma warning restore 612, 618
         }

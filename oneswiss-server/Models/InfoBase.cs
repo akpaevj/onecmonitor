@@ -22,6 +22,5 @@ public class InfoBase : DatabaseObject
     [DeleteBehavior(DeleteBehavior.SetNull)]
     public virtual Credentials? Credentials { get; set; }
     public virtual Cluster Cluster { get; set; } = null!;
-    
-    public virtual List<InfoBaseMaintenanceTask> MaintenanceTasks { get; set; } = [];
+    public virtual List<MaintenanceTask> MaintenanceTasks { get; set; } = [];
 }

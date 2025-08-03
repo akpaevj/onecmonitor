@@ -20,7 +20,7 @@ public class RasServiceWrapper(RasService service) : AutoContext<RasServiceWrapp
     public string RagentHost => service.RagentHost;
 
     [ContextProperty("ПортRagent", "RagentPort", CanWrite = false)]
-    public int RagentPort => service.Port;
+    public int RagentPort => service.RagentPort;
 
     [ContextProperty("Порт", "Port", CanWrite = false)]
     public int Port => service.Port;

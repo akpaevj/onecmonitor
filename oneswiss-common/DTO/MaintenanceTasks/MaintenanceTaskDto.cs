@@ -3,17 +3,15 @@ using OneScript.Contexts;
 
 namespace OneSwiss.Common.DTO.MaintenanceTasks;
 
-[ContextClass("ЗадачаОбслуживания", "MaintenanceTasks")]
 [MessagePackObject]
 public class MaintenanceTaskDto
 {
-    [ContextProperty("Идентификатор", "Id")]
     [Key(0)]
     public Guid Id { get; set; } = Guid.Empty;
-    [ContextProperty("Шаги", "Steps")]
     [Key(1)]
+    public bool CommonDestination { get; set; }
+    [Key(2)]
     public List<MaintenanceStepDto> Steps { get; set; } = [];
-    [ContextProperty("ИнформационныеБазы", "InfoBases")]
-    [Key(2)] 
+    [Key(3)] 
     public List<InfoBaseDto> InfoBases { get; set; } = [];
 }

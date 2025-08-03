@@ -18,17 +18,17 @@
 <MudGrid>
     <MudItem xs="12" md="3">
         <MudPaper Class="pa-4">
-            <TreeView @bind-SelectedItem="_selectedItem" @bind-Items="_items"/>
+            <TreeView @ref="_tree" @bind-SelectedItem="_selectedItem" @bind-Items="_items"/>
         </MudPaper>
     </MudItem>
     <MudItem xs="12" md="9">
-        @if (_selectedItem is { Item.DynamicComponentType: not null })
+        @if (_selectedItem is { DynamicComponentType: not null })
         {
             <DynamicComponent 
                 @ref="_dynamicComponent" 
-                @key="_selectedItem.Item.Id" 
-                Type="_selectedItem.Item.DynamicComponentType" 
-                Parameters="_selectedItem.Item.Parameters"/>
+                @key="_selectedItem.Id" 
+                Type="_selectedItem.DynamicComponentType" 
+                Parameters="_selectedItem.Parameters"/>
         }
     </MudItem>
 </MudGrid>
@@ -37,8 +37,9 @@
 {
     HubConnection? _hubConnection;
     private IReadOnlyCollection<TreeItem> _items = [];
-    private TreeViewItem? _selectedItem;
-    private DynamicComponent _dynamicComponent;
+    private TreeItem? _selectedItem;
+    private DynamicComponent? _dynamicComponent;
+    private TreeView _tree;
 
     protected override async Task OnInitializedAsync()
     {
@@ -60,6 +61,10 @@
     private async Task UpdateItems()
     {
         _items = await LoadAgents();
+        _selectedItem = _items.FirstOrDefault();
+
+        if (_dynamicComponent?.Instance is AgentInfo agentInfoView)
+            await agentInfoView.UpdateState();
     }
     
     private async Task<List<TreeItem>> LoadAgents()

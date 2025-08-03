@@ -1,7 +1,13 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+
 namespace OneSwiss.Server.Models;
 
 public abstract class DatabaseObject : IHasId
 {
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    [Key]
     public Guid Id { get; set; }
 
     private bool Equals(DatabaseObject other)
