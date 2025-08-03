@@ -1,6 +1,7 @@
 using System.CommandLine.Parsing;
 using System.Text.RegularExpressions;
 using OneSwiss.Agent.Extensions;
+using OneSwiss.Agent.Helpers;
 using OneSwiss.Agent.Oscript;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.DTO.MaintenanceTasks;
@@ -56,12 +57,96 @@ public class MaintenanceTaskExecutor : BackgroundService
 
             try
             {
-                await StartMaintenanceTask(task, stoppingToken);
+                if (task.CommonDestination)
+                    await StartCommonDestinationMaintenanceTask(task, stoppingToken);
+                else
+                    await StartMaintenanceTask(task, stoppingToken);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, $"Ошибка обработки задания обслуживания: {e.Message}");
             }
+        }
+    }
+    
+    private async Task StartCommonDestinationMaintenanceTask(MaintenanceTaskDto task, CancellationToken cancellationToken)
+    {
+        await SendTaskLog(task, "Начало выполнения задачи", false, false, cancellationToken);
+
+        try
+        {
+            var v8Files = await SaveTaskV8Files(task, cancellationToken);
+            
+            var log = new List<MaintenanceTaskLogItemDto>();
+
+            var context = new MaintenanceStepContext
+            {
+                Task = task,
+                Log = log,
+                Step = task.Steps.GetRootStep(),
+                Files = v8Files
+            };
+
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    if (log.Count > 0)
+                    {
+                        await SendStepLog(log, cancellationToken);
+                        log.Clear();
+                    }
+
+                    if (context.Step.NodeKind == MaintenanceStepNodeKind.TryCatch)
+                    {
+                        try
+                        {
+                            await HandleTaskStepNode(context, cancellationToken);
+
+                            if (context.Step.LeftStepId is not null)
+                                context.Step = task.Steps.GetStep(context.Step.LeftStepId);
+                            else
+                                break;
+                        }
+                        catch (Exception e)
+                        {
+                            AddStepLogItem(context, e.ToString(), true);
+
+                            if (context.Step.RightStepId is not null)
+                                context.Step = task.Steps.GetStep(context.Step.RightStepId);
+                            else
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        await HandleTaskStepNode(context, cancellationToken);
+
+                        if (context.Step.LeftStepId is not null)
+                            context.Step = task.Steps.GetStep(context.Step.LeftStepId);
+                        else
+                            break;
+                    }
+                }
+
+                AddStepLogItem(context, "Завершено", false, true);
+                await SendStepLog(log, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                AddStepLogItem(context, e.ToString(), true, true);
+                await SendStepLog(log, cancellationToken);
+            }
+            finally
+            {
+                DeleteV8Files(context.Files, true);
+            }
+            
+            await SendTaskLog(task, "Завершение выполнения задачи", false, true, cancellationToken);
+        }
+        catch (Exception e)
+        {
+            await SendTaskLog(task, e.ToString(), true, true, cancellationToken);
         }
     }
 
@@ -140,7 +225,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                         {
                             try
                             {
-                                await HandleTaskStepNode(context);
+                                await HandleTaskStepNode(context, stoppingToken);
 
                                 if (context.Step.LeftStepId is not null)
                                     context.Step = task.Steps.GetStep(context.Step.LeftStepId);
@@ -159,7 +244,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                         }
                         else
                         {
-                            await HandleTaskStepNode(context);
+                            await HandleTaskStepNode(context, stoppingToken);
 
                             if (context.Step.LeftStepId is not null)
                                 context.Step = task.Steps.GetStep(context.Step.LeftStepId);
@@ -224,7 +309,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         return result;
     }
 
-    private async Task HandleTaskStepNode(MaintenanceStepContext context)
+    private async Task HandleTaskStepNode(MaintenanceStepContext context, CancellationToken cancellationToken)
     {
         AddStepLogItem(context, $"Обработка шага \"{context.Step.Kind.GetDisplay()}\"");
 
@@ -257,6 +342,9 @@ public class MaintenanceTaskExecutor : BackgroundService
             case MaintenanceStepKind.ExecuteOneScript:
                 ExecuteOneScript(context);
                 break;
+            case MaintenanceStepKind.CopyInfoBase:
+                await CopyInfoBase(context, cancellationToken);
+                break;
             default:
                 throw new Exception($"Неизвестный тип шага \"{context.Step.Kind.GetDisplay()}\"");
         }
@@ -271,7 +359,7 @@ public class MaintenanceTaskExecutor : BackgroundService
             IsError = isError,
             IsFinish = isFinish,
             TimeStamp = DateTime.Now,
-            InfoBaseId = context.InfoBase.Id,
+            InfoBaseId = context.InfoBase?.Id,
             StepId = context.Step.Id,
             TaskId = context.Task.Id
         });
@@ -300,17 +388,27 @@ public class MaintenanceTaskExecutor : BackgroundService
         await using var scope = _serviceProvider.CreateAsyncScope();
         using var downloader = scope.ServiceProvider.GetRequiredService<FilesDownloader>();
 
-        var filesToDownload = task.Steps
-            .Where(c => c.File is not null)
-            .Select(c => c.File!)
-            .DistinctBy(c => c.Id)
-            .ToList();
+        var filesToDownload = new List<FileDto>();
+
+        foreach (var maintenanceStepDto in task.Steps)
+        {
+            if (maintenanceStepDto.Kind == MaintenanceStepKind.ExecuteOneScript && !maintenanceStepDto.ExecuteOneScriptStep!.DebugMode)
+                filesToDownload.Add(maintenanceStepDto.ExecuteOneScriptStep!.File);
+            else if (maintenanceStepDto.Kind == MaintenanceStepKind.StartExternalDataProcessor)
+                filesToDownload.Add(maintenanceStepDto.StartExternalDataProcessorStep!.File);
+            else if (maintenanceStepDto.Kind == MaintenanceStepKind.UpdateConfiguration)
+                filesToDownload.Add(maintenanceStepDto.UpdateConfigurationStep!.File);
+            else if (maintenanceStepDto.Kind == MaintenanceStepKind.LoadConfiguration && !maintenanceStepDto.LoadExtensionStep!.FromConfigRepository)
+                filesToDownload.Add(maintenanceStepDto.LoadConfigurationStep!.File!);
+            else  if (maintenanceStepDto.Kind == MaintenanceStepKind.LoadExtension && !maintenanceStepDto.LoadExtensionStep!.FromConfigRepository)
+                filesToDownload.Add(maintenanceStepDto.LoadExtensionStep!.File!);
+        }
 
         if (filesToDownload.Count == 0)
             return [];
         
         await SendTaskLog(task, "Загрузка файлов для выполнения шагов", false, false, cancellationToken);
-        var result = await downloader.Download(_serverConnection, filesToDownload, cancellationToken);
+        var result = await downloader.Download(_serverConnection, filesToDownload.DistinctBy(c => c.Id).ToList(), cancellationToken);
         await SendTaskLog(task, "Загрузка файлов для выполнения шагов завершена", false, false, cancellationToken);
 
         return result;
@@ -319,18 +417,41 @@ public class MaintenanceTaskExecutor : BackgroundService
     private async Task DumpConfigRepositories(Dictionary<Guid, string> files, MaintenanceTaskDto task, 
         CancellationToken cancellationToken)
     {
-        var fromRepsSteps = task.Steps.Where(c => c.FromConfigRepository).ToList();
+        var fromRepsSteps = task.Steps.Where(c =>
+        {
+            switch (c.Kind)
+            {
+                case MaintenanceStepKind.LoadConfiguration when c.LoadConfigurationStep!.FromConfigRepository:
+                case MaintenanceStepKind.LoadExtension when c.LoadExtensionStep!.FromConfigRepository:
+                    return true;
+                default:
+                    return false;
+            }
+        })
+        .Select(c =>
+        {
+            switch (c.Kind)
+            {
+                case MaintenanceStepKind.LoadConfiguration when c.LoadConfigurationStep!.FromConfigRepository:
+                    return (Step: c, c.LoadConfigurationStep!.ConfigurationRepository);
+                case MaintenanceStepKind.LoadExtension when c.LoadExtensionStep!.FromConfigRepository:
+                    return (Step: c, c.LoadExtensionStep!.ConfigurationRepository);
+                default:
+                    throw new NotImplementedException();
+            }
+        }).ToList();
+        
         if (fromRepsSteps.Count == 0)
             return;
         
         await SendTaskLog(task, "Выгрузка конфигураций из хранилищ", false, false, cancellationToken);
         
-        Parallel.ForEach(task.Steps.Where(c => c.FromConfigRepository), step =>
+        Parallel.ForEach(fromRepsSteps, stepInfo =>
         {
-            var isExtension = step.Kind == MaintenanceStepKind.LoadExtension;
+            var isExtension = stepInfo.Step.Kind == MaintenanceStepKind.LoadExtension;
             var extension = isExtension ? "cfe" : "cf";
             
-            var crServer = _v8ServicesProvider.GetCrServerForPort(step.ConfigurationRepository!.Port);
+            var crServer = _v8ServicesProvider.GetCrServerForPort(stepInfo.ConfigurationRepository!.Port);
             var tempIbPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 
             try
@@ -339,16 +460,16 @@ public class MaintenanceTaskExecutor : BackgroundService
                 OnecV8BatchMode.CreateFileInfoBase(crServer.Platform, tempIbPath);
 
                 var configPath = Path.Join(Path.GetTempPath(), $"{Guid.NewGuid()}.{extension}");
-                var address = $"tcp://localhost:{crServer.Port}/{step.ConfigurationRepository.Name}";
+                var address = $"tcp://localhost:{crServer.Port}/{stepInfo.ConfigurationRepository.Name}";
 
                 using var batch = OnecV8BatchMode.CreateDesignerBatch(crServer.Platform, tempIbPath);
                 batch.DumpConfigRepository(
                     configPath,
                     address,
-                    step.ConfigurationRepository.Credentials!.User,
-                    step.ConfigurationRepository.Credentials!.Password);
-
-                step.File = new FileDto
+                    stepInfo.ConfigurationRepository.Credentials!.User,
+                    stepInfo.ConfigurationRepository.Credentials!.Password);
+                
+                var file = new FileDto
                 {
                     Id = Guid.NewGuid(),
                     Name = address,
@@ -358,8 +479,12 @@ public class MaintenanceTaskExecutor : BackgroundService
                     IsExtension = isExtension,
                     Length = new FileInfo(configPath).Length
                 };
-
-                files.Add(step.File.Id, configPath);
+                files.Add(file.Id, configPath);
+                
+                if (stepInfo.Step.Kind == MaintenanceStepKind.LoadConfiguration)
+                    stepInfo.Step.LoadConfigurationStep!.File = file;
+                else if (stepInfo.Step.Kind == MaintenanceStepKind.LoadExtension)
+                    stepInfo.Step.LoadExtensionStep!.File = file;
             }
             finally
             {
@@ -401,22 +526,22 @@ public class MaintenanceTaskExecutor : BackgroundService
     private static async Task LockConnections(MaintenanceStepContext context)
     {
         await context.Rac.BlockConnections(
-            context.InfoBase.Cluster.ClusterInternalId, 
+            context.InfoBase!.Cluster.ClusterInternalId, 
             context.InfoBase.InfoBaseInternalId,
-            context.Step.AccessCode,
-            context.Step.Message,
+            context.Step.LockConnectionsStep!.AccessCode,
+            context.Step.LockConnectionsStep!.Message,
             context.InfoBase.Cluster.Credentials?.User ?? "",
             context.InfoBase.Cluster.Credentials?.Password ?? "",
             context.InfoBase.Credentials?.User ?? "",
             context.InfoBase.Credentials?.Password ?? "");
         
-        context.AccessCode = context.Step.AccessCode;
+        context.AccessCode = context.Step.LockConnectionsStep.AccessCode;
     }
     
     private static async Task CloseConnections(MaintenanceStepContext context)
     {
         var sessions = await context.Rac.GetInfoBaseSessions(
-            context.InfoBase.Cluster.ClusterInternalId, 
+            context.InfoBase!.Cluster.ClusterInternalId, 
             context.InfoBase.InfoBaseInternalId,
             context.InfoBase.Cluster.Credentials?.User ?? "",
             context.InfoBase.Cluster.Credentials?.Password ?? "",
@@ -447,7 +572,7 @@ public class MaintenanceTaskExecutor : BackgroundService
     private static async Task UnlockConnections(MaintenanceStepContext context)
     {
         await context.Rac.UnblockConnections(
-            context.InfoBase.Cluster.ClusterInternalId, 
+            context.InfoBase!.Cluster.ClusterInternalId, 
             context.InfoBase.InfoBaseInternalId,
             context.InfoBase.Cluster.Credentials?.User ?? "",
             context.InfoBase.Cluster.Credentials?.Password ?? "",
@@ -457,14 +582,14 @@ public class MaintenanceTaskExecutor : BackgroundService
     
     private static async Task LoadExtension(MaintenanceStepContext context)
     {
-        var filePath = context.Files[context.Step.File!.Id];
+        var filePath = context.Files[context.Step.LoadExtensionStep!.File!.Id];
 
         if (context.UseDesignerAgent)
         {
-            await context.DesignerAgentClient!.LoadExtension(Path.GetFileName(filePath), context.Step.ExtensionName);
-            AddStepLogItem(context, $"Загрузка расширения \"{context.Step.ExtensionName}\" выполнена");
+            await context.DesignerAgentClient!.LoadExtension(Path.GetFileName(filePath), context.Step.LoadExtensionStep.ExtensionName);
+            AddStepLogItem(context, $"Загрузка расширения \"{context.Step.LoadExtensionStep.ExtensionName}\" выполнена");
             
-            context.DesignerAgentClient!.UpdateDbCfgExtension(context.Step.ExtensionName);
+            context.DesignerAgentClient!.UpdateDbCfgExtension(context.Step.LoadExtensionStep.ExtensionName);
             await context.DesignerAgentClient.ReadMessagesTillSuccess(message =>
                 LogDesignerAgentMessage(context, message));
         }
@@ -472,9 +597,9 @@ public class MaintenanceTaskExecutor : BackgroundService
         {
             using var batch = context.GetBatchDesigner();
             batch.LoadExtension(
-                context.Step.ExtensionName, 
+                context.Step.LoadExtensionStep.ExtensionName, 
                 filePath, 
-                context.InfoBase.Credentials?.User ?? "", 
+                context.InfoBase!.Credentials?.User ?? "", 
                 context.InfoBase.Credentials?.Password ?? "", 
                 context.AccessCode,
                 true);
@@ -485,10 +610,23 @@ public class MaintenanceTaskExecutor : BackgroundService
     
     private void ExecuteOneScript(MaintenanceStepContext context)
     {
-        var scriptPath = Directory.CreateTempSubdirectory().FullName;
+        string scriptPath;
+        string executable;
+
+        if (context.Step.ExecuteOneScriptStep!.DebugMode)
+        {
+            executable = context.Step.ExecuteOneScriptStep!.ExecutablePath;
+            scriptPath = Path.GetDirectoryName(executable)!;
+        }
+        else
+        {
+            scriptPath = Directory.CreateTempSubdirectory().FullName;
         
-        var filePath = context.Files[context.Step.File!.Id];
-        var opmMetadata = OneScriptPackageReader.Unzip(filePath, scriptPath);
+            var filePath = context.Files[context.Step.ExecuteOneScriptStep!.File.Id];
+            var opmMetadata = OneScriptPackageReader.Unzip(filePath, scriptPath);
+
+            executable = opmMetadata!.Executable;
+        }
 
         var scriptHost = new OneScriptExecutor();
         scriptHost.OnEcho += (_, tuple) =>
@@ -499,17 +637,57 @@ public class MaintenanceTaskExecutor : BackgroundService
         {
             AddStepLogItem(context, ex.Message, true);
         };
-
-        var cmdParser = new Parser();
-        var parsingResult = cmdParser.Parse(context.Step.CommandLineArguments);
         
-        scriptHost.ExecutePackageScript(scriptPath, opmMetadata!, [], e =>
+        scriptHost.ExecutePackageScript(scriptPath, executable, [], e =>
         {
             e.AddAssembly(typeof(OscriptIntegrationGlobalContext).Assembly);
             e.AddGlobalContext(_oscriptIntegrationGlobalContext);
-        });
+        }, context.Step.ExecuteOneScriptStep!.DebugMode);
         
-        Directory.Delete(scriptPath, true);
+        if (!context.Step.ExecuteOneScriptStep!.DebugMode)
+            Directory.Delete(scriptPath, true);
+    }
+
+    private async Task CopyInfoBase(MaintenanceStepContext context, CancellationToken cancellationToken)
+    {
+        var step = context.Step.CopyInfoBaseStep!;
+
+        var sourceInfoBaseDetails = await GetInfoBaseDetails(step.SourceInfoBase);
+        var destinationInfoBaseDetails = await GetInfoBaseDetails(step.DestinationInfoBase);
+
+        var canCopy = true;
+
+        if (sourceInfoBaseDetails.Dbms != V8InfoBaseDbms.MsSqlServer)
+        {
+            AddStepLogItem(context, $"Тип базы-источника может быть только \"{destinationInfoBaseDetails.Dbms.GetDisplay()}\"", true);
+            canCopy = false;
+        }
+
+        if (destinationInfoBaseDetails.Dbms != V8InfoBaseDbms.MsSqlServer)
+        {
+            AddStepLogItem(context, $"Тип базы-приемника может быть только \"{destinationInfoBaseDetails.Dbms.GetDisplay()}\"", true);
+            canCopy = false;
+        }
+
+        if (canCopy)
+        {
+            var backupInfo = SqlHelper.GetLastBackupInfo(sourceInfoBaseDetails, step.SourceCredentials, cancellationToken);
+        }
+    }
+
+    private async Task<V8InfoBaseDetails> GetInfoBaseDetails(InfoBaseDto infoBase)
+    {
+        var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(infoBase.Cluster.Port);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+        
+        return await rac.GetInfoBase(
+            infoBase.Cluster.ClusterInternalId,
+            infoBase.InfoBaseInternalId,
+            infoBase.Cluster.Credentials?.User ?? "",
+            infoBase.Cluster.Credentials?.Password ?? "",
+            infoBase.Credentials?.User ?? "",
+            infoBase.Credentials?.Password ?? "");
     }
     
     private static async Task DeleteExtension(MaintenanceStepContext context)
@@ -517,7 +695,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         if (context.UseDesignerAgent)
         {
             var allExtensions = await context.DesignerAgentClient!.GetAllExtensions();
-            var extensionsToDeleting = allExtensions.Where(c => Regex.IsMatch(c.Name, context.Step.ExtensionName)).ToList();
+            var extensionsToDeleting = allExtensions.Where(c => Regex.IsMatch(c.Name, context.Step.DeleteExtensionStep!.ExtensionName)).ToList();
 
             foreach (var extension in extensionsToDeleting)
             {
@@ -529,12 +707,12 @@ public class MaintenanceTaskExecutor : BackgroundService
         {
             using var batchGet = context.GetBatchDesigner();
             var allExtensions = batchGet.GetExtensionsList(
-                context.InfoBase.Credentials?.User ?? "", 
+                context.InfoBase!.Credentials?.User ?? "", 
                 context.InfoBase.Credentials?.Password ?? "", 
                 context.AccessCode,
                 true);
             
-            var extensionsToDeleting = allExtensions.Where(c => Regex.IsMatch(c, context.Step.ExtensionName)).ToList();
+            var extensionsToDeleting = allExtensions.Where(c => Regex.IsMatch(c, context.Step.DeleteExtensionStep!.ExtensionName)).ToList();
             
             foreach (var extension in extensionsToDeleting)
             {
@@ -553,7 +731,7 @@ public class MaintenanceTaskExecutor : BackgroundService
 
     private static async Task LoadConfiguration(MaintenanceStepContext context)
     {
-        var filePath = context.Files[context.Step.File!.Id];
+        var filePath = context.Files[context.Step.LoadConfigurationStep!.File!.Id];
 
         if (context.UseDesignerAgent)
         {
@@ -569,7 +747,7 @@ public class MaintenanceTaskExecutor : BackgroundService
             using var batch = context.GetBatchDesigner();
             batch.LoadConfiguration(
                 filePath, 
-                context.InfoBase.Credentials?.User ?? "", 
+                context.InfoBase!.Credentials?.User ?? "", 
                 context.InfoBase.Credentials?.Password ?? "", 
                 context.AccessCode,
                 true);
@@ -580,7 +758,7 @@ public class MaintenanceTaskExecutor : BackgroundService
     
     private static void UpdateConfiguration(MaintenanceStepContext context)
     {
-        var filePath = context.Files[context.Step.File!.Id];
+        var filePath = context.Files[context.Step.UpdateConfigurationStep!.File.Id];
         
         using var batch = context.GetBatchDesigner();
         batch.UpdateConfiguration(
@@ -595,12 +773,12 @@ public class MaintenanceTaskExecutor : BackgroundService
 
     private static void StartExternalDataProcessor(MaintenanceStepContext context)
     {
-        var filePath = context.Files[context.Step.File!.Id];
+        var filePath = context.Files[context.Step.StartExternalDataProcessorStep!.File.Id];
         
         var batch = context.GetBatchEnterprise();
         batch.ExecuteExternalDataProcessor(
             filePath, 
-            context.InfoBase.Credentials?.User ?? "", 
+            context.InfoBase!.Credentials?.User ?? "", 
             context.InfoBase.Credentials?.Password ?? "", 
             context.AccessCode,
             true);

@@ -7,6 +7,7 @@ using OneSwiss.V8.Platform;
 using ScriptEngine;
 using ScriptEngine.HostedScript;
 using ScriptEngine.Hosting;
+using ScriptEngine.Machine;
 using ExecutionContext = ScriptEngine.Machine.ExecutionContext;
 
 namespace OneSwiss.OneScript;
@@ -17,38 +18,60 @@ public class OneScriptExecutor : IHostApplication
     public EventHandler<Exception>? OnError = null;
     private string[] _args;
     
-    public void ExecutePackageScript(string path, OpmMetadata metadata, string[] args, Action<ExecutionContext> engineBuilder)
+    public void ExecutePackageScript(string path, string executable, string[] args, Action<ExecutionContext> engineBuilder, bool debugMode = false)
     {
-        _args = args;
-        var executablePath = Path.Combine(path, metadata.Executable);
-        var librariesPath = Path.Combine(path, "oscript_modules");
-        
-        using var engine = CreateEngine(librariesPath, engineBuilder);
+        IDebugController? debugController = null;
 
-        var source = SourceCodeBuilder
-            .Create()
-            .FromFile(executablePath)
-            .Build();
+        try
+        {
+            if (debugMode)
+            {
+                var debugServer = new TcpDebugServer(2801);
+                debugController = debugServer.CreateDebugController();
+            }
 
-        var process = engine.CreateProcess(this, source);
-        var exitCode = process.Start();
+            _args = args;
+            var executablePath = Path.Combine(path, executable);
+            var librariesPath = Path.Combine(path, "oscript_modules");
 
-        if (exitCode != 0)
-            throw new Exception("Ошибка выполнения скрипта");
+            using var engine = CreateEngine(librariesPath, engineBuilder, debugController);
+
+            var source = SourceCodeBuilder
+                .Create()
+                .FromFile(executablePath)
+                .Build();
+
+            var process = engine.CreateProcess(this, source);
+            var exitCode = process.Start();
+
+            if (exitCode != 0)
+                throw new Exception("Ошибка выполнения скрипта");
+        }
+        finally
+        {
+            debugController?.Dispose();
+        }
     }
 
-    private static HostedScriptEngine CreateEngine(string librariesPath, Action<ExecutionContext> engineBuilder)
+    private static HostedScriptEngine CreateEngine(
+        string librariesPath, 
+        Action<ExecutionContext> engineBuilder, 
+        IDebugController? debugController = null)
     {
         var builder = DefaultEngineBuilder
             .Create()
             .SetDefaultOptions()
-            .UseImports()
-            .SetupEnvironment(e =>
-            {
-                e.AddStandardLibrary();
-                e.AddAssembly(typeof(OneScriptExecutor).Assembly);
-                engineBuilder.Invoke(e);
-            });
+            .UseImports();
+
+        if (debugController != null)
+            builder.WithDebugger(debugController);
+
+        builder.SetupEnvironment(e =>
+        {
+            e.AddStandardLibrary();
+            e.AddAssembly(typeof(OneScriptExecutor).Assembly);
+            engineBuilder.Invoke(e);
+        });
 
         builder.Services.RegisterSingleton<IDependencyResolver>(new FileSystemDependencyResolver
         {

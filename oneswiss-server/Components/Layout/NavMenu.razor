@@ -4,7 +4,7 @@
 
 <MudNavMenu>
     <MudNavLink Href="" Class="mt-1 mb-1" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Success" Match="NavLinkMatch.All">Панель</MudNavLink>
-    <MudNavGroup Class="mb-1" Title="Обслуживание" Icon="@Icons.Material.Filled.DataArray" IconColor="Color.Primary">
+    <MudNavGroup Class="mb-1" Title="Обслуживание" Expanded="true" Icon="@Icons.Material.Filled.DataArray" IconColor="Color.Primary">
         <MudNavLink Href="configurationrepositories">Хранилища конфигураций</MudNavLink>
         <MudNavLink Href="files">Конфигурации обработки и скрипты</MudNavLink>
         <MudNavLink Href="/maintenancetasks" ForceLoad="true">Задачи обслуживания</MudNavLink>
@@ -17,7 +17,7 @@
     <MudNavLink hidden="@_errorLoggingServiceDisabled" Class="mb-1" Href="/errorLoggingService" Icon="@Icons.Material.Filled.BugReport" IconColor="Color.Error">
         Сервис регистрации ошибок
     </MudNavLink>
-    <MudNavGroup Title="Общее" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">
+    <MudNavGroup Title="Общее" Expanded="true" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">
         <MudNavLink Href="settings">Настройки</MudNavLink>
         <MudNavLink Href="credentials">Учетные данные</MudNavLink>
         <MudNavLink Href="dbms">СУБД</MudNavLink>

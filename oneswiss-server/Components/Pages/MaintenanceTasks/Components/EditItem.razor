@@ -41,18 +41,31 @@
                     OnUpdate="OnUpdate"
                     Editable="_editable">
     <MudStack>
-        <MudStack Row AlignItems="AlignItems.Stretch" StretchItems="StretchItems.All">
-            <MudTextField Class="mb-3 w-100" For="@(() => _editor.Model!.Description)" Variant="Variant.Outlined" Label="Наименование" @bind-Value="@_editor.Model!.Description"/>
-            <ItemsSelector T="InfoBase"
-                           @bind-SelectedValues="_selectedInfoBases"
-                           Class="w-100"
-                           Items="@_editor.Context!.InfoBases.ToList()"
-                           Title="Информационные базы"
-                           NameSelector="item => item.Name"/>
+        <MudStack Row Class="mb-3" Breakpoint="Breakpoint.MdAndDown" AlignItems="AlignItems.Center" StretchItems="StretchItems.All">
+            <MudTextField Class="w-100" For="@(() => _editor.Model!.Description)" Variant="Variant.Outlined" Label="Наименование" @bind-Value="@_editor.Model!.Description"/>
+            <MudSwitch Label="Задача общего назначения" @bind-Value="@_editor.Model!.CommonDestination" Color="Color.Primary"/>
+            @if (_editor.Model!.CommonDestination)
+            {
+                <ItemsSelector T="Agent"
+                               Class="w-100"
+                               @bind-SelectedValues="_editor.Model!.Agents"
+                               Items="@_editor.Context!.Agents.ToList()"
+                               Title="Агенты"
+                               NameSelector="item => item.InstanceName"/>
+            }
+            else
+            {
+                <ItemsSelector T="InfoBase"
+                               Class="w-100"
+                               @bind-SelectedValues="_selectedInfoBases"
+                               Items="@_editor.Context!.InfoBases.ToList()"
+                               Title="Информационные базы"
+                               NameSelector="item => item.Name"/>
+            }
         </MudStack>
         <MudPaper Class="rounded-lg mud-background-gray pa-2">
             <MudStack Row Wrap="Wrap.Wrap" Class="mb-2" Spacing="0">
-                @foreach (var item in Enum.GetValues<MaintenanceStepKind>())
+                @foreach (var item in GetAvailableStepKinds())
                 {
                     <MudChip Disabled="@(!_editable)" T="MaintenanceStepKind" Style="@($"background-color: {item.GetKindColor()}")" Value="@item" OnClick="@(() => OnClickNodeType(item))">@item.GetDisplay()</MudChip>
                 }
@@ -77,7 +90,7 @@
     private readonly Validator _validator = new();
     private EditDatabaseForm<MaintenanceTask> _editor = null!;
     private bool _editable;
-    
+
     [Parameter]
     public Guid Id { get; set; }
     
@@ -125,7 +138,17 @@
     }
     
     private static IQueryable<MaintenanceTask> ModelSelector(IQueryable<MaintenanceTask> arg)
-        => arg.Include(c => c.InfoBases).ThenInclude(c => c.InfoBase).Include(c => c.Steps);
+        => arg
+            .Include(c => c.Agents)
+            .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase)
+            .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
+            .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep)
+            .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep)
+            .Include(c => c.Steps).ThenInclude(c => c.UpdateConfigurationStep)
+            .Include(c => c.Steps).ThenInclude(c => c.DeleteExtensionStep)
+            .Include(c => c.Steps).ThenInclude(c => c.ExecuteOneScriptStep)
+            .Include(c => c.Steps).ThenInclude(c => c.LockConnectionsStep)
+            .Include(c => c.Steps).ThenInclude(c => c.StartExternalDataProcessorStep);
     
     private void BeforeValidation(MaintenanceTask obj)
     {
@@ -141,6 +164,7 @@
     
     private void OnUpdate(MaintenanceTask obj)
     {
+        ModelHelper.UpdateModelItems(_editor.Model!.Agents, obj.Agents);
         ModelHelper.UpdateModelItems(_editor.Model!.InfoBases, obj.InfoBases);
         ModelHelper.UpdateModelItems(_editor.Model!.Steps, obj.Steps);
     }
@@ -152,13 +176,23 @@
         
         var template = (await context.MaintenanceTasks
             .AsNoTracking()
+            .Include(c => c.Agents)
             .Include(c => c.InfoBases).ThenInclude(c => c.InfoBase)
-            .Include(c => c.Steps)
+            .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
+            .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep)
+            .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep)
+            .Include(c => c.Steps).ThenInclude(c => c.UpdateConfigurationStep)
+            .Include(c => c.Steps).ThenInclude(c => c.ExecuteOneScriptStep)
+            .Include(c => c.Steps).ThenInclude(c => c.StartExternalDataProcessorStep)
+            .Include(c => c.Steps).ThenInclude(c => c.DeleteExtensionStep)
+            .Include(c => c.Steps).ThenInclude(c => c.LockConnectionsStep)
             .FirstOrDefaultAsync(c => c.Id == TemplateId))!;
 
         task.Id = id;
         task.Description = template.Description;
         task.IsTemplate = IsTemplate;
+        task.CommonDestination = template.CommonDestination;
+        task.Agents = template.Agents;
         UpdateSelectedInfoBases(template);
         task.Steps.AddRange(template.Steps);
         
@@ -178,6 +212,30 @@
                     
                 if (i.RightStepId == currentId)
                     i.RightStepId = newId;
+
+                if (i.CopyInfoBaseStep != null)
+                    i.CopyInfoBaseStep.Id = Guid.NewGuid();
+                
+                if (i.DeleteExtensionStep != null)
+                    i.DeleteExtensionStep.Id = Guid.NewGuid();
+                
+                if (i.ExecuteOneScriptStep != null)
+                    i.ExecuteOneScriptStep.Id = Guid.NewGuid();
+                
+                if (i.LoadConfigurationStep != null)
+                    i.LoadConfigurationStep.Id = Guid.NewGuid();
+                
+                if (i.LoadExtensionStep != null)
+                    i.LoadExtensionStep.Id = Guid.NewGuid();
+                
+                if (i.LockConnectionsStep != null)
+                    i.LockConnectionsStep.Id = Guid.NewGuid();
+                
+                if (i.UpdateConfigurationStep != null)
+                    i.UpdateConfigurationStep.Id = Guid.NewGuid();
+                
+                if (i.StartExternalDataProcessorStep != null)
+                    i.StartExternalDataProcessorStep.Id = Guid.NewGuid();
             });
                 
             c.Id = newId;
@@ -222,8 +280,20 @@
                 return;
             
             model.Changed += OnNodeChanged;
-            stepNode.Step.Id = Guid.NewGuid();
-        };
+
+            InitNewNode(stepNode);
+        }; 
+    }
+
+    private static void InitNewNode(StepNode node)
+    {
+        node.Step.Id = Guid.NewGuid();
+
+        if (node.Step.Kind == MaintenanceStepKind.CopyInfoBase)
+            node.Step.CopyInfoBaseStep = new CopyInfoBaseStep
+            {
+                Id = Guid.NewGuid()
+            };
     }
     
     private void DiagramToModel(MaintenanceTask task)
@@ -285,7 +355,7 @@
         foreach (var step in task.Steps)
         {
             var addedNode = Diagram.Nodes.Add(new StepNode(step, new Point(step.PositionX, step.PositionY)));
-            InitNode(addedNode, context);
+            InitNode(addedNode);
             nodeStepPairs.Add(step, addedNode);
         }
 
@@ -382,22 +452,35 @@
     private void OnClickNodeType(MaintenanceStepKind kind)
     {
         var node = new StepNode(kind);
-        InitNode(node, _editor.Context!);
+        InitNode(node);
         Diagram.Nodes.Add(node);
     }
 
-    private void InitNode(StepNode node, AppDbContext context)
+    private void InitNode(StepNode node)
     {
-        if (node.Step.NeedLoadFiles())
-            node.Files = context.Files.AsNoTracking().Where(c => c.FileType == node.Step.AvailableFileType).ToList();
-        
-        if (node.Step.IsConfigurationUpdating())
-            node.Repositories = context.ConfigRepositories.AsNoTracking().Where(c => !c.Deleted && c.CredentialsId != null).ToList();
-
         node.AddPort(new StepPort(Diagram, node, PortAlignment.BottomRight));
         node.AddPort(new StepPort(Diagram, node, PortAlignment.TopRight));
         node.AddPort(new StepPort(Diagram, node, PortAlignment.Left));
     }
+
+    private MaintenanceStepKind[] GetAvailableStepKinds()
+        => _editor.Model!.CommonDestination switch
+        {
+            false => [
+                MaintenanceStepKind.LockConnections,
+                MaintenanceStepKind.CloseConnections,
+                MaintenanceStepKind.UnlockConnections,
+                MaintenanceStepKind.LoadExtension,
+                MaintenanceStepKind.DeleteExtension,
+                MaintenanceStepKind.UpdateConfiguration,
+                MaintenanceStepKind.LoadConfiguration,
+                MaintenanceStepKind.StartExternalDataProcessor
+            ],
+            _ => [
+                MaintenanceStepKind.ExecuteOneScript,
+                MaintenanceStepKind.CopyInfoBase
+            ]
+        };
     
     class Validator : ModelValidator<MaintenanceTask>
     {
@@ -415,37 +498,120 @@
 
             When(c => !c.IsTemplate, () =>
             {
-                RuleFor(c => c.InfoBases)
-                    .NotEmpty()
-                    .WithMessage("Не указано ни одной информационной базы");
-
-                RuleForEach(task => task.Steps)
+                When(c => !c.CommonDestination, () =>
+                {
+                    RuleFor(c => c.InfoBases)
+                        .NotEmpty()
+                        .WithMessage("Не указано ни одной информационной базы");
+                });
+                
+                RuleForEach(i => i.Steps)
                     .Custom((step, context) =>
                     {
-                        if (step.NeedLoadFiles() && step.FileId == Guid.Empty)
+                        if (step.Kind == MaintenanceStepKind.DeleteExtension && string.IsNullOrEmpty(step.DeleteExtensionStep!.ExtensionName))
                             context.AddFailure(
-                                nameof(context.PropertyPath), 
-                                $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл");
-                        
-                        if (step.NeedSpecifyConfigRepository() && step.ConfigurationRepositoryId == Guid.Empty)
-                            context.AddFailure(
-                                nameof(context.PropertyPath), 
-                                $"В шаге \"{step.Kind.GetDisplay()}\" не указано хранилище");
+                                nameof(context.PropertyPath),
+                                $"В шаге \"{step.Kind.GetDisplay()}\" не указано регулярное выражение имени расширения");
 
-                        if (step.NeeSpecifyExtensionName() && string.IsNullOrEmpty(step.ExtensionName))
-                            context.AddFailure(
-                                nameof(context.PropertyPath), 
-                                $"В шаге \"{step.Kind.GetDisplay()}\" не указано имя расширения");
+                        if (step.Kind == MaintenanceStepKind.ExecuteOneScript)
+                        {
+                            if (!step.ExecuteOneScriptStep!.DebugMode && step.ExecuteOneScriptStep!.FileId.EmptyOrNull())
+                                context.AddFailure(
+                                    nameof(context.PropertyPath),
+                                    $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл .ospx");
+                            
+                            if (step.ExecuteOneScriptStep!.DebugMode && string.IsNullOrEmpty(step.ExecuteOneScriptStep!.ExecutablePath))
+                                context.AddFailure(
+                                    nameof(context.PropertyPath),
+                                    $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл скрипта");
+                        }
+
+                        if (step.Kind == MaintenanceStepKind.LoadExtension)
+                        {
+                            if (string.IsNullOrEmpty(step.LoadExtensionStep!.ExtensionName))
+                                context.AddFailure(
+                                    nameof(context.PropertyPath),
+                                    $"В шаге \"{step.Kind.GetDisplay()}\" не указано имя расширения");
+
+                            if (step.LoadExtensionStep.FromConfigRepository)
+                            {
+                                if (step.LoadExtensionStep.ConfigurationRepositoryId.EmptyOrNull())
+                                    context.AddFailure(
+                                        nameof(context.PropertyPath),
+                                        $"В шаге \"{step.Kind.GetDisplay()}\" не указано хранилище");
+                            }
+                            else
+                            {
+                                if (step.LoadExtensionStep.FileId.EmptyOrNull())
+                                    context.AddFailure(
+                                        nameof(context.PropertyPath),
+                                        $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл .cfe");
+                            }
+                        }
                         
-                        if (step.NeeSpecifyMessage() && string.IsNullOrEmpty(step.Message))
-                            context.AddFailure(
-                                nameof(context.PropertyPath), 
-                                $"В шаге \"{step.Kind.GetDisplay()}\" не указан текст сообщения");
+                        if (step.Kind == MaintenanceStepKind.LoadConfiguration)
+                        {
+                            if (step.LoadConfigurationStep!.FromConfigRepository)
+                            {
+                                if (step.LoadExtensionStep!.ConfigurationRepositoryId.EmptyOrNull())
+                                    context.AddFailure(
+                                        nameof(context.PropertyPath),
+                                        $"В шаге \"{step.Kind.GetDisplay()}\" не указано хранилище");
+                            }
+                            else
+                            {
+                                if (step.LoadConfigurationStep.FileId.EmptyOrNull())
+                                    context.AddFailure(
+                                        nameof(context.PropertyPath),
+                                        $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл .cf");
+                            }
+                        }
                         
-                        if (step.NeeSpecifyAccessCode() && string.IsNullOrEmpty(step.AccessCode))
+                        if (step.Kind == MaintenanceStepKind.UpdateConfiguration && step.UpdateConfigurationStep!.FileId.EmptyOrNull())
                             context.AddFailure(
-                                nameof(context.PropertyPath), 
-                                $"В шаге \"{step.Kind.GetDisplay()}\" не указан код доступа");
+                                nameof(context.PropertyPath),
+                                $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл .cfu");
+                        
+                        if (step.Kind == MaintenanceStepKind.StartExternalDataProcessor && step.StartExternalDataProcessorStep!.FileId.EmptyOrNull())
+                            context.AddFailure(
+                                nameof(context.PropertyPath),
+                                $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл .epf");
+                        
+                        if (step.Kind == MaintenanceStepKind.LockConnections)
+                        {
+                            if (string.IsNullOrEmpty(step.LockConnectionsStep!.AccessCode))
+                                context.AddFailure(
+                                    nameof(context.PropertyPath),
+                                    $"В шаге \"{step.Kind.GetDisplay()}\" не указан код доступа");
+                            
+                            if (string.IsNullOrEmpty(step.LockConnectionsStep!.Message))
+                                context.AddFailure(
+                                    nameof(context.PropertyPath),
+                                    $"В шаге \"{step.Kind.GetDisplay()}\" не указано сообщение пользователю");
+                        }
+                        
+                        if (step.Kind == MaintenanceStepKind.CopyInfoBase)
+                        {
+                            if (step.CopyInfoBaseStep!.SourceCredentialsId.EmptyOrNull())
+                                context.AddFailure(
+                                    nameof(context.PropertyPath),
+                                    $"В шаге \"{step.Kind.GetDisplay()}\" не указаны учетные данные СУБД-источника");
+                            
+                            if (step.CopyInfoBaseStep!.DestinationCredentialsId.EmptyOrNull())
+                                context.AddFailure(
+                                    nameof(context.PropertyPath),
+                                    $"В шаге \"{step.Kind.GetDisplay()}\" не указаны учетные данные СУБД-приемника");
+                            
+                            if (step.CopyInfoBaseStep!.SourceInfoBaseId.EmptyOrNull())
+                                context.AddFailure(
+                                    nameof(context.PropertyPath),
+                                    $"В шаге \"{step.Kind.GetDisplay()}\" не указана ИБ-источник");
+                            
+                            if (step.CopyInfoBaseStep!.DestinationInfoBaseId.EmptyOrNull())
+                                context.AddFailure(
+                                    nameof(context.PropertyPath),
+                                    $"В шаге \"{step.Kind.GetDisplay()}\" не указана ИБ-приемник");
+                        }
                     });
             });
         }

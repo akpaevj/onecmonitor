@@ -21,5 +21,7 @@ public enum MaintenanceStepKind
     [Display(Name = "Запуск внешней обработки")]
     StartExternalDataProcessor,
     [Display(Name = "Выполнение скрипта - OneScript")]
-    ExecuteOneScript
+    ExecuteOneScript,
+    [Display(Name = "Копирование информационной базы")]
+    CopyInfoBase
 }

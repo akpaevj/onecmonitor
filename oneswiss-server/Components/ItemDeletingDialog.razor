@@ -2,6 +2,7 @@
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Extensions
 @inject ISnackbar SnackBar
+@inject ILogger<ItemDeletingDialog<T>> Logger
 @typeparam T where T : OneSwiss.Server.Models.DatabaseObject
 
 <MudDialog>
@@ -41,6 +42,7 @@
         }
         catch (Exception e)
         {
+            Logger.LogError(e, "Ошибка при удалении элемента");
             SnackBar.ShowError(e);
             Cancel();
         }

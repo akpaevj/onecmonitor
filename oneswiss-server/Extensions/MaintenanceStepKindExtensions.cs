@@ -16,6 +16,7 @@ public static class MaintenanceStepKindExtensions
             MaintenanceStepKind.LoadConfiguration => "rgba(86, 179, 148, 0.7)",
             MaintenanceStepKind.StartExternalDataProcessor => "rgba(69, 175, 196, 0.7)",
             MaintenanceStepKind.ExecuteOneScript => "rgba(119, 160, 220, 0.7)",
+            MaintenanceStepKind.CopyInfoBase => "rgba(59, 160, 220, 0.7)",
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
         };
 }

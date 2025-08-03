@@ -26,25 +26,20 @@ public class MaintenanceStepDto
     [ContextProperty("ИдентификаторПравогоШага", "RightStepId")]
     [Key(5)]
     public Guid? RightStepId { get; set; }
-    [ContextProperty("КодДоступа", "AccessCode")]
-    [Key(6)]
-    public string AccessCode { get; set; } = string.Empty;
-    [ContextProperty("Сообщение", "Message")]
-    [Key(7)]
-    public string Message { get; set; } = string.Empty;
-    [ContextProperty("АргументыКоманднойСтроки", "CommandLineArguments")]
-    [Key(8)]
-    public string CommandLineArguments { get; set; } = string.Empty;
-    [ContextProperty("Файл", "File")]
+    [Key(6)] 
+    public CopyInfoBaseStepDto? CopyInfoBaseStep { get; set; }
+    [Key(7)] 
+    public DeleteExtensionStepDto? DeleteExtensionStep { get; set; }
+    [Key(8)] 
+    public ExecuteOneScriptStepDto? ExecuteOneScriptStep { get; set; }
     [Key(9)] 
-    public FileDto? File { get; set; }
-    [ContextProperty("ИмяРасширения", "ExtensionName")]
-    [Key(10)]
-    public string ExtensionName { get; set; } = string.Empty;
-    [ContextProperty("ИзХранилищаКонфигураций", "FromConfigRepository")]
+    public LoadConfigurationStepDto? LoadConfigurationStep { get; set; }
+    [Key(10)] 
+    public LoadExtensionStepDto? LoadExtensionStep { get; set; }
     [Key(11)] 
-    public bool FromConfigRepository { get; set; }
-    [ContextProperty("ХранилищеКонфигураций", "ConfigRepository")]
+    public LockConnectionsStepDto? LockConnectionsStep { get; set; }
     [Key(12)] 
-    public ConfigurationRepositoryDto? ConfigurationRepository { get; set; }
+    public StartExternalDataProcessorStepDto? StartExternalDataProcessorStep { get; set; }
+    [Key(13)] 
+    public UpdateConfigurationStepDto? UpdateConfigurationStep { get; set; }
 }

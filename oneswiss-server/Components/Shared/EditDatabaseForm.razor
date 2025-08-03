@@ -153,9 +153,9 @@
                 var errors = await Validation.Invoke(Model!, item);
                 var enumerable = errors.ToList();
 
-                var valid = enumerable.Count == 0;
+                var addValid = enumerable.Count == 0;
                 
-                if (valid) 
+                if (addValid) 
                     continue;
                 
                 Form.IsValid = false;
@@ -163,7 +163,7 @@
                 enumerable.ForEach(c => SnackBar.ShowError(c));
             }
         }
-
+        
         if (!Form.IsValid)
         {
             SnackBar.ShowError("Объект не записан");

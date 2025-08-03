@@ -18,7 +18,10 @@
 @if (!DisableTableActions)
 {
     <MudStack Row AlignItems="AlignItems.Start">
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="@(() => NavManager.NavigateTo($"{Route}/create"))" Class="mb-3">Добавить</MudButton>
+        @if (ShowAddButton)
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="@(() => NavManager.NavigateTo($"{Route}/create"))" Class="mb-3">Добавить</MudButton>
+        }
         @if (TableActionsContent != null)
         {
             @TableActionsContent
@@ -112,6 +115,9 @@
     [Parameter] 
     public string Route { get; set; } = string.Empty;
 
+    [Parameter] 
+    public bool ShowAddButton { get; set; } = true;
+    
     [Parameter] 
     public bool ShowDeleteButton { get; set; } = true;
     

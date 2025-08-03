@@ -17,8 +17,11 @@ public class MaintenanceTask : DatabaseObject
     public DateTime FinishDateTime { get; set; } = DateTime.MinValue;
     [Label("Это шаблон")]
     public bool IsTemplate { get; set; } = false;
+    [Label("Это задача общего назначения")]
+    public bool CommonDestination { get; set; } = false;
     
     public virtual List<MaintenanceStep> Steps { get; set; } = [];
+    public virtual List<Agent> Agents { get; set; } = [];
     public virtual List<InfoBaseMaintenanceTask> InfoBases { get; set; } = [];
     public virtual List<MaintenanceTaskLogItem> Logs { get; set; } = [];
 }

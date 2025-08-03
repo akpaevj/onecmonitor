@@ -40,9 +40,6 @@
         item.Steps.ForEach(c =>
         {
             c.MaintenanceTask = null!;
-            c.File = null!;
-            c.ConfigurationRepositoryId = Guid.Empty;
-            c.FileId = Guid.Empty;
         });
 
         var jsonStr = JsonSerializer.Serialize(item, new JsonSerializerOptions
