@@ -187,7 +187,7 @@
         context.AttachRange(task.InfoBases);
         
         var newSteps = Mapper.Map<List<MaintenanceStep>>(template.Steps);
-        newSteps.ForEach(c => c.Id = Guid.Empty);
+        newSteps.ForEach(c => c.Id = Guid.NewGuid());
         
         task.Steps.AddRange(newSteps);
     }
