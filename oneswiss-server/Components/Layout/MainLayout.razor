@@ -19,7 +19,7 @@
     <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
         <NavMenu @ref="_navMenu"/>
     </MudDrawer>
-    <MudMainContent Class="pt-20 pa-5">
+    <MudMainContent Class="pt-16 pa-5">
         <CascadingValue Name="NavMenu" Value="_navMenu">
             @Body
         </CascadingValue>

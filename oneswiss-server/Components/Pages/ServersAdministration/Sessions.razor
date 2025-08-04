@@ -5,7 +5,7 @@
 @using OneSwiss.Server.Services
 @using OneSwiss.V8.Platform.RemoteAdministration
 
-<MudDataGrid T="V8Session" Loading="_isLoading" @bind-SelectedItems="_selectedItems" MultiSelection="true" Height="calc(100vh - 130px)" FixedHeader="true" Items="_items" HorizontalScrollbar="true" Filterable="true" SortMode="SortMode.Multiple" Dense="true" Hover="true">
+<MudDataGrid T="V8Session" Loading="_isLoading" @bind-SelectedItems="_selectedItems" Virtualize="true" MultiSelection="true" FixedHeader="true" Items="_items" HorizontalScrollbar="true" Filterable="true" SortMode="SortMode.Multiple" Dense="true" Hover="true">
     <ToolBarContent>
         <MudStack Row Spacing="0">
             <MudButton Disabled="@(_selectedItems.Count == 0 || _isLoading)" Variant="Variant.Filled" Color="Color.Primary" OnClick="CloseSessions">Закрыть сеансы</MudButton>
@@ -68,6 +68,7 @@
     private bool _isLoading;
     private IEnumerable<V8Session> _items = [];
     private HashSet<V8Session> _selectedItems = [];
+    private bool _needRender = true;
 
     [Parameter] 
     public Models.Cluster Cluster { get; set; } = null!;
@@ -79,7 +80,15 @@
     {
         await UpdateItems();
     }
-    
+
+    protected override bool ShouldRender()
+    {
+        var value = _needRender;
+        _needRender = false;
+        
+        return value;
+    }
+
     private async Task CloseSessions()
     {
         if (_isLoading)
@@ -112,6 +121,7 @@
             return;
 
         _isLoading = true;
+        _needRender = true;
 
         try
         {
@@ -122,7 +132,12 @@
         {
             Snackbar.ShowError(e);
         }
+        finally
+        {
+            _needRender = true;
+        }
 
         _isLoading = false;
+        _needRender = true;
     }
 }

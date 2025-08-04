@@ -10,7 +10,7 @@ using OneSwiss.Server;
 namespace OneSwiss.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250803215839_Initial")]
+    [Migration("20250804094514_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -457,178 +457,16 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("LogTemplates");
                 });
 
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.CopyInfoBaseStep", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DestinationCredentialsId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DestinationInfoBaseId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SourceCredentialsId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SourceInfoBaseId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DestinationCredentialsId");
-
-                    b.HasIndex("DestinationInfoBaseId");
-
-                    b.HasIndex("SourceCredentialsId");
-
-                    b.HasIndex("SourceInfoBaseId");
-
-                    b.ToTable("CopyInfoBaseSteps");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.DeleteExtensionStep", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ExtensionName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("DeleteExtensionSteps");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.ExecuteOneScriptStep", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("DebugMode")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ExecutablePath")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FileId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FileId");
-
-                    b.ToTable("ExecuteOneScriptSteps");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.LoadConfigurationStep", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ConfigurationRepositoryId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FileId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("FromConfigRepository")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConfigurationRepositoryId");
-
-                    b.HasIndex("FileId");
-
-                    b.ToTable("LoadConfigurationSteps");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.LoadExtensionStep", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ConfigurationRepositoryId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ExtensionName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FileId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("FromConfigRepository")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConfigurationRepositoryId");
-
-                    b.HasIndex("FileId");
-
-                    b.ToTable("LoadExtensionSteps");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.LockConnectionsStep", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("AccessCode")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("LockConnectionsSteps");
-                });
-
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("CopyInfoBaseStepId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DeleteExtensionStepId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ExecuteOneScriptStepId")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("Kind")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LeftStepId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LoadConfigurationStepId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LoadExtensionStepId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LockConnectionsStepId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("MaintenanceTaskId")
@@ -650,35 +488,13 @@ namespace OneSwiss.Server.Migrations
                     b.Property<string>("RightStepId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("StartExternalDataProcessorStepId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("StepId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("UpdateConfigurationStepId")
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("CopyInfoBaseStepId");
-
-                    b.HasIndex("DeleteExtensionStepId");
-
-                    b.HasIndex("ExecuteOneScriptStepId");
-
-                    b.HasIndex("LoadConfigurationStepId");
-
-                    b.HasIndex("LoadExtensionStepId");
-
-                    b.HasIndex("LockConnectionsStepId");
-
                     b.HasIndex("MaintenanceTaskId");
-
-                    b.HasIndex("StartExternalDataProcessorStepId");
-
-                    b.HasIndex("UpdateConfigurationStepId");
 
                     b.ToTable("MaintenanceSteps");
                 });
@@ -752,38 +568,6 @@ namespace OneSwiss.Server.Migrations
                     b.HasIndex("TaskId");
 
                     b.ToTable("MaintenanceTaskLogs");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.StartExternalDataProcessorStep", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FileId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FileId");
-
-                    b.ToTable("StartExternalDataProcessorSteps");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.UpdateConfigurationStep", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FileId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FileId");
-
-                    b.ToTable("UpdateConfigurationSteps");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.Notification", b =>
@@ -1086,111 +870,271 @@ namespace OneSwiss.Server.Migrations
                     b.Navigation("Credentials");
                 });
 
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.CopyInfoBaseStep", b =>
-                {
-                    b.HasOne("OneSwiss.Server.Models.Credentials", "DestinationCredentials")
-                        .WithMany()
-                        .HasForeignKey("DestinationCredentialsId");
-
-                    b.HasOne("OneSwiss.Server.Models.InfoBase", "DestinationInfoBase")
-                        .WithMany()
-                        .HasForeignKey("DestinationInfoBaseId");
-
-                    b.HasOne("OneSwiss.Server.Models.Credentials", "SourceCredentials")
-                        .WithMany()
-                        .HasForeignKey("SourceCredentialsId");
-
-                    b.HasOne("OneSwiss.Server.Models.InfoBase", "SourceInfoBase")
-                        .WithMany()
-                        .HasForeignKey("SourceInfoBaseId");
-
-                    b.Navigation("DestinationCredentials");
-
-                    b.Navigation("DestinationInfoBase");
-
-                    b.Navigation("SourceCredentials");
-
-                    b.Navigation("SourceInfoBase");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.ExecuteOneScriptStep", b =>
-                {
-                    b.HasOne("OneSwiss.Server.Models.File", "File")
-                        .WithMany()
-                        .HasForeignKey("FileId");
-
-                    b.Navigation("File");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.LoadConfigurationStep", b =>
-                {
-                    b.HasOne("OneSwiss.Server.Models.ConfigurationRepository", "ConfigurationRepository")
-                        .WithMany()
-                        .HasForeignKey("ConfigurationRepositoryId");
-
-                    b.HasOne("OneSwiss.Server.Models.File", "File")
-                        .WithMany()
-                        .HasForeignKey("FileId");
-
-                    b.Navigation("ConfigurationRepository");
-
-                    b.Navigation("File");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.LoadExtensionStep", b =>
-                {
-                    b.HasOne("OneSwiss.Server.Models.ConfigurationRepository", "ConfigurationRepository")
-                        .WithMany()
-                        .HasForeignKey("ConfigurationRepositoryId");
-
-                    b.HasOne("OneSwiss.Server.Models.File", "File")
-                        .WithMany()
-                        .HasForeignKey("FileId");
-
-                    b.Navigation("ConfigurationRepository");
-
-                    b.Navigation("File");
-                });
-
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
                 {
-                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.CopyInfoBaseStep", "CopyInfoBaseStep")
-                        .WithMany()
-                        .HasForeignKey("CopyInfoBaseStepId");
-
-                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.DeleteExtensionStep", "DeleteExtensionStep")
-                        .WithMany()
-                        .HasForeignKey("DeleteExtensionStepId");
-
-                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.ExecuteOneScriptStep", "ExecuteOneScriptStep")
-                        .WithMany()
-                        .HasForeignKey("ExecuteOneScriptStepId");
-
-                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.LoadConfigurationStep", "LoadConfigurationStep")
-                        .WithMany()
-                        .HasForeignKey("LoadConfigurationStepId");
-
-                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.LoadExtensionStep", "LoadExtensionStep")
-                        .WithMany()
-                        .HasForeignKey("LoadExtensionStepId");
-
-                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.LockConnectionsStep", "LockConnectionsStep")
-                        .WithMany()
-                        .HasForeignKey("LockConnectionsStepId");
-
                     b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", "MaintenanceTask")
                         .WithMany("Steps")
                         .HasForeignKey("MaintenanceTaskId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.StartExternalDataProcessorStep", "StartExternalDataProcessorStep")
-                        .WithMany()
-                        .HasForeignKey("StartExternalDataProcessorStepId");
+                    b.OwnsOne("OneSwiss.Server.Models.MaintenanceTasks.CopyInfoBaseStep", "CopyInfoBaseStep", b1 =>
+                        {
+                            b1.Property<string>("MaintenanceStepId")
+                                .HasColumnType("TEXT");
 
-                    b.HasOne("OneSwiss.Server.Models.MaintenanceTasks.UpdateConfigurationStep", "UpdateConfigurationStep")
-                        .WithMany()
-                        .HasForeignKey("UpdateConfigurationStepId");
+                            b1.Property<string>("DestinationCredentialsId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("DestinationInfoBaseId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("SourceCredentialsId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("SourceInfoBaseId")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("MaintenanceStepId");
+
+                            b1.HasIndex("DestinationCredentialsId");
+
+                            b1.HasIndex("DestinationInfoBaseId");
+
+                            b1.HasIndex("SourceCredentialsId");
+
+                            b1.HasIndex("SourceInfoBaseId");
+
+                            b1.ToTable("MaintenanceSteps");
+
+                            b1.HasOne("OneSwiss.Server.Models.Credentials", "DestinationCredentials")
+                                .WithMany()
+                                .HasForeignKey("DestinationCredentialsId");
+
+                            b1.HasOne("OneSwiss.Server.Models.InfoBase", "DestinationInfoBase")
+                                .WithMany()
+                                .HasForeignKey("DestinationInfoBaseId");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MaintenanceStepId");
+
+                            b1.HasOne("OneSwiss.Server.Models.Credentials", "SourceCredentials")
+                                .WithMany()
+                                .HasForeignKey("SourceCredentialsId");
+
+                            b1.HasOne("OneSwiss.Server.Models.InfoBase", "SourceInfoBase")
+                                .WithMany()
+                                .HasForeignKey("SourceInfoBaseId");
+
+                            b1.Navigation("DestinationCredentials");
+
+                            b1.Navigation("DestinationInfoBase");
+
+                            b1.Navigation("SourceCredentials");
+
+                            b1.Navigation("SourceInfoBase");
+                        });
+
+                    b.OwnsOne("OneSwiss.Server.Models.MaintenanceTasks.DeleteExtensionStep", "DeleteExtensionStep", b1 =>
+                        {
+                            b1.Property<string>("MaintenanceStepId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("ExtensionName")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("MaintenanceStepId");
+
+                            b1.ToTable("MaintenanceSteps");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MaintenanceStepId");
+                        });
+
+                    b.OwnsOne("OneSwiss.Server.Models.MaintenanceTasks.ExecuteOneScriptStep", "ExecuteOneScriptStep", b1 =>
+                        {
+                            b1.Property<string>("MaintenanceStepId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<bool>("DebugMode")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("ExecutablePath")
+                                .IsRequired()
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("FileId")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("MaintenanceStepId");
+
+                            b1.HasIndex("FileId");
+
+                            b1.ToTable("MaintenanceSteps");
+
+                            b1.HasOne("OneSwiss.Server.Models.File", "File")
+                                .WithMany()
+                                .HasForeignKey("FileId");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MaintenanceStepId");
+
+                            b1.Navigation("File");
+                        });
+
+                    b.OwnsOne("OneSwiss.Server.Models.MaintenanceTasks.LoadConfigurationStep", "LoadConfigurationStep", b1 =>
+                        {
+                            b1.Property<string>("MaintenanceStepId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("ConfigurationRepositoryId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("FileId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<bool>("FromConfigRepository")
+                                .HasColumnType("INTEGER");
+
+                            b1.HasKey("MaintenanceStepId");
+
+                            b1.HasIndex("ConfigurationRepositoryId");
+
+                            b1.HasIndex("FileId");
+
+                            b1.ToTable("MaintenanceSteps");
+
+                            b1.HasOne("OneSwiss.Server.Models.ConfigurationRepository", "ConfigurationRepository")
+                                .WithMany()
+                                .HasForeignKey("ConfigurationRepositoryId");
+
+                            b1.HasOne("OneSwiss.Server.Models.File", "File")
+                                .WithMany()
+                                .HasForeignKey("FileId");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MaintenanceStepId");
+
+                            b1.Navigation("ConfigurationRepository");
+
+                            b1.Navigation("File");
+                        });
+
+                    b.OwnsOne("OneSwiss.Server.Models.MaintenanceTasks.LoadExtensionStep", "LoadExtensionStep", b1 =>
+                        {
+                            b1.Property<string>("MaintenanceStepId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("ConfigurationRepositoryId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("ExtensionName")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("FileId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<bool>("FromConfigRepository")
+                                .HasColumnType("INTEGER");
+
+                            b1.HasKey("MaintenanceStepId");
+
+                            b1.HasIndex("ConfigurationRepositoryId");
+
+                            b1.HasIndex("FileId");
+
+                            b1.ToTable("MaintenanceSteps");
+
+                            b1.HasOne("OneSwiss.Server.Models.ConfigurationRepository", "ConfigurationRepository")
+                                .WithMany()
+                                .HasForeignKey("ConfigurationRepositoryId");
+
+                            b1.HasOne("OneSwiss.Server.Models.File", "File")
+                                .WithMany()
+                                .HasForeignKey("FileId");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MaintenanceStepId");
+
+                            b1.Navigation("ConfigurationRepository");
+
+                            b1.Navigation("File");
+                        });
+
+                    b.OwnsOne("OneSwiss.Server.Models.MaintenanceTasks.LockConnectionsStep", "LockConnectionsStep", b1 =>
+                        {
+                            b1.Property<string>("MaintenanceStepId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("AccessCode")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("Message")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("MaintenanceStepId");
+
+                            b1.ToTable("MaintenanceSteps");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MaintenanceStepId");
+                        });
+
+                    b.OwnsOne("OneSwiss.Server.Models.MaintenanceTasks.StartExternalDataProcessorStep", "StartExternalDataProcessorStep", b1 =>
+                        {
+                            b1.Property<string>("MaintenanceStepId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("FileId")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("MaintenanceStepId");
+
+                            b1.HasIndex("FileId");
+
+                            b1.ToTable("MaintenanceSteps");
+
+                            b1.HasOne("OneSwiss.Server.Models.File", "File")
+                                .WithMany()
+                                .HasForeignKey("FileId");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MaintenanceStepId");
+
+                            b1.Navigation("File");
+                        });
+
+                    b.OwnsOne("OneSwiss.Server.Models.MaintenanceTasks.UpdateConfigurationStep", "UpdateConfigurationStep", b1 =>
+                        {
+                            b1.Property<string>("MaintenanceStepId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("FileId")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("MaintenanceStepId");
+
+                            b1.HasIndex("FileId");
+
+                            b1.ToTable("MaintenanceSteps");
+
+                            b1.HasOne("OneSwiss.Server.Models.File", "File")
+                                .WithMany()
+                                .HasForeignKey("FileId");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MaintenanceStepId");
+
+                            b1.Navigation("File");
+                        });
 
                     b.Navigation("CopyInfoBaseStep");
 
@@ -1233,24 +1177,6 @@ namespace OneSwiss.Server.Migrations
                     b.Navigation("Step");
 
                     b.Navigation("Task");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.StartExternalDataProcessorStep", b =>
-                {
-                    b.HasOne("OneSwiss.Server.Models.File", "File")
-                        .WithMany()
-                        .HasForeignKey("FileId");
-
-                    b.Navigation("File");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.UpdateConfigurationStep", b =>
-                {
-                    b.HasOne("OneSwiss.Server.Models.File", "File")
-                        .WithMany()
-                        .HasForeignKey("FileId");
-
-                    b.Navigation("File");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.TechLogSettings", b =>

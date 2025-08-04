@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using MudBlazor.Services;
+using MudExtensions.Services;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.Services;
 using OneSwiss.Server;
@@ -50,6 +51,7 @@ builder.Services.AddRazorComponents()
         options.RootComponents.RegisterForJavaScript<StepWidget>(identifier: "StepWidget");
     });
 builder.Services.AddMudServices();
+builder.Services.AddMudExtensions();
 
 builder.Services.AddSingleton<NotificationsService>();
 builder.Services.AddHostedService<NotificationsProcessor>();

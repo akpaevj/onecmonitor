@@ -55,18 +55,6 @@ namespace OneSwiss.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "DeleteExtensionSteps",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    ExtensionName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DeleteExtensionSteps", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ErrorLoggingServiceSettings",
                 columns: table => new
                 {
@@ -108,19 +96,6 @@ namespace OneSwiss.Server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Files", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "LockConnectionsSteps",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    AccessCode = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
-                    Message = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_LockConnectionsSteps", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -339,59 +314,6 @@ namespace OneSwiss.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ExecuteOneScriptSteps",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    DebugMode = table.Column<bool>(type: "INTEGER", nullable: false),
-                    ExecutablePath = table.Column<string>(type: "TEXT", nullable: false),
-                    FileId = table.Column<string>(type: "TEXT", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ExecuteOneScriptSteps", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ExecuteOneScriptSteps_Files_FileId",
-                        column: x => x.FileId,
-                        principalTable: "Files",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "StartExternalDataProcessorSteps",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    FileId = table.Column<string>(type: "TEXT", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_StartExternalDataProcessorSteps", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_StartExternalDataProcessorSteps_Files_FileId",
-                        column: x => x.FileId,
-                        principalTable: "Files",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "UpdateConfigurationSteps",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    FileId = table.Column<string>(type: "TEXT", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UpdateConfigurationSteps", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_UpdateConfigurationSteps_Files_FileId",
-                        column: x => x.FileId,
-                        principalTable: "Files",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "AgentMaintenanceTask",
                 columns: table => new
                 {
@@ -534,90 +456,6 @@ namespace OneSwiss.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "LoadConfigurationSteps",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    FromConfigRepository = table.Column<bool>(type: "INTEGER", nullable: false),
-                    FileId = table.Column<string>(type: "TEXT", nullable: true),
-                    ConfigurationRepositoryId = table.Column<string>(type: "TEXT", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_LoadConfigurationSteps", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_LoadConfigurationSteps_ConfigRepositories_ConfigurationRepositoryId",
-                        column: x => x.ConfigurationRepositoryId,
-                        principalTable: "ConfigRepositories",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_LoadConfigurationSteps_Files_FileId",
-                        column: x => x.FileId,
-                        principalTable: "Files",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "LoadExtensionSteps",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    FromConfigRepository = table.Column<bool>(type: "INTEGER", nullable: false),
-                    ExtensionName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    FileId = table.Column<string>(type: "TEXT", nullable: true),
-                    ConfigurationRepositoryId = table.Column<string>(type: "TEXT", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_LoadExtensionSteps", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_LoadExtensionSteps_ConfigRepositories_ConfigurationRepositoryId",
-                        column: x => x.ConfigurationRepositoryId,
-                        principalTable: "ConfigRepositories",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_LoadExtensionSteps_Files_FileId",
-                        column: x => x.FileId,
-                        principalTable: "Files",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CopyInfoBaseSteps",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    SourceCredentialsId = table.Column<string>(type: "TEXT", nullable: true),
-                    SourceInfoBaseId = table.Column<string>(type: "TEXT", nullable: true),
-                    DestinationCredentialsId = table.Column<string>(type: "TEXT", nullable: true),
-                    DestinationInfoBaseId = table.Column<string>(type: "TEXT", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CopyInfoBaseSteps", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_CopyInfoBaseSteps_Credentials_DestinationCredentialsId",
-                        column: x => x.DestinationCredentialsId,
-                        principalTable: "Credentials",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_CopyInfoBaseSteps_Credentials_SourceCredentialsId",
-                        column: x => x.SourceCredentialsId,
-                        principalTable: "Credentials",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_CopyInfoBaseSteps_InfoBases_DestinationInfoBaseId",
-                        column: x => x.DestinationInfoBaseId,
-                        principalTable: "InfoBases",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_CopyInfoBaseSteps_InfoBases_SourceInfoBaseId",
-                        column: x => x.SourceInfoBaseId,
-                        principalTable: "InfoBases",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "InfoBaseMaintenanceTask",
                 columns: table => new
                 {
@@ -653,49 +491,85 @@ namespace OneSwiss.Server.Migrations
                     PreviousStepId = table.Column<string>(type: "TEXT", nullable: true),
                     LeftStepId = table.Column<string>(type: "TEXT", nullable: true),
                     RightStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    LockConnectionsStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    LoadConfigurationStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    DeleteExtensionStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    LoadExtensionStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    UpdateConfigurationStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    StartExternalDataProcessorStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    ExecuteOneScriptStepId = table.Column<string>(type: "TEXT", nullable: true),
-                    CopyInfoBaseStepId = table.Column<string>(type: "TEXT", nullable: true),
                     PositionX = table.Column<double>(type: "REAL", nullable: false),
-                    PositionY = table.Column<double>(type: "REAL", nullable: false)
+                    PositionY = table.Column<double>(type: "REAL", nullable: false),
+                    CopyInfoBaseStep_SourceCredentialsId = table.Column<string>(type: "TEXT", nullable: true),
+                    CopyInfoBaseStep_SourceInfoBaseId = table.Column<string>(type: "TEXT", nullable: true),
+                    CopyInfoBaseStep_DestinationCredentialsId = table.Column<string>(type: "TEXT", nullable: true),
+                    CopyInfoBaseStep_DestinationInfoBaseId = table.Column<string>(type: "TEXT", nullable: true),
+                    ExecuteOneScriptStep_DebugMode = table.Column<bool>(type: "INTEGER", nullable: true),
+                    ExecuteOneScriptStep_ExecutablePath = table.Column<string>(type: "TEXT", nullable: true),
+                    ExecuteOneScriptStep_FileId = table.Column<string>(type: "TEXT", nullable: true),
+                    StartExternalDataProcessorStep_FileId = table.Column<string>(type: "TEXT", nullable: true),
+                    UpdateConfigurationStep_FileId = table.Column<string>(type: "TEXT", nullable: true),
+                    LoadExtensionStep_FromConfigRepository = table.Column<bool>(type: "INTEGER", nullable: true),
+                    LoadExtensionStep_ExtensionName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    LoadExtensionStep_FileId = table.Column<string>(type: "TEXT", nullable: true),
+                    LoadExtensionStep_ConfigurationRepositoryId = table.Column<string>(type: "TEXT", nullable: true),
+                    DeleteExtensionStep_ExtensionName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    LoadConfigurationStep_FromConfigRepository = table.Column<bool>(type: "INTEGER", nullable: true),
+                    LoadConfigurationStep_FileId = table.Column<string>(type: "TEXT", nullable: true),
+                    LoadConfigurationStep_ConfigurationRepositoryId = table.Column<string>(type: "TEXT", nullable: true),
+                    LockConnectionsStep_AccessCode = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
+                    LockConnectionsStep_Message = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MaintenanceSteps", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MaintenanceSteps_CopyInfoBaseSteps_CopyInfoBaseStepId",
-                        column: x => x.CopyInfoBaseStepId,
-                        principalTable: "CopyInfoBaseSteps",
+                        name: "FK_MaintenanceSteps_ConfigRepositories_LoadConfigurationStep_ConfigurationRepositoryId",
+                        column: x => x.LoadConfigurationStep_ConfigurationRepositoryId,
+                        principalTable: "ConfigRepositories",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MaintenanceSteps_DeleteExtensionSteps_DeleteExtensionStepId",
-                        column: x => x.DeleteExtensionStepId,
-                        principalTable: "DeleteExtensionSteps",
+                        name: "FK_MaintenanceSteps_ConfigRepositories_LoadExtensionStep_ConfigurationRepositoryId",
+                        column: x => x.LoadExtensionStep_ConfigurationRepositoryId,
+                        principalTable: "ConfigRepositories",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MaintenanceSteps_ExecuteOneScriptSteps_ExecuteOneScriptStepId",
-                        column: x => x.ExecuteOneScriptStepId,
-                        principalTable: "ExecuteOneScriptSteps",
+                        name: "FK_MaintenanceSteps_Credentials_CopyInfoBaseStep_DestinationCredentialsId",
+                        column: x => x.CopyInfoBaseStep_DestinationCredentialsId,
+                        principalTable: "Credentials",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MaintenanceSteps_LoadConfigurationSteps_LoadConfigurationStepId",
-                        column: x => x.LoadConfigurationStepId,
-                        principalTable: "LoadConfigurationSteps",
+                        name: "FK_MaintenanceSteps_Credentials_CopyInfoBaseStep_SourceCredentialsId",
+                        column: x => x.CopyInfoBaseStep_SourceCredentialsId,
+                        principalTable: "Credentials",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MaintenanceSteps_LoadExtensionSteps_LoadExtensionStepId",
-                        column: x => x.LoadExtensionStepId,
-                        principalTable: "LoadExtensionSteps",
+                        name: "FK_MaintenanceSteps_Files_ExecuteOneScriptStep_FileId",
+                        column: x => x.ExecuteOneScriptStep_FileId,
+                        principalTable: "Files",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MaintenanceSteps_LockConnectionsSteps_LockConnectionsStepId",
-                        column: x => x.LockConnectionsStepId,
-                        principalTable: "LockConnectionsSteps",
+                        name: "FK_MaintenanceSteps_Files_LoadConfigurationStep_FileId",
+                        column: x => x.LoadConfigurationStep_FileId,
+                        principalTable: "Files",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaintenanceSteps_Files_LoadExtensionStep_FileId",
+                        column: x => x.LoadExtensionStep_FileId,
+                        principalTable: "Files",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaintenanceSteps_Files_StartExternalDataProcessorStep_FileId",
+                        column: x => x.StartExternalDataProcessorStep_FileId,
+                        principalTable: "Files",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaintenanceSteps_Files_UpdateConfigurationStep_FileId",
+                        column: x => x.UpdateConfigurationStep_FileId,
+                        principalTable: "Files",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaintenanceSteps_InfoBases_CopyInfoBaseStep_DestinationInfoBaseId",
+                        column: x => x.CopyInfoBaseStep_DestinationInfoBaseId,
+                        principalTable: "InfoBases",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaintenanceSteps_InfoBases_CopyInfoBaseStep_SourceInfoBaseId",
+                        column: x => x.CopyInfoBaseStep_SourceInfoBaseId,
+                        principalTable: "InfoBases",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_MaintenanceSteps_MaintenanceTasks_MaintenanceTaskId",
@@ -703,16 +577,6 @@ namespace OneSwiss.Server.Migrations
                         principalTable: "MaintenanceTasks",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_MaintenanceSteps_StartExternalDataProcessorSteps_StartExternalDataProcessorStepId",
-                        column: x => x.StartExternalDataProcessorStepId,
-                        principalTable: "StartExternalDataProcessorSteps",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_MaintenanceSteps_UpdateConfigurationSteps_UpdateConfigurationStepId",
-                        column: x => x.UpdateConfigurationStepId,
-                        principalTable: "UpdateConfigurationSteps",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -787,26 +651,6 @@ namespace OneSwiss.Server.Migrations
                 column: "RepositoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CopyInfoBaseSteps_DestinationCredentialsId",
-                table: "CopyInfoBaseSteps",
-                column: "DestinationCredentialsId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CopyInfoBaseSteps_DestinationInfoBaseId",
-                table: "CopyInfoBaseSteps",
-                column: "DestinationInfoBaseId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CopyInfoBaseSteps_SourceCredentialsId",
-                table: "CopyInfoBaseSteps",
-                column: "SourceCredentialsId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CopyInfoBaseSteps_SourceInfoBaseId",
-                table: "CopyInfoBaseSteps",
-                column: "SourceInfoBaseId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_CustomNotifications_NotificationRecipientId",
                 table: "CustomNotifications",
                 column: "NotificationRecipientId");
@@ -820,11 +664,6 @@ namespace OneSwiss.Server.Migrations
                 name: "IX_EventLogSettings_DbmsId",
                 table: "EventLogSettings",
                 column: "DbmsId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ExecuteOneScriptSteps_FileId",
-                table: "ExecuteOneScriptSteps",
-                column: "FileId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_InfoBaseMaintenanceTask_MaintenanceTasksId",
@@ -842,59 +681,54 @@ namespace OneSwiss.Server.Migrations
                 column: "CredentialsId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_LoadConfigurationSteps_ConfigurationRepositoryId",
-                table: "LoadConfigurationSteps",
-                column: "ConfigurationRepositoryId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LoadConfigurationSteps_FileId",
-                table: "LoadConfigurationSteps",
-                column: "FileId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LoadExtensionSteps_ConfigurationRepositoryId",
-                table: "LoadExtensionSteps",
-                column: "ConfigurationRepositoryId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LoadExtensionSteps_FileId",
-                table: "LoadExtensionSteps",
-                column: "FileId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_LogTemplateTechLogSeance_TemplatesId",
                 table: "LogTemplateTechLogSeance",
                 column: "TemplatesId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceSteps_CopyInfoBaseStepId",
+                name: "IX_MaintenanceSteps_CopyInfoBaseStep_DestinationCredentialsId",
                 table: "MaintenanceSteps",
-                column: "CopyInfoBaseStepId");
+                column: "CopyInfoBaseStep_DestinationCredentialsId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceSteps_DeleteExtensionStepId",
+                name: "IX_MaintenanceSteps_CopyInfoBaseStep_DestinationInfoBaseId",
                 table: "MaintenanceSteps",
-                column: "DeleteExtensionStepId");
+                column: "CopyInfoBaseStep_DestinationInfoBaseId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceSteps_ExecuteOneScriptStepId",
+                name: "IX_MaintenanceSteps_CopyInfoBaseStep_SourceCredentialsId",
                 table: "MaintenanceSteps",
-                column: "ExecuteOneScriptStepId");
+                column: "CopyInfoBaseStep_SourceCredentialsId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceSteps_LoadConfigurationStepId",
+                name: "IX_MaintenanceSteps_CopyInfoBaseStep_SourceInfoBaseId",
                 table: "MaintenanceSteps",
-                column: "LoadConfigurationStepId");
+                column: "CopyInfoBaseStep_SourceInfoBaseId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceSteps_LoadExtensionStepId",
+                name: "IX_MaintenanceSteps_ExecuteOneScriptStep_FileId",
                 table: "MaintenanceSteps",
-                column: "LoadExtensionStepId");
+                column: "ExecuteOneScriptStep_FileId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceSteps_LockConnectionsStepId",
+                name: "IX_MaintenanceSteps_LoadConfigurationStep_ConfigurationRepositoryId",
                 table: "MaintenanceSteps",
-                column: "LockConnectionsStepId");
+                column: "LoadConfigurationStep_ConfigurationRepositoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaintenanceSteps_LoadConfigurationStep_FileId",
+                table: "MaintenanceSteps",
+                column: "LoadConfigurationStep_FileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaintenanceSteps_LoadExtensionStep_ConfigurationRepositoryId",
+                table: "MaintenanceSteps",
+                column: "LoadExtensionStep_ConfigurationRepositoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaintenanceSteps_LoadExtensionStep_FileId",
+                table: "MaintenanceSteps",
+                column: "LoadExtensionStep_FileId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MaintenanceSteps_MaintenanceTaskId",
@@ -902,14 +736,14 @@ namespace OneSwiss.Server.Migrations
                 column: "MaintenanceTaskId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceSteps_StartExternalDataProcessorStepId",
+                name: "IX_MaintenanceSteps_StartExternalDataProcessorStep_FileId",
                 table: "MaintenanceSteps",
-                column: "StartExternalDataProcessorStepId");
+                column: "StartExternalDataProcessorStep_FileId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceSteps_UpdateConfigurationStepId",
+                name: "IX_MaintenanceSteps_UpdateConfigurationStep_FileId",
                 table: "MaintenanceSteps",
-                column: "UpdateConfigurationStepId");
+                column: "UpdateConfigurationStep_FileId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MaintenanceTaskLogs_InfoBaseId",
@@ -927,11 +761,6 @@ namespace OneSwiss.Server.Migrations
                 column: "TaskId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_StartExternalDataProcessorSteps_FileId",
-                table: "StartExternalDataProcessorSteps",
-                column: "FileId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_TechLogSettings_CredentialsId",
                 table: "TechLogSettings",
                 column: "CredentialsId");
@@ -940,11 +769,6 @@ namespace OneSwiss.Server.Migrations
                 name: "IX_TechLogSettings_DbmsId",
                 table: "TechLogSettings",
                 column: "DbmsId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UpdateConfigurationSteps_FileId",
-                table: "UpdateConfigurationSteps",
-                column: "FileId");
         }
 
         /// <inheritdoc />
@@ -1008,40 +832,16 @@ namespace OneSwiss.Server.Migrations
                 name: "Dbms");
 
             migrationBuilder.DropTable(
-                name: "CopyInfoBaseSteps");
+                name: "ConfigRepositories");
 
             migrationBuilder.DropTable(
-                name: "DeleteExtensionSteps");
-
-            migrationBuilder.DropTable(
-                name: "ExecuteOneScriptSteps");
-
-            migrationBuilder.DropTable(
-                name: "LoadConfigurationSteps");
-
-            migrationBuilder.DropTable(
-                name: "LoadExtensionSteps");
-
-            migrationBuilder.DropTable(
-                name: "LockConnectionsSteps");
-
-            migrationBuilder.DropTable(
-                name: "MaintenanceTasks");
-
-            migrationBuilder.DropTable(
-                name: "StartExternalDataProcessorSteps");
-
-            migrationBuilder.DropTable(
-                name: "UpdateConfigurationSteps");
+                name: "Files");
 
             migrationBuilder.DropTable(
                 name: "InfoBases");
 
             migrationBuilder.DropTable(
-                name: "ConfigRepositories");
-
-            migrationBuilder.DropTable(
-                name: "Files");
+                name: "MaintenanceTasks");
 
             migrationBuilder.DropTable(
                 name: "Clusters");

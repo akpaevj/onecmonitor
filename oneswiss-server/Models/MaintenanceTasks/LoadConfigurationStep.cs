@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace OneSwiss.Server.Models.MaintenanceTasks;
 
-public class LoadConfigurationStep : DatabaseObject
+[Owned]
+public class LoadConfigurationStep
 {
     public bool FromConfigRepository { get; set; }
     public Guid? FileId { get; set; }

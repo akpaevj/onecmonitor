@@ -11,6 +11,7 @@
 
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="15.0.1" />
+        <PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="8.2.4" />
         <PackageReference Include="FluentValidation" Version="12.0.0" />
         <PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
         <PackageReference Include="Grpc.Tools" Version="2.72.0">
@@ -38,6 +39,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Reference Include="Microsoft.Data.SqlClient">
+        <HintPath>..\..\..\.nuget\packages\microsoft.data.sqlclient\6.1.0\ref\net9.0\Microsoft.Data.SqlClient.dll</HintPath>
+      </Reference>
       <Reference Include="Telegram.Bot">
         <HintPath>..\..\..\.nuget\packages\telegram.bot\22.5.1\lib\net6.0\Telegram.Bot.dll</HintPath>
       </Reference>

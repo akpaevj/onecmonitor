@@ -5,7 +5,7 @@
 @if (Item.Visible)
 {
     <MudButton FullWidth="true" Class="justify-start" Color="@_color" OnClick="SelectItem">
-        <MudStack Row Spacing="0">
+        <MudStack Row Spacing="0" AlignItems="AlignItems.Stretch" StretchItems="StretchItems.All">
             <MudElement Style="@_paddingStyle" HtmlTag="div"/>
             @if (_isLoading)
             {

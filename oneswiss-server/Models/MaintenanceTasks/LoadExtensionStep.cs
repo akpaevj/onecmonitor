@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace OneSwiss.Server.Models.MaintenanceTasks;
 
-public class LoadExtensionStep : DatabaseObject
+[Owned]
+public class LoadExtensionStep
 {
     public bool FromConfigRepository { get; set; }
     [MaxLength(200)]

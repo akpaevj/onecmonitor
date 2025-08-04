@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace OneSwiss.Server.Models.MaintenanceTasks;
 
-public class CopyInfoBaseStep : DatabaseObject
+[Owned]
+public class CopyInfoBaseStep
 {
     public Guid? SourceCredentialsId { get; set; }
     [ForeignKey(nameof(SourceCredentialsId))]

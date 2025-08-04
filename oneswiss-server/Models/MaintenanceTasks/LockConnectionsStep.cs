@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 
 namespace OneSwiss.Server.Models.MaintenanceTasks;
 
-public class LockConnectionsStep : DatabaseObject
+[Owned]
+public class LockConnectionsStep
 {
     [MaxLength(20)]
     public string AccessCode { get; set; } = string.Empty;

@@ -139,7 +139,7 @@ public class MaintenanceTaskExecutor : BackgroundService
             }
             finally
             {
-                DeleteV8Files(context.Files, true);
+                DeleteV8Files(context.Files, false);
             }
             
             await SendTaskLog(task, "Завершение выполнения задачи", false, true, cancellationToken);

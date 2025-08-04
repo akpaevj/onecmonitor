@@ -24,14 +24,14 @@ namespace OneSwiss.Server
         public DbSet<MaintenanceTask> MaintenanceTasks { get; set; }
         public DbSet<MaintenanceTaskLogItem> MaintenanceTaskLogs { get; set; }
         public DbSet<MaintenanceStep> MaintenanceSteps { get; set; }
-        public DbSet<LockConnectionsStep> LockConnectionsSteps { get; set; }
+        /*public DbSet<LockConnectionsStep> LockConnectionsSteps { get; set; }
         public DbSet<ExecuteOneScriptStep> ExecuteOneScriptSteps { get; set; }
         public DbSet<StartExternalDataProcessorStep> StartExternalDataProcessorSteps { get; set; }
         public DbSet<UpdateConfigurationStep> UpdateConfigurationSteps { get; set; }
         public DbSet<LoadConfigurationStep> LoadConfigurationSteps { get; set; }
         public DbSet<LoadExtensionStep> LoadExtensionSteps { get; set; }
         public DbSet<DeleteExtensionStep> DeleteExtensionSteps { get; set; }
-        public DbSet<CopyInfoBaseStep> CopyInfoBaseSteps { get; set; }
+        public DbSet<CopyInfoBaseStep> CopyInfoBaseSteps { get; set; }*/
         public DbSet<EventLogSettings> EventLogSettings { get; set; }
         public DbSet<ErrorLoggingServiceSettings> ErrorLoggingServiceSettings { get; set; }
         public DbSet<ErrorReport> ErrorReports { get; set; }
@@ -52,6 +52,14 @@ namespace OneSwiss.Server
             => optionsBuilder
                 .UseSqlite($"Data Source={DbPath}")
                 .UseAsyncSeeding(SeedLogTemplates);
+
+        /*protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<MaintenanceStep>()
+                .HasOne<ExecuteOneScriptStep>()
+                .WithOne()
+                .OnDelete(DeleteBehavior.Cascade);
+        }*/
 
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {

@@ -1,5 +1,8 @@
 @inject IDbContextFactory<AppDbContext> ContextFactory
+@using Microsoft.Data.SqlClient
+@using Microsoft.Data.Sqlite
 @using Microsoft.EntityFrameworkCore
+@using Npgsql
 @using OneSwiss.Server.Extensions
 @inject ISnackbar SnackBar
 @inject ILogger<ItemDeletingDialog<T>> Logger
@@ -29,11 +32,11 @@
 
     private async Task Submit()
     {
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        var item = await context.Set<T>().FindAsync(Id);
+        
         try
         {
-            await using var context = await ContextFactory.CreateDbContextAsync();
-            var item = await context.Set<T>().FindAsync(Id);
-            
             context.Entry(item!).State = EntityState.Deleted;
             
             await context.SaveChangesAsync();
@@ -42,10 +45,35 @@
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "Ошибка при удалении элемента");
-            SnackBar.ShowError(e);
-            Cancel();
+            ShowErrorAndCancel(e);
         }
+    }
+
+    private void ShowErrorAndCancel(Exception ex)
+    {
+        Logger.LogError(ex, "Ошибка при удалении элемента");
+        SnackBar.ShowError(ex);
+        Cancel();
+    }
+    
+    private static List<string> GetBlockingReferences(DbContext dbContext, object entity)
+    {
+        var entityType = dbContext.Model.FindEntityType(entity.GetType());
+
+        return (from foreignKey in dbContext.Model.GetEntityTypes()
+                .SelectMany(e => e.GetForeignKeys())
+            where foreignKey.PrincipalEntityType == entityType
+            let dependentType = foreignKey.DeclaringEntityType
+            let navName = foreignKey.PrincipalToDependent?.Name ?? foreignKey.DependentToPrincipal?.Name
+            let count = (int)dbContext.GetType()
+                .GetMethod("Set")
+                .MakeGenericMethod(dependentType.ClrType)
+                .Invoke(dbContext, null)
+                .GetType()
+                .GetMethod("Count")
+                .Invoke(null, [])
+            where count > 0
+            select $"{navName} ({count} шт.)").ToList();
     }
 
     private void Cancel() => MudDialog.Cancel();

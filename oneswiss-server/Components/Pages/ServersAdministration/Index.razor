@@ -1,4 +1,5 @@
 @page "/"
+@using System.Globalization
 @using Blazor.Diagrams.Core.Models.Base
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.EntityFrameworkCore
@@ -8,30 +9,34 @@
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
+@using MudExtensions
 @inject NavigationManager NavManager
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @inject AgentsConnectionsManager AgentsConnectionsManager
+@inject IJSRuntime JS
 @rendermode InteractiveServer
 
 <PageTitle>Администрирование серверов</PageTitle>
 
-<MudGrid>
-    <MudItem xs="12" md="3">
-        <MudPaper Class="pa-4">
-            <TreeView @ref="_tree" @bind-SelectedItem="_selectedItem" @bind-Items="_items"/>
+<MudSplitter EnableMargin="true" EnableSlide="true" @bind-Dimension="_dimension" @bind-Dimension:after="AfterDimensionChanged" Height="calc(100vh - 140px)">
+    <StartContent>
+        <MudPaper Class="pa-2 w-100">
+            <TreeView @bind-SelectedItem="_selectedItem" @bind-Items="_items"/>
         </MudPaper>
-    </MudItem>
-    <MudItem xs="12" md="9">
-        @if (_selectedItem is { DynamicComponentType: not null })
-        {
-            <DynamicComponent 
-                @ref="_dynamicComponent" 
-                @key="_selectedItem.Id" 
-                Type="_selectedItem.DynamicComponentType" 
-                Parameters="_selectedItem.Parameters"/>
-        }
-    </MudItem>
-</MudGrid>
+    </StartContent>
+    <EndContent>
+        <MudPaper Class="pa-2 w-100">
+            @if (_selectedItem is { DynamicComponentType: not null })
+            {
+                <DynamicComponent
+                    @ref="_dynamicComponent"
+                    @key="_selectedItem.Id"
+                    Type="_selectedItem.DynamicComponentType"
+                    Parameters="_selectedItem.Parameters"/>
+            }
+        </MudPaper>
+    </EndContent>
+</MudSplitter>
 
 @code
 {
@@ -39,7 +44,7 @@
     private IReadOnlyCollection<TreeItem> _items = [];
     private TreeItem? _selectedItem;
     private DynamicComponent? _dynamicComponent;
-    private TreeView _tree;
+    private double _dimension = 20;
 
     protected override async Task OnInitializedAsync()
     {
@@ -56,6 +61,19 @@
         await _hubConnection.StartAsync();
 
         await UpdateItems();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var dimension = await JS.InvokeAsync<string?>("localStorage.getItem", "panel_dimension");
+            if (!string.IsNullOrEmpty(dimension))
+            {
+                _dimension = double.Parse(dimension, CultureInfo.InvariantCulture);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
     }
 
     private async Task UpdateItems()
@@ -242,5 +260,10 @@
             DynamicComponentType = typeof(V8ProcessDetails),
             Parameters = new Dictionary<string, object>{ { "ClusterId", cluster.Id }, { "Id", Guid.Parse(c.Id) } }
         }).ToList();
+    }
+
+    private async Task AfterDimensionChanged()
+    {
+        await JS.InvokeVoidAsync("localStorage.setItem", "panel_dimension", _dimension.ToString(CultureInfo.InvariantCulture));
     }
 }

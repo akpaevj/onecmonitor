@@ -1,3 +1,4 @@
+@using System.Text.Json
 @using Blazor.Diagrams
 @using Microsoft.EntityFrameworkCore
 @using Blazor.Diagrams.Components
@@ -19,6 +20,7 @@
 @using OneSwiss.Server.Models.MaintenanceTasks
 @using OneSwiss.Server.Components.Shared
 @inject IJSRuntime JS
+@inject IMapper Mapper
 @rendermode InteractiveServer
 
 <script>
@@ -161,6 +163,7 @@
     {
         // Запомним уже сформированный для модели id
         var template = (await context.MaintenanceTasks
+            .AsNoTracking()
             .Include(c => c.Agents)
             .Include(c => c.InfoBases)
             .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
@@ -176,13 +179,15 @@
         task.Description = template.Description;
         task.IsTemplate = IsTemplate;
         task.CommonDestination = template.CommonDestination;
+        
         task.Agents = template.Agents;
+        context.AttachRange(task.Agents);
+        
         task.InfoBases = template.InfoBases;
-
-        var newSteps = template.Steps;
+        context.AttachRange(task.InfoBases);
+        
+        var newSteps = Mapper.Map<List<MaintenanceStep>>(template.Steps);
         newSteps.ForEach(c => c.Id = Guid.Empty);
-            
-        await context.MaintenanceSteps.AddRangeAsync(newSteps);
         
         task.Steps.AddRange(newSteps);
     }
