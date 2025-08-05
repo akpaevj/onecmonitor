@@ -1,12 +1,24 @@
 ﻿@using System.Reflection
 @using MudBlazor.Utilities
+@using OneSwiss.Server.Extensions
 @inherits LayoutComponentBase
 @inject ISnackbar SnackbarService
+@inject IHttpContextAccessor ContextAccessor
+@inject IJSRuntime JS
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme"/>
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
+
+<script>
+    window.blazorSetCookie = (name, value, days) => {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;secure;samesite=strict`;
+    };
+</script>
+
 <MudLayout>
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="DrawerToggle" />
@@ -14,8 +26,12 @@
         <MudText Typo="Typo.h5">Sw</MudText>
         <MudText Typo="Typo.h5" Style="@($"color:{YellowColor}")">i</MudText>
         <MudText Typo="Typo.h5">ss</MudText>
-        <MudSpacer></MudSpacer>
-        <MudSwitch Color="Color.Primary" @bind-Value="@_isDarkMode" ThumbIcon="@(_isDarkMode ? Icons.Material.Outlined.LightMode : Icons.Material.Outlined.DarkMode)"></MudSwitch>
+        <MudSpacer/>
+        <MudSwitch 
+            Color="Color.Primary"
+            @bind-Value="_isDarkMode"
+            @bind-Value:after="OnChangeTheme"
+            ThumbIcon="@(_isDarkMode ? Icons.Material.Outlined.LightMode : Icons.Material.Outlined.DarkMode)"/>
         <MudText>@Assembly.GetExecutingAssembly().GetName().Version</MudText>
     </MudAppBar>
     <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
@@ -41,7 +57,7 @@
 
     readonly MudTheme _theme = new();
     private const string YellowColor = "#ffe016";
-
+    
     void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
@@ -50,6 +66,36 @@
     protected override void OnInitialized()
     {
         SnackbarService.Configuration.PositionClass = Defaults.Classes.Position.BottomEnd;
+        
+        if (ContextAccessor.HttpContext?.Request.Cookies.TryGetValue("IsDarkMode", out var value) == true &&
+            bool.TryParse(value, out var isDarkMode))
+            _isDarkMode = isDarkMode;
+    }
+    
+    private async Task SetIsDarkModeCookie()
+    {
+        await JS.InvokeVoidAsync("blazorSetCookie", "IsDarkMode", _isDarkMode, 7);
     }
 
+    private async Task OnChangeTheme()
+    {
+        await SetIsDarkModeCookie();
+    }
+
+    private PaletteLight GetSomeShadowedLightTheme()
+    {
+        var palette = new PaletteLight();
+        
+        var properties = palette.GetType().GetProperties().Where(c => c.PropertyType == typeof(MudColor));
+        
+        foreach (var propertyInfo in properties)
+        {
+            var value = propertyInfo.GetValue(palette) as MudColor;
+            
+            if (value != null && value is { R: 255, G: 255, B: 255 })
+                propertyInfo.SetValue(palette, value.ChangeLightness(-0.07));
+        }
+
+        return palette;
+    }
 }

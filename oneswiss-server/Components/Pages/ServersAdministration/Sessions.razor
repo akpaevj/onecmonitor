@@ -5,7 +5,7 @@
 @using OneSwiss.Server.Services
 @using OneSwiss.V8.Platform.RemoteAdministration
 
-<MudDataGrid T="V8Session" Loading="_isLoading" @bind-SelectedItems="_selectedItems" Virtualize="true" MultiSelection="true" FixedHeader="true" Items="_items" HorizontalScrollbar="true" Filterable="true" SortMode="SortMode.Multiple" Dense="true" Hover="true">
+<MudDataGrid T="V8Session" Loading="_isLoading" Class="h-100" @bind-SelectedItems="_selectedItems" Virtualize="true" MultiSelection="true" FixedHeader="true" Items="_items" HorizontalScrollbar="true" Filterable="true" SortMode="SortMode.Multiple" Dense="true" Hover="true">
     <ToolBarContent>
         <MudStack Row Spacing="0">
             <MudButton Disabled="@(_selectedItems.Count == 0 || _isLoading)" Variant="Variant.Filled" Color="Color.Primary" OnClick="CloseSessions">Закрыть сеансы</MudButton>
