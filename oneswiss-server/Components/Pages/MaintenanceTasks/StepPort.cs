@@ -6,31 +6,31 @@ using Blazor.Diagrams.Core.Models.Base;
 
 namespace OneSwiss.Server.Components.Pages.MaintenanceTasks;
 
-public class StepPort : PortModel
+public class StepPort(
+    Diagram diagram,
+    StepPortType type,
+    NodeModel parent,
+    PortAlignment alignment = PortAlignment.Bottom,
+    Point? position = null,
+    Size? size = null)
+    : PortModel(parent, alignment, position, size)
 {
-    private Diagram _diagram;
+    public StepPortType Type { get; } = type;
+    public bool IsIn => Type == StepPortType.In;
+    public bool IsSuccess => Type == StepPortType.Success;
+    public bool IsFailure => Type == StepPortType.Failure;
+    public new StepNode Parent => (base.Parent as StepNode)!;
     
-    public StepPort(Diagram diagram, NodeModel parent, PortAlignment alignment = PortAlignment.Bottom, Point? position = null, Size? size = null) : base(parent, alignment, position, size)
-    {
-        _diagram = diagram;
-    }
-
-    public StepPort(Diagram diagram, string id, NodeModel parent, PortAlignment alignment = PortAlignment.Bottom, Point? position = null, Size? size = null) : base(id, parent, alignment, position, size)
-    {
-        _diagram = diagram;
-    }
-
     public override bool CanAttachTo(ILinkable other)
     {
         if (other is StepPort port)
         {
-            var canAttach = port.Links.Count == 0 && port.Parent.Id != Parent.Id &&
-                            port.Alignment == PortAlignment.Left;
+            var canAttach = port.Links.Count == 0 && port.Parent.Id != Parent.Id && port.Type == StepPortType.In;
             
             // Найдем все циклы диаграммы, если есть хоть один, то отказываем в линке
             if (canAttach)
-                return !_diagram.Nodes.Cast<StepNode>()
-                    .Where(c => c.GetPort(PortAlignment.Left)!.Links.Count == 0)
+                return !diagram.Nodes.Cast<StepNode>()
+                    .Where(c => c.GetInPort()!.Links.Count == 0)
                     .Any(HasLoop);
         }
 

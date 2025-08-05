@@ -9,8 +9,8 @@ namespace OneSwiss.Server.Components.Pages.MaintenanceTasks;
 
 public class StepNode : NodeModel
 {
-    public MaintenanceStep Step { get; set; }
-
+    public MaintenanceStep Step { get; }
+    
     public StepNode(MaintenanceStepKind kind, Point? position = null) : base(position)
     {
         Step = new MaintenanceStep
@@ -23,4 +23,19 @@ public class StepNode : NodeModel
     {
         Step = step;
     }
+
+    public StepPort? GetPort(StepPortType type)
+    {
+        var port = Ports.FirstOrDefault(p => p is StepPort port && port.Type == type);
+        return port as StepPort;
+    }
+    
+    public StepPort? GetInPort()
+        => GetPort(StepPortType.In);
+    
+    public StepPort? GetSuccessPort()
+        => GetPort(StepPortType.Success);
+    
+    public StepPort? GetFailurePort()
+        => GetPort(StepPortType.Failure);
 }

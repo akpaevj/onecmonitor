@@ -21,6 +21,7 @@
 @using OneSwiss.Server.Components.Shared
 @inject IJSRuntime JS
 @inject IMapper Mapper
+@inject IDialogService DialogService
 @rendermode InteractiveServer
 
 <script>
@@ -45,7 +46,10 @@
     <MudStack>
         <MudStack Row Class="mb-3" Breakpoint="Breakpoint.MdAndDown" AlignItems="AlignItems.Center" StretchItems="StretchItems.All">
             <MudTextField Class="w-100" For="@(() => _editor.Model!.Description)" Variant="Variant.Outlined" Label="Наименование" @bind-Value="@_editor.Model!.Description"/>
-            <MudSwitch Label="Задача общего назначения" @bind-Value="@_editor.Model!.CommonDestination" Color="Color.Primary"/>
+            <MudSwitch Label="Задача общего назначения" 
+                       @bind-Value:get="@_editor.Model!.CommonDestination" 
+                       @bind-Value:set="SetTaskType"
+                       Color="Color.Primary"/>
             @if (_editor.Model!.CommonDestination)
             {
                 <ItemsSelector T="Agent"
@@ -129,7 +133,7 @@
         if (TemplateId != Guid.Empty)
             await InitModelFromTemplate(valueTuple.Model, valueTuple.Context);
         
-        ModelToDiagram(valueTuple.Model, valueTuple.Context);
+        ModelToDiagram(valueTuple.Model);
     }
     
     private static IQueryable<MaintenanceTask> ModelSelector(IQueryable<MaintenanceTask> arg)
@@ -230,14 +234,7 @@
                 return;
             
             model.Changed += OnNodeChanged;
-
-            InitNewNode(stepNode);
         }; 
-    }
-
-    private static void InitNewNode(StepNode node)
-    {
-        node.Step.StepId = Guid.NewGuid();
     }
     
     private void DiagramToModel(MaintenanceTask task)
@@ -266,22 +263,22 @@
                 var step1 = link.Source.Model as StepPort;
                 var step2 = link.Target.Model as StepPort;
 
-                var step1Node = step1!.Parent as StepNode;
-                var step2Node = step2!.Parent as StepNode;
+                var step1Node = step1!.Parent;
+                var step2Node = step2!.Parent;
 
-                if (step1.Alignment == PortAlignment.Left)
-                    step1Node!.Step.PreviousStepId = step2Node!.Step.StepId;
-                else if (step1.Alignment == PortAlignment.TopRight)
-                    step1Node!.Step.LeftStepId = step2Node!.Step.StepId;
-                else if (step1.Alignment == PortAlignment.BottomRight)
-                    step1Node!.Step.RightStepId = step2Node!.Step.StepId;
+                if (step1.IsIn)
+                    step1Node.Step.PreviousStepId = step2Node.Step.StepId;
+                else if (step1.IsSuccess)
+                    step1Node.Step.LeftStepId = step2Node.Step.StepId;
+                else if (step1.IsFailure)
+                    step1Node.Step.RightStepId = step2Node.Step.StepId;
                 
-                if (step2.Alignment == PortAlignment.Left)
-                    step2Node!.Step.PreviousStepId = step1Node!.Step.StepId;
-                else if (step2.Alignment == PortAlignment.TopRight)
-                    step2Node!.Step.LeftStepId = step1Node!.Step.StepId;
-                else if (step2.Alignment == PortAlignment.BottomRight)
-                    step2Node!.Step.RightStepId = step1Node!.Step.StepId;
+                if (step2.IsIn)
+                    step2Node.Step.PreviousStepId = step1Node.Step.StepId;
+                else if (step2.IsSuccess)
+                    step2Node.Step.LeftStepId = step1Node.Step.StepId;
+                else if (step2.IsFailure)
+                    step2Node.Step.RightStepId = step1Node.Step.StepId;
             }
 
             step.NodeKind = step is { LeftStepId: not null, RightStepId: not null } 
@@ -291,7 +288,7 @@
         }
     }
 
-    private void ModelToDiagram(MaintenanceTask task, AppDbContext context)
+    private void ModelToDiagram(MaintenanceTask task)
     {
         var nodeStepPairs = new Dictionary<MaintenanceStep, StepNode>();
         
@@ -312,7 +309,7 @@
                 continue;
             
             var secondPort = GetSecondPort(step.StepId);
-            Diagram.Links.Add(new LinkModel(secondPort, node.GetPort(PortAlignment.Left)!));
+            Diagram.Links.Add(new LinkModel(secondPort, node.GetInPort()!));
         }
 
         return;
@@ -323,13 +320,13 @@
             if (secondStep != null)
             {
                 var n = nodeStepPairs[secondStep];
-                return n.GetPort(PortAlignment.TopRight)!;
+                return n.GetSuccessPort()!;
             }
             
             secondStep = task.Steps.FirstOrDefault(c => c.RightStepId == firstStepId);
             
             var n1 = nodeStepPairs[secondStep!];
-            return n1.GetPort(PortAlignment.BottomRight)!;
+            return n1.GetFailurePort()!;
         }
     }
 
@@ -354,7 +351,7 @@
 
             node.Position = new Point(newNodeX, lastNodeY - (node.Size!.Height / 2));
 
-            Diagram.Links.Add(new LinkModel(lastNode.GetPort(PortAlignment.TopRight)!, node.GetPort(PortAlignment.Left)!));   
+            Diagram.Links.Add(new LinkModel(lastNode.GetSuccessPort()!, node.GetInPort()!));   
         }
     }
 
@@ -364,30 +361,30 @@
             return;
             
         var parent = port.Parent;
-        var top = parent.Ports.FirstOrDefault(c => c.Alignment == PortAlignment.TopRight);
-        var bottom = parent.Ports.FirstOrDefault(c => c.Alignment == PortAlignment.BottomRight);
+        var successPort = parent.GetSuccessPort();
+        var failurePort = parent.GetFailurePort();
 
-        if (top?.Links.Count > 0 && bottom?.Links.Count > 0)
+        if (successPort?.Links.Count > 0 && failurePort?.Links.Count > 0)
         {
-            var topLink = top.Links.FirstOrDefault();
-            if (topLink is not null && topLink.Labels.Count == 0)
+            var successLink = successPort.Links.FirstOrDefault();
+            if (successLink is not null && successLink.Labels.Count == 0)
             {
-                topLink.AddLabel("Успех");
-                topLink.Refresh();
+                successLink.AddLabel("Успех");
+                successLink.Refresh();
             }
                 
-            var bottomLink = bottom.Links.FirstOrDefault();
-            if (bottomLink is not null && bottomLink.Labels.Count == 0)
+            var failureLink = failurePort.Links.FirstOrDefault();
+            if (failureLink is not null && failureLink.Labels.Count == 0)
             {
-                bottomLink.AddLabel("Ошибка");
-                bottomLink.Refresh();
+                failureLink.AddLabel("Ошибка");
+                failureLink.Refresh();
             }
         }
-        else if (top?.Links.Count == 0 && bottom?.Links.Count > 0)
-            Diagram.Links.Remove(bottom.Links.First());
-        else if (top?.Links.Count > 0 && bottom?.Links.Count == 0)
+        else if (successPort?.Links.Count == 0 && failurePort?.Links.Count > 0)
+            Diagram.Links.Remove(failurePort.Links.First());
+        else if (successPort?.Links.Count > 0 && failurePort?.Links.Count == 0)
         {
-            var topLink = top.Links.First();
+            var topLink = successPort.Links.First();
             topLink.Labels.Clear();
             topLink.Refresh();
         }
@@ -402,9 +399,37 @@
 
     private void InitNode(StepNode node)
     {
-        node.AddPort(new StepPort(Diagram, node, PortAlignment.BottomRight));
-        node.AddPort(new StepPort(Diagram, node, PortAlignment.TopRight));
-        node.AddPort(new StepPort(Diagram, node, PortAlignment.Left));
+        node.AddPort(new StepPort(Diagram, StepPortType.Failure, node, PortAlignment.BottomRight));
+        node.AddPort(new StepPort(Diagram, StepPortType.Success, node, PortAlignment.TopRight));
+        node.AddPort(new StepPort(Diagram, StepPortType.In, node, PortAlignment.Left));
+    }
+    
+    private async Task SetTaskType(bool value)
+    {
+        var oldValue = _editor.Model!.CommonDestination;
+        _editor.Model!.CommonDestination = value;
+        
+        var availableStepKinds = GetAvailableStepKinds();
+
+        var nodes = Diagram.Nodes.Cast<StepNode>().ToList();
+        var hasNotAvailableNodes = nodes.FirstOrDefault(c => !availableStepKinds.Contains(c.Step.Kind)) != null;
+
+        if (hasNotAvailableNodes)
+        {
+            var result = await DialogService.ShowMessageBox(
+                "Смена типа задачи",
+                "После смены типа задачи, недоступные к использованию типы шагов будут удалены. Продолжить?",
+                "Да",
+                "Нет");
+
+            if (result == true)
+                nodes
+                    .Where(c => !availableStepKinds.Contains(c.Step.Kind))
+                    .ToList()
+                    .ForEach(Diagram.Nodes.Remove);
+            else
+                _editor.Model.CommonDestination = oldValue;
+        }
     }
 
     private MaintenanceStepKind[] GetAvailableStepKinds()
