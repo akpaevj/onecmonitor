@@ -14,12 +14,12 @@ public class CrServerWrapper(CrServer service) : AutoContext<CrServerWrapper>
     
     [ContextProperty("Запущена", "IsActive", CanWrite = false)]
     public bool IsActive => service.IsActive;
-    
+
     [ContextProperty("Порт", "Port", CanWrite = false)]
-    public int Port { get; set; }
+    public int Port => service.Port;
     
     [ContextProperty("Каталог", "Directory", CanWrite = false)]
-    public string Directory { get; set; } = null!;
+    public string Directory => service.Directory;
     
     [ContextProperty("Платформа", "Platform", CanWrite = false)]
     public V8PlatformWrapper Platform { get; } = new(service.Platform);
