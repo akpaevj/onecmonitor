@@ -24,6 +24,7 @@ public class ModelViewModelProfile : Profile
                 vm.Date = reportRoot.Time;
                 vm.PlatformVersion = reportRoot.ServerInfo.AppVersion;
                 vm.UserName = reportRoot.SessionInfo.UserName;
+                vm.AdditionalInfo = reportRoot.AdditionalInfo ?? string.Empty;
                 
                 return vm;
             });
