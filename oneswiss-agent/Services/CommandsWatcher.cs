@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Reflection;
 using MessagePack;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.DTO.MaintenanceTasks;
@@ -392,7 +393,8 @@ namespace OneSwiss.Agent.Services
                 IpAddresses = (await Dns.GetHostEntryAsync(Dns.GetHostName(), cancellationToken)).AddressList
                     .Where(c => c.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(c))
                     .Select(c => c.ToString())
-                    .ToArray()
+                    .ToArray(),
+                AgentVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? ""
             };
             await _server.Send(MessageType.SystemInfo, info, message, cancellationToken);
         }

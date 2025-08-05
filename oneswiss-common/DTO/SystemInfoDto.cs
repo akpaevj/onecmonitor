@@ -10,4 +10,7 @@ public class SystemInfoDto
 
     [Key(1)] 
     public string[] IpAddresses { get; set; } = [];
+    
+    [Key(2)] 
+    public string AgentVersion { get; set; } = string.Empty;
 }
