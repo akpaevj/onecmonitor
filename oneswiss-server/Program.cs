@@ -35,6 +35,7 @@ builder.Services.AddWindowsService(options =>
     options.ServiceName = "OneSwiss";
 });
 builder.Services.AddSystemd();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSignalR();
 

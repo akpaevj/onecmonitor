@@ -10,6 +10,7 @@
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
 @using MudExtensions
+@using OneSwiss.Server.Extensions
 @inject NavigationManager NavManager
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @inject AgentsConnectionsManager AgentsConnectionsManager
@@ -25,7 +26,7 @@
         </MudPaper>
     </StartContent>
     <EndContent>
-        <MudPaper Class="pa-2 w-100">
+        <MudPaper Class="pa-2 w-100 overflow-auto">
             @if (_selectedItem is { DynamicComponentType: not null })
             {
                 <DynamicComponent
@@ -67,7 +68,8 @@
     {
         if (firstRender)
         {
-            var dimension = await JS.InvokeAsync<string?>("localStorage.getItem", "panel_dimension");
+            var dimension = await JS.GetLocalStorageItem<string?>("panel_dimension");
+            
             if (!string.IsNullOrEmpty(dimension))
             {
                 _dimension = double.Parse(dimension, CultureInfo.InvariantCulture);
@@ -263,7 +265,5 @@
     }
 
     private async Task AfterDimensionChanged()
-    {
-        await JS.InvokeVoidAsync("localStorage.setItem", "panel_dimension", _dimension.ToString(CultureInfo.InvariantCulture));
-    }
+        => await JS.SetLocalStorageItem("panel_dimension", _dimension.ToString(CultureInfo.InvariantCulture));
 }
