@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using MudBlazor;
 using MudBlazor.Services;
 using MudExtensions.Services;
 using OneSwiss.Common.DTO;
@@ -74,6 +75,10 @@ builder.Services.AddSingleton<AgentsConnectionsManager>();
 builder.Services.AddHostedService<ClustersInfoBasesDetector>();
 builder.Services.AddHostedService<ConfigurationRepositoriesDetector>();
 builder.Services.AddHostedService<ErrorReportsCleaner>();
+
+builder.Services.AddHostedService<UpdatesChecker>();
+builder.Services.AddSingleton<UpdatesChecker.State>();
+    
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -110,6 +115,7 @@ app.MapRazorComponents<App>()
 
 app.MapHub<AgentConnectionsHub>("/agentsHub");
 app.MapHub<MaintenanceTaskLogHub>("/taskLogHub");
+app.MapHub<UpdatesCheckingHub>("/updatesHub");
 
 await using (var scope = app.Services.CreateAsyncScope())
 {

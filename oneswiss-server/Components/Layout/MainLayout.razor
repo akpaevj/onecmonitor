@@ -1,10 +1,14 @@
 ﻿@using System.Reflection
+@using Microsoft.AspNetCore.SignalR.Client
 @using MudBlazor.Utilities
 @using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Services
 @inherits LayoutComponentBase
 @inject ISnackbar SnackbarService
 @inject IHttpContextAccessor ContextAccessor
-@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject UpdatesChecker.State UpdatesCheckerState
+@inject IJSRuntime Js
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme"/>
 <MudPopoverProvider />
@@ -27,6 +31,11 @@
         <MudText Typo="Typo.h5" Style="@($"color:{YellowColor}")">i</MudText>
         <MudText Typo="Typo.h5">ss</MudText>
         <MudSpacer/>
+        @if (UpdatesCheckerState.UpdatesAvailable)
+        {
+            var text = UpdatesCheckerState?.ReleaseInfo?.Prerelease == true ? "Доступно обновление (pre)" : "Доступно обновление";
+            <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Warning" OnClick="GoToReleasePage">@text</MudButton>
+        }
         <MudSwitch 
             Color="Color.Primary"
             @bind-Value="_isDarkMode"
@@ -54,6 +63,7 @@
     NavMenu? _navMenu;
     bool _drawerOpen = true;
     bool _isDarkMode = true;
+    private HubConnection? _hubConnection;
 
     readonly MudTheme _theme = new();
     private const string YellowColor = "#ffe016";
@@ -63,18 +73,29 @@
         _drawerOpen = !_drawerOpen;
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         SnackbarService.Configuration.PositionClass = Defaults.Classes.Position.BottomEnd;
         
         if (ContextAccessor.HttpContext?.Request.Cookies.TryGetValue("IsDarkMode", out var value) == true &&
             bool.TryParse(value, out var isDarkMode))
             _isDarkMode = isDarkMode;
+        
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavManager.ToAbsoluteUri("/updatesHub"))
+            .Build();
+
+        _hubConnection.On("UpdatesAvailable", async () =>
+        {
+            await InvokeAsync(StateHasChanged);
+        });
+        
+        await _hubConnection.StartAsync();
     }
     
     private async Task SetIsDarkModeCookie()
     {
-        await JS.InvokeVoidAsync("blazorSetCookie", "IsDarkMode", _isDarkMode, 7);
+        await Js.InvokeVoidAsync("blazorSetCookie", "IsDarkMode", _isDarkMode, 7);
     }
 
     private async Task OnChangeTheme()
@@ -98,4 +119,11 @@
 
         return palette;
     }
+
+    private async Task GoToReleasePage()
+    {
+        if (UpdatesCheckerState.ReleaseInfo != null)
+            await Js.InvokeVoidAsync("open", UpdatesCheckerState.ReleaseInfo.HtmlUrl, "_blank"); 
+    }
+
 }

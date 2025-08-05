@@ -14,7 +14,7 @@
 @inject NavigationManager NavManager
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @inject AgentsConnectionsManager AgentsConnectionsManager
-@inject IJSRuntime JS
+@inject IJSRuntime Js
 @rendermode InteractiveServer
 
 <PageTitle>Администрирование серверов</PageTitle>
@@ -68,7 +68,7 @@
     {
         if (firstRender)
         {
-            var dimension = await JS.GetLocalStorageItem<string?>("panel_dimension");
+            var dimension = await Js.GetLocalStorageItem<string?>("panel_dimension");
             
             if (!string.IsNullOrEmpty(dimension))
             {
@@ -265,5 +265,5 @@
     }
 
     private async Task AfterDimensionChanged()
-        => await JS.SetLocalStorageItem("panel_dimension", _dimension.ToString(CultureInfo.InvariantCulture));
+        => await Js.SetLocalStorageItem("panel_dimension", _dimension.ToString(CultureInfo.InvariantCulture));
 }
