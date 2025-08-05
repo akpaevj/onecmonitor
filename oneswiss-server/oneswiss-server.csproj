@@ -5,8 +5,8 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>OneSwiss.Server</RootNamespace>
-        <Version>0.2.8</Version>
-        <AssemblyVersion>0.2.8</AssemblyVersion>
+        <Version>0.2.9</Version>
+        <AssemblyVersion>0.2.9</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>

@@ -1,30 +1,52 @@
 @page "/errorloggingservice"
+@using global::AutoMapper
+@using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Components.Shared
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject IMapper Mapper
+@inject NavigationManager NavManager
 @rendermode InteractiveServer
 
-<DatabaseObjectsTable TModel="ErrorReport" TViewModel="ErrorReportViewModel"
-                      NameSelector="@(_ => "отчет об ошибке")"
-                      Route="errorloggingservice"
-                      Title="Журнал сервиса регистрации ошибок"
-                      ItemsSelector="ItemsSelector"
-                      DisableTableActions="true">
-    <ColumnsContent>
-        <MudTh>Дата</MudTh>
-        <MudTh>Конфигурация</MudTh>
-        <MudTh>Версия платформы</MudTh>
-        <MudTh>Пользователь</MudTh>
-    </ColumnsContent>
-    <RowTemplate>
-        <MudTd DataLabel="Дата">@context.Date</MudTd>
-        <MudTd DataLabel="Конфигурация">@context.Configuration</MudTd>
-        <MudTd DataLabel="Версия платформы">@context.PlatformVersion</MudTd>
-        <MudTd DataLabel="Пользователь">@context.UserName</MudTd>
-    </RowTemplate>
-</DatabaseObjectsTable>
+<PageTitle>Журнал сервиса регистрации ошибок</PageTitle>
+
+<h1 Class="mb-3">Журнал сервиса регистрации ошибок</h1>
+
+
+<MudDataGrid T="ErrorReportViewModel" Items="_items" Dense="true" Hover="true" Filterable="true" FilterMode="DataGridFilterMode.Simple" SortMode="SortMode.Multiple">
+    <Columns>
+        <PropertyColumn Title="Дата" Property="arg => arg.Date"/>
+        <PropertyColumn Title="Конфигурация" Property="arg => arg.Configuration"/>
+        <PropertyColumn Title="Платформа" Property="arg => arg.PlatformVersion"/>
+        <PropertyColumn Title="Пользователь" Property="arg => arg.UserName"/>
+        <PropertyColumn Title="Доп. инфо" Property="arg => arg.AdditionalInfo"/>
+        <TemplateColumn>
+            <CellTemplate>
+                <MudIconButton Icon="@Icons.Material.Filled.OpenInFull" OnClick="@(() => NavigateToItem(context.Item!))" Color="Color.Info"/>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</MudDataGrid>
 
 @code
 {
-    private static IQueryable<ErrorReport> ItemsSelector(IQueryable<ErrorReport> arg)
-        => arg.OrderByDescending(c => c.CreatedAt);
+    private IEnumerable<ErrorReportViewModel> _items;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateItems();
+    }
+
+    private async Task UpdateItems()
+    {
+        var context = await ContextFactory.CreateDbContextAsync();
+        
+        var items = await context.ErrorReports.AsNoTracking().OrderByDescending(c => c.CreatedAt).ToListAsync();
+        _items = Mapper.Map<List<ErrorReportViewModel>>(items);
+    }
+    
+    private void NavigateToItem(ErrorReportViewModel vm)
+    {
+        NavManager.NavigateTo($"/errorloggingservice/{vm.Id}");
+    }
 }

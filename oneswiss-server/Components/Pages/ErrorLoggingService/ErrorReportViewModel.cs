@@ -10,4 +10,5 @@ public class ErrorReportViewModel : IHasId
     public string ConfigurationVersion { get; set; } = string.Empty;
     public string PlatformVersion { get; set; } = string.Empty;
     public string UserName { get; set; } = string.Empty;
+    public string AdditionalInfo { get; set; } = string.Empty;
 }
