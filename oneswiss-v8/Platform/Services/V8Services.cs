@@ -313,7 +313,7 @@ public static partial class V8Services
     }
     
     private static string GetVariableValue(string name, string variable)
-        => RunCommandWithBash($"systemctl show {name} -P {variable}").Trim();
+        => RunCommandWithBash($"systemctl show {name} -p {variable}").Trim();
 
     private static string GetEnvironmentVariableValue(string name, string variable)
     {
