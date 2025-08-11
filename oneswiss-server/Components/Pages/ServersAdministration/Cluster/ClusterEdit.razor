@@ -1,17 +1,20 @@
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
 
-<InlineEditDatabaseForm @ref="_editor" T="Cluster" Id="Id">
-    <MudStack>
-        <MudSelect Class="mb-3" Label="Учетные данные администратора" Variant="Variant.Outlined" @bind-Value="@_editor.Model!.CredentialsId" Clearable="@true">
-            @foreach (var item in _editor.Context!.Credentials.ToList())
-            {
-                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
-            }
-        </MudSelect>
+<MudStack>
+    <MudNumericField For="@(() => _editor.Model!.Port)" ReadOnly="true" Variant="Variant.Outlined" Label="Порт" @bind-Value="@_editor.Model!.Port"/>
+    <InlineEditDatabaseForm @ref="_editor" T="Cluster" Id="Id">
+        <MudStack>
+            <MudSelect Class="mb-3" Label="Учетные данные администратора" Variant="Variant.Outlined" @bind-Value="@_editor.Model!.CredentialsId" Clearable="@true">
+                @foreach (var item in _editor.Context!.Credentials.ToList())
+                {
+                    <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+                }
+            </MudSelect>
         
-    </MudStack>
-</InlineEditDatabaseForm>
+        </MudStack>
+    </InlineEditDatabaseForm>
+</MudStack>
 
 @code
 {

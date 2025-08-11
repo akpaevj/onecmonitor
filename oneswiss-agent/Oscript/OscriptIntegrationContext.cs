@@ -13,16 +13,16 @@ public class OscriptIntegrationContext(
     OneSwissConnection serverConnection) : AutoContext<OscriptIntegrationContext>
 {
     [ContextProperty("ПровайдерПлатформ", "PlatformsProvider", CanWrite = false)]
-    public V8PlatformsProviderWrapper PlatformsProvider { get; } = new(platformsProvider);
+    public V8PlatformsProvider PlatformsProvider { get; } = platformsProvider;
     
     [ContextProperty("ПровайдерСлужб", "ServicesProvider", CanWrite = false)]
-    public V8ServicesProviderWrapper ServicesProvider { get; } = new(servicesProvider);
+    public V8ServicesProvider ServicesProvider { get; } = servicesProvider;
     
     [ContextProperty("МенеджерRas", "RasManager", CanWrite = false)]
-    public RasHolderWrapper RasHolder { get; } = new(rasHolder);
+    public RasHolder RasHolder { get; } = rasHolder;
     
     [ContextProperty("ПровайдерИнсталляцийEdt", "EdtInstallationsProvider", CanWrite = false)]
-    public EdtInstallationsProviderWrapper EdtInstallationsProvider { get; } = new(edtInstallationsProvider);
+    public EdtInstallationsProvider EdtInstallationsProvider { get; } = edtInstallationsProvider;
     
     [ContextProperty("Сервер", "Server", CanWrite = false)]
     public OneSwissConnectionWrapper Server { get; } = new(serverConnection);

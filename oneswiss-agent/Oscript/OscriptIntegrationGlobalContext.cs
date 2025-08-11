@@ -1,4 +1,5 @@
 using OneScript.Contexts;
+using OneSwiss.Common.DTO.MaintenanceTasks;
 using ScriptEngine.Machine.Contexts;
 
 namespace OneSwiss.Agent.Oscript;

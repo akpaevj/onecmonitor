@@ -10,8 +10,10 @@ using OneSwiss.Common.Models.MaintenanceTasks;
 using OneSwiss.OneScript;
 using OneSwiss.V8.Designer.Agent;
 using OneSwiss.V8.Designer.Batch;
+using OneSwiss.V8.Platform;
 using OneSwiss.V8.Platform.RemoteAdministration;
 using ScriptEngine.Hosting;
+using ScriptEngine.Machine;
 
 namespace OneSwiss.Agent.Services.MaintenanceTasks;
 
@@ -181,7 +183,7 @@ public class MaintenanceTaskExecutor : BackgroundService
 
                 try
                 {
-                    var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(infoBase.Cluster.Port);
+                    var ragent = _v8ServicesProvider.GetActiveRagentByPort(infoBase.Cluster.RagentPort);
                     var ras = _rasHolder.GetActiveRasForRagent(ragent);
 
                     context.Rac = Rac.GetRacForRasService(_racLogger, ras);
@@ -641,7 +643,12 @@ public class MaintenanceTaskExecutor : BackgroundService
         scriptHost.ExecutePackageScript(scriptPath, executable, [], e =>
         {
             e.AddAssembly(typeof(OscriptIntegrationGlobalContext).Assembly);
+            e.AddAssembly(typeof(V8Platform).Assembly);
             e.AddGlobalContext(_oscriptIntegrationGlobalContext);
+
+            if (!context.Task.CommonDestination)
+                e.AddGlobalContext(new MaintenanceStepIntegrationGlobalContext(context));
+
         }, context.Step.ExecuteOneScriptStep!.DebugMode);
         
         if (!context.Step.ExecuteOneScriptStep!.DebugMode)
@@ -677,7 +684,7 @@ public class MaintenanceTaskExecutor : BackgroundService
 
     private async Task<V8InfoBaseDetails> GetInfoBaseDetails(InfoBaseDto infoBase)
     {
-        var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(infoBase.Cluster.Port);
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(infoBase.Cluster.Port);
         var ras = _rasHolder.GetActiveRasForRagent(ragent);
         var rac = Rac.GetRacForRasService(_racLogger, ras);
         

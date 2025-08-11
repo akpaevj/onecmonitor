@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using OneSTools.BracketsFile;
+using OneSwiss.V8.Platform.RemoteAdministration;
 using OneSwiss.V8.Platform.Services;
 
 namespace OneSwiss.Agent.Services.EventLog;
@@ -8,6 +9,8 @@ namespace OneSwiss.Agent.Services.EventLog;
 public class ClstWatcher : IDisposable
 {
     private readonly RagentService _ragent;
+    private readonly V8Cluster _cluster;
+    private string _clusterCatalog;
     private readonly string _clstPath;
     private readonly Regex _regex;
     private readonly FileSystemWatcher _clstWatcher;
@@ -16,13 +19,15 @@ public class ClstWatcher : IDisposable
     public event EventHandler<InfoBaseInfo>? InfoBasesAdded;
     public event EventHandler<InfoBaseInfo>? InfoBasesDeleted;
 
-    public ClstWatcher(RagentService ragent, string regex)
+    public ClstWatcher(RagentService ragent, V8Cluster cluster, string clusterCatalog, string regex)
     {
+        _clusterCatalog  = clusterCatalog;
         _ragent = ragent;
-        _clstPath = Path.Combine(_ragent.ClusterCatalog, "1CV8Clst.lst");
+        _cluster = cluster;
+        _clstPath = Path.Combine(clusterCatalog, "1CV8Clst.lst");
         _regex = new Regex(regex, RegexOptions.Compiled | RegexOptions.ExplicitCapture);
         
-        _clstWatcher = new FileSystemWatcher(_ragent.ClusterCatalog, "1CV8Clst.lst")
+        _clstWatcher = new FileSystemWatcher(clusterCatalog, "1CV8Clst.lst")
         {
             NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.LastWrite
         };
@@ -59,7 +64,7 @@ public class ClstWatcher : IDisposable
         {
             var infoBaseNode = infoBasesNode[i];
 
-            var elPath = Path.Combine(_ragent.ClusterCatalog, infoBaseNode[0], "1Cv8Log");
+            var elPath = Path.Combine(_clusterCatalog, infoBaseNode[0], "1Cv8Log");
             string name = infoBaseNode[5];
                 
             if (_regex.IsMatch(name))

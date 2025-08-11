@@ -230,7 +230,7 @@
             
             Diagram.Controls.AddFor(model).Add(new RemoveControl(0.5, 1));
 
-            if (stepNode.Step.StepId != Guid.Empty) 
+            if (stepNode.Step.Id != Guid.Empty) 
                 return;
             
             model.Changed += OnNodeChanged;
@@ -392,7 +392,13 @@
     
     private void OnClickNodeType(MaintenanceStepKind kind)
     {
-        var node = new StepNode(kind);
+        var node = new StepNode(kind)
+        {
+            Step =
+            {
+                StepId = Guid.NewGuid()
+            }
+        };
         InitNode(node);
         Diagram.Nodes.Add(node);
     }
@@ -443,7 +449,8 @@
                 MaintenanceStepKind.DeleteExtension,
                 MaintenanceStepKind.UpdateConfiguration,
                 MaintenanceStepKind.LoadConfiguration,
-                MaintenanceStepKind.StartExternalDataProcessor
+                MaintenanceStepKind.StartExternalDataProcessor,
+                //MaintenanceStepKind.ExecuteOneScript до следующего раза=(
             ],
             _ => [
                 MaintenanceStepKind.ExecuteOneScript
@@ -492,6 +499,13 @@
                                 context.AddFailure(
                                     nameof(context.PropertyPath),
                                     $"В шаге \"{step.Kind.GetDisplay()}\" не указан файл скрипта");
+                            
+                            if (step.ExecuteOneScriptStep!.DebugMode && 
+                                !string.IsNullOrEmpty(step.ExecuteOneScriptStep!.ExecutablePath) &&
+                                !System.IO.File.Exists(step.ExecuteOneScriptStep!.ExecutablePath))
+                                context.AddFailure(
+                                    nameof(context.PropertyPath),
+                                    $"В шаге \"{step.Kind.GetDisplay()}\" не найден файл скрипта");
                         }
 
                         if (step.Kind == MaintenanceStepKind.LoadExtension)
@@ -521,7 +535,7 @@
                         {
                             if (step.LoadConfigurationStep!.FromConfigRepository)
                             {
-                                if (step.LoadExtensionStep!.ConfigurationRepositoryId.EmptyOrNull())
+                                if (step.LoadConfigurationStep!.ConfigurationRepositoryId.EmptyOrNull())
                                     context.AddFailure(
                                         nameof(context.PropertyPath),
                                         $"В шаге \"{step.Kind.GetDisplay()}\" не указано хранилище");

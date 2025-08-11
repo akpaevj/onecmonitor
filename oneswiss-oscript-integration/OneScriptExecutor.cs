@@ -43,6 +43,8 @@ public class OneScriptExecutor : IHostApplication
 
             var process = engine.CreateProcess(this, source);
             var exitCode = process.Start();
+            
+            debugController?.NotifyProcessExit(exitCode);
 
             if (exitCode != 0)
                 throw new Exception("Ошибка выполнения скрипта");

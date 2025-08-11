@@ -8,21 +8,31 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="OneScript" Version="2.0.0-rc.8" />
-      <PackageReference Include="OneScript.DebugServices" Version="2.0.0-rc.8" />
+      <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
     </ItemGroup>
 
     <ItemGroup>
+      <Reference Include="OneScript.Core">
+        <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
+      </Reference>
+      <Reference Include="OneScript.DebugServices">
+        <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.DebugServices.dll</HintPath>
+      </Reference>
+      <Reference Include="OneScript.Language">
+        <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Language.dll</HintPath>
+      </Reference>
       <Reference Include="OneScript.StandardLibrary">
-        <HintPath>..\..\..\.nuget\packages\onescript.standardlibrary\2.0.0-rc.7\lib\net6.0\OneScript.StandardLibrary.dll</HintPath>
+        <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.StandardLibrary.dll</HintPath>
+      </Reference>
+      <Reference Include="oscript">
+        <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\oscript.dll</HintPath>
+      </Reference>
+      <Reference Include="ScriptEngine">
+        <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.dll</HintPath>
       </Reference>
       <Reference Include="ScriptEngine.HostedScript">
-        <HintPath>..\..\..\.nuget\packages\onescript.hosting\2.0.0-rc.7\lib\net6.0\ScriptEngine.HostedScript.dll</HintPath>
+        <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.HostedScript.dll</HintPath>
       </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
     </ItemGroup>
 
 </Project>

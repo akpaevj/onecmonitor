@@ -16,6 +16,8 @@ public class Cluster : DatabaseObject
     public string Host { get; set; } = string.Empty;
     [Label("Порт")]
     public int Port { get; set; }
+    [Label("Порт ragent")]
+    public int RagentPort { get; set; }
     [Label("Агент")]
     public Guid AgentId { get; set; }
     [Label("Учетные данные")]
