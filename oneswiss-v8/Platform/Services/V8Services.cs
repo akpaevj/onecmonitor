@@ -13,9 +13,9 @@ public static partial class V8Services
     private const int RasDefaultPort = 1545;
     private const int CrServerDefaultPort = 1542;
     
-    public static RagentService GetActiveRagentForClusterPort(int port, IReadOnlyList<V8Platform> platforms)
+    public static RagentService GetActiveRagentByPort(int port, IReadOnlyList<V8Platform> platforms)
     {
-        var ragent = GetActiveRagentServices(platforms).FirstOrDefault(c => c.RegPort == port);
+        var ragent = GetActiveRagentServices(platforms).FirstOrDefault(c => c.Port == port);
         if (ragent == null)
             throw new Exception($"Не удалось получить активную службу агента сервера для переданного порта - {port}");
         
@@ -414,29 +414,21 @@ public static partial class V8Services
         else
             service.Port = RagentDefaultPort;
         
-        if (args.HasParameter("regport", out var regPort) && int.TryParse(regPort, out var regPortInt))
-            service.RegPort = regPortInt;
-        else
-            service.RegPort = RagentDefaultRegPort;
-        
-        service.ClusterCatalog = GetClusterCatalog(service.Name, service.RegPort, args);
+        service.WorkingDirectory = GetRagentWorkingDirectory(service.Name, args);
         service.DebugType = RecognizeDebugType(args);
     }
 
-    private static string GetClusterCatalog(string serviceName, int regPort, Args args)
+    private static string GetRagentWorkingDirectory(string serviceName, Args args)
     {
-        args.HasParameter("d", out var clusterCatalog);
+        args.HasParameter("d", out var workingDirectory);
+
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT || !string.IsNullOrEmpty(workingDirectory))
+            return workingDirectory!;
         
-        if (Environment.OSVersion.Platform != PlatformID.Win32NT && string.IsNullOrEmpty(clusterCatalog))
-        {
-            var user = GetVariableValue(serviceName, "User");
-            clusterCatalog = Path.Join("/home", user, ".1cv8/");
-        }
-            
-        clusterCatalog = Path.Combine(clusterCatalog!, $"reg_{regPort}");
+        var user = GetVariableValue(serviceName, "User");
+        workingDirectory = Path.Join("/home", user, ".1cv8/");
 
-        return clusterCatalog;
-
+        return workingDirectory!;
     }
 
     public static void FillCrServerFromArgs(CrServer service, Args args)

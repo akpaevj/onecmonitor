@@ -1,5 +1,6 @@
 using MessagePack;
 using OneScript.Contexts;
+using OneSwiss.V8.Platform.Services;
 
 namespace OneSwiss.Common.DTO;
 
@@ -18,8 +19,11 @@ public class ClusterDto
     public string Host { get; set; } = string.Empty;
     [ContextProperty("Порт", "Port")]
     [Key(3)] 
-    public int Port { get; set; } = 1540;
+    public int Port { get; set; }
+    [ContextProperty("ПортRagent", "PortRagent")]
+    [Key(4)] 
+    public int RagentPort { get; set; }
     [ContextProperty("УчетныеДанные", "Credentials")]
-    [Key(4)]
+    [Key(5)]
     public CredentialsDto? Credentials { get; set; }
 }

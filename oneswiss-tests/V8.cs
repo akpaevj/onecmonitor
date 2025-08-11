@@ -105,9 +105,8 @@ public class V8
         V8Services.FillRagentFromArgs(ras, parsed);
         Assert.Multiple(() =>
         {
-            Assert.That(ras.RegPort, Is.EqualTo(1741));
             Assert.That(ras.Port, Is.EqualTo(1740));
-            Assert.That(ras.ClusterCatalog, Is.EqualTo(@"E:\\srvinfo/reg_1741"));
+            Assert.That(ras.WorkingDirectory, Is.EqualTo(@"E:\\srvinfo"));
             Assert.That(ras.DebugType, Is.EqualTo(RagentDebugType.Http));
         });
     }
@@ -200,7 +199,7 @@ public class V8
                               restart-schedule                          : 
                               """;
         
-        var clusters = Rac.OutputToOutputItems(output).ToRacObjects<V8Cluster>();
+        var clusters = Rac.OutputToOutputItems(output).ToRacObjects<OneSwiss.V8.Platform.RemoteAdministration.V8Cluster>();
         
         Assert.That(clusters, Has.Count.EqualTo(1));
         

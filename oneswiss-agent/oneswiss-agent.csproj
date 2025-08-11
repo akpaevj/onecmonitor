@@ -46,7 +46,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.7" />
-    <PackageReference Include="OneScript.Hosting" Version="2.0.0-rc.8" />
     <PackageReference Include="OneSTools.BracketsFile" Version="2.1.9" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.7" />
@@ -67,6 +66,27 @@
     <None Include="appsettings.Development.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="OneScript.Core">
+      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="OneScript.DebugServices">
+      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.DebugServices.dll</HintPath>
+    </Reference>
+    <Reference Include="OneScript.StandardLibrary">
+      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.StandardLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="oscript">
+      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\oscript.dll</HintPath>
+    </Reference>
+    <Reference Include="ScriptEngine">
+      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="ScriptEngine.HostedScript">
+      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.HostedScript.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

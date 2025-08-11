@@ -37,13 +37,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Reference Include="OneScript.Core">
-	    <HintPath>..\..\..\.nuget\packages\onescript.corelib\2.0.0-rc6\lib\net6.0\OneScript.Core.dll</HintPath>
-	  </Reference>
+	  <ProjectReference Include="..\oneswiss-oscript-integration\oneswiss-oscript-integration.csproj" />
+	  <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
+	  <Reference Include="OneScript.Core">
+	    <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Release'">

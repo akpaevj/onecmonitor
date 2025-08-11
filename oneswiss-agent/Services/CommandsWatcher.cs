@@ -8,6 +8,8 @@ using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Common.Services;
 using OneSwiss.V8.ConfigurationRepository;
 using OneSwiss.V8.Platform.RemoteAdministration;
+using OneSwiss.V8.Platform.Services;
+using V8Cluster = OneSwiss.V8.Platform.RemoteAdministration.V8Cluster;
 
 namespace OneSwiss.Agent.Services
 {
@@ -50,7 +52,7 @@ namespace OneSwiss.Agent.Services
             _maintenanceTasksQueue = maintenanceTasksQueue;
             _applicationLifetime = appLifetime;
             _logger = logger;
-
+            
             _server.MessageReceived += MessageReceived;
             
             _applicationLifetime.ApplicationStopping.Register(() =>
@@ -182,8 +184,16 @@ namespace OneSwiss.Agent.Services
             var ragents = _v8ServicesProvider.GetActiveRagentServices();
             var clusters = new List<V8Cluster>();
 
-            foreach (var rac in ragents.Select(_rasHolder.GetActiveRasForRagent).Select(c => Rac.GetRacForRasService(_racLogger, c)))
-                clusters.AddRange(await rac.GetClusters());
+            foreach (var ragentService in ragents)
+            {
+                var ras = _rasHolder.GetActiveRasForRagent(ragentService);
+                var rac = Rac.GetRacForRasService(_racLogger, ras);
+                
+                var ragentClusters = await rac.GetClusters();
+                ragentClusters.ForEach(c => c.RagentPort = ragentService.Port);
+                
+                clusters.AddRange(ragentClusters);
+            }
             
             await _server.Send(MessageType.ClustersResponse, clusters, message, cancellationToken);
         }
@@ -192,7 +202,7 @@ namespace OneSwiss.Agent.Services
         {
             var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
 
-            var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(cluster.Port);
+            var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
             var ras = _rasHolder.GetActiveRasForRagent(ragent);
             var rac = Rac.GetRacForRasService(_racLogger, ras);
             
@@ -207,7 +217,7 @@ namespace OneSwiss.Agent.Services
         {
             var request = MessagePackSerializer.Deserialize<ChangeClusterObjectParametersRequestDto<ClusterDto>>(message.Data, cancellationToken: cancellationToken);
 
-            var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(request.Item.Port);
+            var ragent = _v8ServicesProvider.GetActiveRagentByPort(request.Item.RagentPort);
             var ras = _rasHolder.GetActiveRasForRagent(ragent);
             var rac = Rac.GetRacForRasService(_racLogger, ras);
             
@@ -220,7 +230,7 @@ namespace OneSwiss.Agent.Services
         {
             var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
 
-            var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(cluster.Port);
+            var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
             var ras = _rasHolder.GetActiveRasForRagent(ragent);
             var rac = Rac.GetRacForRasService(_racLogger, ras);
             
@@ -234,7 +244,7 @@ namespace OneSwiss.Agent.Services
         {
             var infoBase = MessagePackSerializer.Deserialize<InfoBaseDto>(message.Data, cancellationToken: cancellationToken);
 
-            var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(infoBase.Cluster.Port);
+            var ragent = _v8ServicesProvider.GetActiveRagentByPort(infoBase.Cluster.RagentPort);
             var ras = _rasHolder.GetActiveRasForRagent(ragent);
             var rac = Rac.GetRacForRasService(_racLogger, ras);
             
@@ -254,7 +264,7 @@ namespace OneSwiss.Agent.Services
         {
             var request = MessagePackSerializer.Deserialize<V8SessionsRequestDto>(message.Data, cancellationToken: cancellationToken);
 
-            var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(request.Cluster.Port);
+            var ragent = _v8ServicesProvider.GetActiveRagentByPort(request.Cluster.RagentPort);
             var ras = _rasHolder.GetActiveRasForRagent(ragent);
             var rac = Rac.GetRacForRasService(_racLogger, ras);
 
@@ -281,7 +291,7 @@ namespace OneSwiss.Agent.Services
         {
             var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
 
-            var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(cluster.Port);
+            var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
             var ras = _rasHolder.GetActiveRasForRagent(ragent);
             var rac = Rac.GetRacForRasService(_racLogger, ras);
             
@@ -298,7 +308,7 @@ namespace OneSwiss.Agent.Services
         {
             var request = MessagePackSerializer.Deserialize<ChangeClusterObjectParametersRequestDto<InfoBaseDto>>(message.Data, cancellationToken: cancellationToken);
 
-            var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(request.Item.Cluster.Port);
+            var ragent = _v8ServicesProvider.GetActiveRagentByPort(request.Item.Cluster.RagentPort);
             var ras = _rasHolder.GetActiveRasForRagent(ragent);
             var rac = Rac.GetRacForRasService(_racLogger, ras);
             
@@ -342,7 +352,7 @@ namespace OneSwiss.Agent.Services
         {
             var request = MessagePackSerializer.Deserialize<CloseV8SessionsRequestDto>(message.Data, cancellationToken: cancellationToken);
             
-            var ragent = _v8ServicesProvider.GetActiveRagentForClusterPort(request.Cluster.Port);
+            var ragent = _v8ServicesProvider.GetActiveRagentByPort(request.Cluster.RagentPort);
             var ras = _rasHolder.GetActiveRasForRagent(ragent);
             var rac = Rac.GetRacForRasService(_racLogger, ras);
 

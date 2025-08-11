@@ -1,6 +1,7 @@
 using OneScript.Commons;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.Services;
+using OneSwiss.V8.Platform.RemoteAdministration;
 using Exception = System.Exception;
 
 namespace OneSwiss.Agent.Services.EventLog;
@@ -8,10 +9,12 @@ namespace OneSwiss.Agent.Services.EventLog;
 public class EventLogExportManager : IDisposable
 {
     private readonly V8ServicesProvider _v8ServicesProvider;
+    private readonly RasHolder _rasHolder;
     private readonly EventLogExporter _exporter;
     private readonly IServiceProvider _serviceProvider;
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ILogger<EventLogExportManager> _logger;
+    private readonly ILogger<Rac> _racLogger;
     private readonly EventLogRepositoryManager _repositoryManager;
     
     private CancellationTokenSource? _cts;
@@ -23,17 +26,21 @@ public class EventLogExportManager : IDisposable
 
     public EventLogExportManager(
         V8ServicesProvider v8ServicesProvider,
+        RasHolder rasHolder,
         EventLogExporter exporter,
         IServiceProvider serviceProvider,
         EventLogRepositoryManager repositoryManager,
         IHostApplicationLifetime applicationLifetime,
-        ILogger<EventLogExportManager> logger)
+        ILogger<EventLogExportManager> logger,
+        ILogger<Rac> racLogger)
     {
         _v8ServicesProvider = v8ServicesProvider;
+        _rasHolder = rasHolder;
         _exporter = exporter;
         _serviceProvider = serviceProvider;
         _applicationLifetime = applicationLifetime;
         _logger = logger;
+        _racLogger = racLogger;
         _repositoryManager = repositoryManager;
             
         _repositoryManager.SettingsChanged += SettingsChanged;
@@ -66,24 +73,33 @@ public class EventLogExportManager : IDisposable
             
             foreach (var ragent in ragentServices)
             {
-                if (_clstWatchers.ContainsKey(ragent.ClusterCatalog)) 
+                if (_clstWatchers.ContainsKey(ragent.WorkingDirectory)) 
                     continue;
-                
-                var watcher = new ClstWatcher(ragent, _settings!.InfoBaseNameRegex);
-                watcher.InfoBasesAdded += OnInfoBasesAdded;
-                watcher.InfoBasesDeleted += OnInfoBasesDeleted;
-                
-                try
+
+                var ras = _rasHolder.GetActiveRasForRagent(ragent);
+                var rac = Rac.GetRacForRasService(_racLogger, ras);
+                var clusters = await rac.GetClusters();
+
+                foreach (var cluster in clusters)
                 {
-                    _clstWatchers.TryAdd(ragent.ClusterCatalog, watcher);
-                    watcher.Watch();
-                }
-                catch (Exception e)
-                {
-                    if (_clstWatchers.Remove(ragent.ClusterCatalog, out _))
-                        watcher.Dispose();
+                    var clusterCatalog = Path.Combine(ragent.WorkingDirectory, $"reg_{cluster.Port}");
                     
-                    _logger.LogError(e, "Error while adding cluster to watcher");
+                    var watcher = new ClstWatcher(ragent, cluster, clusterCatalog, _settings!.InfoBaseNameRegex);
+                    watcher.InfoBasesAdded += OnInfoBasesAdded;
+                    watcher.InfoBasesDeleted += OnInfoBasesDeleted;
+                
+                    try
+                    {
+                        _clstWatchers.TryAdd(clusterCatalog, watcher);
+                        watcher.Watch();
+                    }
+                    catch (Exception e)
+                    {
+                        if (_clstWatchers.Remove(clusterCatalog, out _))
+                            watcher.Dispose();
+                    
+                        _logger.LogError(e, "Error while adding cluster to watcher");
+                    }
                 }
             }
             

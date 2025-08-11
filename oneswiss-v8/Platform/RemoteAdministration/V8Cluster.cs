@@ -53,4 +53,6 @@ public class V8Cluster
     [Key(16)]
     [RacField("restart-schedule")]
     public string RestartSchedule { get; set; }
+    [Key(17)]
+    public int RagentPort { get; set; }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OneSwiss.Agent.Converters;
 using OneSwiss.Agent.Models;
+using ScriptEngine.Machine;
 
 namespace OneSwiss.Agent
 {
@@ -17,7 +18,7 @@ namespace OneSwiss.Agent
         {
             configurationBuilder.Properties<Guid>()
                 .HaveConversion<GuidStringConverter>();
-
+            
             configurationBuilder.Properties<DateTime>()
                 .HaveConversion<DateTimeStringConverter>();
         }

@@ -5,10 +5,12 @@ using OneScript.Contexts;
 namespace OneSwiss.V8.Platform;
 
 [DisplayName("Платформа 1С")]
+[ContextClass("ПлатформаV8", "PlatformV8")]
 [MessagePackObject]
 public class V8Platform
 {
     [Key(0)]
+    [ContextProperty("Путь", "Path", CanWrite = false)]
     public string PlatformPath { get; init; } = string.Empty;
     [DisplayName("1Cv8 установлена")]
     [Key(1)]
@@ -45,10 +47,6 @@ public class V8Platform
     [Key(9)]
     [ContextProperty("Версия", "Version", CanWrite = false)]
     public string Version { get; init; } = string.Empty;
-    
-    [ScriptConstructor]
-    public static V8Platform Constructor()
-        => new V8Platform();
     
     public override bool Equals(object? obj)
         => obj is V8Platform platform &&

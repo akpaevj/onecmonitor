@@ -20,7 +20,7 @@
         <HintPath>..\..\..\.nuget\packages\microsoft.extensions.configuration.abstractions\9.0.7\lib\net9.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
       </Reference>
       <Reference Include="OneScript.Core">
-        <HintPath>..\..\..\.nuget\packages\onescript.corelib\2.0.0-rc.7\lib\net6.0\OneScript.Core.dll</HintPath>
+        <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
       </Reference>
       <Reference Include="System.ServiceProcess.ServiceController">
         <HintPath>..\..\..\.nuget\packages\system.serviceprocess.servicecontroller\9.0.1\lib\net8.0\System.ServiceProcess.ServiceController.dll</HintPath>

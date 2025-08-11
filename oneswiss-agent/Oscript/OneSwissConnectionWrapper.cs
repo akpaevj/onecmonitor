@@ -6,7 +6,7 @@ using ScriptEngine.Machine.Contexts;
 namespace OneSwiss.Agent.Oscript;
 
 [ContextClass("Сервер", "Server")]
-public class OneSwissConnectionWrapper(OneSwissConnection serverConnection) : AutoContext<OneSwissConnectionWrapper>
+public class OneSwissConnectionWrapper(OneSwissConnection serverConnection)
 {
     private bool _started;
     
