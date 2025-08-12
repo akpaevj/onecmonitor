@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using OneSwiss.Server.Models;
+using OneSwiss.V8.Platform.Services;
 
 namespace OneSwiss.Server.Services;
 

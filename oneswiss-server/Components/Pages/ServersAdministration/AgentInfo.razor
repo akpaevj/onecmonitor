@@ -51,7 +51,7 @@ else
                 </MudSimpleTable>
             }
             <MudStack Class="mt-3" Row StretchItems="StretchItems.All" Breakpoint="Breakpoint.MdAndDown">
-                @if (_installedPlatforms.Count > 0)
+                @if (_installedPlatforms?.Count > 0)
                 {
                     <MudDataGrid T="V8Platform" Items="_installedPlatforms" Class="pa-2" Elevation="1" Dense="true">
                         <ToolBarContent>
@@ -215,12 +215,13 @@ else
             var connection = AgentsConnectionsManager.GetAgentConnection(agent!.Id);
         
             _connected = connection != null;
-            _systemInfo = connection is null ? null : await connection.GetSystemInfo(CancellationToken.None);
-            _installedPlatforms = connection is null ? [] : await connection.GetInstalledPlatforms(CancellationToken.None);
-            _crServerServices = connection is null ? [] : await connection.GetCrServerServices(CancellationToken.None);
-            _rasServices = connection is null ? [] : await connection.GetRasServices(CancellationToken.None);
-            _ragentServices = connection is null ? [] : await connection.GetRagentServices(CancellationToken.None);
-            _edtInstallations = connection is null ? [] : await connection.GetEdtInstallations(CancellationToken.None);
+
+            await LoadInTryCatch(async () => _systemInfo = connection is null ? null : await connection.GetSystemInfo(CancellationToken.None));
+            await LoadInTryCatch(async () => _installedPlatforms = connection is null ? [] : await connection.GetInstalledPlatforms(CancellationToken.None));
+            await LoadInTryCatch(async () => _crServerServices = connection is null ? [] : await connection.GetCrServerServices(CancellationToken.None));
+            await LoadInTryCatch(async () => _rasServices = connection is null ? [] : await connection.GetRasServices(CancellationToken.None));
+            await LoadInTryCatch(async () => _ragentServices = connection is null ? [] : await connection.GetRagentServices(CancellationToken.None));
+            await LoadInTryCatch(async () => _edtInstallations = connection is null ? [] : await connection.GetEdtInstallations(CancellationToken.None));
         }
         catch (Exception e)
         {
@@ -230,6 +231,18 @@ else
         _isLoading = false;
         
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadInTryCatch(Func<Task> action)
+    {
+        try
+        {
+            await action.Invoke();
+        }
+        catch (Exception e)
+        {
+            Snackbar.ShowError(e);
+        }
     }
 
     public async Task UpdateState()
