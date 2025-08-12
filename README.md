@@ -153,11 +153,11 @@ http://localhost:7002/api/ErrorLoggingService
     "Host": "127.0.0.1",
     "Port": 7001
   },
+  "TechLogFolder": "", 
   "V8": {
     "PlatformPaths": [
 
-    ],
-    "TechLogFolder": "" 
+    ]
   }
 }
 ```
