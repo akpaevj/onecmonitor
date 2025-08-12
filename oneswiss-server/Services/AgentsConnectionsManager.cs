@@ -78,6 +78,55 @@ namespace OneSwiss.Server.Services
             foreach (var connection in connections)
                 await connection.SendSettingsRequest(cancellationToken);
         }
+        
+        public async Task StartMaintenanceTask(Guid id, CancellationToken cancellationToken = default)
+        {
+            await using var scope = serviceProvider.CreateAsyncScope();
+            await using var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            
+            var task = await context.MaintenanceTasks
+                .AsNoTracking()
+                
+                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.File)
+                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.ConfigurationRepository.Credentials)
+                
+                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.File)
+                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.ConfigurationRepository.Credentials)
+                
+                .Include(c => c.Steps).ThenInclude(c => c.UpdateConfigurationStep.File)
+                
+                .Include(c => c.Steps).ThenInclude(c => c.ExecuteOneScriptStep.File)
+                
+                .Include(c => c.Steps).ThenInclude(c => c.StartExternalDataProcessorStep.File)
+                
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.SourceCredentials)
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.SourceInfoBase.Credentials)
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.SourceInfoBase.Cluster.Credentials)
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.DestinationCredentials)
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.DestinationInfoBase.Credentials)
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.DestinationInfoBase.Cluster.Credentials)
+                
+                .Include(c => c.Agents)
+                .Include(c => c.InfoBases).ThenInclude(c => c.Credentials)
+                .Include(c => c.InfoBases).ThenInclude(c => c.Cluster).ThenInclude(c => c.Agent)
+                .Include(c => c.InfoBases).ThenInclude(c => c.Cluster).ThenInclude(c => c.Credentials)
+                
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken: cancellationToken);
+
+            var taskAgents = task!.CommonDestination switch
+            {
+                false => task.InfoBases.Select(c => c.Cluster.Agent.Id).Distinct().ToList(),
+                true => task.Agents.Select(c => c.Id).Distinct().ToList() 
+            };  
+            var connections = await GetActiveAgentsConnections(cancellationToken);
+            
+            task.StartDateTime = DateTime.Now;
+
+            await context.SaveChangesAsync(cancellationToken);
+
+            foreach (var connection in connections.Where(c => taskAgents.Contains(c.AgentInstance!.Id)))
+                await connection.StartMaintenanceTask(task, cancellationToken);
+        }
 
         private void AgentConnection_Connected(AgentConnection agentConnection)
         {

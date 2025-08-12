@@ -62,7 +62,7 @@
             @if (Node.Step.LoadConfigurationStep.FromConfigRepository)
             {
                 <MudSelect Class="mb-1" Label="Хранилище" For="@(() => Node.Step.LoadConfigurationStep.ConfigurationRepositoryId)" @bind-Value="@Node.Step.LoadConfigurationStep.ConfigurationRepositoryId" Clearable="true">
-                    @foreach (var item in _context.ConfigRepositories.ToList())
+                    @foreach (var item in _context.ConfigRepositories.Where(c => c.CredentialsId != null).ToList())
                     {
                         <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
                     }
@@ -97,7 +97,7 @@
             @if (Node.Step.LoadExtensionStep.FromConfigRepository)
             {
                 <MudSelect Class="mb-1" Label="Хранилище" For="@(() => Node.Step.LoadExtensionStep.ConfigurationRepositoryId)" @bind-Value="@Node.Step.LoadExtensionStep.ConfigurationRepositoryId" Clearable="true">
-                    @foreach (var item in _context.ConfigRepositories.ToList())
+                    @foreach (var item in _context.ConfigRepositories.Where(c => c.CredentialsId != null).ToList())
                     {
                         <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
                     }

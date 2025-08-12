@@ -400,7 +400,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                 filesToDownload.Add(maintenanceStepDto.StartExternalDataProcessorStep!.File);
             else if (maintenanceStepDto.Kind == MaintenanceStepKind.UpdateConfiguration)
                 filesToDownload.Add(maintenanceStepDto.UpdateConfigurationStep!.File);
-            else if (maintenanceStepDto.Kind == MaintenanceStepKind.LoadConfiguration && !maintenanceStepDto.LoadExtensionStep!.FromConfigRepository)
+            else if (maintenanceStepDto.Kind == MaintenanceStepKind.LoadConfiguration && !maintenanceStepDto.LoadConfigurationStep!.FromConfigRepository)
                 filesToDownload.Add(maintenanceStepDto.LoadConfigurationStep!.File!);
             else  if (maintenanceStepDto.Kind == MaintenanceStepKind.LoadExtension && !maintenanceStepDto.LoadExtensionStep!.FromConfigRepository)
                 filesToDownload.Add(maintenanceStepDto.LoadExtensionStep!.File!);
