@@ -1,10 +1,20 @@
 # OneSwiss
 
 <h2 style="vertical-align: baseline;">
-  <sup>Публикация на   </sup>
-  <a href="https://infostart.ru/1c/tools/2433900">
-    <img alt="infostart" src="https://github.com/user-attachments/assets/56530981-51ed-45b0-86fc-66f62c153286" />
-  </a>
+  <div style="display: inline-block">
+    <div>
+      <sup>Публикация на   </sup>
+      <a href="https://infostart.ru/1c/tools/2433900">
+        <img alt="infostart" src="https://github.com/user-attachments/assets/56530981-51ed-45b0-86fc-66f62c153286" />
+      </a>
+    </div>
+    <div>
+      <sup>Группа в Telegram </sup>
+      <a href="https://t.me/onesswiss" target="_blank">
+        <img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram">
+      </a>
+    </div>
+  </div>
 </div>
 
 ## Система обслуживания и мониторинга информационных баз 1С
