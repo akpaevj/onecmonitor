@@ -2,10 +2,13 @@
 @using System.Text
 @using System.Text.Json
 @using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Dto.ErrorLoggingService
 @using OneSwiss.Server.Helpers
 @inject NavigationManager NavManager
 @inject IDbContextFactory<AppDbContext> ContextFactory
+
+@attribute [ExtAuthorize(BuiltInRoles.ReadErrorLoggingReports)]
 
 <PageTitle>Отчет об ошибке</PageTitle>
 

@@ -6,7 +6,7 @@
 @inject ISnackbar SnackBar
 @implements IDisposable
 @attribute [CascadingTypeParameter(nameof(T))]
-@typeparam T where T : OneSwiss.Server.Models.DatabaseObject, new()
+@typeparam T where T : class, OneSwiss.Server.Models.IHasId, new()
 
 <MudStack>
     <MudForm @ref="Form" Model="Model!" Validation="Validation" Disabled="@(!Editable)">

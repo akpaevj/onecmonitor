@@ -1,9 +1,17 @@
 @page "/techlog/templates"
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using OneSwiss.Server.Extensions
 @rendermode InteractiveServer
 
-<DatabaseObjectsTable TModel="LogTemplate" TViewModel="LogTemplate"
-                      NameSelector="template => template.Name"
-                      Route="techlog/templates"
-                      Title="Шаблоны сбора технологического журнала"/>
+@attribute [ExtAuthorize(BuiltInRoles.ReadTechLogSeances, BuiltInRoles.WriteTechLogSeances)]
+
+<AuthorizeView>
+    <DatabaseObjectsTable TModel="LogTemplate" TViewModel="LogTemplate"
+      NameSelector="template => template.Name"
+      Route="techlog/templates"
+      Title="Шаблоны сбора технологического журнала"
+      ReadOnly="@context.IsReadOnly(BuiltInRoles.WriteTechLogSeances)"/>
+</AuthorizeView>

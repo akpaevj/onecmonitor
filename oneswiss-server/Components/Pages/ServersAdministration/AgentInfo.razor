@@ -40,13 +40,6 @@ else
                         <td>Имя хоста</td>
                         <td>@_systemInfo!.HostName</td>
                     </tr>
-                    @for (var i = 0; i < _systemInfo.IpAddresses.Length; i++)
-                    {
-                        <tr>
-                            <td>IP адрес (@i)</td>
-                            <td>@_systemInfo.IpAddresses[i]</td>
-                        </tr>
-                    }
                     </tbody>
                 </MudSimpleTable>
             }

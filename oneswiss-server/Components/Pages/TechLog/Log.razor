@@ -3,6 +3,7 @@
 @using OneSwiss.Common.Models
 @using OneSwiss.Common.Services
 @using OneSwiss.Common.TechLog
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
 @inject TechLogRepositoryManager RepositoryManager
@@ -10,6 +11,8 @@
 @inject ISnackbar SnackBar
 @implements IDisposable
 @rendermode InteractiveServer
+
+@attribute [ExtAuthorize(BuiltInRoles.ReadTechLogSeances, BuiltInRoles.WriteTechLogSeances)]
 
 <style>
     .selected-tjevent {

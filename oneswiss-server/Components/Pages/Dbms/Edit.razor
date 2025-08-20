@@ -3,7 +3,10 @@
 @using FluentValidation
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Common.Models
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Models
+
+@attribute [ExtAuthorize]
 
 <EditDatabaseForm @ref="_editor" T="Dbms"
                     Id="Id"

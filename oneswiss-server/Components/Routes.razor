@@ -1,6 +1,21 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using OneSwiss.Server.Components.Account.Shared
+@using OneSwiss.Server.Components.Layout
+
+<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"/>
-        <FocusOnNavigate RouteData="routeData" Selector="h1"/>
+        <CascadingAuthenticationState>
+            <AuthorizeRouteView RouteData="routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    <RedirectToLogin/>
+                </NotAuthorized>
+            </AuthorizeRouteView>
+        </CascadingAuthenticationState>
     </Found>
+    <NotFound>
+        <PageTitle>Не найдено</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p role="alert">По запрошенному пути ничего нет</p>
+        </LayoutView>
+    </NotFound>
 </Router>

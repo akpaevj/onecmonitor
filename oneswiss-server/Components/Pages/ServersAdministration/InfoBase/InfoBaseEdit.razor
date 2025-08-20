@@ -1,17 +1,25 @@
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using OneSwiss.Server.Extensions
 
-<InlineEditDatabaseForm @ref="_editor" T="InfoBase" Id="Id">
-    <MudStack>
-        <MudSelect Class="mb-3" Label="Учетные данные администратора" Variant="Variant.Outlined" @bind-Value="@_editor.Model!.CredentialsId" Clearable="@true">
-            @foreach (var item in _editor.Context!.Credentials.ToList())
-            {
-                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
-            }
-        </MudSelect>
+<AuthorizeView>
+    @{
+        var readOnly = context.IsReadOnly(BuiltInRoles.WriteClusterItemsInfo);
         
-    </MudStack>
-</InlineEditDatabaseForm>
+        <InlineEditDatabaseForm @ref="_editor" T="InfoBase" Id="Id" Editable="!readOnly">
+            <MudStack>
+                <MudSelect Class="mb-3" Label="Учетные данные администратора" ReadOnly="readOnly" Variant="Variant.Outlined" @bind-Value="@_editor.Model!.CredentialsId" Clearable="@true">
+                    @foreach (var item in _editor.Context!.Credentials.ToList())
+                    {
+                        <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+                    }
+                </MudSelect>
+
+            </MudStack>
+        </InlineEditDatabaseForm>
+    }
+</AuthorizeView>
 
 @code
 {

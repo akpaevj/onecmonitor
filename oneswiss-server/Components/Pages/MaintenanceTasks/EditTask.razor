@@ -3,8 +3,11 @@
 @using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
 @using OneSwiss.Common.Extensions
 @using OneSwiss.Common.Models.MaintenanceTasks
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models.MaintenanceTasks
+
+@attribute [ExtAuthorize(BuiltInRoles.WriteMaintenanceTasks)]
 
 <EditItem Id="Id" 
           IsTemplate="false" 

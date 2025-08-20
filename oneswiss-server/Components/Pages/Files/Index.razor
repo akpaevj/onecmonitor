@@ -1,6 +1,7 @@
 @page "/files"
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Common.Extensions
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
@@ -9,6 +10,8 @@
 @inject IDialogService DialogService
 @inject FilesProvider FilesProvider
 @rendermode InteractiveServer
+
+@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
 
 <DatabaseObjectsTable TModel="File" TViewModel="File"
                       Title="Файлы"

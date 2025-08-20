@@ -1,18 +1,26 @@
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using OneSwiss.Server.Extensions
 
-<InlineEditDatabaseForm @ref="_editor" T="Cluster" Id="Id">
-    <MudStack>
-        <MudNumericField For="@(() => _editor.Model!.Port)" ReadOnly="true" Variant="Variant.Outlined" Label="Порт" @bind-Value="@_editor.Model!.Port"/>
-        <MudSelect Class="mb-3" Label="Учетные данные администратора" Variant="Variant.Outlined" @bind-Value="@_editor.Model!.CredentialsId" Clearable="@true">
-            @foreach (var item in _editor.Context!.Credentials.ToList())
-            {
-                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
-            }
-        </MudSelect>
+<AuthorizeView>
+    @{
+        var readOnly = context.IsReadOnly(BuiltInRoles.WriteClusterItemsInfo);
+        
+        <InlineEditDatabaseForm @ref="_editor" T="Cluster" Id="Id" Editable="!readOnly">
+            <MudStack>
+                <MudNumericField For="@(() => _editor.Model!.Port)" ReadOnly="true" Variant="Variant.Outlined" Label="Порт" @bind-Value="@_editor.Model!.Port"/>
+                <MudSelect Class="mb-3" Label="Учетные данные администратора" ReadOnly="readOnly" Variant="Variant.Outlined" @bind-Value="@_editor.Model!.CredentialsId" Clearable="@true">
+                    @foreach (var item in _editor.Context!.Credentials.ToList())
+                    {
+                        <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
+                    }
+                </MudSelect>
 
-    </MudStack>
-</InlineEditDatabaseForm>
+            </MudStack>
+        </InlineEditDatabaseForm>
+    }
+</AuthorizeView>
 
 @code
 {

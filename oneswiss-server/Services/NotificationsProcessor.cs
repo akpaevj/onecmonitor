@@ -25,25 +25,18 @@ public class NotificationsProcessor(IDbContextFactory<AppDbContext> dbContextFac
                 
                 foreach (var notification in notifications)
                 {
-                    if (botClient != null && notification.Channel == NotificationChannel.Telegram)
+                    switch (notification.Channel)
                     {
-                        var chatId = new ChatId(notification.Recipient);
-
-                        if (notification.Type == NotificationType.ErrorReportReceived)
-                            await SendErrorReportReceived(context, botClient, chatId, notification, stoppingToken);
-                        else 
-                            await botClient.SendMessage(chatId, notification.Message, ParseMode.MarkdownV2, cancellationToken: stoppingToken);
+                        case NotificationChannel.Telegram when botClient != null:
+                            await SendTelegramNotification(context, botClient, notification, stoppingToken);
+                            break;
+                        case NotificationChannel.WebHook:
+                            await SendWebHookNotification(notification, stoppingToken);
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
                     }
 
-                    if (notification.Channel == NotificationChannel.WebHook)
-                    {
-                        using var client = new HttpClient();
-                        await client.PostAsJsonAsync(
-                            notification.Recipient, 
-                            new WebHookPayload(notification.Type, notification.Message), 
-                            stoppingToken);
-                    }
-                        
                     context.Entry(notification).State = EntityState.Deleted;
                 }
                 
@@ -51,11 +44,35 @@ public class NotificationsProcessor(IDbContextFactory<AppDbContext> dbContextFac
             }
             catch (Exception e)
             {
-                logger.LogWarning(e, "Ошибка отправки уведомления в Telegram");
+                logger.LogWarning(e, "Ошибка отправки уведомления");
             }
             
             await Task.Delay(15 * 1000, stoppingToken);
         }
+    }
+
+    private async Task SendTelegramNotification(
+        AppDbContext context,
+        TelegramBotClient botClient,
+        Notification notification,
+        CancellationToken cancellationToken)
+    {
+        var chatId = new ChatId(notification.Recipient);
+
+        if (notification.Type == NotificationType.ErrorReportReceived)
+            await SendErrorReportReceived(context, botClient, chatId, notification, cancellationToken);
+        else 
+            await botClient.SendMessage(chatId, notification.Message, ParseMode.MarkdownV2, cancellationToken: cancellationToken);
+    }
+
+    private async Task SendWebHookNotification(Notification notification, CancellationToken cancellationToken)
+    {
+        using var client = new HttpClient();
+        
+        await client.PostAsJsonAsync(
+            notification.Recipient, 
+            new WebHookPayload(notification.Type, notification.Message), 
+            cancellationToken);
     }
 
     private static async Task SendErrorReportReceived(

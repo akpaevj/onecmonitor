@@ -1,7 +1,10 @@
 @page "/dbms"
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
 @rendermode InteractiveServer
+
+@attribute [ExtAuthorize]
 
 <DatabaseObjectsTable TModel="Dbms" TViewModel="Dbms"
                       NameSelector="arg => arg.Name"

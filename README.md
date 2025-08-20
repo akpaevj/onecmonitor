@@ -113,6 +113,9 @@ http://localhost:7002/api/ErrorLoggingService
 - Хранилища конфигураций
 
 ## Установка и использование:
+
+### Учетные данные администратора при первом входе - admin/admin
+
 #### Сервер
 Является центральным звеном программного комплекса, осуществляет управлением работы агентов, установленных на серверах 1С.
 ```json
@@ -138,6 +141,20 @@ http://localhost:7002/api/ErrorLoggingService
       "Host": "0.0.0.0",
       "Port": 7002
     }
+  },
+  "Auth": {
+    "Mode": "Internal",
+    "OIDC": {
+      "Authority": "https://my.company.com/realms/master",
+      "ClientId": "oneswiss",
+      "ClientSecret": "13214324543fdsfdsvdsv3213",
+      "Scopes": [
+        "profile",
+        "oidc"
+      ],
+      "NameClaim": "preferred_username",
+      "DisplayNameClaim": "name"
+    }
   }
 }
 ```
@@ -145,6 +162,15 @@ http://localhost:7002/api/ErrorLoggingService
 - OneSwiss
   - Tcp - адрес и порт, по которым сервер будет прослушивать подключающиеся агенты
   - Http - адрес и порт, по которым будет доступна веб-панель управления сервером
+- Auth
+  - Mode - Internal или Mixed. Только внутренняя или внутренняя + OIDC аутентификация
+  - OIDC
+    - Authority - адрес провайдера аутентификации
+    - ClientId - идентификатор клиента аутентификации
+    - ClientSecret - секрет клиента аутентификации
+    - Scopes - список областей, получаемых клиентом
+    - NameClaim - имя утверждения, значение которого будет использовано в качестве логина. По умолчанию - preferred_username
+    - DisplayNameClaim - имя утверждения с отображаемым именем пользователя. По умолчанию - name
     
 #### Агент
 Устанавливается непосредственно на сервера 1С.  

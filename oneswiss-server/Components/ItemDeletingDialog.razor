@@ -6,7 +6,7 @@
 @using OneSwiss.Server.Extensions
 @inject ISnackbar SnackBar
 @inject ILogger<ItemDeletingDialog<T>> Logger
-@typeparam T where T : OneSwiss.Server.Models.DatabaseObject
+@typeparam T where T : class, OneSwiss.Server.Models.IHasId
 
 <MudDialog>
     <TitleContent>

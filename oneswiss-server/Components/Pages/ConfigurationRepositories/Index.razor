@@ -1,8 +1,11 @@
 @page "/configurationrepositories"
 @using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
 @rendermode InteractiveServer
+
+@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
 
 <DatabaseObjectsTable TModel="ConfigurationRepository" TViewModel="ConfigurationRepository"
                       NameSelector="arg => arg.Name"

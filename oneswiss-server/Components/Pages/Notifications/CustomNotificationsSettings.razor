@@ -1,6 +1,7 @@
 @using FluentValidation
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Common.Extensions
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Layout
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Components.Shared
@@ -9,6 +10,8 @@
 @inject ISnackbar SnackBar
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @implements IDisposable
+
+@attribute [ExtAuthorize]
 
 <MudText Typo="Typo.h6" Class="mb-3">Пользовательские уведомления</MudText>
 

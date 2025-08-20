@@ -22,7 +22,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     {
         logger.LogTrace("Запрос списка кластеров из RAS");
 
-        var output = await GetOutputItems("cluster list", 10);
+        var output = await GetOutputItems("cluster list", 20);
         var items = output.ToRacObjects<V8Cluster>();
         
         logger.LogTrace("Список кластеров из RAS получен");
@@ -34,7 +34,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     {
         logger.LogTrace("Запрос информации о кластере из RAS");
 
-        var output = await GetOutputItems($"cluster info --cluster={clusterId}", 10);
+        var output = await GetOutputItems($"cluster info --cluster={clusterId}", 20);
         var item = output.ToRacObjects<V8ClusterDetails>().First();
         
         logger.LogTrace("Информация о кластере из RAS получена");
@@ -87,7 +87,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     }
 
     public async Task BlockConnections(string clusterId, string infoBaseId, string permissionCode, string deniedMessage, string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
-        => await StartRacAndGetOutput($"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=on --scheduled-jobs-deny=on --permission-code={permissionCode} --denied-message=\"{deniedMessage}\"", 10);
+        => await StartRacAndGetOutput($"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=on --scheduled-jobs-deny=on --permission-code={permissionCode} --denied-message=\"{deniedMessage}\"", 30);
 
     public async Task<V8Connection> GetConnectionInfo(
         string clusterId,
@@ -138,7 +138,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         
         var items = (await GetOutputItems(
                 $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
-                20))
+                30))
             .ToRacObjects<V8Connection>(["process", "infobase"],
                 (f, c) => FillV8Connection(infoBases, processes, f, c));
         
@@ -161,7 +161,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка соединений информационной базы из RAS");
         
         var items = (await GetOutputItems(
-                $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}", 20))
+                $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}", 30))
             .ToRacObjects<V8Connection>(["process", "infobase"],
                 (f, c) => FillV8Connection(infoBases, processes, f, c));
         
@@ -269,10 +269,10 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     }
 
     public async Task TerminateSession(string clusterId, string sessionId, string clusterUser = "", string clusterPassword = "")
-        => await StartRacAndGetOutput($"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} terminate --session={sessionId}", 10);
+        => await StartRacAndGetOutput($"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} terminate --session={sessionId}", 20);
     
     public async Task UnblockConnections(string clusterId, string infoBaseId, string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
-        => await StartRacAndGetOutput($"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=off --scheduled-jobs-deny=off", 10);
+        => await StartRacAndGetOutput($"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=off --scheduled-jobs-deny=off", 30);
 
     private async Task<List<Dictionary<string, string>>> GetOutputItems(string command, int commandTimeout)
     {

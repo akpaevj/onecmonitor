@@ -1,8 +1,11 @@
 @page "/techlog/templates/{id:guid}"
 @page "/techlog/templates/create"
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Components.Shared
 @inject IJSRuntime JS
+
+@attribute [ExtAuthorize(BuiltInRoles.WriteTechLogSeances)]
 
 <EditDatabaseForm @ref="_editor" T="LogTemplate" Id="Id"
                     NameSelector="template => template.Name"

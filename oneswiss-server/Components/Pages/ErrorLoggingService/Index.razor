@@ -1,12 +1,15 @@
 @page "/errorloggingservice"
 @using global::AutoMapper
 @using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Components.Shared
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @inject IMapper Mapper
 @inject NavigationManager NavManager
 @rendermode InteractiveServer
+
+@attribute [ExtAuthorize(BuiltInRoles.ReadErrorLoggingReports)]
 
 <PageTitle>Журнал сервиса регистрации ошибок</PageTitle>
 
