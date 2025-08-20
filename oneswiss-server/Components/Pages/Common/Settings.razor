@@ -1,22 +1,36 @@
 @page "/settings"
+@using Microsoft.AspNetCore.WebUtilities
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Pages.TechLog
 @using OneSwiss.Server.Components.Pages.EventLogSettings
 @using OneSwiss.Server.Components.Pages.ErrorLoggingService
 @using OneSwiss.Server.Components.Pages.Notifications
+@using OneSwiss.Server.Components.Pages.AccessGroups
+@using OneSwiss.Server.Components.Pages.UsersAndGroups
+
+@inject NavigationManager NavManager
+
+@attribute [ExtAuthorize]
 
 <PageTitle>Настройки</PageTitle>
 
-<MudTabs Position="Position.Top" Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
-    <MudTabPanel Text="Технологический журнал">
+<MudTabs @ref="_tabs" Position="Position.Top" @bind-ActivePanelIndex="_activeIndex" Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+    <MudTabPanel Text="Группы доступа" ID="@("accessGroups")">
+        <AccessGroups/>
+    </MudTabPanel>
+    <MudTabPanel Text="Пользователи" ID="@("users")">
+        <Users/>
+    </MudTabPanel>
+    <MudTabPanel Text="Технологический журнал" ID="@("techlog")">
         <TechLogSettings/>
     </MudTabPanel>
-    <MudTabPanel Text="Журнал регистрации">
+    <MudTabPanel Text="Журнал регистрации" ID="@("eventLog")">
         <EventLogSettings/>
     </MudTabPanel>
-    <MudTabPanel Text="Сервис регистрации ошибок">
+    <MudTabPanel Text="Сервис регистрации ошибок" ID="@("errorReporting")">
         <ErrorLoggingServiceSettings/>
     </MudTabPanel>
-    <MudTabPanel Text="Уведомления">
+    <MudTabPanel Text="Уведомления" ID="@("notifications")">
         <MudStack>
             <TelegramBotSettings/>
             <CustomNotificationsSettings/>
@@ -24,3 +38,17 @@
         </MudStack>
     </MudTabPanel>
 </MudTabs>
+
+@code {
+    private MudTabs? _tabs;
+    private int _activeIndex;
+
+    [SupplyParameterFromQuery]
+    public string? Tab { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Tab != null)
+            _tabs?.ActivatePanel(Tab);
+    }
+}

@@ -14,15 +14,19 @@
 @using global::AutoMapper
 @using OneSwiss.Common.Extensions
 @using OneSwiss.Common.Models.MaintenanceTasks
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Helpers
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Models.MaintenanceTasks
 @using OneSwiss.Server.Components.Shared
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IJSRuntime JS
 @inject IMapper Mapper
 @inject IDialogService DialogService
 @rendermode InteractiveServer
+
+@attribute [ExtAuthorize(BuiltInRoles.WriteMaintenanceTasks)]
 
 <script>
     function disableWheelPropagation() {
@@ -32,69 +36,72 @@
     }
 </script>
 
-<EditDatabaseForm @ref="_editor" T="MaintenanceTask"
-                    Id="Id"
-                    NameSelector="@(arg => arg.Description)"
-                    Title="@Title"
-                    Route="@Route"
-                    Validation="_validator.ValidateValue"
-                    OnInitialize="OnInitialize"
-                    ModelSelector="ModelSelector"
-                    BeforeValidation="BeforeValidation"
-                    OnUpdate="OnUpdate"
-                    Editable="_editable">
-    <MudStack>
-        <MudStack Row Class="mb-3" Breakpoint="Breakpoint.MdAndDown" AlignItems="AlignItems.Center" StretchItems="StretchItems.All">
-            <MudTextField Class="w-100" For="@(() => _editor.Model!.Description)" Variant="Variant.Outlined" Label="Наименование" @bind-Value="@_editor.Model!.Description"/>
-            <MudSwitch Label="Задача общего назначения" 
-                       @bind-Value:get="@_editor.Model!.CommonDestination" 
-                       @bind-Value:set="SetTaskType"
-                       Color="Color.Primary"/>
-            @if (_editor.Model!.CommonDestination)
-            {
-                <ItemsSelector T="Agent"
-                               Class="w-100"
-                               @bind-SelectedValues="_editor.Model!.Agents"
-                               Items="@_editor.Context!.Agents.ToList()"
-                               Title="Агенты"
-                               NameSelector="item => item.InstanceName"/>
-            }
-            else
-            {
-                <ItemsSelector T="InfoBase"
-                               Class="w-100"
-                               @bind-SelectedValues="_editor.Model!.InfoBases"
-                               Items="@_editor.Context!.InfoBases.ToList()"
-                               Title="Информационные базы"
-                               NameSelector="item => item.Name"/>
-            }
-        </MudStack>
-        <MudPaper Class="rounded-lg mud-background-gray pa-2">
-            <MudStack Row Wrap="Wrap.Wrap" Class="mb-2" Spacing="0">
-                @foreach (var item in GetAvailableStepKinds())
+<AuthorizeView>
+    <EditDatabaseForm @ref="_editor" T="MaintenanceTask"
+                        Id="Id"
+                        NameSelector="@(arg => arg.Description)"
+                        Title="@Title"
+                        Route="@Route"
+                        Validation="_validator.ValidateValue"
+                        OnInitialize="OnInitialize"
+                        ModelSelector="ModelSelector"
+                        BeforeValidation="BeforeValidation"
+                        OnUpdate="OnUpdate"
+                        Editable="_editable">
+        <MudStack>
+            <MudStack Row Class="mb-3" Breakpoint="Breakpoint.MdAndDown" AlignItems="AlignItems.Center" StretchItems="StretchItems.All">
+                <MudTextField Class="w-100" For="@(() => _editor.Model!.Description)" Variant="Variant.Outlined" Label="Наименование" @bind-Value="@_editor.Model!.Description"/>
+                <MudSwitch Label="Задача общего назначения" 
+                           @bind-Value:get="@_editor.Model!.CommonDestination" 
+                           @bind-Value:set="SetTaskType"
+                           Color="Color.Primary"/>
+                @if (_editor.Model!.CommonDestination)
                 {
-                    <MudChip Disabled="@(!_editable)" T="MaintenanceStepKind" Style="@($"background-color: {item.GetKindColor()}")" Value="@item" OnClick="@(() => OnClickNodeType(item))">@item.GetDisplay()</MudChip>
+                    <ItemsSelector T="Agent"
+                                   Class="w-100"
+                                   @bind-SelectedValues="_editor.Model!.Agents"
+                                   Items="@_editor.Context!.Agents.ToList()"
+                                   Title="Агенты"
+                                   NameSelector="item => item.InstanceName"/>
+                }
+                else
+                {
+                    <ItemsSelector T="InfoBase"
+                                   Class="w-100"
+                                   @bind-SelectedValues="_editor.Model!.InfoBases"
+                                   Items="@_editor.Context!.InfoBases.ToList()"
+                                   Title="Информационные базы"
+                                   NameSelector="item => item.Name"/>
                 }
             </MudStack>
-            <MudPaper Class="rounded" Style="width: 100%; height: 500px">
-                <CascadingValue Value="Diagram" IsFixed="true">
-                    <DiagramCanvas>
-                        <Widgets>
-                            <GridWidget Size="30" Mode="GridMode.Point" BackgroundColor="@($"#{Color.Default}")"/>
-                        </Widgets>
-                    </DiagramCanvas>
-                </CascadingValue>
+            <MudPaper Class="rounded-lg mud-background-gray pa-2">
+                <MudStack Row Wrap="Wrap.Wrap" Class="mb-2" Spacing="0">
+                    @foreach (var item in GetAvailableStepKinds())
+                    {
+                        <MudChip Disabled="@(!_editable)" T="MaintenanceStepKind" Style="@($"background-color: {item.GetKindColor()}")" Value="@item" OnClick="@(() => OnClickNodeType(item))">@item.GetDisplay()</MudChip>
+                    }
+                </MudStack>
+                <MudPaper Class="rounded" Style="width: 100%; height: 500px">
+                    <CascadingValue Value="Diagram" IsFixed="true">
+                        <DiagramCanvas>
+                            <Widgets>
+                                <GridWidget Size="30" Mode="GridMode.Point" BackgroundColor="@($"#{Color.Default}")"/>
+                            </Widgets>
+                        </DiagramCanvas>
+                    </CascadingValue>
+                </MudPaper>
             </MudPaper>
-        </MudPaper>
-    </MudStack>
-    
-</EditDatabaseForm>
+        </MudStack>
+        
+    </EditDatabaseForm>
+</AuthorizeView>
 
 @code
 {
     private readonly Validator _validator = new();
     private EditDatabaseForm<MaintenanceTask> _editor = null!;
     private bool _editable;
+    private AuthenticationState _authState;
 
     [Parameter]
     public Guid Id { get; set; }
@@ -111,6 +118,9 @@
     [SupplyParameterFromQuery] 
     public Guid TemplateId { get; set; }
     
+    [CascadingParameter]
+    public Task<AuthenticationState>? AuthStateTask { get; set; }
+    
     public BlazorDiagram Diagram { get; set; } = null!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -126,7 +136,8 @@
     
     private async Task OnInitialize((MaintenanceTask Model, AppDbContext Context) valueTuple)
     {
-        _editable = valueTuple.Model.StartDateTime == DateTime.MinValue;
+        _authState = await AuthStateTask!;
+        _editable = valueTuple.Model.StartDateTime == DateTime.MinValue && !_authState.IsReadOnly(BuiltInRoles.WriteMaintenanceTasks);
         
         InitDiagram();
         

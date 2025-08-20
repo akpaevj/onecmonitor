@@ -3,77 +3,85 @@
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
 @using OneSwiss.V8.Platform.RemoteAdministration
+@using Microsoft.AspNetCore.Components.Authorization
+@using OneSwiss.Server.Extensions
 
-<ClusterObjectDetails
-    @ref="_details"
-    T="V8ClusterDetails"
-    GetAgentConnectionCallback="GetAgentConnectionCallback"
-    SaveAble="true"
-    OnSave="OnSave"
-    BeforeLoadModel="BeforeLoadModel"
-    OnLoadModel="OnLoadModel">
-    <MudStack Row Class="mb-3" Breakpoint="Breakpoint.SmAndDown" StretchItems="StretchItems.All">
-        <MudCard>
-            <MudCardHeader>
-                <MudText>Основное</MudText>
-            </MudCardHeader>
-            <MudCardContent>
-                <MudStack>
-                    <MudTextField For="@(() => _details.Model.Name)" Variant="Variant.Outlined" Label="Наименование" @bind-Value="@_details.Model.Name"/>
-                    <MudSelect Label="Защищенное соединение" For="@(() => _details.Model.SecurityLevel)" @bind-Value="@_details.Model.SecurityLevel">
-                        @foreach (var item in Enum.GetValues<V8SecurityLevel>())
-                        {
-                            <MudSelectItem Value="item">@item.GetDisplay()</MudSelectItem>
-                        }
-                    </MudSelect>
-                    <MudSwitch For="@(() => _details.Model.AllowAccessRightAuditEventsRecording)" Color="Color.Primary" Label="Разрешать запись событий аудита прав доступа" @bind-Value="@_details.Model.AllowAccessRightAuditEventsRecording"/>
-                </MudStack>
-            </MudCardContent>
-        </MudCard>
-        <MudCard>
-            <MudCardHeader>
-                <MudText>Перезапускать рабочие процессы</MudText>
-            </MudCardHeader>
-            <MudCardContent>
-                <MudStack>
-                    <MudTextField For="@(() => _details.Model.RestartSchedule)" Variant="Variant.Outlined" Label="Расписание перезапуска" @bind-Value="@_details.Model.RestartSchedule"/>
-                    <MudSwitch For="@(() => _details.Model.KillProblemProcesses)" Color="Color.Primary" Label="Принудительно завершать проблемные процессы" @bind-Value="@_details.Model.KillProblemProcesses"/>
-                    <MudSwitch For="@(() => _details.Model.KillByMemoryWithDump)" Color="Color.Primary" Label="Записывать дамп процесса при превышении критического объема памяти" @bind-Value="@_details.Model.KillByMemoryWithDump"/>
-                </MudStack>
-            </MudCardContent>
-        </MudCard>
-    </MudStack>
-    <MudStack Class="mb-3" Row Breakpoint="Breakpoint.SmAndDown" StretchItems="StretchItems.All">
-        <MudCard>
-            <MudCardHeader>
-                <MudText>Параметры процессов</MudText>
-            </MudCardHeader>
-            <MudCardContent>
-                <MudStack>
-                    <MudNumericField For="@(() => _details.Model.ExpirationTimeout)" Adornment="Adornment.End" AdornmentText="сек." Variant="Variant.Outlined" Label="Проблемные процессы завершать через" @bind-Value="@_details.Model.ExpirationTimeout"/>
-                    <MudNumericField For="@(() => _details.Model.SessionFaultToleranceLevel)" Variant="Variant.Outlined" Label="Уровень отказоустойчивости" @bind-Value="@_details.Model.SessionFaultToleranceLevel"/>
-                    <MudSelect Label="Режим распределения нагрузки" For="@(() => _details.Model.LoadBalancingMode)" @bind-Value="@_details.Model.LoadBalancingMode">
-                        @foreach (var item in Enum.GetValues<V8ClusterLoadBalancingMode>())
-                        {
-                            <MudSelectItem Value="item">@item.GetDisplay()</MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudStack>
-            </MudCardContent>
-        </MudCard>
-        <MudCard>
-            <MudCardHeader>
-                <MudText>Отслеживание разрыва соединений</MudText>
-            </MudCardHeader>
-            <MudCardContent>
-                <MudStack>
-                    <MudNumericField For="@(() => _details.Model.PingPeriod)" Adornment="Adornment.End" AdornmentText="сек." Variant="Variant.Outlined" Label="Период проверки" @bind-Value="@_details.Model.PingPeriod"/>
-                    <MudNumericField For="@(() => _details.Model.PingTimeout)" Adornment="Adornment.End" AdornmentText="сек." Variant="Variant.Outlined" Label="Таймаут проверки" @bind-Value="@_details.Model.PingTimeout"/>
-                </MudStack>
-            </MudCardContent>
-        </MudCard>
-    </MudStack>
-</ClusterObjectDetails>
+<AuthorizeView>
+    @{
+        var readOnly = context.IsReadOnly(BuiltInRoles.WriteClusterItemsInfo);
+        
+        <ClusterObjectDetails
+            @ref="_details"
+            T="V8ClusterDetails"
+            GetAgentConnectionCallback="GetAgentConnectionCallback"
+            SaveAble="!readOnly"
+            OnSave="OnSave"
+            BeforeLoadModel="BeforeLoadModel"
+            OnLoadModel="OnLoadModel">
+            <MudStack Row Class="mb-3" Breakpoint="Breakpoint.SmAndDown" StretchItems="StretchItems.All">
+                <MudCard>
+                    <MudCardHeader>
+                        <MudText>Основное</MudText>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudStack>
+                            <MudTextField For="@(() => _details.Model.Name)" ReadOnly="readOnly" Variant="Variant.Outlined" Label="Наименование" @bind-Value="@_details.Model.Name"/>
+                            <MudSelect Label="Защищенное соединение" ReadOnly="readOnly" For="@(() => _details.Model.SecurityLevel)" @bind-Value="@_details.Model.SecurityLevel">
+                                @foreach (var item in Enum.GetValues<V8SecurityLevel>())
+                                {
+                                    <MudSelectItem Value="item">@item.GetDisplay()</MudSelectItem>
+                                }
+                            </MudSelect>
+                            <MudSwitch For="@(() => _details.Model.AllowAccessRightAuditEventsRecording)" ReadOnly="readOnly" Color="Color.Primary" Label="Разрешать запись событий аудита прав доступа" @bind-Value="@_details.Model.AllowAccessRightAuditEventsRecording"/>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+                <MudCard>
+                    <MudCardHeader>
+                        <MudText>Перезапускать рабочие процессы</MudText>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudStack>
+                            <MudTextField For="@(() => _details.Model.RestartSchedule)" ReadOnly="readOnly" Variant="Variant.Outlined" Label="Расписание перезапуска" @bind-Value="@_details.Model.RestartSchedule"/>
+                            <MudSwitch For="@(() => _details.Model.KillProblemProcesses)" ReadOnly="readOnly" Color="Color.Primary" Label="Принудительно завершать проблемные процессы" @bind-Value="@_details.Model.KillProblemProcesses"/>
+                            <MudSwitch For="@(() => _details.Model.KillByMemoryWithDump)" ReadOnly="readOnly" Color="Color.Primary" Label="Записывать дамп процесса при превышении критического объема памяти" @bind-Value="@_details.Model.KillByMemoryWithDump"/>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudStack>
+            <MudStack Class="mb-3" Row Breakpoint="Breakpoint.SmAndDown" StretchItems="StretchItems.All">
+                <MudCard>
+                    <MudCardHeader>
+                        <MudText>Параметры процессов</MudText>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudStack>
+                            <MudNumericField For="@(() => _details.Model.ExpirationTimeout)" ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек." Variant="Variant.Outlined" Label="Проблемные процессы завершать через" @bind-Value="@_details.Model.ExpirationTimeout"/>
+                            <MudNumericField For="@(() => _details.Model.SessionFaultToleranceLevel)" ReadOnly="readOnly" Variant="Variant.Outlined" Label="Уровень отказоустойчивости" @bind-Value="@_details.Model.SessionFaultToleranceLevel"/>
+                            <MudSelect Label="Режим распределения нагрузки" For="@(() => _details.Model.LoadBalancingMode)" ReadOnly="readOnly" @bind-Value="@_details.Model.LoadBalancingMode">
+                                @foreach (var item in Enum.GetValues<V8ClusterLoadBalancingMode>())
+                                {
+                                    <MudSelectItem Value="item">@item.GetDisplay()</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+                <MudCard>
+                    <MudCardHeader>
+                        <MudText>Отслеживание разрыва соединений</MudText>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudStack>
+                            <MudNumericField For="@(() => _details.Model.PingPeriod)" ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек." Variant="Variant.Outlined" Label="Период проверки" @bind-Value="@_details.Model.PingPeriod"/>
+                            <MudNumericField For="@(() => _details.Model.PingTimeout)" ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек." Variant="Variant.Outlined" Label="Таймаут проверки" @bind-Value="@_details.Model.PingTimeout"/>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudStack>
+        </ClusterObjectDetails>
+    }
+</AuthorizeView>
 
 @code {
     private Cluster _item = null!;

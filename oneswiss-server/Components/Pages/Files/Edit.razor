@@ -1,11 +1,14 @@
 @page "/files/{id:guid}"
 @page "/files/create"
 @using FluentValidation
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
 @using OneSwiss.Server.Components.Shared
 @inject ILogger<Edit> Logger
 @inject FilesProvider FilesProvider
+
+@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
 
 <EditDatabaseForm @ref="_editor" T="File"
                     Id="Id"

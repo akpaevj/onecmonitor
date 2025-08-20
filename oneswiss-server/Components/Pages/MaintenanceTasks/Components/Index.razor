@@ -1,62 +1,76 @@
-@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models.MaintenanceTasks
 @using OneSwiss.Server.Services
-@using OneSwiss.Server.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@using OneSwiss.Server.Extensions
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject AgentsConnectionsManager AgentsConnectionsManager
 @rendermode InteractiveServer
 
-<DatabaseObjectsTable @ref="_table" TModel="MaintenanceTask" TViewModel="MaintenanceTask"
-                      NameSelector="@(task => task.Description)"
-                      Route="@Route"
-                      Title="@Title"
-                      ItemsSelector="ItemsSelector">
-    <TableActionsContent>
-        <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="CreateFromTemplate" Class="mb-3">Из шаблона</MudButton>
-    </TableActionsContent>
-    <ColumnsContent>
-        <MudTh>Описание</MudTh>
-        @if (!IsTemplate)
-        {
-            <MudTh>Время начала</MudTh>
-            <MudTh>Есть ошибки</MudTh>
-            <MudTh>Время окончания</MudTh>
-        }
-    </ColumnsContent>
-    <RowTemplate>
-        <MudTd DataLabel="Описание">@context.Description</MudTd>
-        @if (!IsTemplate)
-        {
-            <MudTd DataLabel="Время начала">@context.StartDateTime</MudTd>
-            <MudTd Class="@(context.IsFaulted ? "mud-error-text" : "mud-success-text")" DataLabel="Есть ошибки">@context.IsFaulted</MudTd>
-            <MudTd DataLabel="Время окончания">@context.FinishDateTime</MudTd>
-        }
-    </RowTemplate>
-    <RowActionsContent>
-        @if (!context.IsTemplate)
-        {
-            if (context.StartDateTime != DateTime.MinValue)
+@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
+
+<AuthorizeView Context="authState">
+    <DatabaseObjectsTable @ref="_table" TModel="MaintenanceTask" TViewModel="MaintenanceTask"
+                          NameSelector="@(task => task.Description)"
+                          Route="@Route"
+                          Title="@Title"
+                          ItemsSelector="ItemsSelector"
+                          ReadOnly="@authState.IsReadOnly(BuiltInRoles.WriteMaintenanceTasks)">
+        <TableActionsContent>
+            <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="CreateFromTemplate" Class="mb-3">Из шаблона</MudButton>
+        </TableActionsContent>
+        <ColumnsContent>
+            <MudTh>Описание</MudTh>
+            @if (!IsTemplate)
             {
-                <MudIconButton Icon="@Icons.Material.Filled.ListAlt" OnClick="@(() => NavigateToLog(context))" Color="Color.Warning"/>
+                <MudTh>Время начала</MudTh>
+                <MudTh>Есть ошибки</MudTh>
+                <MudTh>Время окончания</MudTh>
             }
-            else
+        </ColumnsContent>
+        <RowTemplate>
+            <MudTd DataLabel="Описание">@context.Description</MudTd>
+            @if (!IsTemplate)
             {
-                <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" OnClick="@(() => StartTask(context))" Color="Color.Success"/>
+                <MudTd DataLabel="Время начала">@context.StartDateTime</MudTd>
+                <MudTd Class="@(context.IsFaulted ? "mud-error-text" : "mud-success-text")" DataLabel="Есть ошибки">@context.IsFaulted</MudTd>
+                <MudTd DataLabel="Время окончания">@context.FinishDateTime</MudTd>
             }
-        }
-        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavManager.NavigateTo($"{Route}/{context.Id}"))" Color="Color.Info"/>
-        @if (context.IsTemplate || context.StartDateTime == DateTime.MinValue || context.FinishDateTime != DateTime.MinValue)
-        {
-            <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => _table.DeleteItem(context))" Color="Color.Error"/>
-        }
-        @if (RowActionsContent != null)
-        {
-            @RowActionsContent.Invoke(context)
-        }
-    </RowActionsContent>
-</DatabaseObjectsTable>
+        </RowTemplate>
+        <RowActionsContent>
+            @if (!context.IsTemplate)
+            {
+                if (context.StartDateTime != DateTime.MinValue)
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.ListAlt" OnClick="@(() => NavigateToLog(context))" Color="Color.Warning"/>
+                }
+                else
+                {
+                    if (authState.IsInRoles(BuiltInRoles.WriteMaintenanceTasks))
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" OnClick="@(() => StartTask(context))" Color="Color.Success"/>
+                    }
+                }
+            }
+            
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavManager.NavigateTo($"{Route}/{context.Id}"))" Color="Color.Info"/>
+            
+            @if (authState.IsInRoles(BuiltInRoles.WriteMaintenanceTasks))
+            {
+                @if (context.IsTemplate || context.StartDateTime == DateTime.MinValue || context.FinishDateTime != DateTime.MinValue)
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => _table.DeleteItem(context))" Color="Color.Error"/>
+                }
+                @if (RowActionsContent != null)
+                {
+                    @RowActionsContent.Invoke(context)
+                }
+            }
+        </RowActionsContent>
+    </DatabaseObjectsTable>
+</AuthorizeView>
 
 @code
 {
@@ -95,9 +109,7 @@
     }
 
     private void NavigateToLog(MaintenanceTask task)
-    {
-        NavManager.NavigateTo($"{Route}/{task.Id}/log");
-    }
+        => NavManager.NavigateTo($"{Route}/{task.Id}/log");
 
     private IQueryable<MaintenanceTask> ItemsSelector(IQueryable<MaintenanceTask> arg)
         => arg.Where(c => c.IsTemplate == IsTemplate);

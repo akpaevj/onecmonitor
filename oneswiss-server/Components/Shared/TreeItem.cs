@@ -1,6 +1,6 @@
 using MudBlazor;
 
-namespace OneSwiss.Server.Components.Pages.ServersAdministration;
+namespace OneSwiss.Server.Components.Shared;
 
 public class TreeItem(string id, TreeItem? parent = null)
 {
@@ -33,4 +33,8 @@ public class TreeItem(string id, TreeItem? parent = null)
     }
     public Type? DynamicComponentType { get; init; }
     public Dictionary<string, object>? Parameters { get; init; }
+    public bool ShowEditItemIcon { get; set; }
+    public Func<TreeItem, Task>? EditItemCallBack { get; set; }
+    public bool ShowDeleteItemIcon { get; set; }
+    public Func<TreeItem, Task>? DeleteItemCallBack { get; set; }
 }

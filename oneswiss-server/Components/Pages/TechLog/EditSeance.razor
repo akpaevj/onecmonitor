@@ -3,11 +3,14 @@
 @using FluentValidation
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Common.Extensions
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Helpers
 @using OneSwiss.Server.Services
 @inject AgentsConnectionsManager AgentsConnectionsManager 
+
+@attribute [ExtAuthorize(BuiltInRoles.WriteTechLogSeances)]
 
 <EditDatabaseForm @ref="_editor" T="TechLogSeance" Id="Id"
                     NameSelector="item => item.Description"

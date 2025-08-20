@@ -1,9 +1,9 @@
 @page "/maintenancetaskstemplates/{id:guid}"
 @page "/maintenancetaskstemplates/create"
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
-@using OneSwiss.Server.Extensions
-@inject ILogger<EditTemplate> Logger
-@inject ISnackbar SnackBar
+
+@attribute [ExtAuthorize(BuiltInRoles.WriteMaintenanceTasks)]
 
 <EditItem Id="Id" 
           IsTemplate="true" 

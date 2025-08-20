@@ -1,6 +1,7 @@
 @page "/"
 @using System.Globalization
 @using Blazor.Diagrams.Core.Models.Base
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Components.Pages.ServersAdministration.Cluster
@@ -21,9 +22,7 @@
 
 <MudSplitter EnableMargin="true" EnableSlide="true" @bind-Dimension="_dimension" @bind-Dimension:after="AfterDimensionChanged" Height="calc(100vh - 140px)">
     <StartContent>
-        <MudPaper Class="pa-2 w-100">
-            <TreeView @bind-SelectedItem="_selectedItem" @bind-Items="_items"/>
-        </MudPaper>
+        <TreeView @bind-SelectedItem="_selectedItem" Class="w-100" @bind-Items="_items"/>
     </StartContent>
     <EndContent>
         <MudPaper Class="pa-2 w-100 overflow-auto">
@@ -46,9 +45,15 @@
     private TreeItem? _selectedItem;
     private DynamicComponent? _dynamicComponent;
     private double _dimension = 20;
+    private AuthenticationState _authState;
+    
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthStateTask { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        _authState = await AuthStateTask;
+        
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(NavManager.ToAbsoluteUri("/agentsHub"))
             .Build();
@@ -101,7 +106,12 @@
                 Text = c.InstanceName,
                 AdornmentIcon = Icons.Material.Filled.SupportAgent,
                 AdornmentIconColor = agentIsConnected ? Color.Success : Color.Error,
-                LoadChildrenFunc = () => LoadClusters(c, agentIsConnected),
+                LoadChildrenFunc = _authState.IsInRoles(
+                    BuiltInRoles.ReadClusterItems,
+                    BuiltInRoles.WriteClusterItemsInfo)
+                    ? () => LoadClusters(c,
+                        agentIsConnected)
+                    : null,
                 DynamicComponentType = typeof(AgentInfo),
                 Parameters = new Dictionary<string, object> { { "Id", c.Id } }
             };
@@ -150,67 +160,20 @@
             AdornmentIconColor = Color.Tertiary,
             LoadChildrenFunc = () => LoadV8Processes(cluster)
         });
-            
-        result.Add(new TreeItem($"{cluster.Id}730fd344-b3f0-4f4c-bf2e-42cdcf0ff2f4")
+
+        if (_authState.IsInRoles(
+                BuiltInRoles.ReadSessions,
+                BuiltInRoles.CloseSessions))
         {
-            Text = "Сеансы",
-            AdornmentIcon = Icons.Material.Filled.PersonPin,
-            AdornmentIconColor = Color.Secondary,
-            DynamicComponentType = typeof(Sessions),
-            Parameters = new Dictionary<string, object> { { "Cluster", cluster } }
-        });
-            
-        /*result.AddRange(
-        [
-            new TreeItemData<SidebarItem>
+            result.Add(new TreeItem($"{cluster.Id}730fd344-b3f0-4f4c-bf2e-42cdcf0ff2f4")
             {
-                Expandable = false,
-                Visible = false,
-                Text = "Рабочие серверы",
-                Icon = Icons.Material.Filled.Work,
-                Value = new SidebarItem($"{cluster.Id}5d123301-afdd-4a85-bf56-e4e4f21bea89")
-            },
-            new TreeItemData<SidebarItem>
-            {
-                Expandable = false,
-                Visible = false,
-                Text = "Администраторы",
-                Icon = Icons.Material.Filled.Password,
-                Value = new SidebarItem($"{cluster.Id}c82ea9d3-9438-424e-a786-4872315eb9c4")
-            },
-            new TreeItemData<SidebarItem>
-            {
-                Expandable = false,
-                Visible = false,
-                Text = "Менеджеры кластера",
-                Icon = Icons.Material.Filled.ManageAccounts,
-                Value = new SidebarItem($"{cluster.Id}4c95da0e-f1a1-4be2-9291-d979105429ed")
-            },
-            new TreeItemData<SidebarItem>
-            {
-                Expandable = false,
-                Text = "Блокировки",
-                Visible = false,
-                Icon = Icons.Material.Filled.Lock,
-                Value = new SidebarItem($"{cluster.Id}f42c1518-48fa-41b7-b354-92b3d7c6e8a6")
-            },
-            new TreeItemData<SidebarItem>
-            {
-                Expandable = false,
-                Text = "Соединения",
-                Visible = false,
-                Icon = Icons.Material.Filled.PrivateConnectivity,
-                Value = new SidebarItem($"{cluster.Id}aeb3aa97-1c14-40ab-a2ad-d39cd8789cb5")
-            },
-            new TreeItemData<SidebarItem>
-            {
-                Expandable = false,
-                Visible = false,
-                Text = "Профили безопасности",
-                Icon = Icons.Material.Filled.Security,
-                Value = new SidebarItem($"{cluster.Id}c0c25fcf-4021-4828-a764-35ff2122d762")
-            }
-        ]);*/
+                Text = "Сеансы",
+                AdornmentIcon = Icons.Material.Filled.PersonPin,
+                AdornmentIconColor = Color.Secondary,
+                DynamicComponentType = typeof(Sessions),
+                Parameters = new Dictionary<string, object> { { "Cluster", cluster } }
+            });
+        }
 
         return Task.FromResult(result);
     }
@@ -235,19 +198,25 @@
             Parameters = new Dictionary<string, object> { { "Id", c.Id }, { "AgentIsConnected", agentIsConnected } },
         }).ToList();
     }
-    
-    private static Task<List<TreeItem>> LoadInfoBaseChildren(Models.InfoBase infoBase)
-        =>
-            Task.FromResult<List<TreeItem>>([
-                new TreeItem($"{infoBase.Id}730fd344-b3f0-4f4c-bf2e-42cdcf0ff2f4")
-                {
-                    Text = "Сеансы",
-                    AdornmentIcon = Icons.Material.Filled.PersonPin,
-                    AdornmentIconColor = Color.Secondary,
-                    DynamicComponentType = typeof(Sessions),
-                    Parameters = new Dictionary<string, object> { { "Cluster", infoBase.Cluster }, { "InfoBase", infoBase } } 
-                }
-            ]);
+
+    private Task<List<TreeItem>> LoadInfoBaseChildren(Models.InfoBase infoBase)
+    {
+        var result = new List<TreeItem>();
+
+        if (_authState.IsInRoles(
+                BuiltInRoles.ReadSessions,
+                BuiltInRoles.CloseSessions))
+            result.Add(new TreeItem($"{infoBase.Id}730fd344-b3f0-4f4c-bf2e-42cdcf0ff2f4")
+            {
+                Text = "Сеансы",
+                AdornmentIcon = Icons.Material.Filled.PersonPin,
+                AdornmentIconColor = Color.Secondary,
+                DynamicComponentType = typeof(Sessions),
+                Parameters = new Dictionary<string, object> { { "Cluster", infoBase.Cluster }, { "InfoBase", infoBase } } 
+            });
+        
+        return Task.FromResult(result);
+    }
     
     private async Task<List<TreeItem>> LoadV8Processes(Models.Cluster cluster)
     {

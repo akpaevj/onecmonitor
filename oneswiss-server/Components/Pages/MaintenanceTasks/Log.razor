@@ -2,6 +2,7 @@
 @using Dapper
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Models.MaintenanceTasks
@@ -9,6 +10,8 @@
 @inject NavigationManager NavManager
 @inject ISnackbar SnackBar
 @rendermode InteractiveServer
+
+@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
 
 <PageTitle>Журнал задачи обслуживания</PageTitle>
 

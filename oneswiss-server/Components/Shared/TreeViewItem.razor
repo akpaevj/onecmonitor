@@ -1,11 +1,12 @@
 @inject ISnackbar Snackbar
+@using OneSwiss.Server.Components.Pages.ServersAdministration
 @using OneSwiss.Server.Extensions
 @implements IDisposable
 
 @if (Item.Visible)
 {
-    <MudButton FullWidth="true" Class="justify-start" Color="@_color" OnClick="SelectItem">
-        <MudStack Row Spacing="0" AlignItems="AlignItems.Stretch" StretchItems="StretchItems.All">
+    <MudButton FullWidth="true" Class="align-stretch justify-start d-inline" Color="@_color" OnClick="SelectItem">
+        <MudStack Row Spacing="0" Class="align-stretch" AlignItems="AlignItems.Stretch" StretchItems="StretchItems.All">
             <MudElement Style="@_paddingStyle" HtmlTag="div"/>
             @if (_isLoading)
             {
@@ -19,9 +20,18 @@
             {
                 <MudIcon Class="mr-3" Icon="@Item.AdornmentIcon" Color="@Item.AdornmentIconColor"/>
             }
-            <MudText Style="overflow-wrap: anywhere">
+            <MudText Class="w-100" Align="Align.Start" Style="overflow-wrap: anywhere">
                 @Item.Text
             </MudText>
+            <MudSpacer/>
+            @if (Item.ShowEditItemIcon)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OnClickEditItem(Item))" Color="Color.Info"/>
+            }
+            @if (Item.ShowDeleteItemIcon)
+            {
+                <MudIconButton Class="ms-3" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => OnClickDeleteItem(Item))" Color="Color.Error"/>
+            }
         </MudStack>
     </MudButton>
     <MudCollapse @bind-Expanded="@Item.Expanded" Class="w-100">
@@ -124,5 +134,17 @@
     public void Dispose()
     {
         Tree?.UnregisterItem(this);
+    }
+
+    private async Task OnClickEditItem(TreeItem item)
+    {
+        if (Item.EditItemCallBack != null)
+            await Item.EditItemCallBack.Invoke(item);
+    }
+    
+    private async Task OnClickDeleteItem(TreeItem item)
+    {
+        if (Item.DeleteItemCallBack != null)
+            await Item.DeleteItemCallBack.Invoke(item);
     }
 }

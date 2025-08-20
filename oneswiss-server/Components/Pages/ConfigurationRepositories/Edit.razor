@@ -1,8 +1,11 @@
 @page "/configurationrepositories/{id:guid}"
 @using FluentValidation
 @using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
+
+@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
 
 <EditDatabaseForm @ref="_editor" T="ConfigurationRepository"
                     Id="Id"

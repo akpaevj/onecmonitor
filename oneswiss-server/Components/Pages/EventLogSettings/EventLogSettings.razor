@@ -4,6 +4,7 @@
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Common.DTO
 @using OneSwiss.Common.Storage
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
@@ -11,6 +12,8 @@
 @inject AgentsConnectionsManager AgentsConnectionsManager 
 @inject IMapper Mapper
 @inject ISnackbar SnackBar
+
+@attribute [ExtAuthorize]
 
 <MudText Typo="Typo.h6" Class="mb-3">Сервис экспорта журнала регистрации</MudText>
 

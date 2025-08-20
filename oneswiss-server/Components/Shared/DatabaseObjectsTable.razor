@@ -7,78 +7,91 @@
 @inject ISnackbar SnackBar
 @inject IMapper Mapper
 @attribute [CascadingTypeParameter(nameof(TModel))]
-@typeparam TModel where TModel : OneSwiss.Server.Models.DatabaseObject
+@typeparam TModel where TModel : class, OneSwiss.Server.Models.IHasId
 @attribute [CascadingTypeParameter(nameof(TViewModel))]
 @typeparam TViewModel where TViewModel : OneSwiss.Server.Models.IHasId
 
 <PageTitle>@Title</PageTitle>
 
-<h1 Class="mb-3">@Title</h1>
+<MudStack Spacing="0" Class="@Class">
+    @if (ShowTitle)
+    {
+        <h1 Class="mb-3">@Title</h1>
+    }
 
-@if (!DisableTableActions)
-{
-    <MudStack Row AlignItems="AlignItems.Start">
-        @if (ShowAddButton)
-        {
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="@(() => NavManager.NavigateTo($"{Route}/create"))" Class="mb-3">Добавить</MudButton>
-        }
-        @if (TableActionsContent != null)
-        {
-            @TableActionsContent
-        }
-    </MudStack>
-}
+    @if (!DisableTableActions && !ReadOnly)
+    {
+        <MudStack Row AlignItems="AlignItems.Start" Class="mb-3">
+            @if (ShowAddButton)
+            {
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="@(() => NavManager.NavigateTo($"{Route}/create"))">Добавить</MudButton>
+            }
+            @if (TableActionsContent != null)
+            {
+                @TableActionsContent
+            }
+        </MudStack>
+    }
 
-<MudTable T="TViewModel" Items="_items"
-          GroupBy="@GroupBy"
-          GroupHeaderStyle="@GroupHeaderStyle"
-          GroupFooterClass="@GroupFooterClass"
-          Dense="@Dense"
-          Hover="@Hover">
-    <GroupHeaderTemplate>
-        @GroupHeader?.Invoke(context)
-    </GroupHeaderTemplate>
-    <ColGroup>
-        @ColGroup
-    </ColGroup>
-    <HeaderContent>
-        @if (ColumnsContent == null)
-        {
-            <MudTh>Наименование</MudTh>
-        }
-        else
-        {
-            @ColumnsContent
-        }
-        <MudTh/>
-    </HeaderContent>
-    <RowTemplate>
-        @if (RowTemplate == null)
-        {
-            <MudTd DataLabel="Наименование">@NameSelector(context)</MudTd>
-        }
-        else
-        {
-            @RowTemplate.Invoke(context)
-        }
-        <MudTd>
-            <MudStack Row>
-                @if (RowActionsContent == null)
-                {
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavigateToItem(context))" Color="Color.Info"/>
-                    @if (ShowDeleteButton)
-                    {
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteItem(context))" Color="Color.Error"/>
+    <MudTable T="TViewModel" Items="_items"
+              GroupBy="@GroupBy"
+              GroupHeaderStyle="@GroupHeaderStyle"
+              GroupFooterClass="@GroupFooterClass"
+              Dense="@Dense"
+              Hover="@Hover"
+              Class="w-100">
+        <GroupHeaderTemplate>
+            @GroupHeader?.Invoke(context)
+        </GroupHeaderTemplate>
+        <ColGroup>
+            @ColGroup
+        </ColGroup>
+        <HeaderContent>
+            @if (ColumnsContent == null)
+            {
+                <MudTh>Наименование</MudTh>
+            }
+            else
+            {
+                @ColumnsContent
+            }
+            <MudTh/>
+        </HeaderContent>
+        <RowTemplate>
+            @if (RowTemplate == null)
+            {
+                <MudTd DataLabel="Наименование">@NameSelector(context)</MudTd>
+            }
+            else
+            {
+                @RowTemplate.Invoke(context)
+            }
+            <MudTd>
+                <MudStack Row>
+                    @{
+                        var showActions = ShowRowActionsPredicate?.Invoke(context) ?? true;
+
+                        if (showActions && !ReadOnly)
+                        {
+                            @if (RowActionsContent == null)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavigateToItem(context))" Color="Color.Info"/>
+                                @if (ShowDeleteButton)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteItem(context))" Color="Color.Error"/>
+                                }
+                            }
+                            else
+                            {
+                                @RowActionsContent.Invoke(context)
+                            }
+                        }
                     }
-                }
-                else
-                {
-                    @RowActionsContent.Invoke(context)
-                }
-            </MudStack>
-        </MudTd>
-    </RowTemplate>
-</MudTable>
+                </MudStack>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
 
 @code
 {
@@ -111,6 +124,9 @@
     
     [Parameter] 
     public Func<TViewModel, string> NameSelector { get; set; } = null!;
+    
+    [Parameter] 
+    public Func<TViewModel, bool> ShowRowActionsPredicate { get; set; } = null!;
 
     [Parameter] 
     public string Route { get; set; } = string.Empty;
@@ -121,6 +137,15 @@
     [Parameter] 
     public bool ShowDeleteButton { get; set; } = true;
     
+    [Parameter] 
+    public bool ShowTitle { get; set; } = true;
+    
+    /// <summary>
+    /// Обработчик события "Перед удалением", в результате должен вернуть флаг возможности продолжения операции
+    /// </summary>
+    [Parameter]
+    public Func<(TModel Model, AppDbContext Context), Task<bool>>? BeforeDelete { get; set; }
+    
     [Parameter]
     public EventCallback<TModel> AfterDelete { get; set; }
     
@@ -128,10 +153,16 @@
     public string? GroupHeaderStyle { get; set; }
     
     [Parameter] 
+    public string? Class { get; set; }
+    
+    [Parameter] 
     public string? GroupFooterClass { get; set; }
     
     [Parameter] 
     public bool Dense { get; set; }
+    
+    [Parameter] 
+    public bool ReadOnly { get; set; }
     
     [Parameter] 
     public TableGroupDefinition<TViewModel>? GroupBy { get; set; }
@@ -144,22 +175,26 @@
     
     [Parameter] 
     public bool Hover { get; set; }
+    
+    [Parameter]
+    public Func<AppDbContext, Task<List<TModel>>>? LoadItemsFunc { get; set; }
 
     protected override async Task OnInitializedAsync()
-    {
-        await UpdateItems();
-    }
+        => await UpdateItems();
 
     public async Task DeleteItem(TViewModel item)
     {
+        await using var context = await ContextFactory.CreateDbContextAsync();
+        
+        if (BeforeDelete != null)
+            if (!await BeforeDelete((Mapper.Map<TModel>(item), context)))
+                return;
+        
         await DialogService.ShowItemDeletingDialog<TModel>(item.Id, NameSelector(item));
         await UpdateItems();
         
         await AfterDelete.InvokeAsync(Mapper.Map<TModel>(item));
     }
-
-    public async Task<AppDbContext> GetContext()
-        => await ContextFactory.CreateDbContextAsync();
 
     private async Task UpdateItems()
     {
@@ -186,14 +221,16 @@
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
 
+        if (LoadItemsFunc != null) 
+            return await LoadItemsFunc(context);
+        
         if (ItemsSelector == null)
             return await context.Set<TModel>().ToListAsync();
-        
+
         return ItemsSelector.Invoke(context.Set<TModel>()).ToList();
+
     }
 
     private void NavigateToItem(TViewModel vm)
-    {
-        NavManager.NavigateTo($"{Route}/{vm.Id}");
-    }
+        => NavManager.NavigateTo($"{Route}/{vm.Id}");
 }

@@ -1,5 +1,8 @@
 @using FluentValidation
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
+
+@attribute [ExtAuthorize]
 
 <SettingsForm @ref="_editor" T="Models.ErrorLoggingServiceSettings"
                     Validation="_validator.ValidateValue"

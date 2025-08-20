@@ -7,7 +7,10 @@
 @using System.Text.Json
 @using System.Text.Unicode
 @using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
+
+@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
 
 <script>
   window.downloadFileFromStream = async (fileName, contentStreamReference) => {

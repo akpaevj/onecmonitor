@@ -1,0 +1,7 @@
+﻿@page "/Account/AccessDenied"
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+
+<PageTitle>Доступ запрещен</PageTitle>
+
+<MudAlert Severity="Severity.Error">Нет доступа к ресурсу</MudAlert>

@@ -5,19 +5,21 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>OneSwiss.Server</RootNamespace>
-        <Version>0.2.9</Version>
-        <AssemblyVersion>0.2.9</AssemblyVersion>
+        <Version>0.3.0</Version>
+        <AssemblyVersion>0.3.0</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="15.0.1" />
         <PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="8.2.4" />
+        <PackageReference Include="Extensions.MudBlazor.StaticInput" Version="3.2.1" />
         <PackageReference Include="FluentValidation" Version="12.0.0" />
         <PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
         <PackageReference Include="Grpc.Tools" Version="2.72.0">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.8" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.7" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
@@ -40,6 +42,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Reference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore">
+        <HintPath>..\..\..\.nuget\packages\microsoft.aspnetcore.identity.entityframeworkcore\9.0.7\lib\net9.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll</HintPath>
+      </Reference>
       <Reference Include="Microsoft.Data.SqlClient">
         <HintPath>..\..\..\.nuget\packages\microsoft.data.sqlclient\6.1.0\ref\net9.0\Microsoft.Data.SqlClient.dll</HintPath>
       </Reference>
@@ -54,9 +59,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Include="tsconfig.json">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </None>
       <Content Remove="package.json" />
       <None Include="package.json">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
@@ -89,6 +91,86 @@
       <_ContentIncludedByDefault Remove="Components\Pages\Common\Settings.razor" />
       <_ContentIncludedByDefault Remove="Components\Pages\Clusters\Index.razor" />
       <_ContentIncludedByDefault Remove="Components\Pages\InfoBases\Edit.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\AccessDenied.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ConfirmEmail.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ConfirmEmailChange.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ExternalLogin.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ForgotPassword.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ForgotPasswordConfirmation.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\InvalidPasswordReset.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\InvalidUser.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Lockout.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Login.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\LoginWith2fa.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\LoginWithRecoveryCode.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ChangePassword.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\DeletePersonalData.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Disable2fa.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Email.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\EnableAuthenticator.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ExternalLogins.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\GenerateRecoveryCodes.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Index.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\PersonalData.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ResetAuthenticator.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\SetPassword.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\TwoFactorAuthentication.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\_Imports.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\Register.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\RegisterConfirmation.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ResendEmailConfirmation.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ResetPassword.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\ResetPasswordConfirmation.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Pages\_Imports.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\ExternalLoginPicker.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\ManageLayout.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\ManageNavMenu.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\RedirectToLogin.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\ShowRecoveryCodes.razor" />
+      <_ContentIncludedByDefault Remove="Components\Account\Shared\StatusMessage.razor" />
+      <_ContentIncludedByDefault Remove="Components\Pages\Auth\Login.razor" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <UpToDateCheckInput Remove="Components\Account\Pages\AccessDenied.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\ConfirmEmail.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\ConfirmEmailChange.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\ExternalLogin.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\ForgotPassword.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\ForgotPasswordConfirmation.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\InvalidPasswordReset.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\InvalidUser.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Lockout.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Login.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\LoginWith2fa.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\LoginWithRecoveryCode.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\ChangePassword.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\DeletePersonalData.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Disable2fa.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Email.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\EnableAuthenticator.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\ExternalLogins.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\GenerateRecoveryCodes.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Index.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\PersonalData.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\ResetAuthenticator.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\SetPassword.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\TwoFactorAuthentication.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\_Imports.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Register.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\RegisterConfirmation.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\ResendEmailConfirmation.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\ResetPassword.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\ResetPasswordConfirmation.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\_Imports.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Shared\ExternalLoginPicker.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Shared\ManageLayout.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Shared\ManageNavMenu.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Shared\RedirectToLogin.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Shared\ShowRecoveryCodes.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Shared\StatusMessage.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Index.razor" />
+      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\_Imports.razor" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Release'">

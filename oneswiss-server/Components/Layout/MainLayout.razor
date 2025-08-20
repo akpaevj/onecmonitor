@@ -1,19 +1,21 @@
-﻿@using System.Reflection
+@using System.Reflection
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.SignalR.Client
-@using MudBlazor.Utilities
-@using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Services
+@using MudBlazor.StaticInput
+@using OneSwiss.Server.Components.Account
+@using OneSwiss.Server.Models
 @inherits LayoutComponentBase
 @inject ISnackbar SnackbarService
 @inject IHttpContextAccessor ContextAccessor
-@inject NavigationManager NavManager
 @inject UpdatesChecker.State UpdatesCheckerState
+@inject NavigationManager NavManager
+@inject UserManager<ApplicationUser> UserManager
 @inject IJSRuntime Js
-
-<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme"/>
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
 
 <script>
     window.blazorSetCookie = (name, value, days) => {
@@ -23,34 +25,43 @@
     };
 </script>
 
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme"/>
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
 <MudLayout>
     <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="DrawerToggle" />
-        <MudText Class="ms-2" Typo="Typo.h5" Style="@($"color:{YellowColor}")">One</MudText>
-        <MudText Typo="Typo.h5">Sw</MudText>
-        <MudText Typo="Typo.h5" Style="@($"color:{YellowColor}")">i</MudText>
-        <MudText Typo="Typo.h5">ss</MudText>
+        <AuthorizeView>
+            <MudStaticNavDrawerToggle DrawerId="nav-drawer" Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"/>
+            <AppLabel/>
+        </AuthorizeView>
         <MudSpacer/>
-        @if (UpdatesCheckerState.UpdatesAvailable)
-        {
-            var text = UpdatesCheckerState?.ReleaseInfo?.Prerelease == true ? "Доступно обновление (pre)" : "Доступно обновление";
-            <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Warning" OnClick="GoToReleasePage">@text</MudButton>
-        }
-        <MudSwitch 
-            Color="Color.Primary"
-            @bind-Value="_isDarkMode"
-            @bind-Value:after="OnChangeTheme"
-            ThumbIcon="@(_isDarkMode ? Icons.Material.Outlined.LightMode : Icons.Material.Outlined.DarkMode)"/>
+        <AuthorizeView>
+            @if (UpdatesCheckerState.UpdatesAvailable)
+            {
+                var text = UpdatesCheckerState?.ReleaseInfo?.Prerelease == true ? "Доступно обновление (pre)" : "Доступно обновление";
+                <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Warning" OnClick="GoToReleasePage">@text</MudButton>
+            }
+            <MudText Class="ms-3">@_user?.ToString()</MudText>
+            <MudSwitch
+                Color="Color.Primary"
+                @bind-Value="_isDarkMode"
+                @bind-Value:after="OnChangeTheme"
+                ThumbIcon="@(_isDarkMode ? Icons.Material.Outlined.LightMode : Icons.Material.Outlined.DarkMode)"/>
+        </AuthorizeView>
         <MudText>@Assembly.GetExecutingAssembly().GetName().Version</MudText>
     </MudAppBar>
-    <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-        <NavMenu @ref="_navMenu"/>
-    </MudDrawer>
-    <MudMainContent Class="pt-16 pa-5">
-        <CascadingValue Name="NavMenu" Value="_navMenu">
+    <AuthorizeView>
+        <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+            <NavMenu @ref="_navMenu"/>
+        </MudDrawer>
+    </AuthorizeView>
+    <CascadingValue Name="NavMenu" Value="_navMenu">
+        <MudMainContent Class="pt-16 pa-5">
             @Body
-        </CascadingValue>
-    </MudMainContent>
+        </MudMainContent>
+    </CascadingValue>
 </MudLayout>
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -60,21 +71,18 @@
 </div>
 
 @code {
+    private HubConnection? _hubConnection;
+    bool _isDarkMode = true;
     NavMenu? _navMenu;
     bool _drawerOpen = true;
-    bool _isDarkMode = true;
-    private HubConnection? _hubConnection;
-
     readonly MudTheme _theme = new();
-    private const string YellowColor = "#ffe016";
+    private ApplicationUser? _user;
     
-    void DrawerToggle()
-    {
-        _drawerOpen = !_drawerOpen;
-    }
-
     protected override async Task OnInitializedAsync()
     {
+        if (ContextAccessor.HttpContext != null)
+            _user = await UserManager.GetUserAsync(ContextAccessor.HttpContext.User);
+        
         SnackbarService.Configuration.PositionClass = Defaults.Classes.Position.BottomEnd;
         
         if (ContextAccessor.HttpContext?.Request.Cookies.TryGetValue("IsDarkMode", out var value) == true &&
@@ -94,36 +102,14 @@
     }
     
     private async Task SetIsDarkModeCookie()
-    {
-        await Js.InvokeVoidAsync("blazorSetCookie", "IsDarkMode", _isDarkMode, 7);
-    }
+        => await Js.InvokeVoidAsync("blazorSetCookie", "IsDarkMode", _isDarkMode, 7);
 
     private async Task OnChangeTheme()
-    {
-        await SetIsDarkModeCookie();
-    }
-
-    private PaletteLight GetSomeShadowedLightTheme()
-    {
-        var palette = new PaletteLight();
-        
-        var properties = palette.GetType().GetProperties().Where(c => c.PropertyType == typeof(MudColor));
-        
-        foreach (var propertyInfo in properties)
-        {
-            var value = propertyInfo.GetValue(palette) as MudColor;
-            
-            if (value != null && value is { R: 255, G: 255, B: 255 })
-                propertyInfo.SetValue(palette, value.ChangeLightness(-0.07));
-        }
-
-        return palette;
-    }
+        => await SetIsDarkModeCookie();
 
     private async Task GoToReleasePage()
     {
         if (UpdatesCheckerState.ReleaseInfo != null)
             await Js.InvokeVoidAsync("open", UpdatesCheckerState.ReleaseInfo.HtmlUrl, "_blank"); 
     }
-
 }
