@@ -208,3 +208,16 @@ http://localhost:7002/api/ErrorLoggingService
   Если не указан, то используется стандартный путь:
   - Windows - %PROGRAMDATA%/oneswiss/techlog
   - Linux - /var/log/oneswiss/techlog
+
+#### Работа за reverse proxy
+Для обеспечения корректного перенаправления и использования схемы, на прокси-сервере необходимо устанавливать следующие заголовки:
+- X-MS-Proxy - адрес прокси сервера
+- X-Forwarded-For - адрес и порт удаленной точки подключения
+- X-Forwarded-Proto - испольуемая схема
+Условный пример:
+```
+X-Ms-Proxy: 10.10.0.1
+X-Forwarded-For: {remote_host}
+X-Forwarded-Proto: https
+```
+Так-же в файле конфигурации сервера oneswiss обязательно требуется указание адреса пограничного прокси-сервера в параметре *ProxyAddress*
