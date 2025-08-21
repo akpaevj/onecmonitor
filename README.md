@@ -155,7 +155,8 @@ http://localhost:7002/api/ErrorLoggingService
       "NameClaim": "preferred_username",
       "DisplayNameClaim": "name"
     }
-  }
+  },
+  "ProxyAddress": "10.10.0.1"
 }
 ```
 Где:
@@ -171,7 +172,8 @@ http://localhost:7002/api/ErrorLoggingService
     - Scopes - список областей, получаемых клиентом
     - NameClaim - имя утверждения, значение которого будет использовано в качестве логина. По умолчанию - preferred_username
     - DisplayNameClaim - имя утверждения с отображаемым именем пользователя. По умолчанию - name
-    
+- ProxyAddress - IP пограничного прокси сервера
+
 #### Агент
 Устанавливается непосредственно на сервера 1С.  
 ```json
