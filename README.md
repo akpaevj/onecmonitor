@@ -214,7 +214,8 @@ http://localhost:7002/api/ErrorLoggingService
 - X-MS-Proxy - адрес прокси сервера
 - X-Forwarded-For - адрес и порт удаленной точки подключения
 - X-Forwarded-Proto - испольуемая схема
-Условный пример:
+  
+**Условный пример:**
 ```
 X-Ms-Proxy: 10.10.0.1
 X-Forwarded-For: {remote_host}
