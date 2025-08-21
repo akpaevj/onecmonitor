@@ -5,6 +5,9 @@ namespace OneSwiss.V8;
 
 public static class ProcessRunner
 {
+    private static Encoding GetRussianEncoding()
+        => OperatingSystem.IsLinux() ? Encoding.UTF8 : Encoding.GetEncoding(866);
+    
     /// <summary>
     /// Запускает процесс асинхронно и возвращает результат выполнения
     /// </summary>
@@ -29,7 +32,9 @@ public static class ProcessRunner
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            CreateNoWindow = true
+            CreateNoWindow = true,
+            StandardOutputEncoding = GetRussianEncoding(),
+            StandardErrorEncoding = GetRussianEncoding()
         };
         process.EnableRaisingEvents = true;
 

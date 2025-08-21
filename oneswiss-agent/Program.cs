@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using OneSwiss.Agent;
 using OneSwiss.Agent.Models;
@@ -8,6 +9,8 @@ using OneSwiss.Agent.Services.MaintenanceTasks;
 using OneSwiss.Agent.Services.TechLog;
 using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Common.Services;
+
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((_, services) =>
