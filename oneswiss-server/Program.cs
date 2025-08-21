@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +55,16 @@ builder.Services.AddResponseCompression(opts =>
 {
     opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
         [ "application/octet-stream" ]);
+});
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    var proxyAddress = builder.Configuration.GetValue("ProxyAddress", "");
+    if (!string.IsNullOrEmpty(proxyAddress))
+        options.KnownProxies.Add(IPAddress.Parse(proxyAddress));
+    
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
 
 // Add services to the container.
@@ -150,6 +161,8 @@ builder.Services.AddSingleton<UpdatesChecker.State>();
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

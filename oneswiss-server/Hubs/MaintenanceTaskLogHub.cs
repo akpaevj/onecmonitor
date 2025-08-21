@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 namespace OneSwiss.Server.Hubs;
 
+[AllowAnonymous]
 public class MaintenanceTaskLogHub : Hub
 {
     public async Task Subscribe(Guid taskId)
