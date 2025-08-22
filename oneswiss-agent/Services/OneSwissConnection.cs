@@ -6,30 +6,36 @@ namespace OneSwiss.Agent.Services
 {
     public class OneSwissConnection : ServerConnection
     {
-        private readonly string _host;
+        private readonly string _serverAddress;
+        private bool _authRequired;
         private readonly int _port;
         private readonly AgentInstance _agent;
+        private readonly TokenRetriever _tokenRetriever;
         private readonly IHostApplicationLifetime _hostApplicationLifetime;
 
         public OneSwissConnection(
+            TokenRetriever tokenRetriever,
             IServiceProvider serviceProvider,
             IConfiguration configuration,
             IHostApplicationLifetime hostApplicationLifetime, 
             ILogger<OneSwissConnection> logger) : base(logger)
         {
             _hostApplicationLifetime = hostApplicationLifetime;
+            _tokenRetriever = tokenRetriever;
 
             using var scope = serviceProvider.CreateAsyncScope();
             using var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             _agent = appDbContext.AgentInstance.FirstOrDefault()!;
 
-            _host = configuration.GetValue("OneSwiss:Host", "0.0.0.0");
-            _port = configuration.GetValue("OneSwiss:Port", 7001);
+            _serverAddress = configuration.GetValue("Server", "ws://localhost:7002");
+            _authRequired = configuration.GetValue("Auth:Required", false);
         }
 
         public async Task Start(bool mainConnection = false)
         {
-            await Start(_host, _port, async () =>
+            var token = _authRequired ? await _tokenRetriever.GetValidTokenAsync() : null;
+            
+            await Start(_serverAddress, token, async () =>
             {
                 await WriteMessageToStream(MessageType.AgentInfo, 
                     new AgentInstanceDto

@@ -29,18 +29,18 @@ public sealed class OnecV8BatchMode : IDisposable
         return batch;
     }
     
-    public static OnecV8BatchMode CreateEnterpriseBatch(V8Platform platform, string server, string infoBase)
-    {
-        var batch = new OnecV8BatchMode(platform, "ENTERPRISE");
-        batch._arguments.Add($"/S{server}\\{infoBase}");
-
-        return batch;
-    }
-    
     public static OnecV8BatchMode CreateDesignerBatch(V8Platform platform, string ibPath)
     {
         var batch = new OnecV8BatchMode(platform, "DESIGNER");
         batch._arguments.Add($"/F\"{ibPath}\"");
+
+        return batch;
+    }
+    
+    public static OnecV8BatchMode CreateEnterpriseBatch(V8Platform platform, string server, string infoBase)
+    {
+        var batch = new OnecV8BatchMode(platform, "ENTERPRISE");
+        batch._arguments.Add($"/S{server}\\{infoBase}");
 
         return batch;
     }

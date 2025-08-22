@@ -1,28 +1,30 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Net.WebSockets;
 using Microsoft.Extensions.Logging;
 
 namespace OneSwiss.Common;
 
 public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection(logger)
 {
-    private string _host = null!;
-    private int _port;
+    private string _serverAddress = null!;
+    private string? _bearerToken;
 
-    protected async Task Start(string host, int port, Func<Task> afterConnectCallback, CancellationToken token)
+    
+    protected async Task Start(string address, string? bearerToken, Func<Task> afterConnectCallback, CancellationToken cancellationToken)
     {
-        _host = host;
-        _port = port;
+        _serverAddress = address;
+        _bearerToken = bearerToken;
         
         Disconnected += (_, _) =>
         {
             logger.LogWarning("Отключен от сервера");
             
-            if (!token.IsCancellationRequested)
-                _ = TryConnectInLoop(afterConnectCallback, token);
+            if (!cancellationToken.IsCancellationRequested)
+                _ = TryConnectInLoop(afterConnectCallback, cancellationToken);
         };
 
-        await TryConnectInLoop(afterConnectCallback, token);
+        await TryConnectInLoop(afterConnectCallback, cancellationToken);
     }
         
     private async Task TryConnectInLoop(Func<Task> afterConnectCallback, CancellationToken cancellationToken)
@@ -52,7 +54,7 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
                 await Task.Delay(10 * 1000, cancellationToken);
             }
 
-            if (Socket?.Connected == true)
+            if (Socket?.State == WebSocketState.Open)
                 break;
         }
         while (!cancellationToken.IsCancellationRequested);
@@ -60,26 +62,23 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
 
     private async Task Reconnect(CancellationToken cancellationToken)
     {
-        logger.LogTrace($"Попытка подключения к {_host}:{_port}");
+        logger.LogTrace($"Попытка подключения к {_serverAddress}");
 
         Socket?.Dispose();
         Socket = null;
+        
+        var uri = new Uri($"{_serverAddress}/ws/agents");
 
-        var addresses = await Dns.GetHostAddressesAsync(_host, AddressFamily.InterNetwork, cancellationToken);
-        if (addresses.Length == 0)
-            throw new Exception("Не удалось определить адрес сервера");
-        var endPoint = new IPEndPoint(addresses[0], _port);
-
-        logger.LogTrace($"Адрес сервера: {endPoint.Address}");
-
-        Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
-        {
-            NoDelay = true
-        };
+        logger.LogTrace($"Адрес сервера: {uri}");
+        
+        var s = new ClientWebSocket();
+        if (_bearerToken != null)
+            s.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");
         
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(10));
 
-        await Socket.ConnectAsync(endPoint, cts.Token);
+        await s.ConnectAsync(uri, cts.Token);
+        Socket = s;
     }
 }
