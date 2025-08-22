@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OneSwiss.Server;
 
@@ -10,9 +11,11 @@ using OneSwiss.Server;
 namespace OneSwiss.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250822193200_NotNullUserGroup")]
+    partial class NotNullUserGroup
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.7");
@@ -29,7 +32,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("RolesId");
 
-                    b.ToTable("AccessGroupApplicationRole", (string)null);
+                    b.ToTable("AccessGroupApplicationRole");
                 });
 
             modelBuilder.Entity("AccessGroupUsersGroup", b =>
@@ -44,7 +47,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("UsersGroupsId");
 
-                    b.ToTable("AccessGroupUsersGroup", (string)null);
+                    b.ToTable("AccessGroupUsersGroup");
                 });
 
             modelBuilder.Entity("AgentMaintenanceTask", b =>
@@ -59,7 +62,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("MaintenanceTasksId");
 
-                    b.ToTable("AgentMaintenanceTask", (string)null);
+                    b.ToTable("AgentMaintenanceTask");
                 });
 
             modelBuilder.Entity("AgentTechLogSeance", b =>
@@ -74,7 +77,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("TechLogSeancesId");
 
-                    b.ToTable("AgentTechLogSeance", (string)null);
+                    b.ToTable("AgentTechLogSeance");
                 });
 
             modelBuilder.Entity("InfoBaseMaintenanceTask", b =>
@@ -89,7 +92,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("MaintenanceTasksId");
 
-                    b.ToTable("InfoBaseMaintenanceTask", (string)null);
+                    b.ToTable("InfoBaseMaintenanceTask");
                 });
 
             modelBuilder.Entity("LogTemplateTechLogSeance", b =>
@@ -104,7 +107,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("TemplatesId");
 
-                    b.ToTable("LogTemplateTechLogSeance", (string)null);
+                    b.ToTable("LogTemplateTechLogSeance");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -224,7 +227,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AccessGroups", (string)null);
+                    b.ToTable("AccessGroups");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.Agent", b =>
@@ -240,7 +243,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Agents", (string)null);
+                    b.ToTable("Agents");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.ApplicationRole", b =>
@@ -391,7 +394,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("CredentialsId");
 
-                    b.ToTable("Clusters", (string)null);
+                    b.ToTable("Clusters");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.ConfigurationRepository", b =>
@@ -431,7 +434,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("CredentialsId");
 
-                    b.ToTable("ConfigRepositories", (string)null);
+                    b.ToTable("ConfigRepositories");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.ConfigurationRepositoryUser", b =>
@@ -462,7 +465,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("RepositoryId");
 
-                    b.ToTable("ConfigRepositoryUsers", (string)null);
+                    b.ToTable("ConfigRepositoryUsers");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.Credentials", b =>
@@ -494,7 +497,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Credentials", (string)null);
+                    b.ToTable("Credentials");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.CustomNotification", b =>
@@ -519,7 +522,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("NotificationRecipientId");
 
-                    b.ToTable("CustomNotifications", (string)null);
+                    b.ToTable("CustomNotifications");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.Dbms", b =>
@@ -546,7 +549,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Dbms", (string)null);
+                    b.ToTable("Dbms");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.ErrorLoggingServiceSettings", b =>
@@ -567,7 +570,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ErrorLoggingServiceSettings", (string)null);
+                    b.ToTable("ErrorLoggingServiceSettings");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.ErrorReport", b =>
@@ -593,7 +596,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ErrorReports", (string)null);
+                    b.ToTable("ErrorReports");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.EventLogSettings", b =>
@@ -631,7 +634,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("DbmsId");
 
-                    b.ToTable("EventLogSettings", (string)null);
+                    b.ToTable("EventLogSettings");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.File", b =>
@@ -657,7 +660,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Files", (string)null);
+                    b.ToTable("Files");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.InfoBase", b =>
@@ -695,7 +698,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("CredentialsId");
 
-                    b.ToTable("InfoBases", (string)null);
+                    b.ToTable("InfoBases");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.LogTemplate", b =>
@@ -714,7 +717,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LogTemplates", (string)null);
+                    b.ToTable("LogTemplates");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceStep", b =>
@@ -756,7 +759,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("MaintenanceTaskId");
 
-                    b.ToTable("MaintenanceSteps", (string)null);
+                    b.ToTable("MaintenanceSteps");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTask", b =>
@@ -787,7 +790,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MaintenanceTasks", (string)null);
+                    b.ToTable("MaintenanceTasks");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.MaintenanceTasks.MaintenanceTaskLogItem", b =>
@@ -827,7 +830,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("TaskId");
 
-                    b.ToTable("MaintenanceTaskLogs", (string)null);
+                    b.ToTable("MaintenanceTaskLogs");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.Notification", b =>
@@ -863,7 +866,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.NotificationRecipient", b =>
@@ -885,7 +888,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("NotificationRecipients", (string)null);
+                    b.ToTable("NotificationRecipients");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.TechLogFilter", b =>
@@ -904,7 +907,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TechLogFilters", (string)null);
+                    b.ToTable("TechLogFilters");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.TechLogSeance", b =>
@@ -931,7 +934,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TechLogSeances", (string)null);
+                    b.ToTable("TechLogSeances");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.TechLogSettings", b =>
@@ -965,7 +968,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("DbmsId");
 
-                    b.ToTable("TechLogSettings", (string)null);
+                    b.ToTable("TechLogSettings");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.TelegramBotSettings", b =>
@@ -980,7 +983,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TelegramBotSettings", (string)null);
+                    b.ToTable("TelegramBotSettings");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.UsersGroup", b =>
@@ -1003,7 +1006,7 @@ namespace OneSwiss.Server.Migrations
 
                     b.HasIndex("ParentId");
 
-                    b.ToTable("UsersGroups", (string)null);
+                    b.ToTable("UsersGroups");
                 });
 
             modelBuilder.Entity("AccessGroupApplicationRole", b =>
@@ -1280,7 +1283,7 @@ namespace OneSwiss.Server.Migrations
 
                             b1.HasIndex("SourceInfoBaseId");
 
-                            b1.ToTable("MaintenanceSteps", (string)null);
+                            b1.ToTable("MaintenanceSteps");
 
                             b1.HasOne("OneSwiss.Server.Models.Credentials", "DestinationCredentials")
                                 .WithMany()
@@ -1322,7 +1325,7 @@ namespace OneSwiss.Server.Migrations
 
                             b1.HasKey("MaintenanceStepId");
 
-                            b1.ToTable("MaintenanceSteps", (string)null);
+                            b1.ToTable("MaintenanceSteps");
 
                             b1.WithOwner()
                                 .HasForeignKey("MaintenanceStepId");
@@ -1347,7 +1350,7 @@ namespace OneSwiss.Server.Migrations
 
                             b1.HasIndex("FileId");
 
-                            b1.ToTable("MaintenanceSteps", (string)null);
+                            b1.ToTable("MaintenanceSteps");
 
                             b1.HasOne("OneSwiss.Server.Models.File", "File")
                                 .WithMany()
@@ -1379,7 +1382,7 @@ namespace OneSwiss.Server.Migrations
 
                             b1.HasIndex("FileId");
 
-                            b1.ToTable("MaintenanceSteps", (string)null);
+                            b1.ToTable("MaintenanceSteps");
 
                             b1.HasOne("OneSwiss.Server.Models.ConfigurationRepository", "ConfigurationRepository")
                                 .WithMany()
@@ -1422,7 +1425,7 @@ namespace OneSwiss.Server.Migrations
 
                             b1.HasIndex("FileId");
 
-                            b1.ToTable("MaintenanceSteps", (string)null);
+                            b1.ToTable("MaintenanceSteps");
 
                             b1.HasOne("OneSwiss.Server.Models.ConfigurationRepository", "ConfigurationRepository")
                                 .WithMany()
@@ -1457,7 +1460,7 @@ namespace OneSwiss.Server.Migrations
 
                             b1.HasKey("MaintenanceStepId");
 
-                            b1.ToTable("MaintenanceSteps", (string)null);
+                            b1.ToTable("MaintenanceSteps");
 
                             b1.WithOwner()
                                 .HasForeignKey("MaintenanceStepId");
@@ -1475,7 +1478,7 @@ namespace OneSwiss.Server.Migrations
 
                             b1.HasIndex("FileId");
 
-                            b1.ToTable("MaintenanceSteps", (string)null);
+                            b1.ToTable("MaintenanceSteps");
 
                             b1.HasOne("OneSwiss.Server.Models.File", "File")
                                 .WithMany()
@@ -1499,7 +1502,7 @@ namespace OneSwiss.Server.Migrations
 
                             b1.HasIndex("FileId");
 
-                            b1.ToTable("MaintenanceSteps", (string)null);
+                            b1.ToTable("MaintenanceSteps");
 
                             b1.HasOne("OneSwiss.Server.Models.File", "File")
                                 .WithMany()

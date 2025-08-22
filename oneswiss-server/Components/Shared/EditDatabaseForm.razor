@@ -101,10 +101,10 @@
     public EventCallback<T> OnUpdate { get; set; }
     
     /// <summary>
-    /// Метод замещения алгоритма сохранения модели
+    /// Дополнительные действия при сохранении модели
     /// </summary>
     [Parameter]
-    public Func<(T, AppDbContext), Task>? OnSave { get; set; }
+    public Func<T, Task>? OnSave { get; set; }
     
     /// <summary>
     /// Дополнительные действия после сохранения модели
@@ -154,78 +154,61 @@
     
     private async Task Save()
     {
-        if (OnSave == null)
+        await BeforeValidation.InvokeAsync(Model);
+        
+        await Form.Validate();
+
+        if (Validation != null)
         {
-            await BeforeValidation.InvokeAsync(Model);
-        
-            await Form.Validate();
-
-            if (Validation != null)
+            foreach (var item in _additionalValidableProperties)
             {
-                foreach (var item in _additionalValidableProperties)
-                {
-                    var errors = await Validation.Invoke(Model!, item);
-                    var enumerable = errors.ToList();
+                var errors = await Validation.Invoke(Model!, item);
+                var enumerable = errors.ToList();
 
-                    var addValid = enumerable.Count == 0;
+                var addValid = enumerable.Count == 0;
                 
-                    if (addValid) 
-                        continue;
+                if (addValid) 
+                    continue;
                 
-                    Form.IsValid = false;
+                Form.IsValid = false;
                 
-                    enumerable.ForEach(c => SnackBar.ShowError(c));
-                }
-            }
-        
-            if (!Form.IsValid)
-            {
-                SnackBar.ShowError("Объект не записан");
-                return;
-            }
-
-            await AfterValidation.InvokeAsync(Model);
-        
-            try
-            {
-                var model = await GetModel(false);
-
-                if (model != null)
-                {
-                    Context!.Entry(model).CurrentValues.SetValues(Model!);
-                    await OnUpdate.InvokeAsync(model);
-                }
-                else
-                    Context!.Entry(Model!).State = EntityState.Added;
-            
-                await Context!.SaveChangesAsync();
-
-                await AfterSave.InvokeAsync(model ?? Model!);
-            
-                SnackBar.ShowSuccess("Объект записан", false);
-            
-                NavigateBack();
-            }
-            catch (Exception e)
-            {
-                SnackBar.ShowError(e);
+                enumerable.ForEach(c => SnackBar.ShowError(c));
             }
         }
-        else
+        
+        if (!Form.IsValid)
         {
-            try
+            SnackBar.ShowError("Объект не записан");
+            return;
+        }
+
+        await AfterValidation.InvokeAsync(Model);
+        
+        try
+        {
+            var model = await GetModel(false);
+
+            if (model != null)
             {
-                var model = await GetModel(false) ?? Model!;
-                await OnSave((model, Context)!);
-                await AfterSave.InvokeAsync(model);
+                Context!.Entry(model).CurrentValues.SetValues(Model!);
+                await OnUpdate.InvokeAsync(model);
+            }
+            else
+                Context!.Entry(Model!).State = EntityState.Added;
+
+            if (OnSave != null)
+                await OnSave.Invoke(model ?? Model!);
             
-                SnackBar.ShowSuccess("Объект записан", false);
-                NavigateBack();
-            }
-            catch (Exception e)
-            {
-                SnackBar.ShowError(e);
-            }
+            await Context!.SaveChangesAsync();
+            await AfterSave.InvokeAsync(model ?? Model!);
+            
+            SnackBar.ShowSuccess("Объект записан", false);
+            
+            NavigateBack();
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
         }
     }
 

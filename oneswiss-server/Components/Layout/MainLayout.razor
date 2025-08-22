@@ -18,10 +18,11 @@
 @inject IJSRuntime Js
 
 <script>
-    window.blazorSetCookie = (name, value, days) => {
+    window.blazorSetCookie = (name, value, days, secure) => {
+        const secureStr = secure ? ';secure' : '';
         const expires = new Date();
         expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-        document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;secure;samesite=strict`;
+        document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/${secureStr};samesite=strict`;
     };
 </script>
 
@@ -102,7 +103,7 @@
     }
     
     private async Task SetIsDarkModeCookie()
-        => await Js.InvokeVoidAsync("blazorSetCookie", "IsDarkMode", _isDarkMode, 7);
+        => await Js.InvokeVoidAsync("blazorSetCookie", "IsDarkMode", _isDarkMode, 7, false);
 
     private async Task OnChangeTheme()
         => await SetIsDarkModeCookie();
