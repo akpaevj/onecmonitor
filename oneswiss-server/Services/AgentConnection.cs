@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using System.Net.WebSockets;
 using AutoMapper;
 using MessagePack;
 using Microsoft.AspNetCore.SignalR;
@@ -34,7 +35,7 @@ namespace OneSwiss.Server.Services
         public event AgentDisconnectedHandler? AgentDisconnected;
 
         public AgentConnection(
-            Socket socket, 
+            WebSocket socket, 
             IServiceProvider serviceProvider, 
             ILogger<AgentConnection> logger)
             : base(logger)
@@ -53,7 +54,7 @@ namespace OneSwiss.Server.Services
             _logger = logger;
         }
 
-        public void Listen(CancellationToken cancellationToken)
+        public void Listen(CancellationToken cancellationToken = default)
         {
             MessageReceived += async (_, message) =>
             {

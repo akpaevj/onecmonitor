@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Net.WebSockets;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using OneSwiss.Server.Hubs;
@@ -8,47 +9,34 @@ using OneSwiss.Server.Models;
 namespace OneSwiss.Server.Services
 {
     public class AgentsConnectionsManager(
-        IConfiguration configuration,
         IServiceProvider serviceProvider,
-        ILogger<AgentsConnectionsManager> logger) : BackgroundService
+        ILogger<AgentsConnectionsManager> logger)
     {
-        private readonly string _host = configuration.GetValue("OnecMonitor:Tcp:Host", "0.0.0.0");
-        private readonly int _port = configuration.GetValue("OnecMonitor:Tcp:Port", 7001);
-        private readonly Socket _socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        
         private readonly HashSet<AgentConnection> _connections = [];
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        public void AcceptAgent(WebSocket socket, TaskCompletionSource cts)
         {
-            _socket.Bind(new IPEndPoint(IPAddress.Parse(_host), _port));
-
-            logger.LogInformation($"Прослушивание агентов: {_host}:{_port}");
-
-            while (!stoppingToken.IsCancellationRequested)
+            try
             {
-                _socket.Listen();
-
-                try
-                {
-                    var client = await _socket.AcceptAsync(stoppingToken);
-
-                    var agentConnection = new AgentConnection(
-                        client,
-                        serviceProvider,
-                        serviceProvider.GetRequiredService<ILogger<AgentConnection>>());
+                var agentConnection = new AgentConnection(
+                    socket,
+                    serviceProvider,
+                    serviceProvider.GetRequiredService<ILogger<AgentConnection>>());
                 
-                    agentConnection.AgentConnected += AgentConnection_Connected;
-                    agentConnection.AgentDisconnected += AgentConnection_Disconnected;
-
-                    agentConnection.Listen(stoppingToken);
-                }
-                catch (Exception e)
+                agentConnection.AgentConnected += AgentConnection_Connected;
+                agentConnection.AgentDisconnected += conn =>
                 {
-                    logger.LogError(e, "Ошибка обработчики входящего подключения");
-                }
-            }
+                    cts.TrySetResult();
+                    AgentConnection_Disconnected(conn);
+                };
 
-            _socket.Close();
+                agentConnection.Listen();
+            }
+            catch (Exception e)
+            {
+                cts.TrySetException(e);
+                logger.LogError(e, "Ошибка обработчики входящего подключения");
+            }
         }
         
         public AgentConnection? GetAgentConnection(Guid agentId)

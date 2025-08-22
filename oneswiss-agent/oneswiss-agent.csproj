@@ -10,8 +10,8 @@
 	<Configurations>Debug;Release;Debug agent;Debug server</Configurations>
 	<Authors>Akpaev E.A.</Authors>
 	<Company>Akpaev E.A.</Company>
-	<AssemblyVersion>0.3.0</AssemblyVersion>
-	<Version>0.3.0</Version>
+	<AssemblyVersion>0.3.1</AssemblyVersion>
+	<Version>0.3.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <PackageReference Include="ClickHouse.Client" Version="7.14.0" />
+    <PackageReference Include="Duende.IdentityModel.OidcClient" Version="6.0.1" />
     <PackageReference Include="Grpc.Tools" Version="2.72.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

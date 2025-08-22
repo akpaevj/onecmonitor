@@ -9,6 +9,7 @@ using OneSwiss.Agent.Services.MaintenanceTasks;
 using OneSwiss.Agent.Services.TechLog;
 using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Common.Services;
+using Duende.IdentityModel.Client;
 
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
@@ -20,6 +21,8 @@ var host = Host.CreateDefaultBuilder(args)
             options.ServiceName = "OneSwissAgent";
         });
         services.AddSystemd();
+        
+        services.AddSingleton<TokenRetriever>();
         
         services.AddSingleton<FilesProvider>();
         
@@ -83,7 +86,7 @@ void CreateAgentInstance(IConfiguration configuration, AppDbContext appDbContext
 {
     var agentInstance = appDbContext.AgentInstance.AsNoTracking().FirstOrDefault();
 
-    var instanceName = configuration.GetValue("Agent:InstanceName", Environment.MachineName);
+    var instanceName = configuration.GetValue("InstanceName", Environment.MachineName);
     if (string.IsNullOrEmpty(instanceName))
         instanceName = Environment.MachineName;
 

@@ -1,5 +1,6 @@
-﻿using System.Collections.Concurrent;
-using System.Net.Sockets;
+﻿using System.Buffers;
+using System.Collections.Concurrent;
+using System.Net.WebSockets;
 using System.Threading.Channels;
 using MessagePack;
 using Microsoft.Extensions.Logging;
@@ -9,7 +10,7 @@ namespace OneSwiss.Common;
 
 public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposable
 {
-    protected Socket? Socket;
+    protected WebSocket? Socket;
     private CancellationToken _cancellationToken;
     
     private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Message>> _calls = new();
@@ -42,6 +43,9 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
 
     public async Task SendOk(Message callMessage, CancellationToken cancellationToken)
     {
+        if (Socket?.State != WebSocketState.Open)
+            throw new InvalidOperationException("WebSocket is not connected");
+
         var header = new MessageHeader(MessageType.Ok, 0, callMessage.Header.CallId);
         var message = new Message(header);
 
@@ -50,6 +54,9 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
 
     public async Task SendError(Message callMessage, string messageText, CancellationToken cancellationToken)
     {
+        if (Socket?.State != WebSocketState.Open)
+            throw new InvalidOperationException("WebSocket is not connected");
+
         var data = MessagePackSerializer.Serialize(new ErrorDto { Message = messageText }, cancellationToken: cancellationToken).AsMemory();
         var header = new MessageHeader(MessageType.Error, data.Length, callMessage.Header.CallId);
         var message = new Message(header, data);
@@ -59,6 +66,9 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
         
     public async Task Send<T>(MessageType messageType, T item, Message callMessage, CancellationToken cancellationToken)
     {
+        if (Socket?.State != WebSocketState.Open)
+            throw new InvalidOperationException("WebSocket is not connected");
+
         var data = MessagePackSerializer.Serialize(item, cancellationToken: cancellationToken).AsMemory();
         var header = new MessageHeader(messageType, data.Length, callMessage.Header.CallId);
         var message = new Message(header, data);
@@ -68,6 +78,9 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
     
     public async Task Send<T>(MessageType messageType, T item, CancellationToken cancellationToken)
     {
+        if (Socket?.State != WebSocketState.Open)
+            throw new InvalidOperationException("WebSocket is not connected");
+
         var data = MessagePackSerializer.Serialize(item, cancellationToken: cancellationToken).AsMemory();
         var header = new MessageHeader(messageType, data.Length, Guid.NewGuid());
         var message = new Message(header, data);
@@ -80,6 +93,9 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
         MessageType responseMessageType,
         CancellationToken cancellationToken)
     {
+        if (Socket?.State != WebSocketState.Open)
+            throw new InvalidOperationException("WebSocket is not connected");
+
         var header = new MessageHeader(messageType, 0, Guid.NewGuid());
         var message = new Message(header);
 
@@ -92,6 +108,9 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
         T item, 
         CancellationToken cancellationToken)
     {
+        if (Socket?.State != WebSocketState.Open)
+            throw new InvalidOperationException("WebSocket is not connected");
+
         var data = MessagePackSerializer.Serialize(item, cancellationToken: cancellationToken).AsMemory();
         var header = new MessageHeader(messageType, data.Length, Guid.NewGuid());
         var message = new Message(header, data);
@@ -102,8 +121,9 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
     private async Task<TResult> WriteMessageAndWaitResult<TResult>(Message message, MessageType responseMessageType, CancellationToken cancellationToken)
     {
         var cts = new TaskCompletionSource<Message>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _calls.TryAdd(message.Header.CallId, cts);
-        
+        if (!_calls.TryAdd(message.Header.CallId, cts))
+            throw new InvalidOperationException("Duplicate call ID detected");
+
         logger.LogTrace($"Постановка сообщения в очередь отправки. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
         await _messagesChannel.Writer.WriteAsync(message, cancellationToken);
         
@@ -127,7 +147,9 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
     private async Task WriteMessage(Message message, bool needWait, CancellationToken cancellationToken)
     {
         if (!needWait)
+        {
             await _messagesChannel.Writer.WriteAsync(message, cancellationToken);
+        }
         else
         {
             var cts = new TaskCompletionSource<Message>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -156,14 +178,24 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
     {
         try
         {
-            while (!_cancellationToken.IsCancellationRequested)
+            while (!_cancellationToken.IsCancellationRequested && Socket?.State == WebSocketState.Open)
             {
                 var message = await _messagesChannel.Reader.ReadAsync(_cancellationToken);
                 
-                await Socket!.SendAsync(message.Header.AsMemory(), _cancellationToken);
+                // Отправляем заголовок
+                await Socket.SendAsync(
+                    message.Header.AsMemory(),
+                    WebSocketMessageType.Binary,
+                    message.Data.Length == 0, // not end of message - ждем данные
+                    _cancellationToken);
 
+                // Отправляем данные если есть
                 if (message.Data.Length > 0)
-                    await Socket!.SendAsync(message.Data, _cancellationToken);
+                    await Socket.SendAsync(
+                        message.Data,
+                        WebSocketMessageType.Binary,
+                        true, // end of message
+                        _cancellationToken);
                 
                 logger.LogTrace($"Отправлено сообщение. Тип: {message.Header.Type}. Идентификатор: {message.Header.CallId}");
             }
@@ -176,21 +208,36 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
     
     protected async Task WriteMessageToStream<T>(MessageType messageType, T item, CancellationToken cancellationToken)
     {
+        if (Socket?.State != WebSocketState.Open)
+            throw new InvalidOperationException("WebSocket is not connected");
+
         var data = MessagePackSerializer.Serialize(item, cancellationToken: cancellationToken).AsMemory();
         var header = new MessageHeader(messageType, data.Length);
 
         try
         {
-            await Socket!.SendAsync(header.ToBytesArray(), cancellationToken);
+            // Отправляем заголовок
+            await Socket.SendAsync(
+                header.AsMemory(),
+                WebSocketMessageType.Binary,
+                data.Length == 0,
+                cancellationToken);
 
-            if (header.Length > 0)
-                await Socket!.SendAsync(data, cancellationToken);
+            // Отправляем данные если есть
+            if (data.Length > 0)
+                await Socket.SendAsync(
+                    data,
+                    WebSocketMessageType.Binary,
+                    true,
+                    cancellationToken);
             
             logger.LogTrace($"Отправлено сообщение. Тип: {header.Type}. Идентификатор: {header.CallId}");
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Error writing message to stream");
             RaiseDisconnected();
+            throw;
         }
     }
 
@@ -198,16 +245,18 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
     {
         try
         {
-            while (!_cancellationToken.IsCancellationRequested)
+            while (!_cancellationToken.IsCancellationRequested && Socket?.State == WebSocketState.Open)
             {
-                var headerBuffer = await ReadBytesFromStream(MessageHeader.HeaderLength, _cancellationToken);
+                // Читаем заголовок (первое сообщение)
+                var headerBuffer = await ReadMessagePart(MessageHeader.HeaderLength, _cancellationToken);
                 var header = MessageHeader.FromSpan(headerBuffer.Span);
 
                 Message message;
 
                 if (header.Length > 0)
                 {
-                    var dataBuffer = await ReadBytesFromStream(header.Length, _cancellationToken);
+                    // Читаем данные (второе сообщение)
+                    var dataBuffer = await ReadMessagePart(header.Length, _cancellationToken);
                     message = new Message(header, dataBuffer);
                 }
                 else
@@ -229,20 +278,36 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
         }
     }
 
-    private async Task<Memory<byte>> ReadBytesFromStream(int count, CancellationToken cancellationToken)
+    private async Task<Memory<byte>> ReadMessagePart(int expectedLength, CancellationToken cancellationToken)
     {
-        var memory = new Memory<byte>(new byte[count]);
+        var memory = new Memory<byte>(new byte[expectedLength]);
+        var totalRead = 0;
 
-        var read = 0;
-
-        while (!cancellationToken.IsCancellationRequested)
+        while (totalRead < expectedLength && !cancellationToken.IsCancellationRequested)
         {
-            if (Socket!.Poll(0, SelectMode.SelectRead) && Socket.Available == 0)
-                throw new Exception("Disconnected");
-            
-            read += await Socket!.ReceiveAsync(memory[read..], cancellationToken);
+            if (Socket?.State != WebSocketState.Open)
+                throw new WebSocketException($"WebSocket is not open (State: {Socket?.State})");
 
-            if (count == read)
+            var result = await Socket.ReceiveAsync(
+                memory[totalRead..], 
+                cancellationToken);
+
+            // Если получен close frame, закрываем соединение
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                await Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, 
+                    "Connection closed by remote", cancellationToken);
+                throw new WebSocketException("Connection closed by remote");
+            }
+
+            totalRead += result.Count;
+
+            // Если это конец сообщения, но мы прочитали не все данные - ошибка
+            if (result.EndOfMessage && totalRead < expectedLength)
+                throw new WebSocketException($"Unexpected end of message. Expected: {expectedLength}, Received: {totalRead}");
+
+            // Если это конец сообщения и мы прочитали все данные - выходим
+            if (result.EndOfMessage && totalRead == expectedLength)
                 break;
         }
 
@@ -265,7 +330,16 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
             
         if (disposing)
         {
+            // Cancel all pending calls
+            foreach (var cts in _calls.Values)
+            {
+                cts.TrySetCanceled();
+            }
+            _calls.Clear();
+            
             Socket?.Dispose();
+            _disconnectingEventSemaphore?.Dispose();
+            _messagesChannel.Writer.TryComplete();
         }
 
         _disposedValue = true;

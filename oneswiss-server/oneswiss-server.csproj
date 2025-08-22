@@ -5,8 +5,8 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>OneSwiss.Server</RootNamespace>
-        <Version>0.3.0</Version>
-        <AssemblyVersion>0.3.0</AssemblyVersion>
+        <Version>0.3.1</Version>
+        <AssemblyVersion>0.3.1</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -19,6 +19,7 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.8" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.7" />

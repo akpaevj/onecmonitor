@@ -132,17 +132,12 @@ http://localhost:7002/api/ErrorLoggingService
       "Protocols": "Http1AndHttp2"
     }
   },
-  "OneSwiss": {
-    "Tcp": {
-      "Host": "0.0.0.0",
-      "Port": 7001
-    },
-    "Http": {
-      "Host": "0.0.0.0",
-      "Port": 7002
-    }
+  "Http": {
+    "Host": "0.0.0.0",
+    "Port": 7002
   },
   "Auth": {
+    "RequireClientsAuthentication": "false",
     "Mode": "Internal",
     "OIDC": {
       "Authority": "https://my.company.com/realms/master",
@@ -160,10 +155,11 @@ http://localhost:7002/api/ErrorLoggingService
 }
 ```
 Где:
-- OneSwiss
-  - Tcp - адрес и порт, по которым сервер будет прослушивать подключающиеся агенты
-  - Http - адрес и порт, по которым будет доступна веб-панель управления сервером
+- Http
+  - Host - адрес веб-панели управления сервером
+  - Port - порт
 - Auth
+  - RequireClientsAuthentication - флаг необходимости выполнения аутентификации подключающихся агентов
   - Mode - Internal или Mixed. Только внутренняя или внутренняя + OIDC аутентификация
   - OIDC
     - Authority - адрес провайдера аутентификации
@@ -184,12 +180,13 @@ http://localhost:7002/api/ErrorLoggingService
       "Microsoft.Hosting.Lifetime": "Information"
     }
   },
-  "Agent": {
-    "InstanceName": ""
-  },
-  "OneSwiss": {
-    "Host": "127.0.0.1",
-    "Port": 7001
+  "InstanceName": "",
+  "Server": "wss://oneswiss.company.domain",
+  "Auth": {
+    "Required": "true",
+    "TokensEndpoint": "https://sso.company.domain/protocol/openid-connect/token",
+    "ClientId": "oneswiss",
+    "ClientSecret": "fdsnjfdifo54343r43jnd"
   },
   "TechLogFolder": "", 
   "V8": {
@@ -200,9 +197,13 @@ http://localhost:7002/api/ErrorLoggingService
 }
 ```
 Где:  
-- Agent
-  - InstanceName - наименование агента, отображаемое в панели управления серверной части. Если не задано - то hostname
-- OneSwiss - адрес и порт, по которым агент будет стучаться к серверной части
+- InstanceName - наименование агента, отображаемое в панели управления серверной части. Если не задано - то hostname
+- Server - адрес и порт, по которым агент будет стучаться к серверной части. Если сервер опубликован по https, то для доступа агентов необходимо использовать wss, а не ws
+- Auth
+  - Required - флаг необходимости получения и использования jwt токена для аутентификации агента при подключении к серверу oneswiss
+  - TokensEndpoint - адрес конечной точки издателя токенов аутентификации
+  - ClientId - идентификатор клиента
+  - ClientSecret - сервер клиента
 - PlatformPaths - дополнительные пути, если платформы установлены не в каталогах установки платформы 1С по умолчанию
 - TechLogFolder - служебный каталог сбора технологического журнала, используемый в работе подсистемы сеансов сбора ТЖ.
   Если не указан, то используется стандартный путь:
