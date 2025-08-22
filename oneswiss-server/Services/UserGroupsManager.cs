@@ -6,7 +6,7 @@ using OneSwiss.Server.Models;
 
 namespace OneSwiss.Server.Services;
 
-public class UserGroupsManager(UserManager<ApplicationUser> usersManager, IDbContextFactory<AppDbContext> contextFactory)
+public class UserGroupsManager(IServiceProvider serviceProvider, IDbContextFactory<AppDbContext> contextFactory)
 {
     private async Task<List<ApplicationRole>> GetGroupRoles(Guid groupId)
     {
@@ -28,11 +28,14 @@ public class UserGroupsManager(UserManager<ApplicationUser> usersManager, IDbCon
 
     public async Task UpdateUsersRoles()
     {
+        await using var scope = serviceProvider.CreateAsyncScope();
         await using var context = await contextFactory.CreateDbContextAsync();
-        await UpdateGroupUsersRoles(context, BuiltInDbData.EveryoneGroup.Id);
+        using var usersManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        
+        await UpdateGroupUsersRoles(context, usersManager, BuiltInDbData.EveryoneGroup.Id);
     }
 
-    private async Task UpdateGroupUsersRoles(AppDbContext context, Guid groupId)
+    private async Task UpdateGroupUsersRoles(AppDbContext context, UserManager<ApplicationUser> usersManager, Guid groupId)
     {
         var group = await context.UsersGroups
             .Include(usersGroup => usersGroup.Users)
@@ -47,13 +50,13 @@ public class UserGroupsManager(UserManager<ApplicationUser> usersManager, IDbCon
             var userRoles = await usersManager.GetRolesAsync(user!);
             var newRoles = groupRoles.Where(c => !userRoles.Contains(c.NormalizedName, StringComparer.InvariantCultureIgnoreCase)).ToList();
             var removedRoles = userRoles.Where(c => !groupRolesNames.Contains(c, StringComparer.InvariantCultureIgnoreCase)).ToList();
-
+            
             await usersManager.AddToRolesAsync(user!, newRoles.Select(c => c.Name!));
             await usersManager.RemoveFromRolesAsync(user!, removedRoles);
         }
 
         foreach (var childGroup in group.Groups)
-            await UpdateGroupUsersRoles(context, childGroup.Id);
+            await UpdateGroupUsersRoles(context, usersManager, childGroup.Id);
     }
 
     public async Task<bool> GroupsExists()
@@ -78,6 +81,8 @@ public class UserGroupsManager(UserManager<ApplicationUser> usersManager, IDbCon
     
     public async Task AddUserToGroup(ApplicationUser user, Guid groupId)
     {
+        await using var scope = serviceProvider.CreateAsyncScope();
+        using var usersManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         await using var context = await contextFactory.CreateDbContextAsync();
         
         var group = context.UsersGroups

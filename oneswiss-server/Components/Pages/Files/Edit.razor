@@ -67,25 +67,6 @@
     
     [Parameter]
     public Guid Id { get; set; }
-    
-    class Validator : ModelValidator<File>
-    {
-        public Validator()
-        {
-            RuleFor(c => c.Name)
-                .NotEmpty()
-                .WithMessage("Не заполнено наименование");
-            
-            RuleFor(c => c.Version)
-                .NotEmpty()
-                .WithMessage("Не указана версия");
-            
-            RuleFor(c => c.DataPath)
-                .NotEmpty()
-                .WithMessage("Прикрепите файл")
-                .WithName("_file");
-        }
-    }
 
     private void AfterBindFiles()
     {
@@ -133,5 +114,24 @@
         isLoading = false;
                 
         obj.DataPath = fileName;
+    }
+    
+    class Validator : ModelValidator<File>
+    {
+        public Validator()
+        {
+            RuleFor(c => c.Name)
+                .NotEmpty()
+                .WithMessage("Не заполнено наименование");
+            
+            RuleFor(c => c.Version)
+                .NotEmpty()
+                .WithMessage("Не указана версия");
+            
+            RuleFor(c => c.DataPath)
+                .NotEmpty()
+                .WithMessage("Прикрепите файл")
+                .WithName("_file");
+        }
     }
 }

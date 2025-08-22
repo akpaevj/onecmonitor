@@ -49,9 +49,11 @@
     {
         ModelHelper.UpdateModelItems(_editor.Model!.Roles, model.Roles);
     }
-    
-    private async Task AfterSave(AccessGroup group)
-        => await GroupsManager.UpdateUsersRoles();
+
+    private async Task AfterSave()
+    {
+        await GroupsManager.UpdateUsersRoles();
+    }
     
     class Validator : ModelValidator<AccessGroup>
     {
