@@ -19,7 +19,6 @@ public static class BuiltinDataSeeder
     private static async Task SeedUsers(this IServiceProvider serviceProvider)
     {
         var manager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var groupsManager = serviceProvider.GetRequiredService<UserGroupsManager>();
 
         if (await manager.Users.AnyAsync())
             return;
@@ -27,11 +26,9 @@ public static class BuiltinDataSeeder
         await manager.CreateAsync(new ApplicationUser
         {
             UserName = BuiltInDbData.AdminUser.User,
-            DisplayName = BuiltInDbData.AdminUser.DisplayName
+            DisplayName = BuiltInDbData.AdminUser.DisplayName,
+            GroupId = BuiltInDbData.AdminsGroup.Id,
         }, BuiltInDbData.AdminUser.Password);
-        var adminUser = manager.Users.First(c => c.UserName == BuiltInDbData.AdminUser.User);
-
-        await groupsManager.AddUserToGroup(adminUser, BuiltInDbData.AdminsGroup.Id);
     }
 
     private static async Task SeedRoles(this IServiceProvider serviceProvider)
