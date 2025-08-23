@@ -16,6 +16,7 @@
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @inject AgentsConnectionsManager AgentsConnectionsManager
 @inject IJSRuntime Js
+@inject IDialogService DialogService
 @rendermode InteractiveServer
 
 <PageTitle>Администрирование серверов</PageTitle>
@@ -113,11 +114,13 @@
                         agentIsConnected)
                     : null,
                 DynamicComponentType = typeof(AgentInfo),
-                Parameters = new Dictionary<string, object> { { "Id", c.Id } }
+                Parameters = new Dictionary<string, object> { { "Id", c.Id } },
+                ShowDeleteItemIcon = !agentIsConnected && _authState.IsInRoles(BuiltInRoles.Administrator),
+                DeleteItemCallBack = _ => DeleteItem(c, c.InstanceName)
             };
         }).ToList();
     }
-    
+
     private async Task<List<TreeItem>> LoadClusters(Agent agent, bool agentIsConnected)
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
@@ -235,4 +238,14 @@
 
     private async Task AfterDimensionChanged()
         => await Js.SetLocalStorageItem("panel_dimension", _dimension.ToString(CultureInfo.InvariantCulture));
+
+    private async Task DeleteItem<T>(T item, string name) where T : class, IHasId
+    {
+        await using var context = await ContextFactory.CreateDbContextAsync();
+
+        await DialogService.ShowItemDeletingDialog<T>(item.Id, name);
+        
+        await UpdateItems();
+        await InvokeAsync(StateHasChanged);
+    }
 }

@@ -14,6 +14,9 @@ public static class BuiltinDataSeeder
         await scope.ServiceProvider.SeedAccessGroups();
         await scope.ServiceProvider.SeedUsersGroups();
         await scope.ServiceProvider.SeedUsers();
+
+        var groupsManager = scope.ServiceProvider.GetRequiredService<UserGroupsManager>();
+        await groupsManager.UpdateUsersRoles();
     }
     
     private static async Task SeedUsers(this IServiceProvider serviceProvider)
