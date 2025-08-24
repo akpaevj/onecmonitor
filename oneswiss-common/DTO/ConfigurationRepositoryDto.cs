@@ -1,6 +1,7 @@
 using MessagePack;
 using OneScript.Contexts;
 using OneSwiss.OneScript.Oscript;
+using OneSwiss.V8.Platform;
 
 namespace OneSwiss.Common.DTO;
 
@@ -17,7 +18,13 @@ public class ConfigurationRepositoryDto
     [ContextProperty("ИмяХранилищаКонфигураций", "ConfigurationRepositoryName")]
     [Key(2)]
     public string Name { get; set; }
-    [ContextProperty("ПортСервераХранилищКонфигураций", "ConfigurationRepositoryServerPort")]
+    [ContextProperty("ХостСервераХранилищКонфигураций", "ConfigurationRepositoryServerHost")]
     [Key(3)]
+    public string Host { get; set; }
+    [ContextProperty("ПортСервераХранилищКонфигураций", "ConfigurationRepositoryServerPort")]
+    [Key(4)]
     public int Port { get; set; }
+    [Key(5)]
+    [ContextProperty("Платформа", "Platform", CanWrite = false)]
+    public V8Platform Platform { get; set; } = null!;
 }

@@ -29,9 +29,7 @@ public class DtoProfile : Profile
             .ForMember(c => c.ClusterInternalId, opt => opt.MapFrom(src => src.Id))
             .ReverseMap();
         
-        CreateMap<ConfigurationRepository, ConfigurationRepositoryDto>()
-            .ForMember(c => c.Id, opt => opt.Ignore())
-            .ReverseMap();
+        CreateMap<ConfigurationRepository, ConfigurationRepositoryDto>().ReverseMap();
         
         CreateMap<File, FileDto>()
             .ForMember(c => c.FileExtension, opt => opt.MapFrom(src => Path.GetExtension(src.DataPath)))

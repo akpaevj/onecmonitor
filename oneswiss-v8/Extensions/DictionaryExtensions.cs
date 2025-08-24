@@ -24,17 +24,17 @@ public static class DictionaryExtensions
                 continue;
 
             if (property.PropertyType == typeof(bool))
-                property.SetValue(racObject, racFieldValue is "1" or "on" or "yes" or "allow");
+                property.SetValue(racObject, racFieldValue.ToLower() is "1" or "on" or "yes" or "allow");
             else if (property.PropertyType == typeof(string))
                 property.SetValue(racObject, racFieldValue.Trim('"'));
-            else if (property.PropertyType == typeof(int))
-                property.SetValue(racObject, int.Parse(racFieldValue));
-            else if (property.PropertyType == typeof(long))
-                property.SetValue(racObject, long.Parse(racFieldValue));
-            else if (property.PropertyType == typeof(double))
-                property.SetValue(racObject, double.Parse(racFieldValue, NumberStyles.Any, CultureInfo.InvariantCulture));
-            else if (property.PropertyType == typeof(DateTime))
-                property.SetValue(racObject, DateTime.Parse(racFieldValue));
+            else if (property.PropertyType == typeof(int) && int.TryParse(racFieldValue, out var i))
+                property.SetValue(racObject, i);
+            else if (property.PropertyType == typeof(long) && long.TryParse(racFieldValue, out var l))
+                property.SetValue(racObject, l);
+            else if (property.PropertyType == typeof(double) && double.TryParse(racFieldValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
+                property.SetValue(racObject, d);
+            else if (property.PropertyType == typeof(DateTime) && DateTime.TryParse(racFieldValue, out var dt))
+                property.SetValue(racObject, dt);
             else if (property.PropertyType.IsEnum)
                 property.SetValue(racObject, Enum.Parse(property.PropertyType, racFieldValue.Replace(" ", ""), true));
             else

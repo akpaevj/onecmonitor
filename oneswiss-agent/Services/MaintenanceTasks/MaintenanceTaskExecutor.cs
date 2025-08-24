@@ -453,18 +453,17 @@ public class MaintenanceTaskExecutor : BackgroundService
             var isExtension = stepInfo.Step.Kind == MaintenanceStepKind.LoadExtension;
             var extension = isExtension ? "cfe" : "cf";
             
-            var crServer = _v8ServicesProvider.GetCrServerForPort(stepInfo.ConfigurationRepository!.Port);
             var tempIbPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 
             try
             {
                 Directory.CreateDirectory(tempIbPath);
-                OnecV8BatchMode.CreateFileInfoBase(crServer.Platform, tempIbPath);
+                OnecV8BatchMode.CreateFileInfoBase(stepInfo.ConfigurationRepository!.Platform, tempIbPath);
 
                 var configPath = Path.Join(Path.GetTempPath(), $"{Guid.NewGuid()}.{extension}");
-                var address = $"tcp://localhost:{crServer.Port}/{stepInfo.ConfigurationRepository.Name}";
+                var address = $"tcp://{stepInfo.ConfigurationRepository.Host}:{stepInfo.ConfigurationRepository.Port}/{stepInfo.ConfigurationRepository.Name}";
 
-                using var batch = OnecV8BatchMode.CreateDesignerBatch(crServer.Platform, tempIbPath);
+                using var batch = OnecV8BatchMode.CreateDesignerBatch(stepInfo.ConfigurationRepository.Platform, tempIbPath);
                 batch.DumpConfigRepository(
                     configPath,
                     address,

@@ -47,7 +47,7 @@ public class ConfigurationRepositoriesDetector(
                                 
                                 foreach (var repository in crService.Repositories)
                                 {
-                                    var details = await connection.GetConfigRepositoryDetails(crService, repository, token);
+                                    var details = await connection.GetConfigRepositoryDetails(crService.Port, repository, token);
                                     
                                     removedReps.Remove(details.Id);
                                     

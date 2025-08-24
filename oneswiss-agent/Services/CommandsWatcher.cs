@@ -385,6 +385,7 @@ namespace OneSwiss.Agent.Services
             var result = new ConfigRepositoryDetailsDto
             {
                 Id = db.ReadId(),
+                Platform = crServer.Platform,
                 Users = db.ReadUsers().Select(c => new ConfigRepositoryUserDto
                 {
                     Id = c.Id,

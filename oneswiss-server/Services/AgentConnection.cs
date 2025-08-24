@@ -241,18 +241,18 @@ namespace OneSwiss.Server.Services
                 } ,
                 cancellationToken);
         
-        public async Task<ConfigRepositoryDetailsDto> GetConfigRepositoryDetails(CrServer server, string repository, CancellationToken cancellationToken)
+        public async Task<ConfigRepositoryDetailsDto> GetConfigRepositoryDetails(int port, string repository, CancellationToken cancellationToken)
             => await Get<ConfigRepositoryDetailsRequestDto, ConfigRepositoryDetailsDto>(
                 MessageType.ConfigRepositoryDetailsRequest, 
                 MessageType.ConfigRepositoryDetails,
                 new ConfigRepositoryDetailsRequestDto
                 {
-                  CrServerPort = server.Port,
+                  CrServerPort = port,
                   Repository = repository
                 },
                 cancellationToken);
         
-        public async Task StartMaintenanceTask(MaintenanceTask task, CancellationToken cancellationToken = default)
+        public async Task StartMaintenanceTask(MaintenanceTaskDto task, CancellationToken cancellationToken = default)
             => await Send(MessageType.MaintenanceTask, _mapper.Map<MaintenanceTaskDto>(task), cancellationToken);
         
         private async Task<List<TechLogSeanceDto>> GetTechLogSeances(CancellationToken cancellationToken)
