@@ -73,12 +73,12 @@
     private void OnPasswordChanged()
         => _passwordChanged = true;
 
-    private async Task CheckCanChange(ApplicationUser model)
+    private async Task ThrowIfCanNotChange(ApplicationUser model)
     {
-        var users = await UserManager.GetUsersInRoleAsync(BuiltInRoles.Administrator);
+        var users = await UserManager.GetUsersInRoleAsync(Roles.Administrator);
 
         var currentUser = users.FirstOrDefault(c => c.Id == model.Id);
-        if (currentUser != null) 
+        if (currentUser != null && model.GroupId != currentUser.GroupId) 
             users.Remove(currentUser);
 
         if (users.Count == 0)
@@ -92,7 +92,7 @@
         var newUser = Id == Guid.Empty;
 
         if (!newUser)
-            await CheckCanChange(obj);
+            await ThrowIfCanNotChange(obj);
         
         if (_passwordChanged)
         {

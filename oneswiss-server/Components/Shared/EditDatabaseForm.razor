@@ -154,7 +154,15 @@
     
     private async Task Save()
     {
-        await BeforeValidation.InvokeAsync(Model);
+        try
+        {
+            await BeforeValidation.InvokeAsync(Model);
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+            return;
+        }
         
         await Form.Validate();
 
