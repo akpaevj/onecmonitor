@@ -1,38 +1,25 @@
 using System.Net;
-using System.Security.Claims;
 using AutoMapper;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.BearerToken;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Microsoft.IdentityModel.Tokens;
-using MudBlazor;
 using MudBlazor.Services;
 using MudExtensions.Services;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.Services;
 using OneSwiss.Server;
+using OneSwiss.Server.ApiControllers;
 using OneSwiss.Server.AutoMapper;
 using OneSwiss.Server.Components;
 using OneSwiss.Server.Components.Account;
 using OneSwiss.Server.Components.Pages.MaintenanceTasks;
 using OneSwiss.Server.Extensions;
-using OneSwiss.Server.Helpers;
 using OneSwiss.Server.Hubs;
-using OneSwiss.Server.Models;
 using OneSwiss.Server.Services;
+using OneSwiss.Server.Services.CrServerProxy;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,20 +27,19 @@ builder.WebHost.ConfigureKestrel((context, options) =>
 {
     options.AllowSynchronousIO = true;
     options.Limits.MaxRequestBodySize = long.MaxValue;
-    
+    options.Limits.MaxResponseBufferSize = long.MaxValue;
+    options.Limits.MaxRequestBufferSize = long.MaxValue;
+
     // configure http listener
     var host = context.Configuration.GetValue<string>("Http:Host");
     var port = context.Configuration.GetValue("Http:Port", 7002);
 
-    options.Listen(string.IsNullOrEmpty(host) ? IPAddress.Any: IPAddress.Parse(host), port);
+    options.Listen(string.IsNullOrEmpty(host) ? IPAddress.Any : IPAddress.Parse(host), port);
 });
 
 builder.AddOneSwissAuthentication();
 
-builder.Services.AddWindowsService(options =>
-{
-    options.ServiceName = "OneSwiss";
-});
+builder.Services.AddWindowsService(options => { options.ServiceName = "OneSwiss"; });
 builder.Services.AddSystemd();
 builder.Services.AddHttpContextAccessor();
 
@@ -62,7 +48,7 @@ builder.Services.AddSignalR();
 builder.Services.AddResponseCompression(opts =>
 {
     opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-        [ "application/octet-stream" ]);
+        ["application/octet-stream"]);
 });
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -70,7 +56,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     var proxyAddress = builder.Configuration.GetValue("ProxyAddress", "");
     if (!string.IsNullOrEmpty(proxyAddress))
         options.KnownProxies.Add(IPAddress.Parse(proxyAddress));
-    
+
     options.ForwardedHeaders =
         ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
@@ -79,7 +65,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents(options =>
     {
-        options.RootComponents.RegisterForJavaScript<StepWidget>(identifier: "StepWidget");
+        options.RootComponents.RegisterForJavaScript<StepWidget>("StepWidget");
     });
 
 builder.Services.AddCascadingAuthenticationState();
@@ -112,9 +98,15 @@ builder.Services.AddHostedService<ClustersInfoBasesDetector>();
 builder.Services.AddHostedService<ConfigurationRepositoriesDetector>();
 builder.Services.AddHostedService<ErrorReportsCleaner>();
 
+builder.Services.AddSingleton<InterAgencyCommunicationService>();
+
 builder.Services.AddHostedService<UpdatesChecker>();
 builder.Services.AddSingleton<UpdatesChecker.State>();
-    
+
+builder.Services.AddHostedService<CrServerConnectionsDisconnecter>();
+builder.Services.AddSingleton<CrServerConnectionsPool>();
+builder.Services.AddSingleton<CrServerRequestsHandler>();
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -124,7 +116,7 @@ app.UseForwardedHeaders();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseExceptionHandler("/Error", true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
@@ -167,27 +159,27 @@ app.Lifetime.ApplicationStarted.Register(() =>
 {
     // Инициализириуем службы при старте приложения
     using var scope = app.Services.CreateScope();
-    
+
     var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
     using var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    
+
     var techLogRepositoryManager = scope.ServiceProvider.GetRequiredService<TechLogRepositoryManager>();
-    
+
     var techLogSettings = db.TechLogSettings
         .Include(c => c.Credentials)
         .Include(c => c.Dbms)
-        .FirstOrDefault();
-    
+        .SingleOrDefault();
+
     if (techLogSettings != null)
         techLogRepositoryManager.UpdateSettings(mapper.Map<TechLogSettingsDto>(techLogSettings));
-    
+
     var eventLogRepositoryManager = scope.ServiceProvider.GetRequiredService<EventLogRepositoryManager>();
-    
+
     var eventLogSettings = db.EventLogSettings
         .Include(c => c.Credentials)
         .Include(c => c.Dbms)
-        .FirstOrDefault();
-    
+        .SingleOrDefault();
+
     if (eventLogSettings != null)
         eventLogRepositoryManager.UpdateSettings(mapper.Map<EventLogSettingsDto>(eventLogSettings));
 });

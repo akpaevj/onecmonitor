@@ -1,39 +1,129 @@
+using OneSwiss.Common.DTO;
+
 namespace OneSwiss.Agent.Services;
+
+public class DownloadedFileDescription
+{
+    public Guid Id { get; init; }
+    public string Path { get; init; } = string.Empty;
+}
 
 public class FilesProvider
 {
-    public string TechLogFolder { get; }
+    private readonly IConfiguration _configuration;
+    private readonly OneSwissConnection _connection;
+    private readonly ILogger<FilesProvider> _logger;
 
-    public FilesProvider(IConfiguration configuration, ILogger<FilesProvider> logger)
+    public FilesProvider(
+        [FromKeyedServices(OneSwissConnection.CommonKey)]
+        OneSwissConnection connection,
+        IConfiguration configuration,
+        ILogger<FilesProvider> logger)
     {
-        TechLogFolder = configuration.GetValue<string>("TechLogFolder") ?? "";
+        _connection = connection;
+        _configuration = configuration;
+        _logger = logger;
+
+        InitTechlogFolder();
+        InitGitRepositoriesFolder();
+    }
+
+    public string TechLogFolder { get; private set; }
+    public string GitSyncFolder { get; private set; }
+
+    public async Task<List<DownloadedFileDescription>> DownloadFiles(List<FileDto> files,
+        CancellationToken cancellationToken = default)
+    {
+        return await DownloadFiles(_connection, files, cancellationToken);
+    }
+
+    public static async Task<List<DownloadedFileDescription>> DownloadFiles(
+        OneSwissConnection connection,
+        List<FileDto> files,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new List<DownloadedFileDescription>();
+
+        foreach (var file in files)
+        {
+            var path = Path.Join(Path.GetTempPath(), $"{Guid.NewGuid()}{file.FileExtension}");
+            await using var oStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
+
+            await connection.DownloadFile(oStream, file.Id, cancellationToken);
+
+            result.Add(new DownloadedFileDescription
+            {
+                Id = file.Id,
+                Path = path
+            });
+        }
+
+        return result;
+    }
+
+    private void InitTechlogFolder()
+    {
+        TechLogFolder = _configuration.GetValue<string>("TechLogFolder") ?? "";
 
         if (string.IsNullOrEmpty(TechLogFolder))
         {
             TechLogFolder = GetTechLogDefaultFolder();
-            logger.LogInformation($"Путь к каталогу сбора технологического журнала не указан, будет использован каталог по умолчанию: {TechLogFolder}");
+            _logger.LogInformation(
+                $"Путь к каталогу сбора технологического журнала не указан, будет использован каталог по умолчанию: {TechLogFolder}");
         }
 
-        if (Directory.Exists(TechLogFolder)) 
+        if (Directory.Exists(TechLogFolder))
             return;
-        
+
         try
         {
             Directory.CreateDirectory(TechLogFolder);
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Ошибка создания каталога сбора технологического журнала");
+            _logger.LogError(e, "Ошибка создания каталога сбора технологического журнала");
+        }
+    }
+
+    private void InitGitRepositoriesFolder()
+    {
+        GitSyncFolder = _configuration.GetValue<string>("GitSyncFolder") ?? "";
+
+        if (string.IsNullOrEmpty(GitSyncFolder))
+        {
+            GitSyncFolder = GetGitRepositoriesDefaultFolder();
+            _logger.LogInformation(
+                $"Путь к служебному каталогу синхронизатора хранилищ и Git не указан, будет использован каталог по умолчанию: {GitSyncFolder}");
+        }
+
+        if (Directory.Exists(GitSyncFolder))
+            return;
+
+        try
+        {
+            Directory.CreateDirectory(GitSyncFolder);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Ошибка создания репозиториев git");
         }
     }
 
     private static string GetTechLogDefaultFolder()
-        => Environment.OSVersion.Platform switch
+    {
+        return Environment.OSVersion.Platform switch
         {
-            PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "oneswiss", "techlog"),
+            PlatformID.Win32NT => Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "oneswiss", "techlog"),
             _ => Path.Combine("/var", "log", "oneswiss", "techlog")
         };
-    
+    }
+
+    private static string GetGitRepositoriesDefaultFolder()
+    {
+        return Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "repos");
+    }
+
     public static bool WritingAvailable(string path)
     {
         var testPath = Path.Combine(path, "test.txt");

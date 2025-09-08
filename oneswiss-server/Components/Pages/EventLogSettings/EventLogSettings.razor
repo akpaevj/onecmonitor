@@ -7,9 +7,8 @@
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Extensions
-@using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
-@inject AgentsConnectionsManager AgentsConnectionsManager 
+@inject AgentsConnectionsManager AgentsConnectionsManager
 @inject IMapper Mapper
 @inject ISnackbar SnackBar
 
@@ -18,26 +17,34 @@
 <MudText Typo="Typo.h6" Class="mb-3">Сервис экспорта журнала регистрации</MudText>
 
 <SettingsForm @ref="_editor" T="Models.EventLogSettings"
-                    Validation="@_validator.ValidateValue"
-                    AfterSave="AfterSave"
-                    OnInitialize="OnInitialize">
+              Validation="@_validator.ValidateValue"
+              AfterSave="AfterSave"
+              OnInitialize="OnInitialize">
     <MudStack>
         <MudSwitch Class="mb-3" Label="Включен" @bind-Value="@_editor.Model!.Enabled" Color="Color.Primary"></MudSwitch>
-        <MudSelect Class="mb-3" For="@(() => _editor.Model!.DbmsId)" Label="СУБД" @bind-Value="@_editor.Model!.DbmsId" Clearable="true">
-            @foreach (var item in _editor.Context!.Dbms.AsNoTracking().ToList())
-            {
-                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
-            }
-        </MudSelect>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.DatabaseName)" Label="Имя базы данных" @bind-Value="@_editor.Model!.DatabaseName"></MudTextField>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Table)" Label="Имя таблицы" @bind-Value="@_editor.Model!.Table"></MudTextField>
-        <MudSelect Class="mb-3" For="@(() => _editor.Model!.CredentialsId)" Label="Учетные данные" @bind-Value="@_editor.Model!.CredentialsId" Clearable="true">
-            @foreach (var item in _credentials)
-            {
-                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
-            }
-        </MudSelect>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.InfoBaseNameRegex)" Label="Шаблон регулярного выражения для имени ИБ" @bind-Value="@_editor.Model!.InfoBaseNameRegex"></MudTextField>
+        <ItemSelector
+            @bind-Value="@_editor.Model!.DbmsId"
+            Items="@_editor.Context!.Dbms.AsNoTracking().ToList()"
+            Class="mb-3"
+            ItemValueSelector="arg => arg.Id"
+            ItemNameSelector="arg => arg.Name"
+            Label="СУБД"
+            For="@(() => _editor.Model!.DbmsId)"/>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.DatabaseName)" Label="Имя базы данных"
+                      @bind-Value="@_editor.Model!.DatabaseName"></MudTextField>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Table)" Label="Имя таблицы"
+                      @bind-Value="@_editor.Model!.Table"></MudTextField>
+        <ItemSelector
+            @bind-Value="@_editor.Model!.CredentialsId"
+            Items="@_editor.Context.Credentials.Where(c => !c.IsToken).ToList()"
+            Class="mb-3"
+            ItemValueSelector="arg => arg.Id"
+            ItemNameSelector="arg => arg.Name"
+            Label="Учетные данные"
+            For="@(() => _editor.Model!.CredentialsId)"/>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.InfoBaseNameRegex)"
+                      Label="Шаблон регулярного выражения для имени ИБ"
+                      @bind-Value="@_editor.Model!.InfoBaseNameRegex"></MudTextField>
     </MudStack>
 </SettingsForm>
 
@@ -47,14 +54,11 @@
     private SettingsForm<Models.EventLogSettings> _editor = null!;
     private readonly Validator _validator = new();
 
-    private List<Credentials> _credentials;
-    
-    private async Task OnInitialize((Models.EventLogSettings Model, AppDbContext Context) obj)
+    private void OnInitialize((Models.EventLogSettings Model, AppDbContext Context) obj)
     {
         _cts = new CancellationTokenSource();
-        _credentials = await obj.Context.Credentials.ToListAsync();
     }
-    
+
     private async Task AfterSave(Models.EventLogSettings obj)
     {
         if (!obj.Enabled)
@@ -63,7 +67,7 @@
         try
         {
             await InitDataBase();
-            
+
             SnackBar.ShowSuccess("База данных инициализирована");
         }
         catch (Exception e)
@@ -81,23 +85,23 @@
             SnackBar.ShowError(e);
         }
     }
-    
+
     private async Task InitDataBase()
     {
         var settings = await _editor.Context!.EventLogSettings
             .AsNoTracking()
             .Include(c => c.Dbms)
             .Include(c => c.Credentials)
-            .FirstOrDefaultAsync(_cts!.Token);
+            .SingleOrDefaultAsync(_cts!.Token);
 
         var settingsDto = Mapper.Map<EventLogSettingsDto>(settings);
-        
+
         using var context = new ClickHouseContext(
-            settingsDto.Dbms, 
-            settingsDto.Credentials, 
-            settingsDto.DatabaseName, 
+            settingsDto.Dbms,
+            settingsDto.Credentials,
+            settingsDto.DatabaseName,
             settingsDto.Table);
-        
+
         await context.InitEventLogTable(_cts!.Token);
     }
 
@@ -105,7 +109,7 @@
     {
         _cts?.Dispose();
     }
-    
+
     private class Validator : ModelValidator<Models.EventLogSettings>
     {
         public Validator()
@@ -115,19 +119,19 @@
                 RuleFor(x => x.DatabaseName)
                     .NotEmpty()
                     .WithMessage("Не указано имя базы данных");
-                
+
                 RuleFor(x => x.Table)
                     .NotEmpty()
                     .WithMessage("Не указана таблица базы данных");
-                
+
                 RuleFor(x => x.DbmsId)
                     .NotEmpty()
                     .WithMessage("Не указана СУБД");
-                
+
                 RuleFor(x => x.CredentialsId)
                     .NotEmpty()
                     .WithMessage("Не указаны учетные данные");
-                
+
                 RuleFor(x => x.InfoBaseNameRegex)
                     .NotEmpty()
                     .WithMessage("Не указано регулярное выражение для имени информационной базы")
@@ -135,7 +139,7 @@
                     .WithMessage("Указано невалидное регулярное выражение");
             });
         }
-        
+
         private static bool IsValidRegex(string pattern)
         {
             if (string.IsNullOrWhiteSpace(pattern)) return false;

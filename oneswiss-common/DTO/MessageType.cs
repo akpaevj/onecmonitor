@@ -1,50 +1,55 @@
-﻿namespace OneSwiss.Common.DTO
+﻿namespace OneSwiss.Common.DTO;
+
+public enum MessageType
 {
-    public enum MessageType
-    {
-        // System messages
-        Error,
-        Ok,
-        
-        // Client messages
-        AgentInfo,
-        InstalledPlatforms,
-        RagentServices,
-        RasServices,
-        CrServerServices,
-        ClustersResponse,
-        ClusterDetailsResponse,
-        InfoBasesResponse,
-        InfoBaseDetailsResponse,
-        V8SessionsResponse,
-        V8ProcessesResponse,
-        SettingsRequest,
-        MaintenanceStepNodeLog,
-        V8FileRequest,
-        SystemInfoRequest,
-        ConfigRepositoryDetailsRequest,
-        EdtInstallationsRequest,
-        QueueNotificationRequest,
-        
-        // Server messages
-        InstalledPlatformsRequest,
-        RagentServicesRequest,
-        RasServicesRequest,
-        CrServerServicesRequest,
-        ClustersRequest,
-        ClusterDetailsRequest,
-        ChangeClusterParametersRequest,
-        ChangeInfoBaseParametersRequest,
-        InfoBasesRequest,
-        InfoBaseDetailsRequest,
-        V8SessionsRequest,
-        V8ProcessesRequest,
-        Settings,
-        MaintenanceTask,
-        V8FileChunk,
-        SystemInfo,
-        ConfigRepositoryDetails,
-        EdtInstallations,
-        CloseV8SessionsRequest
-    }
+    // System messages
+    Error,
+    Ok,
+    DataStreamHeader,
+    DataStreamChunk,
+
+    // Client messages
+    AgentInfo,
+    InstalledPlatforms,
+    RagentServices,
+    RasServices,
+    CrServerServices,
+    Clusters,
+    ClusterDetails,
+    InfoBases,
+    InfoBaseDetails,
+    V8Sessions,
+    V8Processes,
+    SettingsRequest,
+    MaintenanceStepNodeLog,
+    FileRequest,
+    SystemInfoRequest,
+    ConfigRepositoryDetailsRequest,
+    EdtInstallationsRequest,
+    QueueCustomNotificationRequest,
+    GitSyncTasksRequest,
+    GitSyncTaskProcessorStopped,
+    CrServerPlatformRequest,
+
+    // Server messages
+    InstalledPlatformsRequest,
+    RagentServicesRequest,
+    RasServicesRequest,
+    CrServerServicesRequest,
+    ClustersRequest,
+    ClusterDetailsRequest,
+    ChangeClusterParametersRequest,
+    ChangeInfoBaseParametersRequest,
+    InfoBasesRequest,
+    InfoBaseDetailsRequest,
+    V8SessionsRequest,
+    V8ProcessesRequest,
+    Settings,
+    GitSyncTasks,
+    MaintenanceTask,
+    SystemInfo,
+    ConfigRepositoryDetails,
+    EdtInstallations,
+    CloseV8SessionsRequest,
+    V8Platform
 }

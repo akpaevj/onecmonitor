@@ -1,11 +1,11 @@
-@using Microsoft.EntityFrameworkCore
-@using OneSwiss.Server.Components.Layout
-@using OneSwiss.Server.Extensions
 @inject NavigationManager NavigationManager
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @inject ISnackbar SnackBar
 @implements IDisposable
 @attribute [CascadingTypeParameter(nameof(T))]
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Components.Layout
+@using OneSwiss.Server.Extensions
 @typeparam T where T : class, OneSwiss.Server.Models.IHasId, new()
 
 <MudStack>
@@ -16,7 +16,8 @@
         @if (Editable)
         {
             <MudSpacer/>
-            <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="Save">Сохранить</MudButton>
+            <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="Save">Сохранить
+            </MudButton>
         }
     </MudStack>
 </MudStack>
@@ -27,69 +28,68 @@
 
     public AppDbContext? Context { get; private set; }
     public T? Model { get; set; }
-    
+
     /// <summary>
-    /// Идентификатор элемента
+    ///     Идентификатор элемента
     /// </summary>
     [Parameter]
     public Guid Id { get; set; }
 
     /// <summary>
-    /// Объект может быть отредактирован и записан
+    ///     Объект может быть отредактирован и записан
     /// </summary>
     [Parameter]
     public bool Editable { get; set; } = true;
-    
+
     /// <summary>
-    /// Содержимое формы редактирования
+    ///     Содержимое формы редактирования
     /// </summary>
-    [Parameter] 
+    [Parameter]
     public RenderFragment? ChildContent { get; set; }
-    
+
     /// <summary>
-    /// Используется при получении сложной модели со связями
+    ///     Используется при получении сложной модели со связями
     /// </summary>
     [Parameter]
     public Func<IQueryable<T>, IQueryable<T>>? ModelSelector { get; set; }
-    
+
     /// <summary>
-    /// Дополнительные действия перед проверкой модели
+    ///     Дополнительные действия перед проверкой модели
     /// </summary>
     [Parameter]
     public EventCallback<T> BeforeValidation { get; set; }
-    
+
     /// <summary>
-    /// Дополнительные действия после проверки модели
+    ///     Дополнительные действия после проверки модели
     /// </summary>
     [Parameter]
     public EventCallback<T> AfterValidation { get; set; }
-    
+
     /// <summary>
-    /// Дополнительные действия при сохранении модели, которая уже существует в БД
+    ///     Дополнительные действия при сохранении модели, которая уже существует в БД
     /// </summary>
     [Parameter]
     public EventCallback<T> OnUpdate { get; set; }
-    
+
     /// <summary>
-    /// Дополнительные действия после сохранения модели
+    ///     Дополнительные действия после сохранения модели
     /// </summary>
     [Parameter]
     public EventCallback<T> AfterSave { get; set; }
-    
+
     /// <summary>
-    /// Дополнительные действия при инициализации
+    ///     Дополнительные действия при инициализации
     /// </summary>
     [Parameter]
     public EventCallback<(T Model, AppDbContext Context)> OnInitialize { get; set; }
-    
+
     /// <summary>
-    /// Дополнительные действия при инициализации
+    ///     Дополнительные действия при инициализации
     /// </summary>
     [Parameter]
     public Func<object, string, Task<IEnumerable<string>>>? Validation { get; set; }
-    
-    [CascadingParameter(Name = "NavMenu")]
-    public NavMenu NavMenu { get; set; }
+
+    [CascadingParameter(Name = "NavMenu")] public NavMenu NavMenu { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,7 +98,7 @@
             Context = await ContextFactory.CreateDbContextAsync();
 
             Model = await GetSingleObject();
-            
+
             await OnInitialize.InvokeAsync((Model!, Context));
         }
         catch (Exception e)
@@ -106,11 +106,11 @@
             SnackBar.ShowError(e);
         }
     }
-    
+
     private async Task Save()
     {
         await BeforeValidation.InvokeAsync(Model);
-        
+
         await Form.Validate();
 
         if (!Form.IsValid)
@@ -120,7 +120,7 @@
         }
 
         await AfterValidation.InvokeAsync(Model);
-        
+
         try
         {
             var model = await GetSingleObject(false);
@@ -132,13 +132,13 @@
             }
             else
                 Context!.Entry(Model!).State = EntityState.Added;
-            
+
             await Context!.SaveChangesAsync();
 
             await AfterSave.InvokeAsync(model ?? Model!);
-            
+
             SnackBar.ShowSuccess("Объект записан", false);
-            
+
             await NavMenu.NotifyStateHasChanged();
         }
         catch (Exception e)
@@ -153,21 +153,22 @@
                 ? Context!.Set<T>()
                 : ModelSelector
                     .Invoke(Context!.Set<T>()))
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync();
 
-        if (item != null) 
+        if (item != null)
             return item;
 
-        if (!createNew) 
+        if (!createNew)
             return null;
-        
+
         item = new T();
         Context.Set<T>().Add(item);
 
         return item;
-
     }
 
     public void Dispose()
-        => Context?.Dispose();
+    {
+        Context?.Dispose();
+    }
 }

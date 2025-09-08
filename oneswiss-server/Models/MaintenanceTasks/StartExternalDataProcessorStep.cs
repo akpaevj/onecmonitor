@@ -7,6 +7,6 @@ namespace OneSwiss.Server.Models.MaintenanceTasks;
 public class StartExternalDataProcessorStep
 {
     public Guid? FileId { get; set; }
-    [ForeignKey(nameof(FileId))]
-    public File? File { get; set; }
+
+    [ForeignKey(nameof(FileId))] public File? File { get; set; }
 }

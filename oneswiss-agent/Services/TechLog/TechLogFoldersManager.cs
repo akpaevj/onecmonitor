@@ -8,33 +8,28 @@ namespace OneSwiss.Agent.Services.TechLog;
 
 public class TechLogFoldersManager : IDisposable
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly TechLogReadersManager _readersManager;
     private readonly IHostApplicationLifetime _applicationLifetime;
-    private readonly ILogger<TechLogFoldersManager> _logger;
-    
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly ConcurrentDictionary<string, TechLogFolderWatcher> _watchers = new();
     private readonly Timer? _deletingTimer;
     private readonly List<string> _foldersForDeleting = [];
+    private readonly ILogger<TechLogFoldersManager> _logger;
+    private readonly TechLogReadersManager _readersManager;
 
-    public IReadOnlyList<string> LogFolders => _watchers.Keys.ToList().AsReadOnly();
-    
-    public async Task Init(TechLogSettingsDto settings, CancellationToken cancellationToken)
-        => await _readersManager.Init(settings, cancellationToken);
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ConcurrentDictionary<string, TechLogFolderWatcher> _watchers = new();
 
     public TechLogFoldersManager(
-        IServiceProvider serviceProvider, 
+        IServiceProvider serviceProvider,
         TechLogReadersManager readersManager,
         IHostApplicationLifetime applicationLifetime,
         ILogger<TechLogFoldersManager> logger)
     {
         _serviceProvider = serviceProvider;
         _applicationLifetime = applicationLifetime;
-        
+
         _readersManager = readersManager;
         _readersManager.ReadingFinished += ReadingFinished;
-        
+
         _logger = logger;
 
         _deletingTimer = new Timer(30 * 1000);
@@ -42,20 +37,33 @@ public class TechLogFoldersManager : IDisposable
         _deletingTimer.Enabled = true;
     }
 
+    public IReadOnlyList<string> LogFolders => _watchers.Keys.ToList().AsReadOnly();
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    public async Task Init(TechLogSettingsDto settings, CancellationToken cancellationToken)
+    {
+        await _readersManager.Init(settings, cancellationToken);
+    }
+
     private void DeletingTimerOnElapsed(object? sender, ElapsedEventArgs e)
     {
         _semaphore.Wait();
-            
+
         for (var i = _foldersForDeleting.Count - 1; i >= 0; i--)
         {
             var folder = _foldersForDeleting[i];
-                    
+
             try
             {
                 Directory.Delete(folder, true);
                 _foldersForDeleting.Remove(folder);
                 _logger.LogTrace("Каталог шаблона {Folder} удален", folder);
-                
+
                 var seanceFolder = Path.GetDirectoryName(folder)!;
 
                 if (Directory.GetDirectories(seanceFolder).Length == 0)
@@ -115,9 +123,9 @@ public class TechLogFoldersManager : IDisposable
         try
         {
             await _semaphore.WaitAsync();
-        
+
             await AddReader(path, _applicationLifetime.ApplicationStopping);
-        
+
             _semaphore.Release();
         }
         catch
@@ -125,7 +133,7 @@ public class TechLogFoldersManager : IDisposable
             // ignore
         }
     }
-    
+
     private async void ReadingFinished(object? sender, string path)
     {
         try
@@ -135,7 +143,7 @@ public class TechLogFoldersManager : IDisposable
             try
             {
                 await _readersManager.RemoveReader(path, _applicationLifetime.ApplicationStopping);
-                
+
                 var folder = Path.GetDirectoryName(path)!;
 
                 if (_watchers.TryGetValue(folder, out var watcher))
@@ -164,20 +172,21 @@ public class TechLogFoldersManager : IDisposable
         try
         {
             await _readersManager.AddReader(path, cancellationToken);
-            
+
             var folder = Path.GetDirectoryName(path)!;
-        
+
             if (_watchers.TryGetValue(folder, out var watcher))
                 watcher.AddFileToStopList(path);
             else
-                _logger.LogWarning($"Файл {path} не добавлен в стоп-лист наблюдателя, т.к. наблюдатель для каталога журнала не найден");
+                _logger.LogWarning(
+                    $"Файл {path} не добавлен в стоп-лист наблюдателя, т.к. наблюдатель для каталога журнала не найден");
         }
         catch (Exception e)
         {
             _logger.LogError(e, $"Ошибка добавления файла {path} в стоп-лист наблюдателя");
         }
     }
-    
+
     public async Task RemoveFolder(string path, CancellationToken cancellationToken)
     {
         await _semaphore.WaitAsync(cancellationToken);
@@ -187,9 +196,9 @@ public class TechLogFoldersManager : IDisposable
             _foldersForDeleting.Add(path);
             watcher.Dispose();
         }
-        
+
         _semaphore.Release();
-        
+
         _logger.LogTrace($"Наблюдение каталога {path} остановлено");
     }
 
@@ -201,17 +210,8 @@ public class TechLogFoldersManager : IDisposable
     private void Dispose(bool disposing)
     {
         ReleaseUnmanagedResources();
-        
-        if (disposing)
-        {
-            _deletingTimer?.Dispose();
-        }
-    }
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+        if (disposing) _deletingTimer?.Dispose();
     }
 
     ~TechLogFoldersManager()

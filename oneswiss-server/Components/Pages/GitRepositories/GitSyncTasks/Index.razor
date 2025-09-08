@@ -1,0 +1,46 @@
+@page "/gitrepositories/gitsynctasks"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Attributes
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Components.Shared
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+@attribute [ExtAuthorize(Roles.ReadGitRepositories, Roles.WriteGitRepositories)]
+
+<AuthorizeView Context="authState">
+    <DatabaseObjectsTable TModel="GitSyncTask" TViewModel="GitSyncTask"
+                          NameSelector="@(arg => arg.GitRepository.Name)"
+                          Route="gitrepositories/gitsynctasks"
+                          ItemsSelector="ItemsSelector"
+                          Title="Задания синхронизации хранилища и Git"
+                          ReadOnly="@authState.IsReadOnly(Roles.WriteGitRepositories)">
+        <TableActionsContent>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="NavigateBack" Class="mb-3">Назад
+            </MudButton>
+        </TableActionsContent>
+        <ColumnsContent>
+            <MudTh>Хранилище</MudTh>
+            <MudTh>Репозиторий</MudTh>
+        </ColumnsContent>
+        <RowTemplate>
+            <MudTd DataLabel="Репозиторий">@context.GitRepository.Name</MudTd>
+        </RowTemplate>
+    </DatabaseObjectsTable>
+</AuthorizeView>
+
+@code
+{
+    private void NavigateBack()
+    {
+        NavigationManager.NavigateTo("/gitrepositories");
+    }
+
+    private static IQueryable<GitSyncTask> ItemsSelector(IQueryable<GitSyncTask> arg)
+    {
+        return arg
+            .Include(c => c.GitRepository);
+    }
+}

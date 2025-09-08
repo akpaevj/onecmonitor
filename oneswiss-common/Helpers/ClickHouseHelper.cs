@@ -1,50 +1,51 @@
 ﻿using System.Text;
 
-namespace OneSwiss.Common.Helpers
+namespace OneSwiss.Common.Helpers;
+
+public class ClickHouseHelper
 {
-    public class ClickHouseHelper
+    public static string SerializeDateTime(DateTime dateTime)
     {
-        public static string SerializeDateTime(DateTime dateTime)
-            => dateTime.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.ffffff");
+        return dateTime.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.ffffff");
+    }
 
-        public static string SerializeArray(int[] items)
+    public static string SerializeArray(int[] items)
+    {
+        var builder = new StringBuilder();
+
+        builder.Append('[');
+
+        for (var i = 0; i < items.Length; i++)
         {
-            var builder = new StringBuilder();
+            builder.Append(items[i]);
 
-            builder.Append('[');
-
-            for (int i = 0; i < items.Length; i++)
-            {
-                builder.Append(items[i]);
-
-                if (i != items.Length - 1)
-                    builder.Append(',');
-            }
-
-            builder.Append(']');
-
-            return builder.ToString();
+            if (i != items.Length - 1)
+                builder.Append(',');
         }
 
-        public static string SerializeArray(string[] items)
+        builder.Append(']');
+
+        return builder.ToString();
+    }
+
+    public static string SerializeArray(string[] items)
+    {
+        var builder = new StringBuilder();
+
+        builder.Append('[');
+
+        for (var i = 0; i < items.Length; i++)
         {
-            var builder = new StringBuilder();
+            builder.Append('\'');
+            builder.Append(items[i]);
+            builder.Append('\'');
 
-            builder.Append('[');
-
-            for (int i = 0; i < items.Length; i++)
-            {
-                builder.Append('\'');
-                builder.Append(items[i]);
-                builder.Append('\'');
-
-                if (i != items.Length - 1)
-                    builder.Append(',');
-            }
-
-            builder.Append(']');
-
-            return builder.ToString();
+            if (i != items.Length - 1)
+                builder.Append(',');
         }
+
+        builder.Append(']');
+
+        return builder.ToString();
     }
 }

@@ -11,10 +11,11 @@ public class V8Service
 {
     [DisplayName("Имя")]
     [ContextProperty("Имя", "Name", CanWrite = false)]
-    [Key(0)] 
+    [Key(0)]
     public string Name { get; set; } = string.Empty;
+
     [DisplayName("Запущена")]
     [ContextProperty("Запущена", "IsActive", CanWrite = false)]
-    [Key(1)] 
+    [Key(1)]
     public bool IsActive { get; set; }
 }

@@ -5,8 +5,10 @@ namespace OneSwiss.Common.Extensions;
 public static class EnumExtension
 {
     public static string GetDisplay(this Enum value)
-        => value.GetAttributeOfType<DisplayAttribute>()?.Name ?? value.ToString();
-    
+    {
+        return value.GetAttributeOfType<DisplayAttribute>()?.Name ?? value.ToString();
+    }
+
     private static T? GetAttributeOfType<T>(this Enum enumVal) where T : Attribute
     {
         var type = enumVal.GetType();

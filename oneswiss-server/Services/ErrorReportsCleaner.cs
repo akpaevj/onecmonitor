@@ -2,7 +2,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace OneSwiss.Server.Services;
 
-public class ErrorReportsCleaner(IServiceProvider serviceProvider, ILogger<ErrorReportsCleaner> logger) : BackgroundService
+public class ErrorReportsCleaner(IServiceProvider serviceProvider, ILogger<ErrorReportsCleaner> logger)
+    : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -10,8 +11,8 @@ public class ErrorReportsCleaner(IServiceProvider serviceProvider, ILogger<Error
         {
             await using var scope = serviceProvider.CreateAsyncScope();
             await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            
-            var settings = dbContext.ErrorLoggingServiceSettings.FirstOrDefault();
+
+            var settings = dbContext.ErrorLoggingServiceSettings.SingleOrDefault();
 
             if (settings?.ReportsTtl > 0)
             {

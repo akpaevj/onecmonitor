@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+using OneSwiss.Common.Models;
 
 namespace OneSwiss.Server.Models;
 

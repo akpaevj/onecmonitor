@@ -1,21 +1,20 @@
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Common.Extensions
+@using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
 @using OneSwiss.V8.Platform.RemoteAdministration
-@using Microsoft.AspNetCore.Components.Authorization
-@using OneSwiss.Server.Extensions
-
 <AuthorizeView>
     @{
-        var readOnly = context.IsReadOnly(BuiltInRoles.WriteClusterItemsInfo);
-        
-        <ClusterObjectDetails 
-            @ref="_details" 
+        var readOnly = context.IsReadOnly(Roles.WriteClusterItemsInfo);
+
+        <ClusterObjectDetails
+            @ref="_details"
             T="V8InfoBaseDetails"
             GetAgentConnectionCallback="GetAgentConnectionCallback"
-            SaveAble="!readOnly" 
-            OnSave="OnSave" 
+            SaveAble="!readOnly"
+            OnSave="OnSave"
             BeforeLoadModel="BeforeLoadModel"
             OnLoadModel="OnLoadModel">
             <MudStack Class="mb-3" Row Breakpoint="Breakpoint.SmAndDown" StretchItems="StretchItems.All">
@@ -25,25 +24,47 @@
                     </MudCardHeader>
                     <MudCardContent>
                         <MudStack>
-                            <MudTextField Disabled="true" ReadOnly="readOnly" For="@(() => _details.Model.Name)" Variant="Variant.Outlined" Label="Наименование" @bind-Value="@_details.Model.Name"/>
-                            <MudTextField For="@(() => _details.Model.Description)" ReadOnly="readOnly" Variant="Variant.Outlined" Label="Описание" @bind-Value="@_details.Model.Description"/>
-                            <MudSelect Disabled="true" Label="Защищенное соединение" ReadOnly="readOnly" Variant="Variant.Outlined" For="@(() => _details.Model.SecurityLevel)" @bind-Value="@_details.Model.SecurityLevel">
-                                @foreach (var item in Enum.GetValues<V8SecurityLevel>())
-                                {
-                                    <MudSelectItem Value="item">@item.GetDisplay()</MudSelectItem>
-                                }
-                            </MudSelect>
-                            <MudTextField For="@(() => _details.Model.DbServer)" ReadOnly="readOnly" Variant="Variant.Outlined" Label="Сервер баз данных" @bind-Value="@_details.Model.DbServer"/>
-                            <MudSelect Label="тип СУБД" For="@(() => _details.Model.Dbms)" ReadOnly="readOnly" Variant="Variant.Outlined" @bind-Value="@_details.Model.Dbms">
-                                @foreach (var item in Enum.GetValues<V8InfoBaseDbms>())
-                                {
-                                    <MudSelectItem Value="item">@item.GetDisplay()</MudSelectItem>
-                                }
-                            </MudSelect>
-                            <MudTextField For="@(() => _details.Model.DbName)" ReadOnly="readOnly" Variant="Variant.Outlined" Label="База данных" @bind-Value="@_details.Model.DbName"/>
-                            <MudTextField For="@(() => _details.Model.DbUser)" ReadOnly="readOnly" Variant="Variant.Outlined" Label="Пользователь сервера БД" @bind-Value="@_details.Model.DbUser"/>
-                            <MudTextField For="@(() => _details.Model.DbPwd)" ReadOnly="readOnly" Variant="Variant.Outlined" Label="Пароль пользователя БД" @bind-Value="@_details.Model.DbPwd"/>
-                            <MudSwitch For="@(() => _details.Model.LicenseDistribution)" ReadOnly="readOnly" Color="Color.Primary" Label="Разрешить выдачу лицензий сервером 1С:Предприятие" @bind-Value="@_details.Model.LicenseDistribution"/>
+                            <MudTextField Disabled="true" ReadOnly="readOnly" For="@(() => _details.Model.Name)"
+                                          Variant="Variant.Outlined" Label="Наименование"
+                                          @bind-Value="@_details.Model.Name"/>
+                            <MudTextField For="@(() => _details.Model.Description)" ReadOnly="readOnly"
+                                          Variant="Variant.Outlined" Label="Описание"
+                                          @bind-Value="@_details.Model.Description"/>
+                            <ItemSelector
+                                @bind-Value="@_details.Model!.SecurityLevel"
+                                Items="Enum.GetValues<V8SecurityLevel>().ToList()"
+                                Class="mb-3"
+                                ItemValueSelector="arg => arg"
+                                ItemNameSelector="arg => arg.GetDisplay()"
+                                Label="Защищенное соединение"
+                                ReadOnly="readOnly"
+                                Variant="Variant.Outlined"
+                                For="@(() => _details.Model.SecurityLevel)"/>
+                            <MudTextField For="@(() => _details.Model.DbServer)" ReadOnly="readOnly"
+                                          Variant="Variant.Outlined" Label="Сервер баз данных"
+                                          @bind-Value="@_details.Model.DbServer"/>
+                            <ItemSelector
+                                @bind-Value="@_details.Model!.Dbms"
+                                Items="Enum.GetValues<V8InfoBaseDbms>().ToList()"
+                                Class="mb-3"
+                                ItemValueSelector="arg => arg"
+                                ItemNameSelector="arg => arg.GetDisplay()"
+                                Label="Тип СУБД"
+                                ReadOnly="readOnly"
+                                Variant="Variant.Outlined"
+                                For="@(() => _details.Model.Dbms)"/>
+                            <MudTextField For="@(() => _details.Model.DbName)" ReadOnly="readOnly"
+                                          Variant="Variant.Outlined" Label="База данных"
+                                          @bind-Value="@_details.Model.DbName"/>
+                            <MudTextField For="@(() => _details.Model.DbUser)" ReadOnly="readOnly"
+                                          Variant="Variant.Outlined" Label="Пользователь сервера БД"
+                                          @bind-Value="@_details.Model.DbUser"/>
+                            <MudTextField For="@(() => _details.Model.DbPwd)" ReadOnly="readOnly"
+                                          Variant="Variant.Outlined" Label="Пароль пользователя БД"
+                                          @bind-Value="@_details.Model.DbPwd"/>
+                            <MudSwitch For="@(() => _details.Model.LicenseDistribution)" ReadOnly="readOnly"
+                                       Color="Color.Primary" Label="Разрешить выдачу лицензий сервером 1С:Предприятие"
+                                       @bind-Value="@_details.Model.LicenseDistribution"/>
                         </MudStack>
                     </MudCardContent>
                 </MudCard>
@@ -53,13 +74,25 @@
                     </MudCardHeader>
                     <MudCardContent>
                         <MudStack>
-                            <MudSwitch For="@(() => _details.Model.SessionsDeny)" ReadOnly="readOnly" Color="Color.Primary" Label="Блокировка начала сеансов включена" @bind-Value="@_details.Model.SessionsDeny"/>
-                            <MudSwitch For="@(() => _details.Model.ScheduledJobsDeny)" ReadOnly="readOnly" Color="Color.Primary" Label="Блокировка регламентных заданий включена" @bind-Value="@_details.Model.ScheduledJobsDeny"/>
-                            <MudInput InputType="InputType.DateTimeLocal" For="@(() => _details.Model.DeniedFrom)" ReadOnly="readOnly" Label="Начало" @bind-Value="@_details.Model.DeniedFrom"/>
-                            <MudInput InputType="InputType.DateTimeLocal" For="@(() => _details.Model.DeniedTo)" ReadOnly="readOnly" Label="Окончание" @bind-Value="@_details.Model.DeniedTo"/>
-                            <MudTextField For="@(() => _details.Model.DeniedMessage)" Variant="Variant.Outlined" ReadOnly="readOnly" Label="Сообщение" @bind-Value="@_details.Model.DeniedMessage"/>
-                            <MudTextField For="@(() => _details.Model.PermissionCode)" Variant="Variant.Outlined" ReadOnly="readOnly" Label="Код разрешения" @bind-Value="@_details.Model.PermissionCode"/>
-                            <MudTextField For="@(() => _details.Model.DeniedParameter)" Variant="Variant.Outlined" ReadOnly="readOnly" Label="Параметр блокировки" @bind-Value="@_details.Model.DeniedParameter"/>
+                            <MudSwitch For="@(() => _details.Model.SessionsDeny)" ReadOnly="readOnly"
+                                       Color="Color.Primary" Label="Блокировка начала сеансов включена"
+                                       @bind-Value="@_details.Model.SessionsDeny"/>
+                            <MudSwitch For="@(() => _details.Model.ScheduledJobsDeny)" ReadOnly="readOnly"
+                                       Color="Color.Primary" Label="Блокировка регламентных заданий включена"
+                                       @bind-Value="@_details.Model.ScheduledJobsDeny"/>
+                            <MudInput InputType="InputType.DateTimeLocal" For="@(() => _details.Model.DeniedFrom)"
+                                      ReadOnly="readOnly" Label="Начало" @bind-Value="@_details.Model.DeniedFrom"/>
+                            <MudInput InputType="InputType.DateTimeLocal" For="@(() => _details.Model.DeniedTo)"
+                                      ReadOnly="readOnly" Label="Окончание" @bind-Value="@_details.Model.DeniedTo"/>
+                            <MudTextField For="@(() => _details.Model.DeniedMessage)" Variant="Variant.Outlined"
+                                          ReadOnly="readOnly" Label="Сообщение"
+                                          @bind-Value="@_details.Model.DeniedMessage"/>
+                            <MudTextField For="@(() => _details.Model.PermissionCode)" Variant="Variant.Outlined"
+                                          ReadOnly="readOnly" Label="Код разрешения"
+                                          @bind-Value="@_details.Model.PermissionCode"/>
+                            <MudTextField For="@(() => _details.Model.DeniedParameter)" Variant="Variant.Outlined"
+                                          ReadOnly="readOnly" Label="Параметр блокировки"
+                                          @bind-Value="@_details.Model.DeniedParameter"/>
                         </MudStack>
                     </MudCardContent>
                 </MudCard>
@@ -71,22 +104,39 @@
                     </MudCardHeader>
                     <MudCardContent>
                         <MudStack>
-                            <MudTextField For="@(() => _details.Model.ExternalSessionManagerConnectionString)" ReadOnly="readOnly" Variant="Variant.Outlined" Label="Внешнее управление сеансами" @bind-Value="@_details.Model.ExternalSessionManagerConnectionString"/>
-                            <MudSwitch For="@(() => _details.Model.ExternalSessionManagerRequired)" ReadOnly="readOnly" Color="Color.Primary" Label="Обязательное использование внешнее управление" @bind-Value="@_details.Model.ExternalSessionManagerRequired"/>
-                            <MudSelect Label="Профиль безопасности" For="@(() => _details.Model.SecurityProfileName)" ReadOnly="readOnly" Variant="Variant.Outlined" @bind-Value="@_details.Model.SecurityProfileName">
-                                @foreach (var item in _securityProfiles)
-                                {
-                                    <MudSelectItem Value="item">@item</MudSelectItem>
-                                }
-                            </MudSelect>
-                            <MudSelect Label="Профиль безопасности безопасного режима" For="@(() => _details.Model.SafeModeSecurityProfileName)" ReadOnly="readOnly" Variant="Variant.Outlined" @bind-Value="@_details.Model.SafeModeSecurityProfileName">
-                                @foreach (var item in _securityProfiles)
-                                {
-                                    <MudSelectItem Value="item">@item</MudSelectItem>
-                                }
-                            </MudSelect>
-                            <MudSwitch For="@(() => _details.Model.ReserveWorkingProcesses)" ReadOnly="readOnly" Color="Color.Primary" Label="Резервирование рабочих процессов" @bind-Value="@_details.Model.ReserveWorkingProcesses"/>
-                            <MudSwitch For="@(() => _details.Model.DisableLocalSpeechToText)" ReadOnly="readOnly" Color="Color.Primary" Label="Запретить локальное распознавание речи" @bind-Value="@_details.Model.DisableLocalSpeechToText"/>
+                            <MudTextField For="@(() => _details.Model.ExternalSessionManagerConnectionString)"
+                                          ReadOnly="readOnly" Variant="Variant.Outlined"
+                                          Label="Внешнее управление сеансами"
+                                          @bind-Value="@_details.Model.ExternalSessionManagerConnectionString"/>
+                            <MudSwitch For="@(() => _details.Model.ExternalSessionManagerRequired)" ReadOnly="readOnly"
+                                       Color="Color.Primary" Label="Обязательное использование внешнее управление"
+                                       @bind-Value="@_details.Model.ExternalSessionManagerRequired"/>
+                            <ItemSelector
+                                @bind-Value="@_details.Model!.SecurityProfileName"
+                                Items="@_securityProfiles"
+                                Class="mb-3"
+                                ItemValueSelector="arg => arg"
+                                ItemNameSelector="arg => arg"
+                                Label="Профиль безопасности"
+                                ReadOnly="readOnly"
+                                Variant="Variant.Outlined"
+                                For="@(() => _details.Model.SecurityProfileName)"/>
+                            <ItemSelector
+                                @bind-Value="@_details.Model!.SafeModeSecurityProfileName"
+                                Items="@_securityProfiles"
+                                Class="mb-3"
+                                ItemValueSelector="arg => arg"
+                                ItemNameSelector="arg => arg"
+                                Label="Профиль безопасности безопасного режима"
+                                ReadOnly="readOnly"
+                                Variant="Variant.Outlined"
+                                For="@(() => _details.Model.SafeModeSecurityProfileName)"/>
+                            <MudSwitch For="@(() => _details.Model.ReserveWorkingProcesses)" ReadOnly="readOnly"
+                                       Color="Color.Primary" Label="Резервирование рабочих процессов"
+                                       @bind-Value="@_details.Model.ReserveWorkingProcesses"/>
+                            <MudSwitch For="@(() => _details.Model.DisableLocalSpeechToText)" ReadOnly="readOnly"
+                                       Color="Color.Primary" Label="Запретить локальное распознавание речи"
+                                       @bind-Value="@_details.Model.DisableLocalSpeechToText"/>
                         </MudStack>
                     </MudCardContent>
                 </MudCard>
@@ -96,9 +146,21 @@
                     </MudCardHeader>
                     <MudCardContent>
                         <MudStack>
-                            <MudNumericField For="@(() => _details.Model.ConfigurationUnloadDelayByWorkingProcessWithoutActiveUsers)" ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек." Variant="Variant.Outlined" Label="Задержка выгрузки конфигурации рабочим процессом" @bind-Value="@_details.Model.ConfigurationUnloadDelayByWorkingProcessWithoutActiveUsers"/>
-                            <MudNumericField For="@(() => _details.Model.MinimumScheduledJobsStartPeriodWithoutActiveUsers)" ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек." Variant="Variant.Outlined" Label="Минимальный период запуска регламентных заданий" @bind-Value="@_details.Model.MinimumScheduledJobsStartPeriodWithoutActiveUsers"/>
-                            <MudNumericField For="@(() => _details.Model.MaximumScheduledJobsStartShiftWithoutActiveUsers)" ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек." Variant="Variant.Outlined" Label="Максимальный сдвиг запуска регламентных заданий" @bind-Value="@_details.Model.MaximumScheduledJobsStartShiftWithoutActiveUsers"/>
+                            <MudNumericField
+                                For="@(() => _details.Model.ConfigurationUnloadDelayByWorkingProcessWithoutActiveUsers)"
+                                ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек."
+                                Variant="Variant.Outlined" Label="Задержка выгрузки конфигурации рабочим процессом"
+                                @bind-Value="@_details.Model.ConfigurationUnloadDelayByWorkingProcessWithoutActiveUsers"/>
+                            <MudNumericField
+                                For="@(() => _details.Model.MinimumScheduledJobsStartPeriodWithoutActiveUsers)"
+                                ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек."
+                                Variant="Variant.Outlined" Label="Минимальный период запуска регламентных заданий"
+                                @bind-Value="@_details.Model.MinimumScheduledJobsStartPeriodWithoutActiveUsers"/>
+                            <MudNumericField
+                                For="@(() => _details.Model.MaximumScheduledJobsStartShiftWithoutActiveUsers)"
+                                ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек."
+                                Variant="Variant.Outlined" Label="Максимальный сдвиг запуска регламентных заданий"
+                                @bind-Value="@_details.Model.MaximumScheduledJobsStartShiftWithoutActiveUsers"/>
                         </MudStack>
                     </MudCardContent>
                 </MudCard>
@@ -110,29 +172,34 @@
 @code {
     private InfoBase _item = null!;
     private ClusterObjectDetails<V8InfoBaseDetails> _details = null!;
-    private List<string> _securityProfiles = [];
+    private readonly List<string> _securityProfiles = [];
 
-    [Parameter]
-    public Guid Id { get; set; }
-    
+    [Parameter] public Guid Id { get; set; }
+
     private async Task BeforeLoadModel(IDbContextFactory<AppDbContext> contextFactory)
     {
         await using var context = await contextFactory.CreateDbContextAsync();
-        
+
         _item = (await context.InfoBases
             .AsNoTracking()
             .Include(c => c.Credentials)
             .Include(c => c.Cluster.Credentials)
             .FirstOrDefaultAsync(c => c.Id == Id))!;
     }
-    
+
     private async Task<V8InfoBaseDetails> OnLoadModel(AgentConnection connection)
-        => await connection.GetV8InfoBaseDetails(_item, CancellationToken.None);
+    {
+        return await connection.GetV8InfoBaseDetails(_item, CancellationToken.None);
+    }
 
     private async Task OnSave(AgentConnection connection, Dictionary<string, string> changedProperties)
-        => await connection.ChangeInfoBaseParameters(_item, changedProperties, CancellationToken.None);
+    {
+        await connection.ChangeInfoBaseParameters(_item, changedProperties, CancellationToken.None);
+    }
 
     private AgentConnection? GetAgentConnectionCallback(AgentsConnectionsManager agentsConnectionsManager)
-        => agentsConnectionsManager.GetAgentConnection(_item.Cluster.AgentId);
+    {
+        return agentsConnectionsManager.GetAgentConnection(_item.Cluster.AgentId);
+    }
 
 }

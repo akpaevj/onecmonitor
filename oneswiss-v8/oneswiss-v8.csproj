@@ -8,23 +8,23 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="OneSTools.FileDatabase" Version="1.0.1" />
-      <PackageReference Include="SSH.NET" Version="2025.0.0" />
+        <PackageReference Include="OneSTools.FileDatabase" Version="1.0.1"/>
+        <PackageReference Include="SSH.NET" Version="2025.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Reference Include="MessagePack.Annotations">
-        <HintPath>..\..\..\.nuget\packages\messagepack.annotations\3.1.2\lib\netstandard2.0\MessagePack.Annotations.dll</HintPath>
-      </Reference>
-      <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
-        <HintPath>..\..\..\.nuget\packages\microsoft.extensions.configuration.abstractions\9.0.7\lib\net9.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
-      </Reference>
-      <Reference Include="OneScript.Core">
-        <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
-      </Reference>
-      <Reference Include="System.ServiceProcess.ServiceController">
-        <HintPath>..\..\..\.nuget\packages\system.serviceprocess.servicecontroller\9.0.1\lib\net8.0\System.ServiceProcess.ServiceController.dll</HintPath>
-      </Reference>
+        <Reference Include="MessagePack.Annotations">
+            <HintPath>..\..\..\.nuget\packages\messagepack.annotations\3.1.2\lib\netstandard2.0\MessagePack.Annotations.dll</HintPath>
+        </Reference>
+        <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
+            <HintPath>..\..\..\.nuget\packages\microsoft.extensions.configuration.abstractions\9.0.7\lib\net9.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+        </Reference>
+        <Reference Include="OneScript.Core">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
+        </Reference>
+        <Reference Include="System.ServiceProcess.ServiceController">
+            <HintPath>..\..\..\.nuget\packages\system.serviceprocess.servicecontroller\9.0.1\lib\net8.0\System.ServiceProcess.ServiceController.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Release'">

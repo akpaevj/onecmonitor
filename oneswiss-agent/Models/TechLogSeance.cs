@@ -1,11 +1,10 @@
-﻿namespace OneSwiss.Agent.Models
+﻿namespace OneSwiss.Agent.Models;
+
+public class TechLogSeance
 {
-    public class TechLogSeance
-    {
-        public Guid Id { get; set; }
-        public DateTime StartDateTime { get; set; } = DateTime.MinValue;
-        public DateTime FinishDateTime { get; set; } = DateTime.MaxValue;
-        public string Template { get; set; } = string.Empty;
-        public TechLogSeanceStatus Status { get; set; }
-    }
+    public Guid Id { get; set; }
+    public DateTime StartDateTime { get; set; } = DateTime.MinValue;
+    public DateTime FinishDateTime { get; set; } = DateTime.MaxValue;
+    public string Template { get; set; } = string.Empty;
+    public TechLogSeanceStatus Status { get; set; }
 }

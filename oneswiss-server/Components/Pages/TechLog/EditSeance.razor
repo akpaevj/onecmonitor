@@ -4,31 +4,31 @@
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Common.Extensions
 @using OneSwiss.Server.Attributes
-@using OneSwiss.Server.Models
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Helpers
+@using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
-@inject AgentsConnectionsManager AgentsConnectionsManager 
+@inject AgentsConnectionsManager AgentsConnectionsManager
 
-@attribute [ExtAuthorize(BuiltInRoles.WriteTechLogSeances)]
+@attribute [ExtAuthorize(Roles.WriteTechLogSeances)]
 
 <EditDatabaseForm @ref="_editor" T="TechLogSeance" Id="Id"
-                    NameSelector="item => item.Description"
-                    Route="techlog/seances"
-                    Title="Новый сеанс сбора технологического журнала"
-                    OnInitialize="OnInitialize"
-                    BeforeValidation="BeforeValidation"
-                    AfterSave="AfterSave"
-                    Validation="_validator.ValidateValue"
-                    ModelSelector="ModelSelector">
+                  NameSelector="item => item.Description"
+                  Route="techlog/seances"
+                  Title="Новый сеанс сбора технологического журнала"
+                  OnInitialize="OnInitialize"
+                  BeforeValidation="BeforeValidation"
+                  AfterSave="AfterSave"
+                  Validation="_validator.ValidateValue"
+                  ModelSelector="ModelSelector">
     <MudStack>
-        <MudTextField Class="mb-3" Label="Описание" 
+        <MudTextField Class="mb-3" Label="Описание"
                       @bind-Value="@_editor.Model!.Description"
                       For="@(() => _editor.Model!.Description)"/>
     </MudStack>
     <MudStack Row Class="mb-3" AlignItems="AlignItems.Center">
         <MudText>Режим запуска:</MudText>
-        <MudRadioGroup T="TechLogSeanceStartMode" 
+        <MudRadioGroup T="TechLogSeanceStartMode"
                        @bind-Value="_editor.Model!.StartMode"
                        @bind-Value:after="OnChangeStartMode">
             @foreach (var item in Enum.GetValues<TechLogSeanceStartMode>())
@@ -38,19 +38,19 @@
         </MudRadioGroup>
     </MudStack>
     <MudStack Row Class="mb-3" StretchItems="StretchItems.All" Breakpoint="Breakpoint.MdAndDown">
-        <MudDatePicker Label="Дата начала" 
+        <MudDatePicker Label="Дата начала"
                        For="@(() => _startDate)"
-                       @bind-Date="@_startDate" 
+                       @bind-Date="@_startDate"
                        @bind-Date:after="SetStartDateTime"
                        Disabled="_startDateTimeDisabled"/>
         <MudTimePicker Label="Время начала"
-                       For="@(() => _startTime)" 
+                       For="@(() => _startTime)"
                        @bind-Time="@_startTime"
                        @bind-Time:after="SetStartDateTime"
                        Disabled="_startDateTimeDisabled"/>
-        <MudNumericField Label="Длительность (мин.)" 
-                         For="@(() => _editor.Model!.Duration)" 
-                         @bind-Value="_editor.Model!.Duration" 
+        <MudNumericField Label="Длительность (мин.)"
+                         For="@(() => _editor.Model!.Duration)"
+                         @bind-Value="_editor.Model!.Duration"
                          Disabled="_durationDisabled"/>
     </MudStack>
     <MudStack Row StretchItems="StretchItems.All" Breakpoint="Breakpoint.SmAndDown">
@@ -76,9 +76,8 @@
 
     private DateTime? _startDate;
     private TimeSpan? _startTime;
-    
-    [Parameter]
-    public Guid Id { get; set; }
+
+    [Parameter] public Guid Id { get; set; }
 
     private void OnInitialize((TechLogSeance Model, AppDbContext Context) valueTuple)
     {
@@ -87,7 +86,7 @@
 
         _startDate = valueTuple.Model.StartDateTime;
         _startTime = valueTuple.Model.StartDateTime.TimeOfDay;
-        
+
         SetAvailabilityInternal(valueTuple.Model);
     }
 
@@ -95,7 +94,7 @@
     {
         if (!firstRender)
             return;
-        
+
         _editor.AddAdditionalValidableProperty(nameof(TechLogSeance.Agents));
         _editor.AddAdditionalValidableProperty(nameof(TechLogSeance.Templates));
     }
@@ -108,7 +107,7 @@
             TechLogSeanceStartMode.Immediately => DateTime.Now,
             _ => _editor.Model!.StartDateTime
         };
-        
+
         ModelHelper.UpdateModelItems(_editor.Model!.Agents, arg.Agents);
         ModelHelper.UpdateModelItems(_editor.Model!.Templates, arg.Templates);
     }
@@ -141,24 +140,30 @@
         ChangeStartTime();
         SetAvailabilityInternal(_editor.Model!);
     }
-    
+
     private async Task AfterSave(TechLogSeance obj)
-        => await RaiseUpdateSettings(CancellationToken.None);
-    
+    {
+        await RaiseUpdateSettings(CancellationToken.None);
+    }
+
     private async Task RaiseUpdateSettings(CancellationToken cancellationToken)
     {
         var connections = await AgentsConnectionsManager.GetActiveAgentsConnections(cancellationToken);
-        
+
         foreach (var connection in connections)
             await connection.SendSettingsRequest(cancellationToken);
     }
-    
+
     private void SetStartDateTime()
-        =>  _editor.Model!.StartDateTime = (_startDate ?? DateTime.MinValue).Date.Add(_startTime ?? TimeSpan.Zero);
-    
+    {
+        _editor.Model!.StartDateTime = (_startDate ?? DateTime.MinValue).Date.Add(_startTime ?? TimeSpan.Zero);
+    }
+
     private static IQueryable<TechLogSeance> ModelSelector(IQueryable<TechLogSeance> arg)
-        => arg.Include(c => c.Agents).Include(c => c.Templates);
-    
+    {
+        return arg.Include(c => c.Agents).Include(c => c.Templates);
+    }
+
     private class Validator : ModelValidator<TechLogSeance>
     {
         public Validator()
@@ -170,11 +175,11 @@
             RuleFor(c => c.Agents)
                 .NotEmpty()
                 .WithMessage("Не указаны подключаемые агенты");
-            
+
             RuleFor(c => c.Templates)
                 .NotEmpty()
                 .WithMessage("Не указаны подключаемые шаблоны");
-            
+
             When(c => c.StartMode != TechLogSeanceStartMode.Monitor, () =>
             {
                 RuleFor(c => c.Duration)

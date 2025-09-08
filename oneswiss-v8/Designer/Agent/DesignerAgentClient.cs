@@ -1,5 +1,4 @@
 using System.Net.Sockets;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
 using OneSwiss.V8.Designer.Agent.Models;
@@ -9,14 +8,13 @@ namespace OneSwiss.V8.Designer.Agent;
 
 public sealed class DesignerAgentClient : IDisposable
 {
+    private readonly SshClient _client;
     private readonly string _host;
+    private readonly string _password;
     private readonly int _port;
     private readonly string _username;
-    private readonly string _password;
-    private readonly SshClient _client;
-    
+
     private ShellStream _shellStream = null!;
-    private Channel<DesignerAgentMessage> MessagesChannel { get; } = Channel.CreateUnbounded<DesignerAgentMessage>();
 
     public DesignerAgentClient(string user, string password, string host = "localhost", int port = 1543)
     {
@@ -24,7 +22,7 @@ public sealed class DesignerAgentClient : IDisposable
         _port = port;
         _username = user;
         _password = password;
-        
+
         var connectionInfo = new ConnectionInfo(
             _host,
             _port,
@@ -34,15 +32,23 @@ public sealed class DesignerAgentClient : IDisposable
             Timeout = TimeSpan.FromHours(12),
             MaxSessions = 1
         };
-        
+
         _client = new SshClient(connectionInfo);
     }
-    
+
+    private Channel<DesignerAgentMessage> MessagesChannel { get; } = Channel.CreateUnbounded<DesignerAgentMessage>();
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     public async Task<bool> WaitAgentAvailable(TimeSpan timeout)
     {
         using var socket = new TcpClient();
         var endTime = DateTime.Now.Add(timeout);
-        
+
         while (DateTime.Now < endTime)
         {
             try
@@ -57,7 +63,7 @@ public sealed class DesignerAgentClient : IDisposable
 
             await Task.Delay(100);
         }
-        
+
         return false;
     }
 
@@ -65,7 +71,7 @@ public sealed class DesignerAgentClient : IDisposable
     {
         var sftp = new SftpClient(_host, _port, _username, _password);
         await sftp.ConnectAsync(cancellationToken);
-        
+
         return sftp;
     }
 
@@ -78,17 +84,17 @@ public sealed class DesignerAgentClient : IDisposable
         await WaitDataAvailable();
         _shellStream.Read();
         await _shellStream.FlushAsync(cancellationToken);
-        
+
         WriteCommand("options set --show-prompt=no");
         await WaitDataAvailable();
         _shellStream.Read();
-        
+
         _ = StartReadLoop(cancellationToken);
-        
+
         WriteCommand("options set --output-format=json");
         await MessagesChannel.EnsureNextSuccess();
     }
-    
+
     public async Task EnableProgressNotification()
     {
         WriteCommand("options set --notify-progress=yes");
@@ -106,13 +112,13 @@ public sealed class DesignerAgentClient : IDisposable
         WriteCommand("common connect-ib");
         await MessagesChannel.EnsureNextSuccess();
     }
-    
+
     public async Task LoadCfg(string path)
     {
         WriteCommand($"config load-cfg --file \"{path}\"");
         await MessagesChannel.EnsureNextSuccess();
     }
-    
+
     public void UpdateDbCfg()
     {
         WriteCommand("config update-db-cfg --dynamic-disable --server --session-terminate=force");
@@ -123,12 +129,13 @@ public sealed class DesignerAgentClient : IDisposable
         WriteCommand($"config load-cfg --file=\"{path}\" --extension=\"{extensionName}\"");
         await MessagesChannel.EnsureNextSuccess();
     }
-    
+
     public void UpdateDbCfgExtension(string extensionName)
     {
-        WriteCommand($"config update-db-cfg --extension=\"{extensionName}\" --dynamic-disable --server --session-terminate=force");
+        WriteCommand(
+            $"config update-db-cfg --extension=\"{extensionName}\" --dynamic-disable --server --session-terminate=force");
     }
-    
+
     public async Task DeleteExtension(string extensionName)
     {
         WriteCommand($"config extensions delete --extension=\"{extensionName}\"");
@@ -142,7 +149,7 @@ public sealed class DesignerAgentClient : IDisposable
     }
 
     public async Task<ExtensionInfo> GetExtension(string name)
-    { 
+    {
         WriteCommand($"config extensions properties get --extension={name}");
         return await MessagesChannel.ReadNextMessage<ExtensionInfo>();
     }
@@ -155,20 +162,24 @@ public sealed class DesignerAgentClient : IDisposable
     }
 
     public void DisconnectIb()
-        => WriteCommand("common disconnect-ib");
+    {
+        WriteCommand("common disconnect-ib");
+    }
 
     public void Shutdown()
-        => WriteCommand("common shutdown");
+    {
+        WriteCommand("common shutdown");
+    }
 
     public async Task ReadMessagesTillSuccess(Action<DesignerAgentMessage> handler)
     {
         while (true)
         {
             var next = await MessagesChannel.EnsureNextNotError();
-            
+
             if (next.Type == "success")
                 break;
-            
+
             handler.Invoke(next);
         }
     }
@@ -193,7 +204,7 @@ public sealed class DesignerAgentClient : IDisposable
             var data = _shellStream.Read();
 
             var response = JsonSerializer.Deserialize<DesignerAgentMessage[]>(data);
-        
+
             if (response is null)
                 throw new Exception("Failed to deserialize designer agent response");
 
@@ -201,18 +212,12 @@ public sealed class DesignerAgentClient : IDisposable
                 await MessagesChannel.Writer.WriteAsync(message, cancellationToken);
         }
     }
-    
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
 
     private void Dispose(bool disposing)
     {
-        if (!disposing) 
+        if (!disposing)
             return;
-        
+
         _client.Dispose();
         MessagesChannel.Writer.Complete();
     }

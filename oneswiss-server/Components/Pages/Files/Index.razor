@@ -1,5 +1,4 @@
 @page "/files"
-@using Microsoft.EntityFrameworkCore
 @using OneSwiss.Common.Extensions
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Extensions
@@ -11,7 +10,7 @@
 @inject FilesProvider FilesProvider
 @rendermode InteractiveServer
 
-@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
+@attribute [ExtAuthorize(Roles.ReadMaintenanceTasks, Roles.WriteMaintenanceTasks)]
 
 <DatabaseObjectsTable TModel="File" TViewModel="File"
                       Title="Файлы"
@@ -28,10 +27,10 @@
     <ColGroup>
         @if (_groupDefinition.Expandable)
         {
-            <col style="width: 60px;" />
+            <col style="width: 60px;"/>
         }
-        <col />
-        <col />
+        <col/>
+        <col/>
     </ColGroup>
     <ColumnsContent>
         <MudTh>Имя</MudTh>

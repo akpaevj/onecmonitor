@@ -15,9 +15,9 @@ public class ClickHouseContext(
     string database,
     string table) : IEventLogRepository, ITechLogRepository
 {
-    private ClickHouseConnection? _connection;
     private readonly string _tablePath = $"{database}.{table}";
-    
+    private ClickHouseConnection? _connection;
+
     public async Task Connect(CancellationToken cancellationToken)
     {
         if (_connection == null)
@@ -31,48 +31,8 @@ public class ClickHouseContext(
     {
         if (_connection == null)
             await Connect(cancellationToken);
-        
+
         await _connection!.ExecuteAsync($"CREATE DATABASE IF NOT EXISTS {database}");
-    }
-
-    public async Task InitTechLogTable(CancellationToken cancellationToken)
-    {
-        if (_connection == null)
-            await InitDatabase(cancellationToken);
-
-        var createTableCmd =
-            $"""
-             CREATE TABLE IF NOT EXISTS {_tablePath}
-             (
-                 Id UUID,
-                 AgentId UUID,
-                 SeanceId UUID,
-                 TemplateId UUID,
-                 FileName String,
-                 EndPosition Int64,
-                 StartDateTime DateTime64(6, 'UTC') Codec(Delta, LZ4),
-                 DateTime DateTime64(6, 'UTC') Codec(Delta, LZ4),
-                 Duration Int64 Codec(DoubleDelta, LZ4),
-                 EventName LowCardinality(String),
-                 Level Int8 Codec(DoubleDelta, LZ4),
-                 SessionId String,
-                 CallId String,
-                 TClientId Int32 Codec(DoubleDelta, LZ4),
-                 DstClientId Int32 Codec(DoubleDelta, LZ4),
-                 Usr String,
-                 TConnectId String,
-                 TComputerName String,
-                 PProcessName LowCardinality(String),
-                 Locks Array(String),
-                 WaitConnections Array(Int32),
-                 Properties Map(String, String)
-             )
-             ENGINE = MergeTree
-             PARTITION BY toYYYYMMDD(DateTime)
-             ORDER BY (EndPosition, EventName)
-             """;
-        
-        await _connection!.ExecuteAsync(createTableCmd);
     }
 
     public async Task InitEventLogTable(CancellationToken cancellationToken)
@@ -82,40 +42,40 @@ public class ClickHouseContext(
 
         var createTableCmd =
             $"""
-              CREATE TABLE IF NOT EXISTS {_tablePath}
-              (
-                  InfoBaseName LowCardinality(String),
-                  Level LowCardinality(String),
-                  Date DateTime('UTC') Codec(Delta, LZ4),
-                  ApplicationName LowCardinality(String),
-                  ApplicationPresentation LowCardinality(String),
-                  Event LowCardinality(String),
-                  EventPresentation LowCardinality(String),
-                  User LowCardinality(String),
-                  UserName LowCardinality(String),
-                  Computer LowCardinality(String),
-                  Metadata LowCardinality(String),
-                  MetadataPresentation LowCardinality(String),
-                  Comment String Codec(ZSTD),
-                  Data String Codec(ZSTD),
-                  DataPresentation String Codec(ZSTD),
-                  TransactionStatus LowCardinality(String),
-                  TransactionId Int64 Codec(DoubleDelta, LZ4),
-                  TransactionDateTime DateTime('UTC') Codec(Delta, LZ4),
-                  Connection Int64 Codec(DoubleDelta, LZ4),
-                  Session Int64 Codec(DoubleDelta, LZ4),
-                  ServerName LowCardinality(String),
-                  Port Int32 Codec(DoubleDelta, LZ4),
-                  SyncPort Int32 Codec(DoubleDelta, LZ4),
-                  SessionDataSeparation String Codec(ZSTD),
-                  SessionDataSeparationPresentation String Codec(ZSTD),
-              )
-              engine = MergeTree()
-              PARTITION BY toYYYYMM(Date)
-              ORDER BY Date
-              TTL Date + INTERVAL 1 MONTH DELETE
-              """;
-        
+             CREATE TABLE IF NOT EXISTS {_tablePath}
+             (
+                 InfoBaseName LowCardinality(String),
+                 Level LowCardinality(String),
+                 Date DateTime('UTC') Codec(Delta, LZ4),
+                 ApplicationName LowCardinality(String),
+                 ApplicationPresentation LowCardinality(String),
+                 Event LowCardinality(String),
+                 EventPresentation LowCardinality(String),
+                 User LowCardinality(String),
+                 UserName LowCardinality(String),
+                 Computer LowCardinality(String),
+                 Metadata LowCardinality(String),
+                 MetadataPresentation LowCardinality(String),
+                 Comment String Codec(ZSTD),
+                 Data String Codec(ZSTD),
+                 DataPresentation String Codec(ZSTD),
+                 TransactionStatus LowCardinality(String),
+                 TransactionId Int64 Codec(DoubleDelta, LZ4),
+                 TransactionDateTime DateTime('UTC') Codec(Delta, LZ4),
+                 Connection Int64 Codec(DoubleDelta, LZ4),
+                 Session Int64 Codec(DoubleDelta, LZ4),
+                 ServerName LowCardinality(String),
+                 Port Int32 Codec(DoubleDelta, LZ4),
+                 SyncPort Int32 Codec(DoubleDelta, LZ4),
+                 SessionDataSeparation String Codec(ZSTD),
+                 SessionDataSeparationPresentation String Codec(ZSTD),
+             )
+             engine = MergeTree()
+             PARTITION BY toYYYYMM(Date)
+             ORDER BY Date
+             TTL Date + INTERVAL 1 MONTH DELETE
+             """;
+
         await _connection!.ExecuteAsync(createTableCmd);
     }
 
@@ -125,38 +85,17 @@ public class ClickHouseContext(
 
         return await _connection!.QuerySingleAsync<DateTime>($"SELECT MAX(Date) FROM {_tablePath}");
     }
-    
-    public async Task<long> GetLastTechLogPosition(string agentId, string seanceId, string templateId, string fileName, CancellationToken cancellationToken)
-    {
-        await Connect(cancellationToken);
-
-        var query =
-            $"""
-             SELECT 
-                 EndPosition 
-             FROM {_tablePath}
-             WHERE
-                 AgentId = toUUID('{agentId}')
-                 and SeanceId = toUUID('{seanceId}')
-                 and TemplateId = toUUID('{templateId}')
-                 and FileName = '{fileName}'
-             ORDER BY
-                 DateTime DESC
-             LIMIT 1
-             """;
-
-        return await _connection!.QueryFirstOrDefaultAsync<long>(query);
-    }
 
     public async Task WriteEvents(EventLogItem[] events, CancellationToken cancellationToken)
     {
         await Connect(cancellationToken);
-        
+
         using var bulk = new ClickHouseBulkCopy(_connection)
         {
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             BatchSize = events.Length,
-            ColumnNames = [
+            ColumnNames =
+            [
                 "InfoBaseName",
                 "Level",
                 "Date",
@@ -206,20 +145,92 @@ public class ClickHouseContext(
             c.Data.RootElement.ToString(),
             c.DataPresentation.RootElement.ToString(),
             c.TransactionStatus,
-            c.TransactionID == string.Empty ? "0" : c.TransactionID[(c.TransactionID.IndexOf('(') + 1)..c.TransactionID.IndexOf(')')],
-            c.TransactionID == string.Empty ? DateTime.MinValue : DateTime.Parse(c.TransactionID[..c.TransactionID.IndexOf('(')]),
+            c.TransactionID == string.Empty
+                ? "0"
+                : c.TransactionID[(c.TransactionID.IndexOf('(') + 1)..c.TransactionID.IndexOf(')')],
+            c.TransactionID == string.Empty
+                ? DateTime.MinValue
+                : DateTime.Parse(c.TransactionID[..c.TransactionID.IndexOf('(')]),
             c.Connection == string.Empty ? "0" : c.Connection,
             c.Session == string.Empty ? "0" : c.Session,
             c.ServerName,
             c.Port == string.Empty ? "0" : c.Port,
             c.SyncPort == string.Empty ? "0" : c.SyncPort,
             c.SessionDataSeparation.RootElement.ToString(),
-            c.SessionDataSeparationPresentation.RootElement.ToString(),
+            c.SessionDataSeparationPresentation.RootElement.ToString()
         });
 
         await bulk.WriteToServerAsync(items, cancellationToken);
     }
-    
+
+    public void Dispose()
+    {
+        _connection?.Dispose();
+    }
+
+    public async Task InitTechLogTable(CancellationToken cancellationToken)
+    {
+        if (_connection == null)
+            await InitDatabase(cancellationToken);
+
+        var createTableCmd =
+            $"""
+             CREATE TABLE IF NOT EXISTS {_tablePath}
+             (
+                 Id UUID,
+                 AgentId UUID,
+                 SeanceId UUID,
+                 TemplateId UUID,
+                 FileName String,
+                 EndPosition Int64,
+                 StartDateTime DateTime64(6, 'UTC') Codec(Delta, LZ4),
+                 DateTime DateTime64(6, 'UTC') Codec(Delta, LZ4),
+                 Duration Int64 Codec(DoubleDelta, LZ4),
+                 EventName LowCardinality(String),
+                 Level Int8 Codec(DoubleDelta, LZ4),
+                 SessionId String,
+                 CallId String,
+                 TClientId Int32 Codec(DoubleDelta, LZ4),
+                 DstClientId Int32 Codec(DoubleDelta, LZ4),
+                 Usr String,
+                 TConnectId String,
+                 TComputerName String,
+                 PProcessName LowCardinality(String),
+                 Locks Array(String),
+                 WaitConnections Array(Int32),
+                 Properties Map(String, String)
+             )
+             ENGINE = MergeTree
+             PARTITION BY toYYYYMMDD(DateTime)
+             ORDER BY (EndPosition, EventName)
+             """;
+
+        await _connection!.ExecuteAsync(createTableCmd);
+    }
+
+    public async Task<long> GetLastTechLogPosition(string agentId, string seanceId, string templateId, string fileName,
+        CancellationToken cancellationToken)
+    {
+        await Connect(cancellationToken);
+
+        var query =
+            $"""
+             SELECT 
+                 EndPosition 
+             FROM {_tablePath}
+             WHERE
+                 AgentId = toUUID('{agentId}')
+                 and SeanceId = toUUID('{seanceId}')
+                 and TemplateId = toUUID('{templateId}')
+                 and FileName = '{fileName}'
+             ORDER BY
+                 DateTime DESC
+             LIMIT 1
+             """;
+
+        return await _connection!.QueryFirstOrDefaultAsync<long>(query);
+    }
+
     public async Task WriteEvents(TjEvent[] events, CancellationToken cancellationToken)
     {
         await Connect(cancellationToken);
@@ -228,7 +239,8 @@ public class ClickHouseContext(
         {
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             BatchSize = events.Length,
-            ColumnNames = [
+            ColumnNames =
+            [
                 "Id",
                 "AgentId",
                 "SeanceId",
@@ -254,7 +266,7 @@ public class ClickHouseContext(
             ],
             DestinationTableName = _tablePath
         };
-        
+
         await bulk.InitAsync();
 
         await bulk.WriteToServerAsync(events.Select(i => new object[]
@@ -283,11 +295,14 @@ public class ClickHouseContext(
             i.Properties
         }), cancellationToken);
     }
-    
-    public Task<TjEvent?> GetTjEvent(string filter, CancellationToken cancellationToken = default)
-        => GetTjEvent(filter, ["*"], cancellationToken);
 
-    public async Task<TjEvent?> GetTjEvent(string filter, string[] fields, CancellationToken cancellationToken = default)
+    public Task<TjEvent?> GetTjEvent(string filter, CancellationToken cancellationToken = default)
+    {
+        return GetTjEvent(filter, ["*"], cancellationToken);
+    }
+
+    public async Task<TjEvent?> GetTjEvent(string filter, string[] fields,
+        CancellationToken cancellationToken = default)
     {
         await Connect(cancellationToken);
 
@@ -316,7 +331,8 @@ public class ClickHouseContext(
         return await _connection!.QueryFirstAsync<TjEvent>(queryText.ToString());
     }
 
-    public async Task<T?> GetTjEventProperties<T>(string filter, string[] fields, T anonTypeObject, CancellationToken cancellationToken = default)
+    public async Task<T?> GetTjEventProperties<T>(string filter, string[] fields, T anonTypeObject,
+        CancellationToken cancellationToken = default)
     {
         await Connect(cancellationToken);
 
@@ -367,16 +383,17 @@ public class ClickHouseContext(
         return result.ToList();
     }
 
-    public async Task<List<TjEvent>> GetTjEvents(int count, int offset, string filter = "", CancellationToken cancellationToken = default)
+    public async Task<List<TjEvent>> GetTjEvents(int count, int offset, string filter = "",
+        CancellationToken cancellationToken = default)
     {
         await Connect(cancellationToken);
 
         var queryText = new StringBuilder(
             $"""
-            SELECT 
-                *
-            FROM {_tablePath}
-            """);
+             SELECT 
+                 *
+             FROM {_tablePath}
+             """);
 
         if (!string.IsNullOrEmpty(filter))
         {
@@ -397,21 +414,31 @@ public class ClickHouseContext(
 
         var queryText = new StringBuilder(
             $"""
-            SELECT 
-                COUNT(*) 
-            FROM {_tablePath}
-            """);
+             SELECT 
+                 COUNT(*) 
+             FROM {_tablePath}
+             """);
 
-        if (string.IsNullOrEmpty(filter)) 
+        if (string.IsNullOrEmpty(filter))
             return await _connection!.QueryFirstAsync<int>(queryText.ToString());
-        
+
         queryText.Append("\nWHERE ");
         queryText.Append(filter);
 
         return await _connection!.QueryFirstAsync<int>(queryText.ToString());
     }
 
-    public async Task<long> GetLastFilePosition(string agentId, string seanceId, string templateId, string fileName, CancellationToken cancellationToken)
+    public async Task DeleteTechLogSeanceData(string seanceId, CancellationToken cancellationToken = default)
+    {
+        await Connect(cancellationToken);
+
+        var query = $"ALTER TABLE {_tablePath} DELETE WHERE SeanceId = toUUID('{seanceId}')";
+
+        await _connection!.ExecuteAsync(query);
+    }
+
+    public async Task<long> GetLastFilePosition(string agentId, string seanceId, string templateId, string fileName,
+        CancellationToken cancellationToken)
     {
         await Connect(cancellationToken);
 
@@ -433,20 +460,8 @@ public class ClickHouseContext(
         return await _connection!.QueryFirstOrDefaultAsync<long>(query);
     }
 
-    public async Task DeleteTechLogSeanceData(string seanceId, CancellationToken cancellationToken = default)
-    {
-        await Connect(cancellationToken);
-
-        var query = $"ALTER TABLE {_tablePath} DELETE WHERE SeanceId = toUUID('{seanceId}')";
-
-        await _connection!.ExecuteAsync(query);
-    }
-    
     private string BuildConnectionString()
-        => $"Host={dbms.Host};Port={dbms.Port};Username={credentials.User};Password={credentials.Password}";
-
-    public void Dispose()
     {
-        _connection?.Dispose();
+        return $"Host={dbms.Host};Port={dbms.Port};Username={credentials.User};Password={credentials.Password}";
     }
 }

@@ -10,10 +10,10 @@ public static class StringExtensions
         {
             var hostIps = Dns.GetHostAddresses(str);
             var localIPs = Dns.GetHostAddresses(Dns.GetHostName());
-            
+
             foreach (var hostIp in hostIps)
             {
-                if (IPAddress.IsLoopback(hostIp)) 
+                if (IPAddress.IsLoopback(hostIp))
                     return true;
 
                 if (localIPs.Contains(hostIp))

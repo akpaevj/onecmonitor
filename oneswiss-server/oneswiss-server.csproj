@@ -5,173 +5,200 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>OneSwiss.Server</RootNamespace>
-        <Version>0.3.1</Version>
-        <AssemblyVersion>0.3.1</AssemblyVersion>
+        <Version>0.4.0</Version>
+        <AssemblyVersion>0.4.0</AssemblyVersion>
+        <ApplicationIcon>../icon.ico</ApplicationIcon>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AutoMapper" Version="15.0.1" />
-        <PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="8.2.4" />
-        <PackageReference Include="Extensions.MudBlazor.StaticInput" Version="3.2.1" />
-        <PackageReference Include="FluentValidation" Version="12.0.0" />
-        <PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
+        <PackageReference Include="AutoMapper" Version="15.0.1"/>
+        <PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="8.2.4"/>
+        <PackageReference Include="Extensions.MudBlazor.StaticInput" Version="3.2.1"/>
+        <PackageReference Include="FluentValidation" Version="12.0.0"/>
+        <PackageReference Include="Grpc.AspNetCore" Version="2.71.0"/>
         <PackageReference Include="Grpc.Tools" Version="2.72.0">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.8" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.7" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.7" />
+        <PackageReference Include="LibGit2Sharp" Version="0.31.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.8"/>
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7"/>
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.7"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.7"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.7">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.7" />
-        <PackageReference Include="MudBlazor" Version="8.10.0" />
-        <PackageReference Include="Octokit" Version="14.0.0" />
-        <PackageReference Include="RestSharp" Version="112.1.0" />
-        <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.3" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.7"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.7"/>
+        <PackageReference Include="MudBlazor" Version="8.10.0"/>
+        <PackageReference Include="Octokit" Version="14.0.0"/>
+        <PackageReference Include="RestSharp" Version="112.1.0"/>
+        <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.3"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\oneswiss-common\oneswiss-common.csproj" />
-      <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
+        <ProjectReference Include="..\oneswiss-common\oneswiss-common.csproj"/>
+        <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Reference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore">
-        <HintPath>..\..\..\.nuget\packages\microsoft.aspnetcore.identity.entityframeworkcore\9.0.7\lib\net9.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll</HintPath>
-      </Reference>
-      <Reference Include="Microsoft.Data.SqlClient">
-        <HintPath>..\..\..\.nuget\packages\microsoft.data.sqlclient\6.1.0\ref\net9.0\Microsoft.Data.SqlClient.dll</HintPath>
-      </Reference>
-      <Reference Include="Telegram.Bot">
-        <HintPath>..\..\..\.nuget\packages\telegram.bot\22.5.1\lib\net6.0\Telegram.Bot.dll</HintPath>
-      </Reference>
+        <Reference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore">
+            <HintPath>..\..\..\.nuget\packages\microsoft.aspnetcore.identity.entityframeworkcore\9.0.7\lib\net9.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll</HintPath>
+        </Reference>
+        <Reference Include="Microsoft.Data.SqlClient">
+            <HintPath>..\..\..\.nuget\packages\microsoft.data.sqlclient\6.1.0\ref\net9.0\Microsoft.Data.SqlClient.dll</HintPath>
+        </Reference>
+        <Reference Include="OneScript.Language">
+          <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Language.dll</HintPath>
+        </Reference>
+        <Reference Include="Telegram.Bot">
+            <HintPath>..\..\..\.nuget\packages\telegram.bot\22.5.1\lib\net6.0\Telegram.Bot.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Data\" />
-      <Folder Include="Migrations\" />
+        <Folder Include="Data\"/>
+        <Folder Include="Migrations\"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Content Remove="package.json" />
-      <None Include="package.json">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </None>
-      <Content Remove="package-lock.json" />
-      <None Include="package-lock.json">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </None>
-      <Content Remove="tsconfig.json" />
-      <None Include="tsconfig.json">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </None>
+        <Content Remove="package.json"/>
+        <None Include="package.json">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </None>
+        <Content Remove="package-lock.json"/>
+        <None Include="package-lock.json">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </None>
+        <Content Remove="tsconfig.json"/>
+        <None Include="tsconfig.json">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
     <ItemGroup Condition="'$(Configuration)'=='Release'">
-        <Content Remove="appsettings.Development.json" />
+        <Content Remove="appsettings.Development.json"/>
         <None Include="appsettings.Development.json">
             <CopyToOutputDirectory>Never</CopyToOutputDirectory>
         </None>
     </ItemGroup>
 
     <ItemGroup>
-      <_ContentIncludedByDefault Remove="publish\server\win64\web.config" />
-      <_ContentIncludedByDefault Remove="publish\server\linux64\appsettings.json" />
-      <_ContentIncludedByDefault Remove="publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json" />
-      <_ContentIncludedByDefault Remove="publish\server\win64\appsettings.json" />
-      <_ContentIncludedByDefault Remove="publish\server\win64\oneswiss-server.staticwebassets.endpoints.json" />
-      <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\appsettings.json" />
-      <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json" />
-      <_ContentIncludedByDefault Remove="Components\Pages\Common\Settings.razor" />
-      <_ContentIncludedByDefault Remove="Components\Pages\Clusters\Index.razor" />
-      <_ContentIncludedByDefault Remove="Components\Pages\InfoBases\Edit.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\AccessDenied.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\ConfirmEmail.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\ConfirmEmailChange.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\ExternalLogin.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\ForgotPassword.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\ForgotPasswordConfirmation.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\InvalidPasswordReset.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\InvalidUser.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Lockout.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Login.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\LoginWith2fa.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\LoginWithRecoveryCode.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ChangePassword.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\DeletePersonalData.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Disable2fa.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Email.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\EnableAuthenticator.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ExternalLogins.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\GenerateRecoveryCodes.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Index.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\PersonalData.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ResetAuthenticator.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\SetPassword.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\TwoFactorAuthentication.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\_Imports.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\Register.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\RegisterConfirmation.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\ResendEmailConfirmation.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\ResetPassword.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\ResetPasswordConfirmation.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Pages\_Imports.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Shared\ExternalLoginPicker.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Shared\ManageLayout.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Shared\ManageNavMenu.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Shared\RedirectToLogin.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Shared\ShowRecoveryCodes.razor" />
-      <_ContentIncludedByDefault Remove="Components\Account\Shared\StatusMessage.razor" />
-      <_ContentIncludedByDefault Remove="Components\Pages\Auth\Login.razor" />
+        <_ContentIncludedByDefault Remove="publish\server\win64\web.config"/>
+        <_ContentIncludedByDefault Remove="publish\server\linux64\appsettings.json"/>
+        <_ContentIncludedByDefault Remove="publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json"/>
+        <_ContentIncludedByDefault Remove="publish\server\win64\appsettings.json"/>
+        <_ContentIncludedByDefault Remove="publish\server\win64\oneswiss-server.staticwebassets.endpoints.json"/>
+        <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\appsettings.json"/>
+        <_ContentIncludedByDefault Remove="publish\server\win64\publish\server\linux64\oneswiss-server.staticwebassets.endpoints.json"/>
+        <_ContentIncludedByDefault Remove="Components\Pages\Common\Settings.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Pages\Clusters\Index.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Pages\InfoBases\Edit.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\AccessDenied.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\ConfirmEmail.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\ConfirmEmailChange.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\ExternalLogin.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\ForgotPassword.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\ForgotPasswordConfirmation.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\InvalidPasswordReset.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\InvalidUser.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Lockout.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Login.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\LoginWith2fa.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\LoginWithRecoveryCode.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ChangePassword.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\DeletePersonalData.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Disable2fa.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Email.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\EnableAuthenticator.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ExternalLogins.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\GenerateRecoveryCodes.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\Index.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\PersonalData.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\ResetAuthenticator.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\SetPassword.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\TwoFactorAuthentication.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Manage\_Imports.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\Register.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\RegisterConfirmation.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\ResendEmailConfirmation.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\ResetPassword.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\ResetPasswordConfirmation.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Pages\_Imports.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Shared\ExternalLoginPicker.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Shared\ManageLayout.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Shared\ManageNavMenu.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Shared\RedirectToLogin.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Shared\ShowRecoveryCodes.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Account\Shared\StatusMessage.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Pages\Auth\Login.razor"/>
     </ItemGroup>
 
     <ItemGroup>
-      <UpToDateCheckInput Remove="Components\Account\Pages\AccessDenied.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\ConfirmEmail.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\ConfirmEmailChange.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\ExternalLogin.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\ForgotPassword.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\ForgotPasswordConfirmation.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\InvalidPasswordReset.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\InvalidUser.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Lockout.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Login.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\LoginWith2fa.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\LoginWithRecoveryCode.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\ChangePassword.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\DeletePersonalData.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Disable2fa.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Email.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\EnableAuthenticator.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\ExternalLogins.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\GenerateRecoveryCodes.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Index.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\PersonalData.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\ResetAuthenticator.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\SetPassword.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\TwoFactorAuthentication.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\_Imports.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Register.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\RegisterConfirmation.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\ResendEmailConfirmation.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\ResetPassword.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\ResetPasswordConfirmation.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\_Imports.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Shared\ExternalLoginPicker.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Shared\ManageLayout.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Shared\ManageNavMenu.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Shared\RedirectToLogin.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Shared\ShowRecoveryCodes.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Shared\StatusMessage.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Index.razor" />
-      <UpToDateCheckInput Remove="Components\Account\Pages\Manage\_Imports.razor" />
+        <UpToDateCheckInput Remove="Components\Account\Pages\AccessDenied.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\ConfirmEmail.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\ConfirmEmailChange.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\ExternalLogin.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\ForgotPassword.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\ForgotPasswordConfirmation.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\InvalidPasswordReset.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\InvalidUser.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Lockout.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Login.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\LoginWith2fa.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\LoginWithRecoveryCode.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\ChangePassword.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\DeletePersonalData.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Disable2fa.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Email.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\EnableAuthenticator.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\ExternalLogins.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\GenerateRecoveryCodes.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Index.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\PersonalData.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\ResetAuthenticator.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\SetPassword.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\TwoFactorAuthentication.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\_Imports.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Register.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\RegisterConfirmation.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\ResendEmailConfirmation.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\ResetPassword.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\ResetPasswordConfirmation.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\_Imports.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Shared\ExternalLoginPicker.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Shared\ManageLayout.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Shared\ManageNavMenu.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Shared\RedirectToLogin.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Shared\ShowRecoveryCodes.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Shared\StatusMessage.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\Index.razor"/>
+        <UpToDateCheckInput Remove="Components\Account\Pages\Manage\_Imports.razor"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="OneScript.Core">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
+        </Reference>
+        <Reference Include="OneScript.DebugServices">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.DebugServices.dll</HintPath>
+        </Reference>
+        <Reference Include="OneScript.StandardLibrary">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.StandardLibrary.dll</HintPath>
+        </Reference>
+        <Reference Include="oscript">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\oscript.dll</HintPath>
+        </Reference>
+        <Reference Include="ScriptEngine">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="ScriptEngine.HostedScript">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.HostedScript.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
@@ -181,5 +208,5 @@
         <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
         <NoWarn>$(NoWarn);SA0001</NoWarn>
     </PropertyGroup>
-    
+
 </Project>

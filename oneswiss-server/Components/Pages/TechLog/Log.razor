@@ -1,4 +1,7 @@
 @page "/techlog/seances/{id:guid}/log"
+@inject TechLogRepositoryManager RepositoryManager
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject ISnackbar SnackBar
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Common.Models
 @using OneSwiss.Common.Services
@@ -6,13 +9,10 @@
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
-@inject TechLogRepositoryManager RepositoryManager
-@inject IDbContextFactory<AppDbContext> ContextFactory
-@inject ISnackbar SnackBar
 @implements IDisposable
 @rendermode InteractiveServer
 
-@attribute [ExtAuthorize(BuiltInRoles.ReadTechLogSeances, BuiltInRoles.WriteTechLogSeances)]
+@attribute [ExtAuthorize(Roles.ReadTechLogSeances, Roles.WriteTechLogSeances)]
 
 <style>
     .selected-tjevent {
@@ -32,7 +32,7 @@
                   AdornmentColor="Color.Primary"
                   InputMode="InputMode.search"
                   Class="mt-0 mb-1">
-        
+
     </MudTextField>
     <MudStack Row StretchItems="StretchItems.All" AlignItems="AlignItems.Stretch">
         <MudTable @ref="_table" Style="width: 100%" T="TjEvent"
@@ -88,7 +88,7 @@
     private CancellationTokenSource? _cts;
     private string _title = string.Empty;
 
-    private int _totalItems = 0;
+    private readonly int _totalItems = 0;
     private string _filter = string.Empty;
     private TjEvent? _selectedItem;
 
@@ -125,10 +125,10 @@
             filter = string.IsNullOrEmpty(filter) ? $"SeanceId = toUUID('{Id}')" : $"SeanceId = toUUID('{Id}') and {filter}";
 
             var items = await _techLogRepository!.GetTjEvents(state.PageSize, state.Page * state.PageSize, filter, cancellationToken);
-            
+
             if (items.Count > 0)
                 _table.SetSelectedItem(items.First());
-        
+
             return new TableData<TjEvent>
             {
                 Items = items,
@@ -166,7 +166,7 @@
             _filter = additionalText;
         else
             _filter += $" and {additionalText}";
-        
+
         await _table.ReloadServerData();
     }
 

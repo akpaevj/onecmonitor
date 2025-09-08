@@ -1,0 +1,183 @@
+@page "/gitrepositories/gitsynctasks/{id:guid}"
+@page "/gitrepositories/gitsynctasks/create"
+@using FluentValidation
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Attributes
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Helpers
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
+
+@inject AgentsConnectionsManager ConnectionsManager
+@inject IDbContextFactory<AppDbContext> ContextFactory
+
+@attribute [ExtAuthorize(Roles.WriteGitRepositories)]
+
+<EditDatabaseForm @ref="_editor" T="GitSyncTask"
+                  Id="Id"
+                  NameSelector="@(arg => arg.GitRepository.Name)"
+                  Route="gitrepositories/gitsynctasks"
+                  Title="Новая задача синхронизации хранилища и Git"
+                  ModelSelector="ModelSelector"
+                  OnUpdate="OnUpdate"
+                  BeforeValidation="BeforeValidation"
+                  Validation="_validator.ValidateValue"
+                  OnInitialize="OnInitialize"
+                  AfterSave="AfterSave">
+    <MudStack>
+        <MudSwitch Label="Активна" @bind-Value="@_editor.Model!.IsActive" Color="Color.Primary"/>
+        <ItemSelector
+            @bind-Value="@_editor.Model.AgentId"
+            Items="@_editor.Context!.Agents.ToList()"
+            Label="Агент"
+            Class="mb-3"
+            ItemValueSelector="arg => arg.Id"
+            ItemNameSelector="arg => arg.InstanceName"
+            For="@(() => _editor.Model.AgentId)"/>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.BranchName)" ReadOnly="!_isNew" Label="Имя ветки"
+                      @bind-Value="@_editor.Model!.BranchName"></MudTextField>
+        <ItemSelector
+            @bind-Value="@_editor.Model.GitRepositoryId"
+            Items="@_editor.Context!.GitRepositories.ToList()"
+            Label="Репозиторий Git"
+            Class="mb-3"
+            ItemValueSelector="arg => arg.Id"
+            ItemNameSelector="arg => arg.Name"
+            For="@(() => _editor.Model.GitRepositoryId)"/>
+        <MudTable T="GitSyncTaskItem"
+                  Items="@_editor.Model.Items"
+                  @bind-SelectedItems="_selectedItems"
+                  MultiSelection="true"
+                  SelectOnRowClick="false"
+                  Dense="true">
+            <ToolBarContent>
+                <MudStack Row Spacing="3">
+                    <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="AddItem">
+                        Добавить
+                    </MudButton>
+                    @if (_selectedItems.Count > 0)
+                    {
+                        <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error"
+                                   OnClick="DeleteItem">Удалить
+                        </MudButton>
+                    }
+                </MudStack>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTd>Хранилище</MudTd>
+                <MudTd>Это расширение</MudTd>
+                <MudTd>Активно</MudTd>
+                <MudTd>Версия хранилища</MudTd>
+                <MudTd>Каталог выгрузки</MudTd>
+                <MudTd>Трекеры LFS</MudTd>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Хранилище">
+                    <ItemSelector
+                        @bind-Value="@context.ConfigurationRepositoryId"
+                        Items="@_editor.Context!.ConfigRepositories.ToList()"
+                        Class="mb-3"
+                        ItemValueSelector="arg => arg.Id"
+                        ItemNameSelector="arg => arg.Name"
+                        For="@(() => context.ConfigurationRepositoryId)"
+                        ReadOnly="@(!_isNew && context.Id != Guid.Empty)"/>
+                </MudTd>
+                <MudTd DataLabel="Это расширение">
+                    <MudSwitch For="@(() => context.IsExtension)" @bind-Value="@context.IsExtension" Color="Color.Primary"
+                               ReadOnly="@(!_isNew && context.Id != Guid.Empty)"/>
+                </MudTd>
+                <MudTd DataLabel="Активно">
+                    <MudSwitch For="@(() => context.IsActive)" @bind-Value="@context.IsActive" Color="Color.Primary"/>
+                </MudTd>
+                <MudTd DataLabel="Версия хранилища">
+                    <MudNumericField For="@(() => context.ConfigurationRepositoryVersion)"
+                                     @bind-Value="@context.ConfigurationRepositoryVersion"
+                                     ReadOnly="@(!_isNew && context.Id != Guid.Empty)"/>
+                </MudTd>
+                <MudTd DataLabel="Каталог выгрузки">
+                    <MudTextField For="@(() => context.ExportFolder)"
+                                  @bind-Value="@context.ExportFolder"
+                                  ReadOnly="@(!_isNew && context.Id != Guid.Empty)"/>
+                </MudTd>
+                <MudTd DataLabel="Трекеры LFS">
+                    <MudTextField For="@(() => context.LfsTrackers)" AutoGrow
+                                  @bind-Value="@context.LfsTrackers"
+                                  ReadOnly="@(!_isNew && context.Id != Guid.Empty)"/>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+
+    </MudStack>
+</EditDatabaseForm>
+
+@code
+{
+    private bool _isNew;
+    private readonly Validator _validator = new();
+    private EditDatabaseForm<GitSyncTask> _editor = null!;
+    private HashSet<GitSyncTaskItem> _selectedItems = [];
+    private Models.GitSyncSettings? _defaultSettings;
+
+    [Parameter] public Guid Id { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _isNew = Id == Guid.Empty;
+    }
+
+    private async Task OnInitialize((GitSyncTask Model, AppDbContext Context) obj)
+    {
+        _defaultSettings = await obj.Context.GitSyncSettings.SingleOrDefaultAsync() ?? new Models.GitSyncSettings();
+
+        if (!_isNew)
+            return;
+
+        obj.Model.BranchName = _defaultSettings.BranchName;
+    }
+
+    private static IQueryable<GitSyncTask> ModelSelector(IQueryable<GitSyncTask> arg)
+    {
+        return arg
+            .Include(c => c.Items)
+            .Include(c => c.GitRepository);
+    }
+
+    private async Task AfterSave(GitSyncTask obj)
+    {
+        await ConnectionsManager.RaiseUpdateGitSyncTasks(CancellationToken.None);
+    }
+
+    private void AddItem()
+    {
+        _editor.Model!.Items.Add(new GitSyncTaskItem
+        {
+            LfsTrackers = _defaultSettings?.LfsTrackers ?? ""
+        });
+    }
+
+    private void DeleteItem()
+    {
+        foreach (var selectedItem in _selectedItems)
+            _editor.Model!.Items.Remove(selectedItem);
+    }
+
+    private void OnUpdate(GitSyncTask model)
+    {
+        ModelHelper.UpdateModelItems(_editor.Model!.Items, model.Items);
+    }
+
+    private static void BeforeValidation(GitSyncTask obj)
+    {
+        obj.Items.ForEach(c => c.GitSyncTaskId = obj.Id);
+    }
+
+    class Validator : ModelValidator<GitSyncTask>
+    {
+        public Validator()
+        {
+            RuleFor(c => c.GitRepositoryId)
+                .NotEmpty()
+                .WithMessage("Не задан репозиторий Git");
+        }
+    }
+}

@@ -1,10 +1,10 @@
-@using OneSwiss.Server.Components.Pages.ServersAdministration
-<CascadingValue Value="@this" IsFixed="true">
+<CascadingValue Value="@(this)" IsFixed="true">
     <MudStack Spacing="0" Class="@Class">
         @if (ShowAddButton)
         {
             <MudStack Row AlignItems="AlignItems.Start" Class="mb-3">
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="OnClickAddButton">Добавить</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="OnClickAddButton">Добавить
+                </MudButton>
             </MudStack>
         }
         <MudPaper Class="w-100 h-100 pa-3">
@@ -18,30 +18,23 @@
     </MudStack>
 </CascadingValue>
 
-@code 
+@code
 {
     private readonly List<TreeViewItem> _leafs = [];
 
-    [Parameter]
-    public IReadOnlyCollection<TreeItem> Items { get; set; } = [];
+    [Parameter] public IReadOnlyCollection<TreeItem> Items { get; set; } = [];
 
-    [Parameter]
-    public EventCallback<IReadOnlyCollection<TreeItem>?> ItemsChanged { get; set; }
+    [Parameter] public EventCallback<IReadOnlyCollection<TreeItem>?> ItemsChanged { get; set; }
 
-    [Parameter]
-    public TreeItem? SelectedItem { get; set; }
-    
-    [Parameter]
-    public EventCallback<TreeItem?> SelectedItemChanged { get; set; }
-    
-    [Parameter]
-    public string? Class { get; set; }
-    
-    [Parameter]
-    public bool ShowAddButton { get; set; }
-    
-    [Parameter]
-    public Func<Task>? AddButtonCallback { get; set; }
+    [Parameter] public TreeItem? SelectedItem { get; set; }
+
+    [Parameter] public EventCallback<TreeItem?> SelectedItemChanged { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public bool ShowAddButton { get; set; }
+
+    [Parameter] public Func<Task>? AddButtonCallback { get; set; }
 
     public async Task SelectItem(TreeItem item)
     {
@@ -59,7 +52,7 @@
     {
         _leafs.Add(item);
     }
-    
+
     public void UnregisterItem(TreeViewItem item)
     {
         _leafs.Remove(item);

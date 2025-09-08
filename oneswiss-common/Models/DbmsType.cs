@@ -4,6 +4,5 @@ namespace OneSwiss.Common.Models;
 
 public enum DbmsType
 {
-    [Display(Name = "ClickHouse")]
-    ClickHouse
+    [Display(Name = "ClickHouse")] ClickHouse
 }

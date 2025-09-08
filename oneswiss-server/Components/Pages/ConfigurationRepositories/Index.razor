@@ -1,11 +1,11 @@
 @page "/configurationrepositories"
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Attributes
-@using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
+@using OneSwiss.Server.Components.Shared
 @rendermode InteractiveServer
 
-@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
+@attribute [ExtAuthorize(Roles.ReadMaintenanceTasks, Roles.WriteMaintenanceTasks)]
 
 <DatabaseObjectsTable TModel="ConfigurationRepository" TViewModel="ConfigurationRepository"
                       NameSelector="arg => arg.Name"
@@ -31,6 +31,8 @@
 @code {
 
     private static IQueryable<ConfigurationRepository> ItemsSelector(IQueryable<ConfigurationRepository> arg)
-        => arg.Include(c => c.Agent);
+    {
+        return arg.Include(c => c.Agent);
+    }
 
 }

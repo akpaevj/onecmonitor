@@ -1,0 +1,54 @@
+@page "/gitrepositories"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Attributes
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Components.Shared
+
+@inject NavigationManager NavManager
+@inject IDbContextFactory<AppDbContext> ContextFactory
+
+@rendermode InteractiveServer
+
+@attribute [ExtAuthorize(Roles.ReadGitRepositories, Roles.WriteGitRepositories)]
+
+<AuthorizeView Context="authState">
+    <DatabaseObjectsTable TModel="GitRepository" TViewModel="GitRepository"
+                          NameSelector="arg => arg.Name"
+                          Route="gitrepositories"
+                          Title="Репозиторий GIT"
+                          ReadOnly="@authState.IsReadOnly(Roles.WriteGitRepositories)">
+        <TableActionsContent>
+            @if (_gitSyncEnabled)
+            {
+                <MudButton Color="Color.Secondary" Variant="Variant.Filled"
+                           @onclick="@(() => NavManager.NavigateTo("/gitrepositories/gitsynctasks"))">Задачи
+                    синхронизации
+                </MudButton>
+            }
+        </TableActionsContent>
+        <ColumnsContent>
+            <MudTh>Имя</MudTh>
+            <MudTh>Адрес</MudTh>
+        </ColumnsContent>
+        <RowTemplate>
+            <MudTd DataLabel="Имя">@context.Name</MudTd>
+            <MudTd DataLabel="Адрес">@context.Address</MudTd>
+        </RowTemplate>
+    </DatabaseObjectsTable>
+</AuthorizeView>
+
+@code
+{
+    private bool _gitSyncEnabled;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await ContextFactory.CreateDbContextAsync();
+
+        var settings = await context.GitSyncSettings.SingleOrDefaultAsync();
+        if (settings != null)
+            _gitSyncEnabled = settings.Enabled;
+    }
+}

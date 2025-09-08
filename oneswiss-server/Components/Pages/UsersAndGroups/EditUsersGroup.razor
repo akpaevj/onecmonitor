@@ -13,22 +13,25 @@
 @attribute [ExtAuthorize]
 
 <EditDatabaseForm @ref="_editor" T="UsersGroup"
-                    Id="Id"
-                    Route="settings?tab=users"
-                    Title="Новая группа пользователей"
-                    NameSelector="@(c => c.Name)"
-                    ModelSelector="ModelSelector"
-                    OnUpdate="OnUpdate"
-                    Validation="_validator.ValidateValue"
-                    AfterSave="AfterSave">
+                  Id="Id"
+                  Route="settings?tab=users"
+                  Title="Новая группа пользователей"
+                  NameSelector="@(c => c.Name)"
+                  ModelSelector="ModelSelector"
+                  OnUpdate="OnUpdate"
+                  Validation="_validator.ValidateValue"
+                  AfterSave="AfterSave">
     <MudStack>
-        <MudSelect Class="mb-3" Label="Группа пользователей" For="@(() => _editor.Model!.ParentId)" @bind-Value="@_editor.Model!.ParentId" Clearable="true">
-            @foreach (var item in _editor.Context!.UsersGroups.Where(c => c.Id != Id).ToList())
-            {
-                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
-            }
-        </MudSelect>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" Label="Наименование" @bind-Value="@_editor.Model!.Name"/>
+        <ItemSelector
+            @bind-Value="@_editor.Model!.ParentId"
+            Items="@_editor.Context!.UsersGroups.Where(c => c.Id != Id).ToList()"
+            Class="mb-3"
+            ItemValueSelector="arg => arg.Id"
+            ItemNameSelector="arg => arg.Name"
+            Label="Группа пользователей"
+            For="@(() => _editor.Model!.ParentId)"/>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" Label="Наименование"
+                      @bind-Value="@_editor.Model!.Name"/>
         <MudStack Row StretchItems="StretchItems.All" Breakpoint="Breakpoint.SmAndDown">
             <ItemsSelector T="ApplicationUser"
                            @bind-SelectedValues="@_editor.Model!.Users"
@@ -50,22 +53,24 @@
     private EditDatabaseForm<UsersGroup> _editor = null!;
 
     /// <summary>
-    /// Идентификатор элемента
+    ///     Идентификатор элемента
     /// </summary>
     [Parameter]
     public Guid Id { get; set; }
 
     private static IQueryable<UsersGroup> ModelSelector(IQueryable<UsersGroup> arg)
-        => arg
+    {
+        return arg
             .Include(c => c.Users)
             .Include(c => c.AccessGroups);
-    
+    }
+
     private void OnUpdate(UsersGroup model)
     {
         ModelHelper.UpdateModelItems(_editor.Model!.AccessGroups, model.AccessGroups);
         ModelHelper.UpdateModelItems(_editor.Model.Users, model.Users);
     }
-    
+
     private async Task AfterSave()
     {
         await GroupsManager.UpdateUsersRoles();

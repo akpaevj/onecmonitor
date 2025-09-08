@@ -1,24 +1,23 @@
-@using Blazor.Diagrams.Components.Renderers;
-@using FluentValidation
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@using Blazor.Diagrams.Components.Renderers
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Common.Extensions
 @using OneSwiss.Common.Models.MaintenanceTasks
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
-@using OneSwiss.Server.Models.MaintenanceTasks
-@inject IDbContextFactory<AppDbContext> ContextFactory
 @implements IDisposable
 
 <MudCard>
     <MudCardHeader Style="@("background-color: " + Node.Step.Kind.GetKindColor())">
         <MudText>@Node.Step.Kind.GetDisplay()</MudText>
     </MudCardHeader>
-    
+
     <MudCardContent>
-        
+
         @if (Node.Step.Kind == MaintenanceStepKind.StartExternalDataProcessor)
         {
-            <MudSelect Class="mb-1" Label="Файл EPF" For="@(() => Node.Step.StartExternalDataProcessorStep.FileId)" @bind-Value="@Node.Step.StartExternalDataProcessorStep.FileId" Clearable="true">
+            <MudSelect Class="mb-1" Label="Файл EPF" For="@(() => Node.Step.StartExternalDataProcessorStep.FileId)"
+                       @bind-Value="@Node.Step.StartExternalDataProcessorStep.FileId" Clearable="true">
                 @foreach (var item in _context.Files.Where(c => c.FileType == FileType.Epf).ToList())
                 {
                     <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
@@ -28,14 +27,18 @@
 
         @if (Node.Step.Kind == MaintenanceStepKind.ExecuteOneScript)
         {
-            <MudSwitch Class="mb-1" Label="Режим отладки" @bind-Value="@Node.Step.ExecuteOneScriptStep.DebugMode" @bind-Value:after="SetNeedRender" Color="Color.Primary"/>
+            <MudSwitch Class="mb-1" Label="Режим отладки" @bind-Value="@Node.Step.ExecuteOneScriptStep.DebugMode"
+                       @bind-Value:after="SetNeedRender" Color="Color.Primary"/>
             @if (Node.Step.ExecuteOneScriptStep.DebugMode)
             {
-                <MudTextField Class="mb-1" Label="Файл скрипта" For="@(() => Node.Step.ExecuteOneScriptStep.ExecutablePath)" @bind-Value="@Node.Step.ExecuteOneScriptStep.ExecutablePath"/>
+                <MudTextField Class="mb-1" Label="Файл скрипта"
+                              For="@(() => Node.Step.ExecuteOneScriptStep.ExecutablePath)"
+                              @bind-Value="@Node.Step.ExecuteOneScriptStep.ExecutablePath"/>
             }
             else
             {
-                <MudSelect Class="mb-1" Label="Файл OSPX" For="@(() => Node.Step.ExecuteOneScriptStep.FileId)" @bind-Value="@Node.Step.ExecuteOneScriptStep.FileId" Clearable="true">
+                <MudSelect Class="mb-1" Label="Файл OSPX" For="@(() => Node.Step.ExecuteOneScriptStep.FileId)"
+                           @bind-Value="@Node.Step.ExecuteOneScriptStep.FileId" Clearable="true">
                     @foreach (var item in _context.Files.Where(c => c.FileType == FileType.Ospx).ToList())
                     {
                         <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
@@ -46,22 +49,30 @@
 
         @if (Node.Step.Kind == MaintenanceStepKind.LockConnections)
         {
-            <MudTextField Class="mb-1" Label="Код доступа" For="@(() => Node.Step.LockConnectionsStep.AccessCode)" @bind-Value="@Node.Step.LockConnectionsStep.AccessCode"/>
-            <MudTextField Class="mb-1" Label="Сообщение" For="@(() => Node.Step.LockConnectionsStep.Message)" @bind-Value="@Node.Step.LockConnectionsStep.Message"/>
+            <MudTextField Class="mb-1" Label="Код доступа" For="@(() => Node.Step.LockConnectionsStep.AccessCode)"
+                          @bind-Value="@Node.Step.LockConnectionsStep.AccessCode"/>
+            <MudTextField Class="mb-1" Label="Сообщение" For="@(() => Node.Step.LockConnectionsStep.Message)"
+                          @bind-Value="@Node.Step.LockConnectionsStep.Message"/>
         }
 
         @if (Node.Step.Kind == MaintenanceStepKind.DeleteExtension)
         {
-            <MudTextField Class="mb-1" Label="Регулярное выражение имени расширения" For="@(() => Node.Step.DeleteExtensionStep.ExtensionName)" @bind-Value="@Node.Step.DeleteExtensionStep.ExtensionName"/>
+            <MudTextField Class="mb-1" Label="Регулярное выражение имени расширения"
+                          For="@(() => Node.Step.DeleteExtensionStep.ExtensionName)"
+                          @bind-Value="@Node.Step.DeleteExtensionStep.ExtensionName"/>
         }
 
         @if (Node.Step.Kind == MaintenanceStepKind.LoadConfiguration)
         {
-            <MudSwitch Class="mb-1" Label="Из хранилища" @bind-Value="@Node.Step.LoadConfigurationStep.FromConfigRepository" @bind-Value:after="SetNeedRender" Color="Color.Primary"/>
+            <MudSwitch Class="mb-1" Label="Из хранилища"
+                       @bind-Value="@Node.Step.LoadConfigurationStep.FromConfigRepository"
+                       @bind-Value:after="SetNeedRender" Color="Color.Primary"/>
 
             @if (Node.Step.LoadConfigurationStep.FromConfigRepository)
             {
-                <MudSelect Class="mb-1" Label="Хранилище" For="@(() => Node.Step.LoadConfigurationStep.ConfigurationRepositoryId)" @bind-Value="@Node.Step.LoadConfigurationStep.ConfigurationRepositoryId" Clearable="true">
+                <MudSelect Class="mb-1" Label="Хранилище"
+                           For="@(() => Node.Step.LoadConfigurationStep.ConfigurationRepositoryId)"
+                           @bind-Value="@Node.Step.LoadConfigurationStep.ConfigurationRepositoryId" Clearable="true">
                     @foreach (var item in _context.ConfigRepositories.Where(c => c.CredentialsId != null).ToList())
                     {
                         <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
@@ -70,7 +81,8 @@
             }
             else
             {
-                <MudSelect Class="mb-1" Label="Файл CF" For="@(() => Node.Step.LoadConfigurationStep.FileId)" @bind-Value="@Node.Step.LoadConfigurationStep.FileId" Clearable="true">
+                <MudSelect Class="mb-1" Label="Файл CF" For="@(() => Node.Step.LoadConfigurationStep.FileId)"
+                           @bind-Value="@Node.Step.LoadConfigurationStep.FileId" Clearable="true">
                     @foreach (var item in _context.Files.Where(c => c.FileType == FileType.Cf).ToList())
                     {
                         <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
@@ -81,7 +93,8 @@
 
         @if (Node.Step.Kind == MaintenanceStepKind.UpdateConfiguration)
         {
-            <MudSelect Class="mb-1" Label="Файл CFU" For="@(() => Node.Step.UpdateConfigurationStep.FileId)" @bind-Value="@Node.Step.UpdateConfigurationStep.FileId" Clearable="true">
+            <MudSelect Class="mb-1" Label="Файл CFU" For="@(() => Node.Step.UpdateConfigurationStep.FileId)"
+                       @bind-Value="@Node.Step.UpdateConfigurationStep.FileId" Clearable="true">
                 @foreach (var item in _context.Files.Where(c => c.FileType == FileType.Cfu).ToList())
                 {
                     <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
@@ -91,12 +104,16 @@
 
         @if (Node.Step.Kind == MaintenanceStepKind.LoadExtension)
         {
-            <MudTextField Class="mb-1" Label="Имя расширения" For="@(() => Node.Step.LoadExtensionStep.ExtensionName)" @bind-Value="@Node.Step.LoadExtensionStep.ExtensionName"/>
-            <MudSwitch Class="mb-1" Label="Из хранилища" @bind-Value="@Node.Step.LoadExtensionStep.FromConfigRepository" @bind-Value:after="SetNeedRender" Color="Color.Primary"/>
+            <MudTextField Class="mb-1" Label="Имя расширения" For="@(() => Node.Step.LoadExtensionStep.ExtensionName)"
+                          @bind-Value="@Node.Step.LoadExtensionStep.ExtensionName"/>
+            <MudSwitch Class="mb-1" Label="Из хранилища" @bind-Value="@Node.Step.LoadExtensionStep.FromConfigRepository"
+                       @bind-Value:after="SetNeedRender" Color="Color.Primary"/>
 
             @if (Node.Step.LoadExtensionStep.FromConfigRepository)
             {
-                <MudSelect Class="mb-1" Label="Хранилище" For="@(() => Node.Step.LoadExtensionStep.ConfigurationRepositoryId)" @bind-Value="@Node.Step.LoadExtensionStep.ConfigurationRepositoryId" Clearable="true">
+                <MudSelect Class="mb-1" Label="Хранилище"
+                           For="@(() => Node.Step.LoadExtensionStep.ConfigurationRepositoryId)"
+                           @bind-Value="@Node.Step.LoadExtensionStep.ConfigurationRepositoryId" Clearable="true">
                     @foreach (var item in _context.ConfigRepositories.Where(c => c.CredentialsId != null).ToList())
                     {
                         <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
@@ -105,7 +122,8 @@
             }
             else
             {
-                <MudSelect Class="mb-1" Label="Файл CFE" For="@(() => Node.Step.LoadExtensionStep.FileId)" @bind-Value="@Node.Step.LoadExtensionStep.FileId" Clearable="true">
+                <MudSelect Class="mb-1" Label="Файл CFE" For="@(() => Node.Step.LoadExtensionStep.FileId)"
+                           @bind-Value="@Node.Step.LoadExtensionStep.FileId" Clearable="true">
                     @foreach (var item in _context.Files.Where(c => c.FileType == FileType.Cfe).ToList())
                     {
                         <MudSelectItem Value="@((Guid?)item.Id)">@item.ToString()</MudSelectItem>
@@ -116,28 +134,34 @@
 
         @if (Node.Step.Kind == MaintenanceStepKind.CopyInfoBase)
         {
-            <MudSelect Class="mb-1" Label="Учетные данные БД-источника" For="@(() => Node.Step.CopyInfoBaseStep.SourceCredentialsId)" @bind-Value="@Node.Step.CopyInfoBaseStep.SourceCredentialsId" Clearable="true">
-                @foreach (var item in _context.Credentials.ToList())
+            <MudSelect Class="mb-1" Label="Учетные данные БД-источника"
+                       For="@(() => Node.Step.CopyInfoBaseStep.SourceCredentialsId)"
+                       @bind-Value="@Node.Step.CopyInfoBaseStep.SourceCredentialsId" Clearable="true">
+                @foreach (var item in _context.Credentials.Where(c => !c.IsToken).ToList())
                 {
                     <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
                 }
             </MudSelect>
 
-            <MudSelect Class="mb-1" Label="ИБ-источник" For="@(() => Node.Step.CopyInfoBaseStep.SourceInfoBaseId)" @bind-Value="@Node.Step.CopyInfoBaseStep.SourceInfoBaseId" Clearable="true">
+            <MudSelect Class="mb-1" Label="ИБ-источник" For="@(() => Node.Step.CopyInfoBaseStep.SourceInfoBaseId)"
+                       @bind-Value="@Node.Step.CopyInfoBaseStep.SourceInfoBaseId" Clearable="true">
                 @foreach (var item in _context.InfoBases.ToList())
                 {
                     <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
                 }
             </MudSelect>
 
-            <MudSelect Class="mb-1" Label="Учетные данные БД-приемника" For="@(() => Node.Step.CopyInfoBaseStep.DestinationCredentialsId)" @bind-Value="@Node.Step.CopyInfoBaseStep.DestinationCredentialsId" Clearable="true">
-                @foreach (var item in _context.Credentials.ToList())
+            <MudSelect Class="mb-1" Label="Учетные данные БД-приемника"
+                       For="@(() => Node.Step.CopyInfoBaseStep.DestinationCredentialsId)"
+                       @bind-Value="@Node.Step.CopyInfoBaseStep.DestinationCredentialsId" Clearable="true">
+                @foreach (var item in _context.Credentials.Where(c => !c.IsToken).ToList())
                 {
                     <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
                 }
             </MudSelect>
 
-            <MudSelect Class="mb-1" Label="ИБ-приемник" For="@(() => Node.Step.CopyInfoBaseStep.DestinationInfoBaseId)" @bind-Value="@Node.Step.CopyInfoBaseStep.DestinationInfoBaseId" Clearable="true">
+            <MudSelect Class="mb-1" Label="ИБ-приемник" For="@(() => Node.Step.CopyInfoBaseStep.DestinationInfoBaseId)"
+                       @bind-Value="@Node.Step.CopyInfoBaseStep.DestinationInfoBaseId" Clearable="true">
                 @foreach (var item in _context.InfoBases.ToList())
                 {
                     <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
@@ -146,20 +170,19 @@
         }
 
     </MudCardContent>
-    
+
     @foreach (var port in Node.Ports)
     {
         <PortRenderer @key="port" Port="port"/>
     }
 </MudCard>
 
-@code 
+@code
 {
-    private bool _needRender = false;
+    private bool _needRender;
     private AppDbContext? _context;
 
-    [Parameter] 
-    public StepNode Node { get; set; } = null!;
+    [Parameter] public StepNode Node { get; set; } = null!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -180,5 +203,7 @@
     }
 
     private void SetNeedRender()
-        => _needRender = true;
+    {
+        _needRender = true;
+    }
 }

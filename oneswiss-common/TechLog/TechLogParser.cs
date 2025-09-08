@@ -1,212 +1,222 @@
 ﻿using OneSwiss.Common.Models;
 
-namespace OneSwiss.Common.TechLog
+namespace OneSwiss.Common.TechLog;
+
+public static class TechLogParser
 {
-    public static class TechLogParser
+    public static bool TryParse(TechLogEventContent eventContent, out TjEvent tjEvent)
     {
-        public static bool TryParse(TechLogEventContent eventContent, out TjEvent tjEvent)
+        var content = eventContent.Content.AsSpan();
+
+        tjEvent = new TjEvent
         {
-            var content = eventContent.Content.AsSpan();
-            
-            tjEvent = new TjEvent
-            {
-                AgentId = eventContent.AgentId,
-                SeanceId = eventContent.SeanceId,
-                TemplateId = eventContent.TemplateId,
-                FileName = eventContent.FileName,
-                EndPosition = eventContent.EndPosition
-            };
+            AgentId = eventContent.AgentId,
+            SeanceId = eventContent.SeanceId,
+            TemplateId = eventContent.TemplateId,
+            FileName = eventContent.FileName,
+            EndPosition = eventContent.EndPosition
+        };
 
-            int offset;
-            if (TryParseDateTime(content[..26], out var dateTime))
-            {
-                offset = 27;
-                tjEvent.DateTime = dateTime;
-            }
-            else
-                return false;
-
-            if (TryReadLongValue(content[offset..], out var duration, out var dLen))
-            {
-                offset += dLen + 1;
-                tjEvent.Duration = duration;
-            }
-            else
-                return false;
-
-            if (TryReadNamelessValue(content[offset..], out var eventName, out var nLen))
-            {
-                offset += nLen + 1;
-                tjEvent.EventName = eventName.ToString();
-            }
-            else
-                return false;
-
-            if (TryReadIntValue(content[offset..], out var level, out var lLen))
-            {
-                offset += lLen + 1;
-                tjEvent.Level = level;
-            }
-            else
-                return false;
-
-            return TryReadProperties(content[offset..], tjEvent);
+        int offset;
+        if (TryParseDateTime(content[..26], out var dateTime))
+        {
+            offset = 27;
+            tjEvent.DateTime = dateTime;
         }
-
-        private static bool TryParseDateTime(ReadOnlySpan<char> content, out DateTime dateTime)
+        else
         {
-            if (DateTime.TryParse(content, out var eventDateTime))
-            {
-                dateTime = eventDateTime;
-                return true;
-            }
-
-            dateTime = DateTime.MinValue;
             return false;
         }
 
-        private static bool TryReadIntValue(ReadOnlySpan<char> content, out int intValue, out int length)
+        if (TryReadLongValue(content[offset..], out var duration, out var dLen))
         {
-            if (TryReadNamelessValue(content, out var value, out length) && int.TryParse(value, out intValue))
-                return true;
-            
-            intValue = int.MinValue;
+            offset += dLen + 1;
+            tjEvent.Duration = duration;
+        }
+        else
+        {
             return false;
         }
 
-        private static bool TryReadLongValue(ReadOnlySpan<char> content, out long longValue, out int length)
+        if (TryReadNamelessValue(content[offset..], out var eventName, out var nLen))
         {
-            if (TryReadNamelessValue(content, out var value, out length) && long.TryParse(value, out longValue))
-                return true;
-            
-            longValue = long.MinValue;
+            offset += nLen + 1;
+            tjEvent.EventName = eventName.ToString();
+        }
+        else
+        {
             return false;
         }
 
-        private static bool TryReadNamelessValue(ReadOnlySpan<char> content, out ReadOnlySpan<char> value, out int length)
+        if (TryReadIntValue(content[offset..], out var level, out var lLen))
         {
-            var i = content.IndexOf(',');
+            offset += lLen + 1;
+            tjEvent.Level = level;
+        }
+        else
+        {
+            return false;
+        }
 
-            if (i == -1)
-            {
-                value = ReadOnlySpan<char>.Empty;
-                length = 0;
-                return false;
-            }
+        return TryReadProperties(content[offset..], tjEvent);
+    }
 
-            value = content[..i];
-            length = i;
+    private static bool TryParseDateTime(ReadOnlySpan<char> content, out DateTime dateTime)
+    {
+        if (DateTime.TryParse(content, out var eventDateTime))
+        {
+            dateTime = eventDateTime;
             return true;
         }
 
-        private static bool TryGetTextValue(ReadOnlySpan<char> content, out ReadOnlySpan<char> value, out int length)
+        dateTime = DateTime.MinValue;
+        return false;
+    }
+
+    private static bool TryReadIntValue(ReadOnlySpan<char> content, out int intValue, out int length)
+    {
+        if (TryReadNamelessValue(content, out var value, out length) && int.TryParse(value, out intValue))
+            return true;
+
+        intValue = int.MinValue;
+        return false;
+    }
+
+    private static bool TryReadLongValue(ReadOnlySpan<char> content, out long longValue, out int length)
+    {
+        if (TryReadNamelessValue(content, out var value, out length) && long.TryParse(value, out longValue))
+            return true;
+
+        longValue = long.MinValue;
+        return false;
+    }
+
+    private static bool TryReadNamelessValue(ReadOnlySpan<char> content, out ReadOnlySpan<char> value, out int length)
+    {
+        var i = content.IndexOf(',');
+
+        if (i == -1)
         {
-            var firstChar = content[0];
-
-            var index = 0;
-            var counted = 0;
-
-            while (index < content.Length)
-            {
-                index += content[index..].IndexOf(firstChar);
-                var nextCh = index + 1 >= content.Length ? '\0' : content[index + 1];
-
-                if (content[index] == firstChar)
-                    counted++;
-
-                index++;
-
-                if (counted <= 1 || counted % 2 != 0 || nextCh == firstChar) 
-                    continue;
-                
-                value = content[1..(index - 1)];
-                length = index;
-                return true;
-            }
-
             value = ReadOnlySpan<char>.Empty;
             length = 0;
             return false;
         }
 
-        private static void AddProperty(TjEvent tjEvent, ReadOnlySpan<char> propertyName, ReadOnlySpan<char> propertyValue, int postfix = 0)
+        value = content[..i];
+        length = i;
+        return true;
+    }
+
+    private static bool TryGetTextValue(ReadOnlySpan<char> content, out ReadOnlySpan<char> value, out int length)
+    {
+        var firstChar = content[0];
+
+        var index = 0;
+        var counted = 0;
+
+        while (index < content.Length)
         {
-            while (true)
-            {
-                var n = postfix > 0 ? $"{propertyName}{postfix}" : propertyName.ToString();
+            index += content[index..].IndexOf(firstChar);
+            var nextCh = index + 1 >= content.Length ? '\0' : content[index + 1];
 
-                if (tjEvent.Properties.ContainsKey(n))
-                {
-                    postfix += 1;
-                    continue;
-                }
+            if (content[index] == firstChar)
+                counted++;
 
-                tjEvent.Properties.Add(n, propertyValue.ToString());
+            index++;
 
-                break;
-            }
+            if (counted <= 1 || counted % 2 != 0 || nextCh == firstChar)
+                continue;
+
+            value = content[1..(index - 1)];
+            length = index;
+            return true;
         }
 
-        private static bool TryReadProperties(ReadOnlySpan<char> content, TjEvent tjEvent)
+        value = ReadOnlySpan<char>.Empty;
+        length = 0;
+        return false;
+    }
+
+    private static void AddProperty(TjEvent tjEvent, ReadOnlySpan<char> propertyName, ReadOnlySpan<char> propertyValue,
+        int postfix = 0)
+    {
+        while (true)
         {
-            while (true)
+            var n = postfix > 0 ? $"{propertyName}{postfix}" : propertyName.ToString();
+
+            if (tjEvent.Properties.ContainsKey(n))
             {
-                if (content.Length == 0)
-                    return true;
+                postfix += 1;
+                continue;
+            }
 
-                var equalIndex = content.IndexOf('=');
+            tjEvent.Properties.Add(n, propertyValue.ToString());
 
-                if (equalIndex == -1)
-                    return false;
+            break;
+        }
+    }
 
-                var propertyName = content[..equalIndex];
+    private static bool TryReadProperties(ReadOnlySpan<char> content, TjEvent tjEvent)
+    {
+        while (true)
+        {
+            if (content.Length == 0)
+                return true;
 
-                var valueStartIndex = equalIndex + 1;
-                content = content[valueStartIndex..];
+            var equalIndex = content.IndexOf('=');
 
-                if (content.Length == 0)
-                    return true;
+            if (equalIndex == -1)
+                return false;
 
-                switch (content[0])
+            var propertyName = content[..equalIndex];
+
+            var valueStartIndex = equalIndex + 1;
+            content = content[valueStartIndex..];
+
+            if (content.Length == 0)
+                return true;
+
+            switch (content[0])
+            {
+                case '\'':
+                case '"':
                 {
-                    case '\'':
-                    case '"':
+                    if (TryGetTextValue(content, out var value, out var length))
                     {
-                        if (TryGetTextValue(content, out var value, out var length))
-                        {
-                            AddProperty(tjEvent, propertyName, value);
-                            content = content[length..];
+                        AddProperty(tjEvent, propertyName, value);
+                        content = content[length..];
 
-                            if (content.Length == 0)
-                                return true;
-                            
-                            if (content[0] == ',')
-                                content = content[1..];
-                        }
-                        else
-                            return false;
-
-                        break;
-                    }
-                    case ',':
-                        AddProperty(tjEvent, propertyName, ReadOnlySpan<char>.Empty);
-                        content = content[1..];
-                        break;
-                    default:
-                    {
-                        var valueEndIndex = content.IndexOf(',');
-
-                        if (valueEndIndex == -1)
-                        {
-                            AddProperty(tjEvent, propertyName, content);
+                        if (content.Length == 0)
                             return true;
-                        }
 
-                        AddProperty(tjEvent, propertyName, content[..valueEndIndex]);
-                        content = content[(valueEndIndex + 1)..];
-
-                        break;
+                        if (content[0] == ',')
+                            content = content[1..];
                     }
+                    else
+                    {
+                        return false;
+                    }
+
+                    break;
+                }
+                case ',':
+                    AddProperty(tjEvent, propertyName, ReadOnlySpan<char>.Empty);
+                    content = content[1..];
+                    break;
+                default:
+                {
+                    var valueEndIndex = content.IndexOf(',');
+
+                    if (valueEndIndex == -1)
+                    {
+                        AddProperty(tjEvent, propertyName, content);
+                        return true;
+                    }
+
+                    AddProperty(tjEvent, propertyName, content[..valueEndIndex]);
+                    content = content[(valueEndIndex + 1)..];
+
+                    break;
                 }
             }
         }

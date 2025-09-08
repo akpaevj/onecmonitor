@@ -1,22 +1,19 @@
-using System.Collections.ObjectModel;
-using OneSwiss.Common.Models.MaintenanceTasks;
-using OneSwiss.Server.Models.MaintenanceTasks;
-
 namespace OneSwiss.Server;
 
 public static class BuiltInDbData
 {
-    public static (string User, string DisplayName, string Password) AdminUser { get; } = 
+    public static (string User, string DisplayName, string Password) AdminUser { get; } =
         ("admin", "Администратор", "admin");
+
     public static (Guid Id, string Name) AdminsAccessGroup { get; } =
         (Guid.Parse("f09113d0-789d-4232-afa0-479a5ea94716"), "Администраторы");
 
     public static (Guid Id, string Name) EveryoneGroup { get; } =
         (Guid.Parse("befbf560-225e-4768-b44b-81305413277a"), "Все");
-    
+
     public static (Guid Id, string Name) AdminsGroup { get; } =
         (Guid.Parse("09305be5-fc3b-49c6-8e04-132ead27a789"), "Администраторы");
-    
+
     public static List<(string Name, string Id, string Content)> LogTemplates { get; } =
     [
         (
