@@ -1,9 +1,13 @@
 @page "/users/{id:guid}"
 @page "/users/create"
+@using System.Security.Claims
+@using System.Transactions
 @using FluentValidation
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
 
@@ -26,16 +30,13 @@
                   OnSave="OnSave"
                   AfterSave="AfterSave">
     <MudStack>
-        <ItemSelector
-            @bind-Value="@_editor.Model!.GroupId"
-            Items="@_editor.Context!.UsersGroups.ToList()"
-            Class="mb-3"
-            ItemValueSelector="arg => arg.Id"
-            ItemNameSelector="arg => arg.Name"
-            Label="Группа пользователей"
-            For="@(() => _editor.Model!.GroupId)"/>
-        <MudTextField For="@(() => _editor.Model!.DisplayName)" Label="Отображаемое имя"
-                      @bind-Value="@_editor.Model!.DisplayName"/>
+        <MudSelect Class="mb-3" Label="Группа пользователей" For="@(() => _editor.Model!.GroupId)" @bind-Value="@_editor.Model!.GroupId">
+            @foreach (var item in _editor.Context!.UsersGroups.ToList())
+            {
+                <MudSelectItem Value="@(item.Id)">@item.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField For="@(() => _editor.Model!.DisplayName)" Label="Отображаемое имя" @bind-Value="@_editor.Model!.DisplayName"/>
         <MudStack Row>
             <MudTextField For="@(() => _editor.Model!.UserName)" Label="Логин" @bind-Value="@_editor.Model!.UserName"/>
             <PasswordInput For="@(() => _password)" @bind-Value="_password" @bind-Value:after="OnPasswordChanged"/>
@@ -75,12 +76,12 @@
         _passwordChanged = true;
     }
 
-    private async Task CheckCanChange(ApplicationUser model)
+    private async Task ThrowIfCanNotChange(ApplicationUser model)
     {
         var users = await UserManager.GetUsersInRoleAsync(Roles.Administrator);
 
         var currentUser = users.FirstOrDefault(c => c.Id == model.Id);
-        if (currentUser != null)
+        if (currentUser != null && model.GroupId != currentUser.GroupId) 
             users.Remove(currentUser);
 
         if (users.Count == 0)
@@ -94,8 +95,8 @@
         var newUser = Id == Guid.Empty;
 
         if (!newUser)
-            await CheckCanChange(obj);
-
+            await ThrowIfCanNotChange(obj);
+        
         if (_passwordChanged)
         {
             var hasher = new PasswordHasher<ApplicationUser>();
@@ -117,14 +118,14 @@
 
         if (string.IsNullOrEmpty(arg.ExternalName))
             return;
-
+        
         var schemes = await SignInManager.GetExternalAuthenticationSchemesAsync();
         var provider = schemes.FirstOrDefault();
-
+        
         if (provider == null)
             return;
-
-        _editor.Context!.UserLogins.Add(new IdentityUserLogin<Guid>
+        
+        _editor.Context!.UserLogins.Add(new IdentityUserLogin<Guid>()
         {
             UserId = arg.Id,
             LoginProvider = provider.Name,
@@ -132,7 +133,7 @@
             ProviderDisplayName = provider.DisplayName
         });
     }
-
+    
     private async Task AfterSave()
     {
         await GroupsManager.UpdateUsersRoles();
@@ -143,7 +144,7 @@
         if (obj.GroupId == Guid.Empty)
             obj.GroupId = BuiltInDbData.EveryoneGroup.Id;
     }
-
+    
     class Validator : ModelValidator<ApplicationUser>
     {
         public Validator()
@@ -151,7 +152,7 @@
             RuleFor(c => c.UserName)
                 .NotEmpty()
                 .WithMessage("Не заполнено имя пользователя");
-
+            
             RuleFor(c => c.GroupId)
                 .NotEqual(Guid.Empty)
                 .WithMessage("Не указана группа пользователей");
