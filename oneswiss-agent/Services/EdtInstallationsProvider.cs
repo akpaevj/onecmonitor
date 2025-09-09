@@ -8,10 +8,13 @@ namespace OneSwiss.Agent.Services;
 public class EdtInstallationsProvider(IConfiguration configuration)
 {
     private readonly EdtPath[] _additionalPaths = configuration.GetSection("EDT:Paths").Get<EdtPath[]>() ?? [];
-    
-    [ContextMethod("ПолучитьИнсталляции", "GetInstallations", Converter = typeof(ReadOnlyListContextConverter<EdtInstallation>))]
+
+    [ContextMethod("ПолучитьИнсталляции", "GetInstallations",
+        Converter = typeof(ReadOnlyListContextConverter<EdtInstallation>))]
     public IReadOnlyList<EdtInstallation> GetInstallations()
-        => EdtDiscoverer.GetInstalled(_additionalPaths.Select(c => (c.IsStarter, c.Path)).ToArray());
+    {
+        return EdtDiscoverer.GetInstalled(_additionalPaths.Select(c => (c.IsStarter, c.Path)).ToArray());
+    }
 
     private abstract record EdtPath(string Path, bool IsStarter);
 }

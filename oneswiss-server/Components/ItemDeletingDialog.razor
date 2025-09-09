@@ -1,11 +1,8 @@
 @inject IDbContextFactory<AppDbContext> ContextFactory
-@using Microsoft.Data.SqlClient
-@using Microsoft.Data.Sqlite
-@using Microsoft.EntityFrameworkCore
-@using Npgsql
-@using OneSwiss.Server.Extensions
 @inject ISnackbar SnackBar
 @inject ILogger<ItemDeletingDialog<T>> Logger
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Server.Extensions
 @typeparam T where T : class, OneSwiss.Server.Models.IHasId
 
 <MudDialog>
@@ -20,27 +17,25 @@
         <MudButton Color="Color.Primary" OnClick="Submit">Удалить</MudButton>
     </DialogActions>
 </MudDialog>
-@code {
-    [Parameter] 
-    public Guid Id { get; set; }
 
-    [Parameter] 
-    public string ItemName { get; set; } = string.Empty;
-    
-    [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; }
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    [Parameter] public string ItemName { get; set; } = string.Empty;
+
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
 
     private async Task Submit()
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
         var item = await context.Set<T>().FindAsync(Id);
-        
+
         try
         {
             context.Entry(item!).State = EntityState.Deleted;
-            
+
             await context.SaveChangesAsync();
-            
+
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (Exception e)
@@ -55,7 +50,7 @@
         SnackBar.ShowError(ex);
         Cancel();
     }
-    
+
     private static List<string> GetBlockingReferences(DbContext dbContext, object entity)
     {
         var entityType = dbContext.Model.FindEntityType(entity.GetType());
@@ -76,5 +71,9 @@
             select $"{navName} ({count} шт.)").ToList();
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
 }

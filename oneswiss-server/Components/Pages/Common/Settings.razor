@@ -1,12 +1,13 @@
 @page "/settings"
-@using Microsoft.AspNetCore.WebUtilities
 @using OneSwiss.Server.Attributes
-@using OneSwiss.Server.Components.Pages.TechLog
-@using OneSwiss.Server.Components.Pages.EventLogSettings
-@using OneSwiss.Server.Components.Pages.ErrorLoggingService
-@using OneSwiss.Server.Components.Pages.Notifications
 @using OneSwiss.Server.Components.Pages.AccessGroups
+@using OneSwiss.Server.Components.Pages.ErrorLoggingService
+@using OneSwiss.Server.Components.Pages.EventLogSettings
+@using OneSwiss.Server.Components.Pages.GitRepositories.GitSyncTasks
+@using OneSwiss.Server.Components.Pages.Notifications
+@using OneSwiss.Server.Components.Pages.TechLog
 @using OneSwiss.Server.Components.Pages.UsersAndGroups
+@using OneSwiss.Server.Components.Pages.CrServerProxy
 
 @inject NavigationManager NavManager
 
@@ -14,7 +15,8 @@
 
 <PageTitle>Настройки</PageTitle>
 
-<MudTabs @ref="_tabs" Position="Position.Top" @bind-ActivePanelIndex="_activeIndex" Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+<MudTabs @ref="_tabs" Position="Position.Top" @bind-ActivePanelIndex="_activeIndex" Elevation="2" Rounded="true"
+         ApplyEffectsToContainer="true" PanelClass="pa-4">
     <MudTabPanel Text="Группы доступа" ID="@("accessGroups")">
         <AccessGroups/>
     </MudTabPanel>
@@ -30,6 +32,16 @@
     <MudTabPanel Text="Сервис регистрации ошибок" ID="@("errorReporting")">
         <ErrorLoggingServiceSettings/>
     </MudTabPanel>
+    <MudTabPanel Text="Сервис синхронизации хранилищ и git" ID="@("gitSync")">
+        <GitSyncSettings/>
+    </MudTabPanel>
+    <MudTabPanel Text="Прокси серверов хранилищ" ID="@("crServersProxy")">
+        <MudStack>
+            <CrServerProxySettings/>
+            <CrServerProxyLocations/>
+            <CrServerProxyMiddlewares/>
+        </MudStack>
+    </MudTabPanel>
     <MudTabPanel Text="Уведомления" ID="@("notifications")">
         <MudStack>
             <TelegramBotSettings/>
@@ -43,12 +55,12 @@
     private MudTabs? _tabs;
     private int _activeIndex;
 
-    [SupplyParameterFromQuery]
-    public string? Tab { get; set; }
+    [SupplyParameterFromQuery] public string? Tab { get; set; }
 
     protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender && Tab != null)
             _tabs?.ActivatePanel(Tab);
     }
+
 }

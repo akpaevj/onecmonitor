@@ -5,20 +5,17 @@ namespace OneSwiss.Agent.Services.TechLog;
 
 internal class TechLogReader : IDisposable
 {
-    private readonly StreamReader _reader;
     private readonly StringBuilder _eventContentBuffer = new();
     private readonly int _prefixLength;
-
-    public string FilePath { get; private set; }
-    public long Position { get; private set; }
-    public string EventContent { get; private set; } = string.Empty;
+    private readonly StreamReader _reader;
 
     public TechLogReader(string path, long position = 0)
     {
         FilePath = path;
-        
+
         var noBomEncoding = new UTF8Encoding(false);
-        var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.SequentialScan);
+        var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096,
+            FileOptions.SequentialScan);
         _reader = new StreamReader(fileStream, noBomEncoding);
         _reader.Peek();
 
@@ -35,6 +32,16 @@ internal class TechLogReader : IDisposable
             _reader.SetPosition(3);
 
         Position = _reader.GetPosition();
+    }
+
+    public string FilePath { get; private set; }
+    public long Position { get; private set; }
+    public string EventContent { get; private set; } = string.Empty;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
     public bool MoveNext()
@@ -63,14 +70,16 @@ internal class TechLogReader : IDisposable
                 }
             }
             else if (lineContainsData && !IsEventBeginning(line)) // skip lines till the next event beginning
+            {
                 continue;
+            }
 
             if (lineContainsData)
                 _eventContentBuffer.AppendLine(line);
 
             if (eventRead)
                 break;
-            
+
             Position = _reader.GetPosition();
         }
 
@@ -78,30 +87,28 @@ internal class TechLogReader : IDisposable
     }
 
     private static bool IsEventBeginning(ReadOnlySpan<char> line)
-        => line.Length > 5
-           && char.IsDigit(line[0])
-           && char.IsDigit(line[1])
-           && line[2] == ':'
-           && char.IsDigit(line[3])
-           && char.IsDigit(line[4])
-           && line[5] == '.';
+    {
+        return line.Length > 5
+               && char.IsDigit(line[0])
+               && char.IsDigit(line[1])
+               && line[2] == ':'
+               && char.IsDigit(line[3])
+               && char.IsDigit(line[4])
+               && line[5] == '.';
+    }
 
-    private bool EventContentBufferHasData() 
-        => _eventContentBuffer.Length > _prefixLength;
+    private bool EventContentBufferHasData()
+    {
+        return _eventContentBuffer.Length > _prefixLength;
+    }
 
     private void Dispose(bool disposing)
     {
-        if (!disposing) 
+        if (!disposing)
             return;
-            
+
         _reader.Dispose();
         _eventContentBuffer.Clear();
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
     ~TechLogReader()

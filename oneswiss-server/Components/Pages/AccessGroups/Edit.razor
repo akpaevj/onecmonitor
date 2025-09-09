@@ -13,16 +13,17 @@
 @attribute [ExtAuthorize]
 
 <EditDatabaseForm @ref="_editor" T="AccessGroup"
-                    Id="Id"
-                    Route="settings?tab=accessGroups"
-                    Title="Новая группа доступа"
-                    NameSelector="@(c => c.Name)"
-                    ModelSelector="ModelSelector"
-                    OnUpdate="OnUpdate"
-                    AfterSave="AfterSave"
-                    Validation="_validator.ValidateValue">
+                  Id="Id"
+                  Route="settings?tab=accessGroups"
+                  Title="Новая группа доступа"
+                  NameSelector="@(c => c.Name)"
+                  ModelSelector="ModelSelector"
+                  OnUpdate="OnUpdate"
+                  AfterSave="AfterSave"
+                  Validation="_validator.ValidateValue">
     <MudStack>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" Label="Наименование" @bind-Value="@_editor.Model!.Name"/>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" Label="Наименование"
+                      @bind-Value="@_editor.Model!.Name"/>
         <ItemsSelector T="ApplicationRole"
                        @bind-SelectedValues="@_editor.Model!.Roles"
                        Items="@_editor.Context!.Roles.ToList()"
@@ -37,14 +38,16 @@
     private EditDatabaseForm<AccessGroup> _editor = null!;
 
     /// <summary>
-    /// Идентификатор элемента
+    ///     Идентификатор элемента
     /// </summary>
     [Parameter]
     public Guid Id { get; set; }
 
     private static IQueryable<AccessGroup> ModelSelector(IQueryable<AccessGroup> arg)
-        => arg.Include(c => c.Roles);
-    
+    {
+        return arg.Include(c => c.Roles);
+    }
+
     private void OnUpdate(AccessGroup model)
     {
         ModelHelper.UpdateModelItems(_editor.Model!.Roles, model.Roles);
@@ -54,7 +57,7 @@
     {
         await GroupsManager.UpdateUsersRoles();
     }
-    
+
     class Validator : ModelValidator<AccessGroup>
     {
         public Validator()

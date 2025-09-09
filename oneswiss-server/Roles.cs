@@ -1,13 +1,9 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace OneSwiss.Server;
 
-public static class BuiltInRoles
+public static class Roles
 {
-    private static readonly List<(string Name, string Description)> AllRoles;
-    public static IReadOnlyList<(string Name, string Description)> Roles => AllRoles;
-    
     public const string Administrator = "Administrator";
     public const string ReadClusterItems = "ReadClusters";
     public const string WriteClusterItemsInfo = "WriteClusterInfo";
@@ -18,9 +14,26 @@ public static class BuiltInRoles
     public const string ReadTechLogSeances = "ReadTechLogSeances";
     public const string WriteTechLogSeances = "WriteTechLogSeances";
     public const string ReadErrorLoggingReports = "ReadErrorLoggingReports";
+    public const string ReadGitRepositories = "ReadGitRepositories";
+    public const string WriteGitRepositories = "WriteGitRepositories";
+    private static readonly List<(string Name, string Description)> _roles;
+
+    static Roles()
+    {
+        _roles = GetConstants(typeof(Roles)).Select(c =>
+        {
+            var name = (string)c.GetRawConstantValue()!;
+            var description = GetDescription(name);
+
+            return (name, description);
+        }).ToList();
+    }
+
+    public static IReadOnlyList<(string Name, string Description)> AllRoles => _roles;
 
     private static string GetDescription(string role)
-        => role switch
+    {
+        return role switch
         {
             Administrator => "Администратор",
             ReadClusterItems => "Просмотр элементов кластеров",
@@ -32,20 +45,12 @@ public static class BuiltInRoles
             ReadTechLogSeances => "Чтение сеансов сбора ТЖ",
             WriteTechLogSeances => "Изменение сеансов сбора ТЖ",
             ReadErrorLoggingReports => "Просмотр отчетов об ошибках",
+            ReadGitRepositories => "Чтение репозиториев Git",
+            WriteGitRepositories => "Запись репозиториев Git",
             _ => throw new ArgumentOutOfRangeException(nameof(role), role, null)
         };
-    
-    static BuiltInRoles()
-    {
-        AllRoles = GetConstants(typeof(BuiltInRoles)).Select(c =>
-        {
-            var name = (string)c.GetRawConstantValue()!;
-            var description = GetDescription(name);
-
-            return (name, description);
-        }).ToList();
     }
-    
+
     private static List<FieldInfo> GetConstants(Type type)
     {
         var fieldInfos = type.GetFields(BindingFlags.Public |

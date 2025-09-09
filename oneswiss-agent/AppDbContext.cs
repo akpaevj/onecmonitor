@@ -1,31 +1,31 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OneSwiss.Agent.Converters;
 using OneSwiss.Agent.Models;
-using ScriptEngine.Machine;
 
-namespace OneSwiss.Agent
+namespace OneSwiss.Agent;
+
+public class AppDbContext : DbContext
 {
-    public class AppDbContext : DbContext
+    public AppDbContext(IHostEnvironment hostEnvironment)
     {
-        public string DbPath { get; }
+        DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-agent.db");
+    }
 
-        public DbSet<AgentInstance> AgentInstance { get; set; }
+    public string DbPath { get; }
 
-        public AppDbContext(IHostEnvironment hostEnvironment)
-            => DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-agent.db");
+    public DbSet<AgentInstance> AgentInstance { get; set; }
 
-        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-        {
-            configurationBuilder.Properties<Guid>()
-                .HaveConversion<GuidStringConverter>();
-            
-            configurationBuilder.Properties<DateTime>()
-                .HaveConversion<DateTimeStringConverter>();
-        }
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<Guid>()
+            .HaveConversion<GuidStringConverter>();
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseSqlite($"Data Source={DbPath}");
-        }
+        configurationBuilder.Properties<DateTime>()
+            .HaveConversion<DateTimeStringConverter>();
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlite($"Data Source={DbPath}");
     }
 }

@@ -1,17 +1,17 @@
 @page "/techlog/templates/{id:guid}"
 @page "/techlog/templates/create"
 @using OneSwiss.Server.Attributes
-@using OneSwiss.Server.Models
 @using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Models
 @inject IJSRuntime JS
 
-@attribute [ExtAuthorize(BuiltInRoles.WriteTechLogSeances)]
+@attribute [ExtAuthorize(Roles.WriteTechLogSeances)]
 
 <EditDatabaseForm @ref="_editor" T="LogTemplate" Id="Id"
-                    NameSelector="template => template.Name"
-                    Route="techlog/templates"
-                    Title="Новый шаблон сбора технологического журнала"
-                    BeforeValidation="BeforeValidation">
+                  NameSelector="template => template.Name"
+                  Route="techlog/templates"
+                  Title="Новый шаблон сбора технологического журнала"
+                  BeforeValidation="BeforeValidation">
     <MudStack>
         <MudTextField Class="mb-3" Label="Наименование" @bind-Value="@_editor.Model!.Name"
                       Required="true" RequiredError="Не заполнено наименование"/>
@@ -23,9 +23,8 @@
 {
     private EditDatabaseForm<LogTemplate> _editor = null!;
 
-    [Parameter]
-    public Guid Id { get; set; }
-    
+    [Parameter] public Guid Id { get; set; }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)

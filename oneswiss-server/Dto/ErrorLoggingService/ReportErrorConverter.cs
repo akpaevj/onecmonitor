@@ -14,9 +14,9 @@ public class ReportErrorConverter : JsonConverter<ReportError>
         {
             Text = reader.GetString() ?? string.Empty
         };
-        
+
         reader.Read();
-        
+
         // старт массива категорий
         reader.Read();
 
@@ -27,14 +27,14 @@ public class ReportErrorConverter : JsonConverter<ReportError>
             categories.Add(reader.GetString() ?? string.Empty);
             reader.Read();
         }
-        
+
         item.Categories = categories.ToArray();
-        
+
         // конец массива категорий
         reader.Read();
-        
+
         reader.SkipTo(JsonTokenType.EndArray);
-        
+
         return item;
     }
 

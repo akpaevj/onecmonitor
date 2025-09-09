@@ -1,94 +1,151 @@
+using System.Text;
+using System.Text.RegularExpressions;
 using OneSwiss.V8.Designer.Models;
 
 namespace OneSwiss.V8.Designer.Batch;
 
-public class ConfigRepositoryReportReader : IDisposable
+public partial class ConfigRepositoryReportReader : IDisposable
 {
     private readonly StreamReader _streamReader;
-    private ConfigRepositoryReportItem? _currentItem;
     private string? _currentLine;
-    
-    public bool EndOfFile => _streamReader.EndOfStream;
-    public ConfigRepositoryReportHeader Header { get; } = new();
 
     public ConfigRepositoryReportReader(string reportPath)
     {
         _streamReader = new StreamReader(reportPath);
-        ReadHeader();
+        ReadHeader().Wait();
     }
 
-    private void ReadHeader()
+    public bool EndOfFile => _streamReader.EndOfStream;
+    public ConfigRepositoryReportHeader Header { get; } = new();
+
+    public void Dispose()
     {
-        Header.ReportBy = _streamReader.ReadLine()!;
-        
-        var date = _streamReader.ReadLine()!;
-        var time = _streamReader.ReadLine()!;
+        _streamReader.Dispose();
+    }
+
+    [GeneratedRegex(@"^(Добавлены|Изменены|Удалены)\s+\d+$", RegexOptions.Compiled | RegexOptions.ExplicitCapture)]
+    private static partial Regex ChangesRegex();
+
+    private async Task ReadHeader()
+    {
+        Header.ReportBy = await ReadField(false, "Отчет по версиям хранилища");
+
+        var date = await ReadField(false, "Дата отчета");
+        var time = await ReadField(false, "Время отчета");
+
         Header.CreatedAt = DateTime.Parse($"{date} {time}");
 
-        _currentLine = _streamReader.ReadLine();
+        await ReadNextLine();
     }
 
-    public async Task<ConfigRepositoryReportItem> NextItem(CancellationToken cancellationToken)
+    private async Task<KeyValuePair<string, string>> ReadField(bool fromCurrentLine,
+        CancellationToken cancellationToken = default)
+    {
+        if (!fromCurrentLine)
+        {
+            await ReadNextLine(cancellationToken);
+            ThrowIfEndOfFile();
+        }
+
+        var kv = ReadKeyValueFromCurrentString();
+
+        if (kv == null)
+            throw new Exception($"Неожиданная строка при чтении отчета: {_currentLine}. Ожидалось поле");
+
+        return (KeyValuePair<string, string>)kv;
+    }
+
+    private async Task<string> ReadField(bool fromCurrentLine, string expectedField,
+        CancellationToken cancellationToken = default)
+    {
+        var nextField = await ReadField(fromCurrentLine, cancellationToken);
+
+        if (!nextField.Key.Equals(expectedField, StringComparison.InvariantCultureIgnoreCase))
+            throw new Exception($"Неожиданное поле при чтении отчета {nextField}. Ожидаемое поле: {expectedField}");
+
+        return nextField.Value;
+    }
+
+    private bool CurrentLineIsField(string expectedField)
+    {
+        var kv = ReadKeyValueFromCurrentString();
+        return kv?.Key == expectedField;
+    }
+
+    public async Task<ConfigRepositoryReportItem> NextItem(bool skipChanges = false,
+        CancellationToken cancellationToken = default)
     {
         if (EndOfFile)
             throw new Exception("Достигнут конец отчета");
-        
-        var current = _currentItem;
-        _currentItem = await ReadNextItem(cancellationToken);
 
-        return current!;
+        return await ReadNextItem(skipChanges, cancellationToken);
     }
 
-    private async Task<ConfigRepositoryReportItem> ReadNextItem(CancellationToken cancellationToken)
+    private async Task<ConfigRepositoryReportItem> ReadNextItem(bool skipChanges = false,
+        CancellationToken cancellationToken = default)
     {
         var item = new ConfigRepositoryReportItem();
+        var readStarted = false;
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            if (_currentLine!.StartsWith("Версия:"))
-                item.Version = int.Parse(GetKeyValueParameter());
-            else if (_currentLine!.StartsWith("Версия конфигурации:"))
-                item.ConfigurationVersion = GetKeyValueParameter();
-            else if (_currentLine!.StartsWith("Пользователь:"))
-                item.ConfigurationVersion = GetKeyValueParameter();
-            else if (_currentLine!.StartsWith("Дата создания:"))
-            {
-                var date = GetKeyValueParameter();
-                await ReadNextLine(cancellationToken);
-                var time = GetKeyValueParameter();
-                
-                item.CreatedAt = DateTime.Parse($"{date} {time}");
-            }
-            else if (_currentLine!.StartsWith("Комментарий:"))
+            if (CurrentLineIsNull() || (CurrentLineIsField("Версия") && readStarted))
+                break; // Это конец текущего элемента отчета
+
+            if (CurrentLineIsEmpty())
             {
                 await ReadNextLine(cancellationToken);
-                item.Comment = _currentLine;
+                continue; // Пустую строку просто пропускаем
             }
-            else if (_currentLine!.StartsWith("\tУдалены"))
+
+            readStarted = true;
+
+            // Проверим, могут начаться секции Добавлены/Изменены/Удалены
+            if (CurrentLineIsChanges())
             {
-                item.Deleted = await ReadChanges(cancellationToken);
-                await ReadNextLine(cancellationToken);
-            }
-            else if (_currentLine!.StartsWith("\tДобавлены"))
-            {
+                if (skipChanges)
+                {
+                    await SkipToNextVersion(cancellationToken);
+                    return item;
+                }
+
                 item.Added = await ReadChanges(cancellationToken);
                 await ReadNextLine(cancellationToken);
+                continue;
             }
-            else if (_currentLine!.StartsWith("\tИзменены"))
+
+            var (key, value) = await ReadField(true, cancellationToken);
+
+            switch (key)
             {
-                item.Changed = await ReadChanges(cancellationToken);
-                await ReadNextLine(cancellationToken);
+                case "Версия":
+                    item.Version = int.Parse(value);
+                    break;
+                case "Версия конфигурации":
+                    item.ConfigurationVersion = value;
+                    break;
+                case "Пользователь":
+                    item.User = value;
+                    break;
+                case "Метка":
+                    item.Label = value;
+                    break;
+                case "Дата создания":
+                {
+                    var time = await ReadField(false, "Время создания", cancellationToken);
+                    item.CreatedAt = DateTime.Parse($"{value} {time}");
+                    break;
+                }
+                case "Комментарий":
+                    item.Comment = await ReadComment(cancellationToken) ?? "";
+                    continue;
+                default:
+                    throw new Exception("Неожиданная структура отчета");
             }
-            else
-                throw new Exception("Неожиданная структура отчета");
 
             await ReadNextLine(cancellationToken);
-
-            // Это начало следующего элемента или конец файла
-            if (string.IsNullOrEmpty(_currentLine) || _currentLine.StartsWith("Версия:"))
-                break;
         }
-        
+
         return item;
     }
 
@@ -98,28 +155,84 @@ public class ConfigRepositoryReportReader : IDisposable
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            var line = await _streamReader.ReadLineAsync(cancellationToken);
+            var line = await ReadNextLine(cancellationToken);
+
             if (string.IsNullOrEmpty(line))
                 break;
-            
+
             changes.Add(line);
         }
 
         return changes;
     }
 
-    private string GetKeyValueParameter()
+    private async Task<string?> ReadNextLine(CancellationToken cancellationToken = default)
     {
-        var ch = _currentLine!.IndexOf(':');
+        _currentLine = await _streamReader.ReadLineAsync(cancellationToken);
+        _currentLine = _currentLine?.Trim();
 
-        return _currentLine[(ch + 1)..].Trim();
+        return _currentLine;
     }
-    
-    private async Task ReadNextLine(CancellationToken cancellationToken)
-        => _currentLine = await _streamReader.ReadLineAsync(cancellationToken);
 
-    public void Dispose()
+    private async Task<string?> ReadComment(CancellationToken cancellationToken = default)
     {
-        _streamReader.Dispose();
+        var data = new StringBuilder();
+
+        while (true)
+        {
+            await ReadNextLine(cancellationToken);
+
+            if (CurrentLineIsNull() || CurrentLineIsChanges())
+                return data.ToString();
+
+            data.AppendLine(_currentLine);
+        }
+    }
+
+    private async Task SkipToNextVersion(CancellationToken cancellationToken = default)
+    {
+        while (!EndOfFile)
+        {
+            var line = await ReadNextLine(cancellationToken);
+
+            if (line == null || CurrentLineIsField("Версия"))
+                return;
+        }
+    }
+
+    private bool CurrentLineIsChanges()
+    {
+        return ChangesRegex().IsMatch(_currentLine!);
+    }
+
+    private bool CurrentLineIsNull()
+    {
+        return _currentLine == null;
+    }
+
+    private bool CurrentLineIsEmpty()
+    {
+        return _currentLine?.Trim() == string.Empty;
+    }
+
+    private KeyValuePair<string, string>? ReadKeyValueFromCurrentString()
+    {
+        if (_currentLine == null)
+            return null;
+
+        var line = _currentLine!.Trim();
+
+        var c = line.IndexOf(':');
+
+        if (c == -1)
+            return null;
+
+        return new KeyValuePair<string, string>(line[..c].Trim(), line[(c + 1)..].Trim());
+    }
+
+    private void ThrowIfEndOfFile()
+    {
+        if (_currentLine == null)
+            throw new Exception("Достигнут конец отчета");
     }
 }

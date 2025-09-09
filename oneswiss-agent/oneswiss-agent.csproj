@@ -1,101 +1,103 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-onecmonitor_agent-803fcdbb-c4d6-4a1b-840e-b9719d878278</UserSecretsId>
-    <RootNamespace>OneSwiss.Agent</RootNamespace>
-	<ServerGarbageCollection>true</ServerGarbageCollection>
-	<Configurations>Debug;Release;Debug agent;Debug server</Configurations>
-	<Authors>Akpaev E.A.</Authors>
-	<Company>Akpaev E.A.</Company>
-	<AssemblyVersion>0.3.1</AssemblyVersion>
-	<Version>0.3.1</Version>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>dotnet-onecmonitor_agent-803fcdbb-c4d6-4a1b-840e-b9719d878278</UserSecretsId>
+        <RootNamespace>OneSwiss.Agent</RootNamespace>
+        <ServerGarbageCollection>true</ServerGarbageCollection>
+        <Configurations>Debug;Release;Debug agent;Debug server</Configurations>
+        <Authors>Akpaev E.A.</Authors>
+        <Company>Akpaev E.A.</Company>
+        <AssemblyVersion>0.4.0</AssemblyVersion>
+        <Version>0.4.0</Version>
+        <ApplicationIcon>../icon.ico</ApplicationIcon>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="om-agent.db" />
-    <None Remove="om-agent.db-shm" />
-    <None Remove="om-agent.db-wal" />
-    <None Update="Asserts\ПодтверждениеЛегальности.epf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="install.sh">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+    <ItemGroup>
+        <None Remove="om-agent.db"/>
+        <None Remove="om-agent.db-shm"/>
+        <None Remove="om-agent.db-wal"/>
+        <None Update="Asserts\ПодтверждениеЛегальности.epf">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="install.sh">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="ClickHouse.Client" Version="7.14.0" />
-    <PackageReference Include="Duende.IdentityModel.OidcClient" Version="6.0.1" />
-    <PackageReference Include="Grpc.Tools" Version="2.72.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="MessagePack" Version="3.1.4" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.7">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.7" />
-    <PackageReference Include="OneSTools.BracketsFile" Version="2.1.9" />
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.7" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="ClickHouse.Client" Version="7.14.0"/>
+        <PackageReference Include="Duende.IdentityModel.OidcClient" Version="6.0.1"/>
+        <PackageReference Include="Grpc.Tools" Version="2.72.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="LibGit2Sharp" Version="0.31.0"/>
+        <PackageReference Include="MessagePack" Version="3.1.4"/>
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.7"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.7">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.7"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.7"/>
+        <PackageReference Include="OneSTools.BracketsFile" Version="2.1.9"/>
+        <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1"/>
+        <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.7"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\oneswiss-common\oneswiss-common.csproj" />
-    <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
-    <ProjectReference Include="..\oneswiss-oscript-integration\oneswiss-oscript-integration.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\oneswiss-common\oneswiss-common.csproj"/>
+        <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj"/>
+        <ProjectReference Include="..\oneswiss-oscript-integration\oneswiss-oscript-integration.csproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Migrations\" />
-  </ItemGroup>
+    <ItemGroup>
+        <Folder Include="Migrations\"/>
+    </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)'=='Release'">
-    <Content Remove="appsettings.Development.json" />
-    <None Include="appsettings.Development.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+    <ItemGroup Condition="'$(Configuration)'=='Release'">
+        <Content Remove="appsettings.Development.json"/>
+        <None Include="appsettings.Development.json">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="OneScript.Core">
-      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="OneScript.DebugServices">
-      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.DebugServices.dll</HintPath>
-    </Reference>
-    <Reference Include="OneScript.StandardLibrary">
-      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.StandardLibrary.dll</HintPath>
-    </Reference>
-    <Reference Include="oscript">
-      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\oscript.dll</HintPath>
-    </Reference>
-    <Reference Include="ScriptEngine">
-      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="ScriptEngine.HostedScript">
-      <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.HostedScript.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+    <ItemGroup>
+        <Reference Include="OneScript.Core">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
+        </Reference>
+        <Reference Include="OneScript.DebugServices">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.DebugServices.dll</HintPath>
+        </Reference>
+        <Reference Include="OneScript.StandardLibrary">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.StandardLibrary.dll</HintPath>
+        </Reference>
+        <Reference Include="oscript">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\oscript.dll</HintPath>
+        </Reference>
+        <Reference Include="ScriptEngine">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="ScriptEngine.HostedScript">
+            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.HostedScript.dll</HintPath>
+        </Reference>
+    </ItemGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <DebugSymbols>False</DebugSymbols>
-    <DebugType>none</DebugType>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
-    <NoWarn>$(NoWarn);SA0001</NoWarn>
-  </PropertyGroup>
-	
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <DebugSymbols>False</DebugSymbols>
+        <DebugType>none</DebugType>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
+        <NoWarn>$(NoWarn);SA0001</NoWarn>
+    </PropertyGroup>
+
 </Project>

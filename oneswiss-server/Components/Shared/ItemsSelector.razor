@@ -1,18 +1,19 @@
-
 @using System.Linq.Expressions
 @typeparam T
 
-<MudSelect 
+<MudSelect
     T="T"
     Label="@_label"
-    MultiSelection="true" 
-    SelectedValues="SelectedValues" 
+    MultiSelection="true"
+    SelectedValues="SelectedValues"
     SelectedValuesChanged="SelectedValuesChangedInternal"
     Variant="Variant.Outlined"
     OuterClass="@Class"
     ToStringFunc="arg => NameSelector(arg!)"
+    Disabled="@Disabled"
     SelectAll="true"
     SelectAllText="Выделить все"
+    Di
     For="For">
     @foreach (var item in Items)
     {
@@ -21,29 +22,24 @@
 </MudSelect>
 
 @code {
-    
+
     private string? _label;
+
+    [Parameter] public string Class { get; set; } = string.Empty;
+
+    [Parameter] public string? Title { get; set; } = string.Empty;
     
-    [Parameter] 
-    public string Class { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
 
-    [Parameter] 
-    public string? Title { get; set; } = string.Empty;
-    
-    [Parameter] 
-    public List<T> Items { get; set; } = [];
+    [Parameter] public List<T> Items { get; set; } = [];
 
-    [Parameter] 
-    public Func<T, string> NameSelector { get; set; } = null!;
+    [Parameter] public Func<T, string> NameSelector { get; set; } = null!;
 
-    [Parameter] 
-    public List<T>? SelectedValues { get; set; } = [];
-    
-    [Parameter]
-    public EventCallback<List<T>> SelectedValuesChanged { get; set; }
+    [Parameter] public List<T>? SelectedValues { get; set; } = [];
 
-    [Parameter]
-    public Expression<Func<T>>? For { get; set; }
+    [Parameter] public EventCallback<List<T>> SelectedValuesChanged { get; set; }
+
+    [Parameter] public Expression<Func<T>>? For { get; set; }
 
     protected override void OnInitialized()
     {
@@ -61,4 +57,5 @@
     {
         _label = string.IsNullOrEmpty(Title) ? $"Выбрано: {SelectedValues?.Count ?? 0}" : $"{Title} ({SelectedValues?.Count ?? 0})";
     }
+
 }

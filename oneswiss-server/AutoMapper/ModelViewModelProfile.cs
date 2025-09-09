@@ -15,8 +15,9 @@ public class ModelViewModelProfile : Profile
             .ConvertUsing((m, vm) =>
             {
                 vm ??= new ErrorReportViewModel();
-                
-                var reportRoot = JsonSerializer.Deserialize<ReportRoot>(m.Report, ErrorReportsHelper.ReportSerializerOptions);
+
+                var reportRoot =
+                    JsonSerializer.Deserialize<ReportRoot>(m.Report, ErrorReportsHelper.ReportSerializerOptions);
 
                 vm.Id = m.Id;
                 vm.Configuration = reportRoot!.ConfigInfo.Name;
@@ -25,7 +26,7 @@ public class ModelViewModelProfile : Profile
                 vm.PlatformVersion = reportRoot.ServerInfo.AppVersion;
                 vm.UserName = reportRoot.SessionInfo.UserName;
                 vm.AdditionalInfo = reportRoot.AdditionalInfo ?? string.Empty;
-                
+
                 return vm;
             });
 

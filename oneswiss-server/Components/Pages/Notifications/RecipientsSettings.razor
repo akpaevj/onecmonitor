@@ -1,14 +1,14 @@
-@using FluentValidation
-@using Microsoft.EntityFrameworkCore
-@using OneSwiss.Common.Extensions
-@using OneSwiss.Server.Attributes
-@using OneSwiss.Server.Components.Layout
-@using OneSwiss.Server.Models
-@using OneSwiss.Server.Components.Shared
-@using OneSwiss.Server.Extensions
-@using OneSwiss.Server.Helpers
 @inject ISnackbar SnackBar
 @inject IDbContextFactory<AppDbContext> ContextFactory
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Common.Models
+@using OneSwiss.Server.Attributes
+@using OneSwiss.Server.Components.Layout
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Helpers
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Components.Shared
 @implements IDisposable
 
 @attribute [ExtAuthorize]
@@ -16,18 +16,22 @@
 <MudText Typo="Typo.h6" Class="mb-3">Получатели уведомлений</MudText>
 
 <MudStack>
-    <MudTable T="NotificationRecipient" 
-              Items="@_items" 
-              @bind-SelectedItems="_selectedItems" 
+    <MudTable T="NotificationRecipient"
+              Items="@_items"
+              @bind-SelectedItems="_selectedItems"
               MultiSelection="true"
               SelectOnRowClick="false"
               Dense="true">
         <ToolBarContent>
             <MudStack Row Spacing="3">
-                <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="AddNewRecipient">Добавить</MudButton>
+                <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="AddNewRecipient">
+                    Добавить
+                </MudButton>
                 @if (_selectedItems.Count > 0)
                 {
-                    <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error" OnClick="DeleteRecipients">Удалить</MudButton>
+                    <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error"
+                               OnClick="DeleteRecipients">Удалить
+                    </MudButton>
                 }
             </MudStack>
         </ToolBarContent>
@@ -63,12 +67,13 @@
             </MudTd>
         </RowTemplate>
     </MudTable>
-    
+
     <MudStack Breakpoint="Breakpoint.SmAndDown" AlignItems="AlignItems.End">
         <MudSpacer/>
-        <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="Save">Сохранить</MudButton>
+        <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="Save">Сохранить
+        </MudButton>
     </MudStack>
-    
+
 </MudStack>
 
 @code
@@ -76,9 +81,8 @@
     private AppDbContext? _context;
     private List<NotificationRecipient> _items = [];
     private HashSet<NotificationRecipient> _selectedItems = [];
-    
-    [CascadingParameter(Name = "NavMenu")]
-    public NavMenu NavMenu { get; set; }
+
+    [CascadingParameter(Name = "NavMenu")] public NavMenu NavMenu { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -91,7 +95,7 @@
         if (Validate())
         {
             ModelHelper.UpdateDbSet(_items, _context!);
-            
+
             await _context!.SaveChangesAsync();
             SnackBar.ShowSuccess("Объект записан");
             await NavMenu.NotifyStateHasChanged();
@@ -125,7 +129,7 @@
     private bool Validate()
     {
         var valid = true;
-        
+
         for (var index = 0; index < _items.Count; index++)
         {
             var notificationRecipient = _items[index];

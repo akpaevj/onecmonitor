@@ -1,0 +1,64 @@
+@using OneSwiss.Server.Models
+<MudTr>
+    <td colspan="5">
+        <MudCard Elevation="0">
+            <MudCardContent Class="pa-3">
+                <MudTable T="ConfigurationRepositoryMiddlewareArgument"
+                          Items="@Items"
+                          @bind-SelectedItems="_selectedItems"
+                          MultiSelection="true"
+                          SelectOnRowClick="false"
+                          Dense="true">
+                    <ToolBarContent>
+                        <MudStack Row Spacing="3">
+                            <MudButton Variant="Variant.Text" Size="Size.Small" Color="Color.Primary" OnClick="AddNewItem">
+                                Добавить аргумент
+                            </MudButton>
+                            @if (_selectedItems.Count > 0)
+                            {
+                                <MudButton Variant="Variant.Text" Size="Size.Small" Color="Color.Error"
+                                           OnClick="DeleteItems">Удалить аргументы
+                                </MudButton>
+                            }
+                        </MudStack>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTd>Ключ</MudTd>
+                        <MudTd>Значение</MudTd>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Ключ">
+                            <MudTextField Class="mb-3" For="@(() => context.Key)"
+                                          @bind-Value="@context.Key"/>
+                        </MudTd>
+                        <MudTd DataLabel="Значение">
+                            <MudTextField Class="mb-3" For="@(() => context.Value)"
+                                          @bind-Value="@context.Value"/>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudCardContent>
+        </MudCard>
+    </td>
+</MudTr>
+
+@code {
+    private HashSet<ConfigurationRepositoryMiddlewareArgument> _selectedItems = [];
+    
+    [Parameter]
+    public List<ConfigurationRepositoryMiddlewareArgument> Items { get; set; }
+    
+    private void AddNewItem()
+    {
+        Items.Add(new ConfigurationRepositoryMiddlewareArgument
+        {
+            Id = Guid.NewGuid(),
+        });
+    }
+
+    private void DeleteItems()
+    {
+        foreach (var selectedItem in _selectedItems)
+            Items.Remove(selectedItem);
+    }
+}

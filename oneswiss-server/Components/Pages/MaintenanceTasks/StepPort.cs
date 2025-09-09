@@ -20,14 +20,14 @@ public class StepPort(
     public bool IsSuccess => Type == StepPortType.Success;
     public bool IsFailure => Type == StepPortType.Failure;
     public new StepNode Parent => (base.Parent as StepNode)!;
-    
+
     public override bool CanAttachTo(ILinkable other)
     {
-        if (other is not StepPort port) 
+        if (other is not StepPort port)
             return false;
-        
+
         var canAttach = port.Links.Count == 0 && port.Parent.Id != Parent.Id && port.Type == StepPortType.In;
-            
+
         // Найдем все циклы диаграммы, если есть хоть один, то отказываем в линке
         if (canAttach)
             return !diagram.Nodes.Cast<StepNode>()
@@ -49,17 +49,18 @@ public class StepPort(
             {
                 if (!visited.Add(port.Id))
                     return true;
-                
+
                 foreach (var link in port.Links)
                 {
-                    if (link.Target is not SinglePortAnchor anchor) 
+                    if (link.Target is not SinglePortAnchor anchor)
                         continue;
 
-                    if (anchor.Model is PortModel nextPort && Dfs(nextPort.Parent.Ports.Where(c => c.Id != nextPort.Id).ToList()))
+                    if (anchor.Model is PortModel nextPort &&
+                        Dfs(nextPort.Parent.Ports.Where(c => c.Id != nextPort.Id).ToList()))
                         return true;
                 }
             }
-            
+
             return false;
         }
     }

@@ -6,41 +6,43 @@ using OneSwiss.Server.Hubs;
 
 namespace OneSwiss.Server.Services;
 
-public class UpdatesChecker(UpdatesChecker.State state, IHubContext<UpdatesCheckingHub> hub, ILogger<UpdatesChecker> logger) : BackgroundService
+public class UpdatesChecker(
+    UpdatesChecker.State state,
+    IHubContext<UpdatesCheckingHub> hub,
+    ILogger<UpdatesChecker> logger) : BackgroundService
 {
     private const string UpdatesCheckerName = "OneSwiss";
     private const string RepoOwnerName = "akpaevj";
     private const string RepoName = "oneswiss";
-    
+
     private readonly Version? _currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
-        {
             try
-            { 
+            {
                 var client = new GitHubClient(new ProductHeaderValue(UpdatesCheckerName));
                 var releases = await client.Repository.Release.GetAll(RepoOwnerName, RepoName);
                 var latestRelease = releases.OrderByDescending(c => c.CreatedAt).FirstOrDefault();
-                
+
                 if (latestRelease == null)
                     continue;
-                
+
                 var version = latestRelease.TagName.Replace("v", "").Trim();
 
-                if (!Regex.IsMatch(version, @"^\d+\.\d+\.\d+$")) 
+                if (!Regex.IsMatch(version, @"^\d+\.\d+\.\d+$"))
                     continue;
-                
+
                 version += ".0";
-                
+
                 state.UpdatesAvailable = new Version(version).CompareTo(_currentVersion) < 0;
 
-                if (!state.UpdatesAvailable) 
+                if (!state.UpdatesAvailable)
                     continue;
-                
+
                 state.ReleaseInfo = latestRelease;
-                await hub.Clients.All.SendAsync("UpdatesAvailable", cancellationToken: stoppingToken);
+                await hub.Clients.All.SendAsync("UpdatesAvailable", stoppingToken);
             }
             catch (Exception e)
             {
@@ -48,9 +50,8 @@ public class UpdatesChecker(UpdatesChecker.State state, IHubContext<UpdatesCheck
             }
             finally
             {
-                await  Task.Delay(60 * 60 * 1000, stoppingToken);
+                await Task.Delay(60 * 60 * 1000, stoppingToken);
             }
-        }
     }
 
     public class State

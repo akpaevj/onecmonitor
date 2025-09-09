@@ -4,5 +4,5 @@ namespace OneSwiss.V8.Platform.RemoteAdministration;
 public class RacFieldAttribute(string name) : Attribute
 {
     public string Name { get; set; } = name;
-    public RacFieldTrueFalseForm TrueFalseForm  { get; set; } = RacFieldTrueFalseForm.TrueFalse;
+    public RacFieldTrueFalseForm TrueFalseForm { get; set; } = RacFieldTrueFalseForm.TrueFalse;
 }

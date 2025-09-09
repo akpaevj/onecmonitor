@@ -9,9 +9,9 @@ public class LoadConfigurationStep
     public bool FromConfigRepository { get; set; }
     public Guid? FileId { get; set; }
     public Guid? ConfigurationRepositoryId { get; set; }
-    
-    [ForeignKey(nameof(FileId))]
-    public File? File { get; set; }
+
+    [ForeignKey(nameof(FileId))] public File? File { get; set; }
+
     [ForeignKey(nameof(ConfigurationRepositoryId))]
     public ConfigurationRepository? ConfigurationRepository { get; set; }
 }

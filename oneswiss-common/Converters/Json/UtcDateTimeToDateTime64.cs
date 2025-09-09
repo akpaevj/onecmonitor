@@ -1,20 +1,20 @@
 ﻿using Newtonsoft.Json;
 using OneSwiss.Common.Helpers;
 
-namespace OneSwiss.Common.Converters.Json
+namespace OneSwiss.Common.Converters.Json;
+
+public class DateTimeToUtcDateTime64 : JsonConverter<DateTime>
 {
-    public class DateTimeToUtcDateTime64 : JsonConverter<DateTime>
+    public override DateTime ReadJson(JsonReader reader, Type objectType, DateTime existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
     {
-        public override DateTime ReadJson(JsonReader reader, Type objectType, DateTime existingValue, bool hasExistingValue, JsonSerializer serializer)
-        {
-            var s = (string)reader.Value!;
+        var s = (string)reader.Value!;
 
-            return DateTime.SpecifyKind(DateTime.Parse(s), DateTimeKind.Utc);
-        }
+        return DateTime.SpecifyKind(DateTime.Parse(s), DateTimeKind.Utc);
+    }
 
-        public override void WriteJson(JsonWriter writer, DateTime value, JsonSerializer serializer)
-        {
-            writer.WriteValue(ClickHouseHelper.SerializeDateTime(value));
-        }
+    public override void WriteJson(JsonWriter writer, DateTime value, JsonSerializer serializer)
+    {
+        writer.WriteValue(ClickHouseHelper.SerializeDateTime(value));
     }
 }

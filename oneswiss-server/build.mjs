@@ -5,9 +5,9 @@ await esbuild.build({
     bundle: true,
     outfile: './wwwroot/bundle.js',
     loader: {
-        ".woff" : 'file',
-        ".woff2" : 'file',
-        ".ttf" : 'file'
+        ".woff": 'file',
+        ".woff2": 'file',
+        ".ttf": 'file'
     },
     minify: true,
     globalName: 'OM',

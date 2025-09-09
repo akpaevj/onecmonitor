@@ -1,17 +1,16 @@
 @page "/"
 @using System.Globalization
-@using Blazor.Diagrams.Core.Models.Base
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.EntityFrameworkCore
+@using MudExtensions
 @using OneSwiss.Server.Components.Pages.ServersAdministration.Cluster
 @using OneSwiss.Server.Components.Pages.ServersAdministration.InfoBase
 @using OneSwiss.Server.Components.Pages.ServersAdministration.Process
 @using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
-@using MudExtensions
-@using OneSwiss.Server.Extensions
 @inject NavigationManager NavManager
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @inject AgentsConnectionsManager AgentsConnectionsManager
@@ -21,7 +20,8 @@
 
 <PageTitle>Администрирование серверов</PageTitle>
 
-<MudSplitter EnableMargin="true" EnableSlide="true" @bind-Dimension="_dimension" @bind-Dimension:after="AfterDimensionChanged" Height="calc(100vh - 140px)">
+<MudSplitter EnableMargin="true" EnableSlide="true" @bind-Dimension="_dimension"
+             @bind-Dimension:after="AfterDimensionChanged" Height="calc(100vh - 140px)">
     <StartContent>
         <TreeView @bind-SelectedItem="_selectedItem" Class="w-100" @bind-Items="_items"/>
     </StartContent>
@@ -47,14 +47,13 @@
     private DynamicComponent? _dynamicComponent;
     private double _dimension = 20;
     private AuthenticationState _authState;
-    
-    [CascadingParameter]
-    public Task<AuthenticationState> AuthStateTask { get; set; }
+
+    [CascadingParameter] public Task<AuthenticationState> AuthStateTask { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         _authState = await AuthStateTask;
-        
+
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(NavManager.ToAbsoluteUri("/agentsHub"))
             .Build();
@@ -64,7 +63,7 @@
             await UpdateItems();
             await InvokeAsync(StateHasChanged);
         });
-        
+
         await _hubConnection.StartAsync();
 
         await UpdateItems();
@@ -75,7 +74,7 @@
         if (firstRender)
         {
             var dimension = await Js.GetLocalStorageItem<string?>("panel_dimension");
-            
+
             if (!string.IsNullOrEmpty(dimension))
             {
                 _dimension = double.Parse(dimension, CultureInfo.InvariantCulture);
@@ -92,30 +91,30 @@
         if (_dynamicComponent?.Instance is AgentInfo agentInfoView)
             await agentInfoView.UpdateState();
     }
-    
+
     private async Task<List<TreeItem>> LoadAgents()
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
         var agents = await context.Agents.AsNoTracking().ToListAsync();
-        
+
         return agents.Select(c =>
         {
             var agentIsConnected = AgentsConnectionsManager.GetAgentConnection(c.Id) != null;
-            
+
             return new TreeItem(c.Id.ToString())
             {
                 Text = c.InstanceName,
                 AdornmentIcon = Icons.Material.Filled.SupportAgent,
                 AdornmentIconColor = agentIsConnected ? Color.Success : Color.Error,
                 LoadChildrenFunc = _authState.IsInRoles(
-                    BuiltInRoles.ReadClusterItems,
-                    BuiltInRoles.WriteClusterItemsInfo)
+                    Roles.ReadClusterItems,
+                    Roles.WriteClusterItemsInfo)
                     ? () => LoadClusters(c,
                         agentIsConnected)
                     : null,
                 DynamicComponentType = typeof(AgentInfo),
                 Parameters = new Dictionary<string, object> { { "Id", c.Id } },
-                ShowDeleteItemIcon = !agentIsConnected && _authState.IsInRoles(BuiltInRoles.Administrator),
+                ShowDeleteItemIcon = !agentIsConnected && _authState.IsInRoles(Roles.Administrator),
                 DeleteItemCallBack = _ => DeleteItem(c, c.InstanceName)
             };
         }).ToList();
@@ -128,18 +127,18 @@
             .AsNoTracking()
             .Include(c => c.Credentials)
             .Where(c => c.AgentId == agent.Id).ToListAsync();
-        
+
         return items.Select(c => new TreeItem(c.Id.ToString())
         {
             Text = c.Name,
             AdornmentIcon = Icons.Material.Filled.AccountTree,
             AdornmentIconColor = Color.Warning,
             LoadChildrenFunc = () => LoadClusterChildren(c, agentIsConnected),
-            DynamicComponentType = typeof(ClusterDetails), 
+            DynamicComponentType = typeof(ClusterDetails),
             Parameters = new Dictionary<string, object> { { "Id", c.Id }, { "AgentIsConnected", agentIsConnected } }
         }).ToList();
     }
-    
+
     private Task<List<TreeItem>> LoadClusterChildren(Models.Cluster cluster, bool agentIsConnected)
     {
         var result = new List<TreeItem>
@@ -153,9 +152,9 @@
             }
         };
 
-        if (!agentIsConnected) 
+        if (!agentIsConnected)
             return Task.FromResult(result);
-        
+
         result.Add(new TreeItem($"{cluster.Id}b25e2c62-5296-4672-888b-8904dcba5882")
         {
             Text = "Рабочие процессы",
@@ -165,8 +164,8 @@
         });
 
         if (_authState.IsInRoles(
-                BuiltInRoles.ReadSessions,
-                BuiltInRoles.CloseSessions))
+                Roles.ReadSessions,
+                Roles.CloseSessions))
         {
             result.Add(new TreeItem($"{cluster.Id}730fd344-b3f0-4f4c-bf2e-42cdcf0ff2f4")
             {
@@ -180,7 +179,7 @@
 
         return Task.FromResult(result);
     }
-    
+
     private async Task<List<TreeItem>> LoadInfoBases(Models.Cluster cluster, bool agentIsConnected)
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
@@ -190,7 +189,7 @@
             .Include(c => c.Credentials)
             .Where(c => c.ClusterId == cluster.Id)
             .ToListAsync();
-        
+
         return items.Select(c => new TreeItem(c.Id.ToString())
         {
             Text = c.Name,
@@ -198,7 +197,7 @@
             AdornmentIconColor = Color.Info,
             LoadChildrenFunc = () => LoadInfoBaseChildren(c),
             DynamicComponentType = typeof(InfoBaseDetails),
-            Parameters = new Dictionary<string, object> { { "Id", c.Id }, { "AgentIsConnected", agentIsConnected } },
+            Parameters = new Dictionary<string, object> { { "Id", c.Id }, { "AgentIsConnected", agentIsConnected } }
         }).ToList();
     }
 
@@ -207,44 +206,46 @@
         var result = new List<TreeItem>();
 
         if (_authState.IsInRoles(
-                BuiltInRoles.ReadSessions,
-                BuiltInRoles.CloseSessions))
+                Roles.ReadSessions,
+                Roles.CloseSessions))
             result.Add(new TreeItem($"{infoBase.Id}730fd344-b3f0-4f4c-bf2e-42cdcf0ff2f4")
             {
                 Text = "Сеансы",
                 AdornmentIcon = Icons.Material.Filled.PersonPin,
                 AdornmentIconColor = Color.Secondary,
                 DynamicComponentType = typeof(Sessions),
-                Parameters = new Dictionary<string, object> { { "Cluster", infoBase.Cluster }, { "InfoBase", infoBase } } 
+                Parameters = new Dictionary<string, object> { { "Cluster", infoBase.Cluster }, { "InfoBase", infoBase } }
             });
-        
+
         return Task.FromResult(result);
     }
-    
+
     private async Task<List<TreeItem>> LoadV8Processes(Models.Cluster cluster)
     {
         var connection = AgentsConnectionsManager.GetAgentConnection(cluster.AgentId);
         var processes = await connection!.GetV8Processes(cluster, CancellationToken.None);
-        
+
         return processes.Select(c => new TreeItem(c.Id.ToString())
         {
             Text = $"{c.Host} ({c.Pid})",
             AdornmentIcon = Icons.Material.Filled.WorkHistory,
             AdornmentIconColor = Color.Tertiary,
             DynamicComponentType = typeof(V8ProcessDetails),
-            Parameters = new Dictionary<string, object>{ { "ClusterId", cluster.Id }, { "Id", Guid.Parse(c.Id) } }
+            Parameters = new Dictionary<string, object> { { "ClusterId", cluster.Id }, { "Id", Guid.Parse(c.Id) } }
         }).ToList();
     }
 
     private async Task AfterDimensionChanged()
-        => await Js.SetLocalStorageItem("panel_dimension", _dimension.ToString(CultureInfo.InvariantCulture));
+    {
+        await Js.SetLocalStorageItem("panel_dimension", _dimension.ToString(CultureInfo.InvariantCulture));
+    }
 
     private async Task DeleteItem<T>(T item, string name) where T : class, IHasId
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
 
         await DialogService.ShowItemDeletingDialog<T>(item.Id, name);
-        
+
         await UpdateItems();
         await InvokeAsync(StateHasChanged);
     }

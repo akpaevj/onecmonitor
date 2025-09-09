@@ -9,24 +9,24 @@ public static partial class V8Platforms
         var paths = GetDefaultInstallationPaths();
         if (additionalPaths != null)
             paths = paths.Concat(additionalPaths).Distinct().ToArray();
-        
+
         return GetInstalledPlatformsInternal(paths).OrderBy(c => c.Version).ToList();
     }
 
     private static List<V8Platform> GetInstalledPlatformsInternal(string[] paths)
     {
         var platforms = new List<V8Platform>();
-        
+
         foreach (var path in paths)
         {
-            if (!Directory.Exists(path)) 
+            if (!Directory.Exists(path))
                 continue;
 
             platforms.AddRange(
                 Directory.GetDirectories(
-                    path, 
-                    "*", 
-                    SearchOption.TopDirectoryOnly
+                        path,
+                        "*",
+                        SearchOption.TopDirectoryOnly
                     )
                     .Where(i => V8VersionFolderRegex().IsMatch(Path.GetFileName(i)))
                     .Select(directory =>
@@ -35,7 +35,7 @@ public static partial class V8Platforms
                         var ras = ExecutableExists(directory, "ras");
                         var rac = ExecutableExists(directory, "rac");
                         var ibcmd = ExecutableExists(directory, "ibcmd");
-                        
+
                         return new V8Platform
                         {
                             PlatformPath = directory,
@@ -50,35 +50,39 @@ public static partial class V8Platforms
                             IbcmdPath = ibcmd.Path
                         };
                     })
-                );
+            );
         }
 
         return platforms;
     }
-    
+
     private static (bool Exists, string Path) ExecutableExists(string platformPath, string name)
     {
         var binPath = Environment.OSVersion.Platform == PlatformID.Win32NT
             ? Path.Join(platformPath, "bin")
             : platformPath;
-        
+
         var path = Path.Join(binPath, name + (Environment.OSVersion.Platform == PlatformID.Win32NT ? ".exe" : ""));
         return (File.Exists(path), path);
     }
 
     public static string[] GetDefaultInstallationPaths()
-        => Environment.OSVersion.Platform switch
+    {
+        return Environment.OSVersion.Platform switch
         {
-            PlatformID.Win32NT => [
+            PlatformID.Win32NT =>
+            [
                 Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "1cv8"),
                 Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "1cv8")
             ],
-            _ => [
+            _ =>
+            [
                 "/opt/1cv8/x86_64",
                 "/opt/1cv8/x86"
             ]
         };
-    
+    }
+
     [GeneratedRegex(@"\d+\.\d+\.\d+\.\d+")]
     private static partial Regex V8VersionFolderRegex();
 }

@@ -6,10 +6,9 @@ namespace OneSwiss.Common.Models.MaintenanceTasks;
 [EnumerationType("ТипНодыШагаОбслуживания", "MaintenanceStepNodeKind")]
 public enum MaintenanceStepNodeKind
 {
-    [EnumValue("Простая", "Simple")]
-    [Display(Name = "Простой")]
+    [EnumValue("Простая", "Simple")] [Display(Name = "Простой")]
     Simple,
-    [EnumValue("Попытка", "TryCatch")]
-    [Display(Name = "Попытка/Исключение")]
+
+    [EnumValue("Попытка", "TryCatch")] [Display(Name = "Попытка/Исключение")]
     TryCatch
 }

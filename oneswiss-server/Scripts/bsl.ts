@@ -1,5 +1,5 @@
 import * as monaco from 'monaco-editor';
-import {languages} from "monaco-editor";
+import {languages} from 'monaco-editor';
 import IMonarchLanguage = languages.IMonarchLanguage;
 
 const monarchBslLangDef: IMonarchLanguage =
@@ -53,38 +53,38 @@ const monarchBslLangDef: IMonarchLanguage =
                 [/[()\[\]\{\}]/, "delimiter.bracket"],
                 [/[;,.]/, "delimiter"],
                 [/"([^"\\]|\\.)*$/, "string.invalid"],
-                [/"/, { token: "string.quote", bracket: "@open", next: "@string" }],
+                [/"/, {token: "string.quote", bracket: "@open", next: "@string"}],
                 [/'([^'\\]|\\.)*$/, "string.invalid"],
-                [/'/, { token: "string.quote", bracket: "@open", next: "@string_single" }]
+                [/'/, {token: "string.quote", bracket: "@open", next: "@string_single"}]
             ],
             "string": [
                 [/[^\\"]+/, "string"],
                 [/\\./, "string.escape"],
-                [/"/, { token: "string.quote", bracket: "@close", next: "@pop" }]
+                [/"/, {token: "string.quote", bracket: "@close", next: "@pop"}]
             ],
             "string_single": [
                 [/[^\\']+/, "string"],
                 [/\\./, "string.escape"],
-                [/'/, { token: "string.quote", bracket: "@close", next: "@pop" }]
+                [/'/, {token: "string.quote", bracket: "@close", next: "@pop"}]
             ]
         }
     }
 
 export function registerBslInMonaco() {
-    monaco.languages.register({ id: 'bsl' });
+    monaco.languages.register({id: 'bsl'});
     monaco.languages.setMonarchTokensProvider('bsl', monarchBslLangDef);
 
     monaco.editor.defineTheme('1c-theme', {
         base: 'vs',
         inherit: true,
         rules: [
-            { token: 'keyword.red', foreground: 'ff0000', fontStyle: 'bold' },
-            { token: 'identifier.blue', foreground: '0000ff' },
-            { token: 'preprocessor', foreground: '800080' },
-            { token: 'comment', foreground: '008000' },
-            { token: 'string', foreground: 'a31515' },
-            { token: 'number', foreground: '098658' },
-            { token: 'delimiter', foreground: '000000' }
+            {token: 'keyword.red', foreground: 'ff0000', fontStyle: 'bold'},
+            {token: 'identifier.blue', foreground: '0000ff'},
+            {token: 'preprocessor', foreground: '800080'},
+            {token: 'comment', foreground: '008000'},
+            {token: 'string', foreground: 'a31515'},
+            {token: 'number', foreground: '098658'},
+            {token: 'delimiter', foreground: '000000'}
         ],
         colors: {
             'editor.foreground': '#000000', // Общий цвет текста

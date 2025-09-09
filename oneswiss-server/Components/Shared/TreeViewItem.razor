@@ -1,5 +1,4 @@
 @inject ISnackbar Snackbar
-@using OneSwiss.Server.Components.Pages.ServersAdministration
 @using OneSwiss.Server.Extensions
 @implements IDisposable
 
@@ -14,7 +13,8 @@
             }
             else
             {
-                <MudIconButton Class="mr-3" Icon="@_icon" Size="Size.Small" OnClick="@(() => SetItemExpanded(!Item.Expanded))"/>
+                <MudIconButton Class="mr-3" Icon="@_icon" Size="Size.Small"
+                               OnClick="@(() => SetItemExpanded(!Item.Expanded))"/>
             }
             @if (!string.IsNullOrEmpty(Item.AdornmentIcon))
             {
@@ -26,11 +26,13 @@
             <MudSpacer/>
             @if (Item.ShowEditItemIcon)
             {
-                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OnClickEditItem(Item))" Color="Color.Info"/>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                               OnClick="@(() => OnClickEditItem(Item))" Color="Color.Info"/>
             }
             @if (Item.ShowDeleteItemIcon)
             {
-                <MudIconButton Class="ms-3" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => OnClickDeleteItem(Item))" Color="Color.Error"/>
+                <MudIconButton Class="ms-3" Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                               OnClick="@(() => OnClickDeleteItem(Item))" Color="Color.Error"/>
             }
         </MudStack>
     </MudButton>
@@ -51,19 +53,16 @@
     private string _paddingStyle = "padding-left: 0px";
     private Color _color = Color.Default;
 
-    [CascadingParameter] 
-    protected TreeView? Tree { get; set; }
-    
-    [Parameter] 
-    public TreeItem Item { get; set; } = null!;
-    
-    [Parameter] 
-    public bool IsSelected { get; set; }
+    [CascadingParameter] protected TreeView? Tree { get; set; }
+
+    [Parameter] public TreeItem Item { get; set; } = null!;
+
+    [Parameter] public bool IsSelected { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         Item.IsSelected = IsSelected;
-        
+
         Tree?.RegisterItem(this);
         await UpdateFullState();
     }
@@ -71,16 +70,16 @@
     public async Task UpdateFullState()
     {
         await UpdateVisualState();
-        
+
         if (Item.Expanded)
             await LoadChildrenItems();
     }
-    
+
     public async Task UpdateVisualState()
     {
         _color = Item.IsSelected ? Color.Primary : Color.Default;
         _paddingStyle = $"padding-left: {Item.Level * 20}px;";
-        
+
         if (Item.LoadChildrenFunc == null)
             _icon = null;
         else
@@ -99,7 +98,7 @@
             try
             {
                 var children = await Item.LoadChildrenFunc.Invoke();
-            
+
                 foreach (var treeItem in children)
                     treeItem.Parent = Item;
 
@@ -110,7 +109,7 @@
                 Snackbar.ShowError(e);
                 Item.Expanded = false;
             }
-                
+
             _isLoading = false;
             await UpdateVisualState();
         }
@@ -130,7 +129,7 @@
             await UpdateFullState();
         }
     }
-    
+
     public void Dispose()
     {
         Tree?.UnregisterItem(this);
@@ -141,7 +140,7 @@
         if (Item.EditItemCallBack != null)
             await Item.EditItemCallBack.Invoke(item);
     }
-    
+
     private async Task OnClickDeleteItem(TreeItem item)
     {
         if (Item.DeleteItemCallBack != null)

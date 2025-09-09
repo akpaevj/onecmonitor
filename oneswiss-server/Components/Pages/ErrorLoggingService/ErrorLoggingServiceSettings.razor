@@ -1,18 +1,19 @@
 @using FluentValidation
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
-
 @attribute [ExtAuthorize]
 
 <SettingsForm @ref="_editor" T="Models.ErrorLoggingServiceSettings"
-                    Validation="_validator.ValidateValue"
-                    OnInitialize="OnInitialize">
+              Validation="_validator.ValidateValue"
+              OnInitialize="OnInitialize">
     <MudStack>
         <MudSwitch Class="mb-3" Label="Включен" @bind-Value="@_editor.Model!.Enabled" Color="Color.Primary"/>
-        <MudTextField Class="mb-3"  For="@(() => _editor.Model!.Message)" Label="Сообщение пользователю" @bind-Value="@_editor.Model!.Message"/>
-        <MudNumericField Class="mb-3"  For="@(() => _editor.Model!.ReportsTtl)" Label="Удалять ошибки старше (в днях)" @bind-Value="@_editor.Model!.ReportsTtl"/>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Message)" Label="Сообщение пользователю"
+                      @bind-Value="@_editor.Model!.Message"/>
+        <MudNumericField Class="mb-3" For="@(() => _editor.Model!.ReportsTtl)" Label="Удалять ошибки старше (в днях)"
+                         @bind-Value="@_editor.Model!.ReportsTtl"/>
     </MudStack>
-    
+
 </SettingsForm>
 
 @code

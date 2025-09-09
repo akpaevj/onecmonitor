@@ -4,6 +4,5 @@ namespace OneSwiss.Server.Dto.ErrorLoggingService;
 
 public class ReportInfoBaseInfo
 {
-    [JsonPropertyName("localeCode")]
-    public string LocaleCode { get; set; } = string.Empty;
+    [JsonPropertyName("localeCode")] public string LocaleCode { get; set; } = string.Empty;
 }

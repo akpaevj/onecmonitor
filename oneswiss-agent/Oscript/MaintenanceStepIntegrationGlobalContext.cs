@@ -5,8 +5,12 @@ using ScriptEngine.Machine.Contexts;
 namespace OneSwiss.Agent.Oscript;
 
 [GlobalContext(Category = "Методы интеграции с задачей обслуживания", ManualRegistration = true)]
-public class MaintenanceStepIntegrationGlobalContext(MaintenanceStepContext stepContext) : GlobalContextBase<MaintenanceStepIntegrationGlobalContext>
+public class MaintenanceStepIntegrationGlobalContext(MaintenanceStepContext stepContext)
+    : GlobalContextBase<MaintenanceStepIntegrationGlobalContext>
 {
     [ContextMethod("ПолучитьКонтекстЗадачиОбслуживания", "GetMaintenanceTaskContext")]
-    public MaintenanceStepContext GetContext() => stepContext;
+    public MaintenanceStepContext GetContext()
+    {
+        return stepContext;
+    }
 }

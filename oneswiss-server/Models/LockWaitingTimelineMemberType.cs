@@ -1,9 +1,8 @@
-﻿namespace OneSwiss.Server.Models
+﻿namespace OneSwiss.Server.Models;
+
+public enum LockWaitingTimelineMemberType
 {
-    public enum LockWaitingTimelineMemberType
-    {
-        Victim = 0,
-        DirectCulprit = 1,
-        IndirectCulprit = 2
-    }
+    Victim = 0,
+    DirectCulprit = 1,
+    IndirectCulprit = 2
 }

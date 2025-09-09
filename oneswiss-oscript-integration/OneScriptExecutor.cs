@@ -1,24 +1,46 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
+using OneScript.Contexts;
 using OneScript.DebugServices;
+using OneScript.Execution;
 using OneScript.Sources;
 using OneScript.StandardLibrary;
-using OneSwiss.V8.Platform;
 using ScriptEngine;
 using ScriptEngine.HostedScript;
 using ScriptEngine.Hosting;
 using ScriptEngine.Machine;
+using ScriptEngine.Machine.Contexts;
 using ExecutionContext = ScriptEngine.Machine.ExecutionContext;
 
 namespace OneSwiss.OneScript;
 
 public class OneScriptExecutor : IHostApplication
 {
+    private string[] _args;
     public EventHandler<(string Message, MessageStatusEnum Status)>? OnEcho = null;
     public EventHandler<Exception>? OnError = null;
-    private string[] _args;
-    
-    public void ExecutePackageScript(string path, string executable, string[] args, Action<ExecutionContext> engineBuilder, bool debugMode = false)
+
+    public void Echo(string str, MessageStatusEnum status = MessageStatusEnum.Ordinary)
+    {
+        OnEcho?.Invoke(this, (str, status));
+    }
+
+    public void ShowExceptionInfo(Exception exc)
+    {
+        OnError?.Invoke(this, exc);
+    }
+
+    public bool InputString([UnscopedRef] out string result, string prompt, int maxLen, bool multiline)
+    {
+        throw new NotImplementedException();
+    }
+
+    public string[] GetCommandLineArguments()
+    {
+        return _args;
+    }
+
+    public void ExecutePackageScript(string path, string executable, string[] args,
+        Action<ExecutionContext> engineBuilder, bool debugMode = false)
     {
         IDebugController? debugController = null;
 
@@ -43,7 +65,7 @@ public class OneScriptExecutor : IHostApplication
 
             var process = engine.CreateProcess(this, source);
             var exitCode = process.Start();
-            
+
             debugController?.NotifyProcessExit(exitCode);
 
             if (exitCode != 0)
@@ -54,10 +76,78 @@ public class OneScriptExecutor : IHostApplication
             debugController?.Dispose();
         }
     }
+    
+    public void ExecuteScriptMethod(string path,
+        string executable,
+        string methodName,
+        IValue[] args,
+        Action<ExecutionContext> engineBuilder,
+        bool debugMode = false)
+    {
+        IDebugController? debugController = null;
 
-    private static HostedScriptEngine CreateEngine(
-        string librariesPath, 
-        Action<ExecutionContext> engineBuilder, 
+        try
+        {
+            if (debugMode)
+            {
+                var debugServer = new TcpDebugServer(2801);
+                debugController = debugServer.CreateDebugController();
+            }
+
+            var executablePath = Path.Combine(path, executable);
+            var librariesPath = Path.Combine(path, "oscript_modules");
+
+            using var engine = CreateEngine(librariesPath, engineBuilder, debugController);
+
+            var source = SourceCodeBuilder
+                .Create()
+                .FromFile(executablePath)
+                .Build();
+
+            engine.Initialize();
+            
+            engine.SetGlobalEnvironment(this, source);
+
+            if (debugMode)
+            {
+                debugController!.Init();
+                debugController.Wait();
+            }
+            
+            var bslProcess = engine.Services.Resolve<BslProcessFactory>().NewProcess();
+            var compiledModule = engine.GetCompilerService().Compile(source, bslProcess);
+            var contextInstance = engine.Engine.NewObject(compiledModule, bslProcess);
+
+            var mn = contextInstance.GetMethodNumber(methodName);
+            
+            contextInstance.CallAsProcedure(mn, args, bslProcess);
+        }
+        finally
+        {
+            debugController?.Dispose();
+        }
+    }
+    
+    public static IExecutableModule GetCompiledModule(string path, string executable, Action<ExecutionContext> engineBuilder)
+    {
+        var executablePath = Path.Combine(path, executable);
+        var librariesPath = Path.Combine(path, "oscript_modules");
+
+        using var engine = CreateEngine(librariesPath, engineBuilder);
+
+        var source = SourceCodeBuilder
+            .Create()
+            .FromFile(executablePath)
+            .Build();
+
+        engine.Initialize();
+        var bslProcess = engine.Services.Resolve<BslProcessFactory>().NewProcess();
+        return engine.GetCompilerService().Compile(source, bslProcess);
+    }
+
+    public static HostedScriptEngine CreateEngine(
+        string librariesPath,
+        Action<ExecutionContext> engineBuilder,
         IDebugController? debugController = null)
     {
         var builder = DefaultEngineBuilder
@@ -80,26 +170,8 @@ public class OneScriptExecutor : IHostApplication
             LibraryRoot = librariesPath
         });
         
-        return new HostedScriptEngine(builder.Build());
-    }
+        var engine = builder.Build();
 
-    public void Echo(string str, MessageStatusEnum status = MessageStatusEnum.Ordinary)
-    {
-        OnEcho?.Invoke(this, (str, status));
-    }
-
-    public void ShowExceptionInfo(Exception exc)
-    {
-        OnError?.Invoke(this, exc);
-    }
-
-    public bool InputString([UnscopedRef] out string result, string prompt, int maxLen, bool multiline)
-    {
-        throw new NotImplementedException();
-    }
-
-    public string[] GetCommandLineArguments()
-    {
-        return _args;
+        return new HostedScriptEngine(engine);
     }
 }

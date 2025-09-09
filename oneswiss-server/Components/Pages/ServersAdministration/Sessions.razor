@@ -1,28 +1,34 @@
-@inject AgentsConnectionsManager AgentsConnectionsManager
-@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Components.Authorization
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Extensions
-@using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
 @using OneSwiss.V8.Platform.RemoteAdministration
-@using Microsoft.AspNetCore.Components.Authorization
+@inject AgentsConnectionsManager AgentsConnectionsManager
+@inject ISnackbar Snackbar
 
-@attribute [ExtAuthorize(BuiltInRoles.ReadSessions, BuiltInRoles.CloseSessions)]
+@attribute [ExtAuthorize(Roles.ReadSessions, Roles.CloseSessions)]
 
 <AuthorizeView>
-    <MudDataGrid T="V8Session" Loading="_isLoading" Class="h-100" @bind-SelectedItems="_selectedItems" Virtualize="true" MultiSelection="true" FixedHeader="true" Items="_items" HorizontalScrollbar="true" Filterable="true" SortMode="SortMode.Multiple" Dense="true" Hover="true">
+    <MudDataGrid T="V8Session" Loading="_isLoading" Class="h-100" @bind-SelectedItems="_selectedItems" Virtualize="true"
+                 MultiSelection="true" FixedHeader="true" Items="_items" HorizontalScrollbar="true" Filterable="true"
+                 SortMode="SortMode.Multiple" Dense="true" Hover="true">
         <ToolBarContent>
             <MudStack Row Spacing="0">
-                @if (context.IsInRoles(BuiltInRoles.CloseSessions))
+                @if (context.IsInRoles(Roles.CloseSessions))
                 {
-                    <MudButton Disabled="@(_selectedItems.Count == 0 || _isLoading)" Variant="Variant.Filled" Color="Color.Primary" OnClick="CloseSessions">Закрыть сеансы</MudButton>
+                    <MudButton Disabled="@(_selectedItems.Count == 0 || _isLoading)" Variant="Variant.Filled"
+                               Color="Color.Primary" OnClick="CloseSessions">Закрыть сеансы
+                    </MudButton>
                 }
-                <MudButton Disabled="_isLoading" Class="ml-2" Variant="Variant.Filled" Color="Color.Secondary" OnClick="UpdateItems">Обновить</MudButton>
-                <MudText Align="Align.Center" Class="ml-2" Typo="Typo.subtitle1">@($"Всего сеансов: {_items.Count()}")</MudText>
+                <MudButton Disabled="_isLoading" Class="ml-2" Variant="Variant.Filled" Color="Color.Secondary"
+                           OnClick="UpdateItems">Обновить
+                </MudButton>
+                <MudText Align="Align.Center" Class="ml-2"
+                         Typo="Typo.subtitle1">@($"Всего сеансов: {_items.Count()}")</MudText>
             </MudStack>
         </ToolBarContent>
         <Columns>
-            <SelectColumn T="V8Session" />
+            <SelectColumn T="V8Session"/>
             <PropertyColumn Property="arg => arg.InfoBase.Name" Title="Инф. база"/>
             <PropertyColumn Property="arg => arg.SessionId" Title="Номер сеанса"/>
             <PropertyColumn Property="arg => arg.StartedAt" Title="Время начала"/>
@@ -79,11 +85,9 @@
     private HashSet<V8Session> _selectedItems = [];
     private bool _needRender = true;
 
-    [Parameter] 
-    public Models.Cluster Cluster { get; set; } = null!;
-    
-    [Parameter] 
-    public Models.InfoBase? InfoBase { get; set; }
+    [Parameter] public Models.Cluster Cluster { get; set; } = null!;
+
+    [Parameter] public Models.InfoBase? InfoBase { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,7 +98,7 @@
     {
         var value = _needRender;
         _needRender = false;
-        
+
         return value;
     }
 
@@ -102,7 +106,7 @@
     {
         if (_isLoading)
             return;
-        
+
         var connection = AgentsConnectionsManager.GetAgentConnection(Cluster.AgentId);
         if (connection == null || _selectedItems.Count == 0)
             return;
@@ -110,10 +114,10 @@
         try
         {
             await connection.CloseV8Sessions(
-                Cluster, 
-                _selectedItems.Select(c => c.Id).ToList(), 
+                Cluster,
+                _selectedItems.Select(c => c.Id).ToList(),
                 CancellationToken.None);
-            
+
             Snackbar.ShowSuccess("Выполнено");
 
             await UpdateItems();
@@ -149,4 +153,5 @@
         _isLoading = false;
         _needRender = true;
     }
+
 }

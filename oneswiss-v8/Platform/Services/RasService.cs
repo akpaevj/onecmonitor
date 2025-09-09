@@ -9,18 +9,21 @@ namespace OneSwiss.V8.Platform.Services;
 [ContextClass("СервисRas", "RasService")]
 public class RasService : V8Service
 {
-    [Key(2)] 
+    [Key(2)]
     [DisplayName("Хост агента кластера")]
     [ContextProperty("ХостRagent", "RagentHost", CanWrite = false)]
     public string RagentHost { get; set; } = string.Empty;
-    [Key(3)] 
+
+    [Key(3)]
     [DisplayName("Порт агента кластера")]
     [ContextProperty("ПортRagent", "RagentPort", CanWrite = false)]
     public int RagentPort { get; set; }
-    [Key(4)] 
+
+    [Key(4)]
     [DisplayName("Порт")]
     [ContextProperty("Порт", "Port", CanWrite = false)]
     public int Port { get; set; }
+
     [Key(5)]
     [DisplayName("Платформа")]
     [ContextProperty("Платформа", "Platform", CanWrite = false)]

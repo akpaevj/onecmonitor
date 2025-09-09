@@ -1,0 +1,77 @@
+@using FluentValidation
+@using global::AutoMapper
+@using OneSwiss.Server.Attributes
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Services
+@inject AgentsConnectionsManager AgentsConnectionsManager
+@inject ISnackbar SnackBar
+
+@attribute [ExtAuthorize]
+
+<MudText Typo="Typo.h6" Class="mb-3">Сервис синхронизации хранилищ и Git</MudText>
+
+<SettingsForm @ref="_editor" T="Models.GitSyncSettings"
+              Validation="@_validator.ValidateValue"
+              AfterSave="AfterSave"
+              OnInitialize="OnInitialize">
+    <MudStack>
+        <MudSwitch Class="mb-3" Label="Включен" @bind-Value="@_editor.Model!.Enabled" Color="Color.Primary"></MudSwitch>
+        <MudCard>
+            <MudCardHeader>
+                <MudText>Значения по умолчанию</MudText>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudTextField Class="mb-3" For="@(() => _editor.Model!.BranchName)" Label="Имя ветки"
+                              @bind-Value="@_editor.Model!.BranchName"></MudTextField>
+                <MudTextField For="@(() => _editor.Model!.LfsTrackers)" Label="Отслеживатели LFS" AutoGrow
+                              @bind-Value="@_editor.Model!.LfsTrackers"></MudTextField>
+            </MudCardContent>
+        </MudCard>
+    </MudStack>
+</SettingsForm>
+
+@code
+{
+    private CancellationTokenSource? _cts;
+    private SettingsForm<Models.GitSyncSettings> _editor = null!;
+    private readonly Validator _validator = new();
+
+    private void OnInitialize((Models.GitSyncSettings Model, AppDbContext Context) obj)
+    {
+        _cts = new CancellationTokenSource();
+    }
+
+    private async Task AfterSave(Models.GitSyncSettings obj)
+    {
+        if (!obj.Enabled)
+            return;
+
+        try
+        {
+            await AgentsConnectionsManager.RaiseUpdateSettings(_cts!.Token);
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Dispose();
+    }
+
+    private class Validator : ModelValidator<Models.GitSyncSettings>
+    {
+        public Validator()
+        {
+            When(c => c.Enabled, () =>
+            {
+                RuleFor(x => x.BranchName)
+                    .NotEmpty()
+                    .WithMessage("Не указано имя ветки");
+            });
+        }
+    }
+}

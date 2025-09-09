@@ -9,13 +9,13 @@ namespace OneSwiss.Agent.Services.TechLog;
 
 public class TechLogManager
 {
-    private readonly V8PlatformsProvider _platformsProvider;
-    private readonly TechLogFoldersManager _foldersManager;
     private readonly IHostApplicationLifetime _applicationLifetime;
+    private readonly TechLogFoldersManager _foldersManager;
     private readonly ILogger<TechLogManager> _logger;
-    
-    private CancellationTokenSource? _cts;
+    private readonly V8PlatformsProvider _platformsProvider;
     private readonly string _rootLogPath;
+
+    private CancellationTokenSource? _cts;
 
     public TechLogManager(
         FilesProvider filesProvider,
@@ -26,12 +26,12 @@ public class TechLogManager
         ILogger<TechLogManager> logger)
     {
         _rootLogPath = filesProvider.TechLogFolder;
-            
+
         _platformsProvider = platformsProvider;
         _foldersManager = foldersManager;
         _applicationLifetime = applicationLifetime;
         _logger = logger;
-        
+
         repositoryManager.SettingsChanged += SettingsChanged;
     }
 
@@ -41,11 +41,11 @@ public class TechLogManager
         {
             if (_cts != null)
                 await _cts.CancelAsync();
-        
+
             _cts = CancellationTokenSource.CreateLinkedTokenSource(_applicationLifetime.ApplicationStopping);
-        
+
             await _foldersManager.Init(settings, _cts.Token);
-        
+
             if (settings.Enabled)
                 _ = Start(settings, _cts.Token).ConfigureAwait(false);
         }
@@ -54,7 +54,7 @@ public class TechLogManager
             _logger.LogError(e, "Ошибка обработки изменения настроек хранилища технологического журнала");
         }
     }
-    
+
     private async Task Start(TechLogSettingsDto settings, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
@@ -62,15 +62,15 @@ public class TechLogManager
             foreach (var logCfgPath in GetLogCfgPaths())
             {
                 var logCfgContentBuilder = new StringBuilder("<config xmlns=\"http://v8.1c.ru/v8/tech-log\">\n");
-                
+
                 var builder = new StringBuilder();
                 var logPaths = new List<string>();
-                
+
                 settings.Seances.ToList().ForEach(c =>
                 {
                     if (c.FinishDateTime < DateTime.UtcNow)
                         return;
-                    
+
                     var logPath = Path.Combine(_rootLogPath, c.Id.ToString(), c.TemplateId.ToString());
 
                     try
@@ -95,33 +95,33 @@ public class TechLogManager
                         _logger.LogError(e, "Ошибка создания каталога сеанса сбора технологического журнала");
                         return;
                     }
-                    
+
                     var templateDoc = new XmlDocument();
                     templateDoc.LoadXml(c.Template);
-                
+
                     var root = templateDoc.DocumentElement;
-                    if (root == null) 
+                    if (root == null)
                         return;
-                        
+
                     logPaths.Add(logPath);
-                
+
                     root.SetAttribute("location", logPath);
                     root.SetAttribute("placement", "plain");
-                
+
                     builder.AppendLine(templateDoc.OuterXml);
                 });
-    
+
                 var removedPaths = _foldersManager.LogFolders.Except(logPaths);
                 foreach (var removedPath in removedPaths)
                     await _foldersManager.RemoveFolder(removedPath, cancellationToken);
-                    
+
                 var newPaths = logPaths.Except(_foldersManager.LogFolders);
                 foreach (var newPath in newPaths)
                     await _foldersManager.AddFolder(newPath, cancellationToken);
-                    
+
                 logCfgContentBuilder.AppendLine(builder.ToString());
                 logCfgContentBuilder.AppendLine("</config>");
-                    
+
                 if (logPaths.Count > 0)
                     await WriteTextToFile(logCfgPath, logCfgContentBuilder.ToString(), cancellationToken);
                 else
@@ -134,22 +134,21 @@ public class TechLogManager
 
     private static void SetLogFolderAccessRights(DirectoryInfo directory)
     {
-        if (!directory.Exists)
-        {
-            directory.Create();
-        }
-        
+        if (!directory.Exists) directory.Create();
+
 #pragma warning disable CA1416
 
         if (Environment.OSVersion.Platform == PlatformID.Unix)
-            File.SetUnixFileMode(directory.FullName, 
+        {
+            File.SetUnixFileMode(directory.FullName,
                 UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
                 UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
                 UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute);
+        }
         else
         {
             var security = directory.GetAccessControl();
-            
+
             security.AddAccessRule(
                 new FileSystemAccessRule(
                     new SecurityIdentifier(WellKnownSidType.WorldSid, null),
@@ -157,10 +156,10 @@ public class TechLogManager
                     InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit,
                     PropagationFlags.InheritOnly,
                     AccessControlType.Allow));
-            
+
             directory.SetAccessControl(security);
         }
-        
+
 #pragma warning restore CA1416
     }
 
@@ -178,11 +177,10 @@ public class TechLogManager
             .Where(c => Directory.Exists(Path.GetDirectoryName(c)))
             .ToArray();
     }
-    
+
     private async Task WriteTextToFile(string path, string text, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
-        {
             try
             {
                 await File.WriteAllTextAsync(path, text, cancellationToken);
@@ -193,13 +191,11 @@ public class TechLogManager
             {
                 _logger.LogWarning(ex, $"Ошибка записи logcfg.xml ({path}))");
             }
-        }
     }
-    
+
     private void DeleteFile(string path, CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested) 
-        {
+        while (!cancellationToken.IsCancellationRequested)
             try
             {
                 if (File.Exists(path))
@@ -207,10 +203,9 @@ public class TechLogManager
 
                 break;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogWarning(ex, $"Ошибка удаления logcfg.xml ({path}))");
             }
-        }
     }
 }

@@ -8,30 +8,36 @@ namespace OneSwiss.Agent.Services.EventLog;
 
 public class ClstWatcher : IDisposable
 {
-    private readonly RagentService _ragent;
-    private readonly V8Cluster _cluster;
-    private string _clusterCatalog;
     private readonly string _clstPath;
-    private readonly Regex _regex;
     private readonly FileSystemWatcher _clstWatcher;
+    private readonly V8Cluster _cluster;
+    private readonly string _clusterCatalog;
+    private readonly RagentService _ragent;
+    private readonly Regex _regex;
     private ConcurrentDictionary<string, InfoBaseInfo> _infoBases = [];
-    
-    public event EventHandler<InfoBaseInfo>? InfoBasesAdded;
-    public event EventHandler<InfoBaseInfo>? InfoBasesDeleted;
 
     public ClstWatcher(RagentService ragent, V8Cluster cluster, string clusterCatalog, string regex)
     {
-        _clusterCatalog  = clusterCatalog;
+        _clusterCatalog = clusterCatalog;
         _ragent = ragent;
         _cluster = cluster;
         _clstPath = Path.Combine(clusterCatalog, "1CV8Clst.lst");
         _regex = new Regex(regex, RegexOptions.Compiled | RegexOptions.ExplicitCapture);
-        
+
         _clstWatcher = new FileSystemWatcher(clusterCatalog, "1CV8Clst.lst")
         {
             NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.LastWrite
         };
     }
+
+    public void Dispose()
+    {
+        _clstWatcher.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    public event EventHandler<InfoBaseInfo>? InfoBasesAdded;
+    public event EventHandler<InfoBaseInfo>? InfoBasesDeleted;
 
     public void Watch()
     {
@@ -39,7 +45,7 @@ public class ClstWatcher : IDisposable
             throw new Exception("\"1CV8Clst.lst\" не обнаружен");
 
         ReadInfoBasesAndRaiseEvents();
-        
+
         _clstWatcher.Changed += ClstWatcher_Changed;
         _clstWatcher.EnableRaisingEvents = true;
     }
@@ -47,8 +53,9 @@ public class ClstWatcher : IDisposable
     private Dictionary<string, InfoBaseInfo> ReadInfoBases()
     {
         var items = new Dictionary<string, InfoBaseInfo>();
-        
-        using var stream = new FileStream(_clstPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+
+        using var stream = new FileStream(_clstPath, FileMode.Open, FileAccess.Read,
+            FileShare.ReadWrite | FileShare.Delete);
         using var reader = new StreamReader(stream);
 
         var fileData = reader.ReadToEnd();
@@ -57,16 +64,16 @@ public class ClstWatcher : IDisposable
         var infoBasesNode = parsedData[2];
         int count = infoBasesNode[0];
 
-        if (count <= 0) 
+        if (count <= 0)
             return items;
-        
+
         for (var i = 1; i <= count; i++)
         {
             var infoBaseNode = infoBasesNode[i];
 
             var elPath = Path.Combine(_clusterCatalog, infoBaseNode[0], "1Cv8Log");
             string name = infoBaseNode[5];
-                
+
             if (_regex.IsMatch(name))
                 items.Add(elPath, new InfoBaseInfo(_ragent.Platform, elPath, name));
         }
@@ -91,11 +98,7 @@ public class ClstWatcher : IDisposable
     }
 
     private void ClstWatcher_Changed(object sender, FileSystemEventArgs e)
-        => ReadInfoBasesAndRaiseEvents();
-    
-    public void Dispose()
     {
-        _clstWatcher.Dispose();
-        GC.SuppressFinalize(this);
+        ReadInfoBasesAndRaiseEvents();
     }
 }
