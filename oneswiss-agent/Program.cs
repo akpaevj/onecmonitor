@@ -1,5 +1,7 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Console;
 using OneSwiss.Agent;
 using OneSwiss.Agent.Models;
 using OneSwiss.Agent.Oscript;
@@ -71,6 +73,14 @@ var host = Host.CreateDefaultBuilder(args)
 
         services.AddSingleton<OscriptIntegrationContext>();
         services.AddSingleton<OscriptIntegrationGlobalContext>();
+    })
+    .ConfigureLogging(opt =>
+    {
+        opt.AddSimpleConsole(cfg =>
+        {
+            cfg.ColorBehavior = LoggerColorBehavior.Enabled;
+            cfg.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
+        });
     })
     .Build();
 

@@ -23,13 +23,11 @@ public class GitSyncTaskItemProcessor(
     private CancellationTokenSource? _tcs;
 
     public EventHandler<Exception>? Stopped;
-    public Guid Id { get; } = item.ConfigurationRepository.InternalId;
     public string RepoFolder { get; } = repoFolder;
     public string IbFolder { get; } = ibFolder;
-    public string ExportFolder { get; } = item.ExportFolder;
-    public bool IsExtension { get; } = item.IsExtension;
+    public GitSyncTaskItemDto TaskItem { get; set; } = item;
 
-    public async Task Start(Func<VersionUploadedArgs, Task> versionUploadedFunc, Func<Guid, Task<int>> readVersionFunc, CancellationToken stoppingToken)
+    public async Task Start(Func<VersionUploadedArgs, Task> versionUploadedFunc, Func<GitSyncTaskItemProcessor, Task<int>> readVersionFunc, CancellationToken stoppingToken)
     {
         try
         {
@@ -39,7 +37,12 @@ public class GitSyncTaskItemProcessor(
 
             while (!_tcs.IsCancellationRequested)
             {
-                var version = await readVersionFunc(item.Id);
+                var version = await readVersionFunc(this);
+                if (version == -1)
+                    version = TaskItem.ConfigurationRepositoryVersion;
+                else
+                    version += 1;
+                
                 var versions = await ReadVersions(version, _tcs.Token);
 
                 foreach (var configRepositoryVersion in versions)
@@ -47,7 +50,7 @@ public class GitSyncTaskItemProcessor(
                     ThrowIfCancelled();
 
                     // Находим email пользователя для фиксации коммита
-                    var user = item.ConfigurationRepository.Users
+                    var user = TaskItem.ConfigurationRepository.Users
                         .FirstOrDefault(c =>
                             c.Name.Equals(configRepositoryVersion.User, StringComparison.InvariantCultureIgnoreCase));
 
@@ -56,7 +59,7 @@ public class GitSyncTaskItemProcessor(
                             $"Для пользователя {configRepositoryVersion.User} не установлено соответствие пользователя Git");
 
                     // Выгружаем версию в файлы
-                    await DumpVersion(versionUploadedFunc, configRepositoryVersion, user);
+                    await DumpConfiguration(versionUploadedFunc, configRepositoryVersion, user);
                 }
 
                 await Task.Delay(10 * 1000, _tcs.Token);
@@ -77,42 +80,44 @@ public class GitSyncTaskItemProcessor(
         _tcs?.Cancel();
     }
 
-    private async Task DumpVersion(Func<VersionUploadedArgs, Task> versionUploadedFunc,
-        ConfigRepositoryReportItem version,
-        ConfigRepositoryUserDto user)
-    {
-        if (item.IsExtension)
-            await DumpConfiguration(versionUploadedFunc, version, user);
-        else
-            await DumpConfiguration(versionUploadedFunc, version, user);
-    }
-
     private async Task DumpConfiguration(Func<VersionUploadedArgs, Task> versionUploadedFunc,
         ConfigRepositoryReportItem version,
         ConfigRepositoryUserDto user)
     {
-        var batch = OnecV8BatchMode.CreateDesignerBatch(platform, IbFolder);
+        using var batch = OnecV8BatchMode.CreateDesignerBatch(platform, IbFolder);
 
         try
         {
+            logger.LogTrace($"Начало загрузки версии конфигурации из хранилища - {item.ExportFolder}");
+            
             batch.UpdateConfigFromRepository(
                 _repoConnectionString,
-                item.ConfigurationRepository.Credentials?.User ?? "",
-                item.ConfigurationRepository.Credentials?.Password ?? "",
+                TaskItem.ConfigurationRepository.Credentials?.User ?? "",
+                TaskItem.ConfigurationRepository.Credentials?.Password ?? "",
                 string.Empty,
                 string.Empty,
                 version.Version,
                 _extensionName);
+            
+            logger.LogTrace($"Загрузка версии конфигурации из хранилища окончена - {item.ExportFolder}");
 
             ThrowIfCancelled();
             
+            logger.LogTrace($"Начало выгрузки файлов конфигурации - {item.ExportFolder}");
+            
             await IbcmdWrapper.ExportXmlFiles(platform, dataFolder, IbFolder, RepoFolder, _extensionName);
+            
+            logger.LogTrace($"Выгрузка файлов конфигурации окончена - {item.ExportFolder}");
+            
+            logger.LogTrace($"Начало фиксации изменений в git - {item.ExportFolder}");
 
             await versionUploadedFunc(new VersionUploadedArgs
             {
                 ReportItem = version,
                 User = user
             });
+            
+            logger.LogTrace($"Фиксация изменений в git окончена - {item.ExportFolder}");
 
             ThrowIfCancelled();
         }
@@ -127,60 +132,19 @@ public class GitSyncTaskItemProcessor(
         }
     }
 
-    private async Task DumpExtension(Func<VersionUploadedArgs, Task> versionUploadedFunc,
-        ConfigRepositoryReportItem version,
-        ConfigRepositoryUserDto user)
-    {
-        var batch = OnecV8BatchMode.CreateDesignerBatch(platform, IbFolder);
-
-        try
-        {
-            var cfePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.cfe");
-            
-            batch.DumpConfigRepository(
-                cfePath,
-                _repoConnectionString,
-                item.ConfigurationRepository.Credentials?.User ?? "",
-                item.ConfigurationRepository.Credentials?.Password ?? "",
-                version.Version,
-                _extensionName);
-
-            ThrowIfCancelled();
-            
-            await IbcmdWrapper.ExportXmlFilesFromFile(platform, dataFolder, cfePath, RepoFolder);
-
-            await versionUploadedFunc(new VersionUploadedArgs
-            {
-                ReportItem = version,
-                User = user
-            });
-
-            ThrowIfCancelled();
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Ошибка выгрузки расширения в файлы");
-            throw;
-        }
-    }
-
     private async Task<List<ConfigRepositoryReportItem>> ReadVersions(int version, CancellationToken cancellationToken)
     {
         var result = new List<ConfigRepositoryReportItem>();
 
         try
         {
-            var batch = OnecV8BatchMode.CreateDesignerBatch(platform, IbFolder);
+            using var batch = OnecV8BatchMode.CreateDesignerBatch(platform, IbFolder);
 
             var reader = batch.GetConfigRepositoryReportReader(
                 _repoConnectionString,
-                item.ConfigurationRepository.Credentials?.User ?? "",
-                item.ConfigurationRepository.Credentials?.Password ?? "",
-                version > 0 ? ++version : version,
+                TaskItem.ConfigurationRepository.Credentials?.User ?? "",
+                TaskItem.ConfigurationRepository.Credentials?.Password ?? "",
+                version,
                 _extensionName);
 
             while (!reader.EndOfFile)
@@ -197,7 +161,7 @@ public class GitSyncTaskItemProcessor(
 
     private async Task InitItemProcessor()
     {
-        if (item.IsExtension)
+        if (TaskItem.IsExtension)
             _extensionName = "EXT";
         
         if (!Directory.Exists(dataFolder))
@@ -218,7 +182,7 @@ public class GitSyncTaskItemProcessor(
         {
             OnecV8BatchMode.CreateFileInfoBase(platform, IbFolder);
 
-            if (item.IsExtension)
+            if (TaskItem.IsExtension)
                 await IbcmdWrapper.AddExtension(platform, dataFolder, IbFolder, _extensionName, "UL");
         }
     }

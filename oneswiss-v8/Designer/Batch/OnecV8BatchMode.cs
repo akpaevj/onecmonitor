@@ -253,7 +253,7 @@ public sealed class OnecV8BatchMode : IDisposable
     }
 
     /// <summary>
-    ///     !!! Never call it while batch operation is running
+    /// !!! Never call it while batch operation is running
     /// </summary>
     public void Stop()
     {
@@ -359,5 +359,8 @@ public sealed class OnecV8BatchMode : IDisposable
 
         _process?.Dispose();
         _process = null;
+        
+        if (File.Exists(_outFilePath))
+            File.Delete(_outFilePath);
     }
 }

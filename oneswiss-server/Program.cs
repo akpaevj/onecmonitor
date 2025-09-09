@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging.Console;
 using MudBlazor.Services;
 using MudExtensions.Services;
 using OneSwiss.Common.DTO;
@@ -22,6 +23,12 @@ using OneSwiss.Server.Services;
 using OneSwiss.Server.Services.CrServerProxy;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.AddSimpleConsole(cfg =>
+{
+    cfg.ColorBehavior = LoggerColorBehavior.Enabled;
+    cfg.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
+});
 
 builder.WebHost.ConfigureKestrel((context, options) =>
 {

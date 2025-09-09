@@ -1,6 +1,8 @@
 @page "/gitrepositories/gitsynctasks/{id:guid}"
 @page "/gitrepositories/gitsynctasks/create"
 @using FluentValidation
+@using LibGit2Sharp
+@using LibGit2Sharp.Handlers
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
@@ -21,6 +23,7 @@
                   ModelSelector="ModelSelector"
                   OnUpdate="OnUpdate"
                   BeforeValidation="BeforeValidation"
+                  AfterValidation="AfterValidation"
                   Validation="_validator.ValidateValue"
                   OnInitialize="OnInitialize"
                   AfterSave="AfterSave">
@@ -125,6 +128,14 @@
         _isNew = Id == Guid.Empty;
     }
 
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _editor.AddAdditionalValidableProperty(nameof(GitSyncTask.Items));
+    }
+
     private async Task OnInitialize((GitSyncTask Model, AppDbContext Context) obj)
     {
         _defaultSettings = await obj.Context.GitSyncSettings.SingleOrDefaultAsync() ?? new Models.GitSyncSettings();
@@ -178,6 +189,39 @@
             RuleFor(c => c.GitRepositoryId)
                 .NotEmpty()
                 .WithMessage("Не задан репозиторий Git");
+            
+            RuleFor(c => c.BranchName)
+                .NotEmpty()
+                .WithMessage("Не заполнено наименование ветки");
+            
+            RuleFor(c => c.AgentId)
+                .NotEmpty()
+                .WithMessage("Не указан исполняющий агент");
+
+            RuleForEach(c => c.Items)
+                .Must(c => c.ConfigurationRepositoryId != Guid.Empty)
+                .WithMessage("Не указано хранилище конфигурации")
+                .Must(c => !string.IsNullOrEmpty(c.ExportFolder))
+                .WithMessage("Не указан каталог выгрузки")
+                .Must(c => c.ConfigurationRepositoryVersion >= 0)
+                .WithMessage("Не указана начальная версия выгрузки");
         }
+    }
+
+    private void AfterValidation(GitSyncTask obj)
+    {
+        var repository = _editor.Context!.GitRepositories
+            .Include(c => c.Token)
+            .FirstOrDefault(c => c.Id == obj.GitRepositoryId);
+        
+        var remoteReference = Repository
+            .ListRemoteReferences(repository!.Address, (_, _, _) => new UsernamePasswordCredentials
+            {
+                Username = string.Empty,
+                Password = repository!.Token.Token
+            });
+
+        if (remoteReference!.Any())
+            throw new Exception("Удаленный репозиторий не пуст");
     }
 }

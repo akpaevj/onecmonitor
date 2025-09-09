@@ -5,10 +5,9 @@
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Services
 @inject AgentsConnectionsManager AgentsConnectionsManager
-@inject IMapper Mapper
 @inject ISnackbar SnackBar
 
-@attribute [ExtAuthorize(Roles.WriteGitRepositories)]
+@attribute [ExtAuthorize]
 
 <MudText Typo="Typo.h6" Class="mb-3">Сервис синхронизации хранилищ и Git</MudText>
 

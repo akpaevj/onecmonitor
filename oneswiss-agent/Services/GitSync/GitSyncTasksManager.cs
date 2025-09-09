@@ -12,7 +12,7 @@ public class GitSyncTasksManager(
     IHostApplicationLifetime lifetime,
     ILogger<GitSyncTaskProcessor> taskLogger,
     ILogger<GitSyncTaskItemProcessor> taskItemLogger,
-    ILogger<GitSyncTasksManager> logger)
+    ILogger<GitSyncTasksManager> logger) : IDisposable
 {
     private readonly Dictionary<Guid, GitSyncTaskProcessor> _processors = new();
     private CancellationTokenSource? _cts;
@@ -113,5 +113,10 @@ public class GitSyncTasksManager(
             return;
 
         _cts?.Cancel();
+    }
+
+    public void Dispose()
+    {
+        _cts?.Dispose();
     }
 }

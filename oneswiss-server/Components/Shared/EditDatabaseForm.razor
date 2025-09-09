@@ -181,7 +181,15 @@
             return;
         }
 
-        await AfterValidation.InvokeAsync(Model);
+        try
+        {
+            await AfterValidation.InvokeAsync(Model);
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+            return;
+        }
 
         try
         {

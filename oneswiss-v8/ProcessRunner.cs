@@ -9,6 +9,28 @@ public abstract class ProcessRunner
     {
         return OperatingSystem.IsLinux() ? Encoding.UTF8 : Encoding.GetEncoding(866);
     }
+    
+    /// <summary>
+    /// Запускает процесс асинхронно и возвращает результат выполнения или вызывает исключение при ошибке исполнения
+    /// </summary>
+    /// <param name="command">Команда или имя исполняемого файла</param>
+    /// <param name="args">Аргументы команды</param>
+    /// <param name="workingDir">Рабочая директория</param>
+    /// <param name="timeout">Таймаут выполнения</param>
+    /// <returns>Результат выполнения процесса</returns>
+    public static async Task<ProcessResult> RunAndThrowAsync(
+        string command,
+        List<string> args,
+        string? workingDir = null,
+        TimeSpan? timeout = null)
+    {
+        var result = await RunAsync(command, string.Join(" ", args), workingDir, timeout);
+
+        if (result.ExitCode > 0)
+            throw new Exception(result.Error);
+
+        return result;
+    }
 
     /// <summary>
     ///     Запускает процесс асинхронно и возвращает результат выполнения

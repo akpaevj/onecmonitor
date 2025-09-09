@@ -7,8 +7,9 @@ using OneSwiss.V8.Designer.Models;
 
 namespace OneSwiss.Agent.Services.GitSync;
 
-public class GitSyncTaskProcessor
+public class GitSyncTaskProcessor : IDisposable
 {
+    private readonly SemaphoreSlim _commitSemaphore = new(1);
     private readonly AgentsResourcesProvider _agentsResourcesProvider;
     private readonly string _ibcmdDataDirs;
     private readonly string _infoBasesPath;
@@ -18,7 +19,6 @@ public class GitSyncTaskProcessor
     private readonly string _repoFolder;
     private readonly OneSwissConnection _serverConnection;
     private readonly GitSyncTaskDto _task;
-    private readonly string _taskMetadataPath;
     private CancellationTokenSource? _cts;
     public EventHandler<Exception>? Stopped;
 
@@ -40,7 +40,6 @@ public class GitSyncTaskProcessor
         _infoBasesPath = Path.Combine(ProcessorFolder, "ib");
         _ibcmdDataDirs = Path.Combine(ProcessorFolder, "ibcmd");
         _repoFolder = Path.Combine(ProcessorFolder, "repo");
-        _taskMetadataPath = Path.Combine(_repoFolder, ".metadata");
     }
 
     public string ProcessorFolder { get; }
@@ -51,11 +50,9 @@ public class GitSyncTaskProcessor
         {
             await InitTaskProcessor(stoppingToken);
             await UpdateItemsInternal(_task.Items);
-            //StartPushing(_cts!.Token);
+            StartPushing(_cts!.Token);
         }
-        catch (OperationCanceledException)
-        {
-        }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             Stop();
@@ -84,8 +81,6 @@ public class GitSyncTaskProcessor
 
     private async Task UpdateItemsInternal(List<GitSyncTaskItemDto> items)
     {
-        await InitMetadata(items);
-
         // Удалим процессоры, которых вообще нет в пришедшем списке
         var toDelete = _itemsProcessors
             .Where(c => items.FirstOrDefault(i => i.Id == c.Key) == null)
@@ -114,9 +109,11 @@ public class GitSyncTaskProcessor
         {
             var cts = CancellationTokenSource.CreateLinkedTokenSource(_cts!.Token);
 
-            var ibcmdDataFolder = Path.Combine(_ibcmdDataDirs, item.Id.ToString());
-            var ibFolder = Path.Combine(_infoBasesPath, item.Id.ToString());
-            var repoFolder = Path.Combine(_repoFolder, item.ExportFolder);
+            var foldersName = item.ExportFolder;
+            
+            var ibcmdDataFolder = Path.Combine(_ibcmdDataDirs, foldersName);
+            var ibFolder = Path.Combine(_infoBasesPath, foldersName);
+            var repoFolder = Path.Combine(_repoFolder, foldersName);
 
             var platform = await _agentsResourcesProvider.GetCrServerPlatform(item.ConfigurationRepository, _cts.Token);
 
@@ -146,7 +143,7 @@ public class GitSyncTaskProcessor
 
                     await SendItemProcessorStoppedNotification(item.ConfigurationRepository.Id, e.Message);
                 }
-            },ReadItemVersion, cts.Token);
+            }, ReadItemVersion, cts.Token);
         }
     }
 
@@ -177,39 +174,6 @@ public class GitSyncTaskProcessor
         await InitRepository();
     }
 
-    private async Task<int> ReadItemVersion(Guid itemId)
-    {
-        var metadata = await ReadTaskMetadata();
-        return (int)metadata!.Items.FirstOrDefault(c => c.Id == itemId)?.Version!;
-    }
-
-    private async Task InitMetadata(List<GitSyncTaskItemDto> items)
-    {
-        GitSyncTaskMetadata? oldMetadata = null;
-        if (File.Exists(_taskMetadataPath))
-            oldMetadata = await ReadTaskMetadata();
-
-        var metadata = new GitSyncTaskMetadata();
-
-        items.ForEach(c =>
-        {
-            var version = oldMetadata == null
-                ? c.ConfigurationRepositoryVersion
-                : oldMetadata.Items.FirstOrDefault(i => i.Id == c.Id)?.Version ?? c.ConfigurationRepositoryVersion;
-
-            metadata.Items.Add(new GitSyncTaskItemMetadata
-            {
-                Id = c.Id,
-                Version = version,
-                ExportFolder = c.ExportFolder,
-                IsExtension = c.IsExtension
-            });
-        });
-
-        await using var wStream = new FileStream(_taskMetadataPath, FileMode.Create);
-        await JsonSerializer.SerializeAsync(wStream, metadata);
-    }
-
     private async Task InitRepository()
     {
         if (!Directory.Exists(_repoFolder))
@@ -218,27 +182,56 @@ public class GitSyncTaskProcessor
         if (!Repository.IsValid(_repoFolder))
         {
             CloneRepository();
-
-            var rep = new Repository(_repoFolder);
+            
+            await ProcessRunner.RunAndThrowAsync("git", ["checkout", "-b", _task.BranchName], _repoFolder);
+            
+            using var rep = new Repository(_repoFolder);
+            SetHeadBranchTrackedBranch(rep);
+            
+            InitRepositoryConfig(rep);
+            
+            //PushChanges(rep);
 
             await InitLfs(_task.Items);
 
             InitGitIgnore();
-            InitRepositoryConfig(rep);
             
             if (!rep.Commits.Any())
                 InitCommit();
         }
     }
 
+    private void SetHeadBranchTrackedBranch(Repository repo)
+    {
+        repo.Branches.Update(repo.Head, b =>
+        {
+            b.TrackedBranch = $"refs/remotes/origin/{_task.BranchName}";
+        });
+    }
+
+    private void CreateRemoteBranchIfNeed(Repository repo)
+    {
+        if (!HasOutgoingChanges(repo))
+            return;
+
+        if (repo.Head.FriendlyName == _task.BranchName && repo.Head.TrackedBranch != null)
+            return;
+        
+        var remote = repo.Network.Remotes.FirstOrDefault();
+        var local = repo.Head;
+        
+        repo.Network.Push(remote, $"refs/heads/{local.FriendlyName}:refs/heads/{local.FriendlyName}", new PushOptions
+        {
+            CredentialsProvider = (_, _, _) => GetCredentials()
+        });
+    }
+
     private async Task InitLfs(List<GitSyncTaskItemDto> items)
     {
-        await ProcessRunner.RunAsync("git", string.Join(" ", "lfs", "install"), _repoFolder);
-
         foreach (var item in items.Where(item => item.LfsTrackers.Trim().Length > 0))
-        foreach (var se in item.LfsTrackers.Split(','))
-            await ProcessRunner.RunAsync("git", string.Join(" ", "lfs", "track", $"{item.ExportFolder}/**/{se.Trim()}"),
-                _repoFolder);
+            foreach (var se in item.LfsTrackers.Split(','))
+                await ProcessRunner.RunAsync("git", ["lfs", "track", $"{item.ExportFolder}/**/{se.Trim()}"],
+                    _repoFolder);
     }
 
     private void CloneRepository()
@@ -290,10 +283,10 @@ public class GitSyncTaskProcessor
 
         Commands.Fetch(repository, remote.Name, refSpecs, options, "Обновление из удаленного репозитория");
 
-        /*repository.MergeFetchedRefs(new Signature("oneswiss", "oneswiss", DateTime.Now), new MergeOptions
+        repository.MergeFetchedRefs(OneSwissSignature(), new MergeOptions
         {
             FastForwardStrategy = FastForwardStrategy.FastForwardOnly
-        });*/
+        });
     }
     
     private void InitCommit()
@@ -316,20 +309,32 @@ public class GitSyncTaskProcessor
     private async Task CommitChanges(GitSyncTaskItemProcessor itemProcessor, ConfigRepositoryReportItem version,
         ConfigRepositoryUserDto user)
     {
-        using var repo = new Repository(_repoFolder);
+        await _commitSemaphore.WaitAsync();
 
-        var path = $"{Path.GetRelativePath(_repoFolder, itemProcessor.RepoFolder)}/*";
-        Commands.Stage(repo, path);
-
-        var author = new Signature(user.Name, user.GitUser, version.CreatedAt);
-
-        repo.Commit(version.Comment, author, author, new CommitOptions
+        try
         {
-            AllowEmptyCommit = true,
-            PrettifyMessage = true
-        });
+            await WriteUploadVersion(itemProcessor, version);
+            
+            using var repo = new Repository(_repoFolder);
 
-        await WriteUploadVersion(itemProcessor, version);
+            var path = $"{Path.GetRelativePath(_repoFolder, itemProcessor.RepoFolder)}/*";
+            Commands.Stage(repo, path);
+
+            var metadataPath = Path.GetRelativePath(_repoFolder, GetItemMetadataPath(itemProcessor));
+            Commands.Stage(repo, metadataPath);
+
+            var author = new Signature(user.Name, user.GitUser, version.CreatedAt);
+
+            repo.Commit(version.Comment, author, author, new CommitOptions
+            {
+                AllowEmptyCommit = true,
+                PrettifyMessage = true
+            });
+        }
+        finally
+        {
+            _commitSemaphore.Release();
+        }
     }
 
     private void StartPushing(CancellationToken cancellationToken)
@@ -341,7 +346,8 @@ public class GitSyncTaskProcessor
                 try
                 {
                     using var repository = new Repository(_repoFolder);
-
+                    CreateRemoteBranchIfNeed(repository);
+                    
                     if (HasOutgoingChanges(repository))
                         PushChanges(repository);
                 }
@@ -373,41 +379,89 @@ public class GitSyncTaskProcessor
 
     private void PushChanges(Repository repository)
     {
+        _logger.LogTrace("Начало отправки изменений в удаленный репозиторий");
+        
         repository.Network.Push(repository.Head, new PushOptions
         {
-            CredentialsProvider = (_, _, _) => GetCredentials()
+            CredentialsProvider = (_, _, _) => GetCredentials(),
         });
+        
+        _logger.LogTrace("Отправка изменений в удаленный репозиторий окончена");
     }
 
     private async Task WriteUploadVersion(GitSyncTaskItemProcessor itemProcessor, ConfigRepositoryReportItem version)
     {
-        var metadata = await ReadTaskMetadata();
-        if (metadata == null)
-            throw new Exception("Файл метаданных задачи не обнаружен");
+        var path = GetItemMetadataPath(itemProcessor);
 
-        var metadataItem = metadata.Items.FirstOrDefault(c => c.Id == itemProcessor.Id);
-        if (metadataItem == null)
-            throw new Exception($"Элемент файла метаданных не обнаружен ({itemProcessor.Id})");
+        var metadata = File.Exists(path) switch
+        {
+            true => await ReadItemMetadata(itemProcessor),
+            false => new GitSyncTaskItemMetadata
+            {
+                ExportFolder = itemProcessor.TaskItem.ExportFolder,
+                IsExtension = itemProcessor.TaskItem.IsExtension,
+                ConfigurationRepositoryId = itemProcessor.TaskItem.ConfigurationRepository.InternalId
+            }
+        };
+        
+        metadata.Version = version.Version;
+        
+        await WriteItemMetadata(itemProcessor, metadata);
+    }
+    
+    private async Task<int> ReadItemVersion(GitSyncTaskItemProcessor item)
+    {
+        var path = GetItemMetadataPath(item);
 
-        metadataItem.ExportFolder = itemProcessor.ExportFolder;
-        metadataItem.Version = version.Version;
-        metadataItem.IsExtension = itemProcessor.IsExtension;
+        if (!File.Exists(path))
+            return -1;
+        
+        var metadata = await ReadItemMetadata(item);
+        return metadata.Version;
+    }
+    
+    private async Task<GitSyncTaskItemMetadata> ReadItemMetadata(GitSyncTaskItemProcessor item)
+    {
+        var path = GetItemMetadataPath(item);
+        return await ReadItemMetadata(path);
+    }
 
-        await using var wStream = new FileStream(_taskMetadataPath, FileMode.Create);
+    private static async Task<GitSyncTaskItemMetadata> ReadItemMetadata(string path)
+    {
+        await using var rStream = File.OpenRead(path);
+        return JsonSerializer.Deserialize<GitSyncTaskItemMetadata>(rStream)!;
+    }
+    
+    private async Task WriteItemMetadata(GitSyncTaskItemProcessor item, GitSyncTaskItemMetadata metadata)
+    {
+        var path = GetItemMetadataPath(item);
+        await WriteItemMetadata(path, metadata);
+    }
+    
+    private static async Task WriteItemMetadata(string path, GitSyncTaskItemMetadata metadata)
+    {
+        await using var wStream = new FileStream(path, FileMode.Create);
+        
         await JsonSerializer.SerializeAsync(wStream, metadata, new JsonSerializerOptions
         {
             WriteIndented = true
         });
     }
 
-    private async Task<GitSyncTaskMetadata?> ReadTaskMetadata()
-    {
-        await using var rStream = File.OpenRead(_taskMetadataPath);
-        return JsonSerializer.Deserialize<GitSyncTaskMetadata>(rStream);
-    }
+    private string GetItemMetadataPath(GitSyncTaskItemProcessor item)
+        => GetItemMetadataPath(item.TaskItem.ExportFolder);
+    
+    private string GetItemMetadataPath(string exportFolder)
+        => Path.Combine(_repoFolder, $".{exportFolder}-metadata");
 
     public void Stop()
     {
         _cts?.Cancel();
+    }
+
+    public void Dispose()
+    {
+        _commitSemaphore.Dispose();
+        _cts?.Dispose();
     }
 }
