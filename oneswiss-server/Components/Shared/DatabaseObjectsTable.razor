@@ -1,6 +1,7 @@
-@using global::AutoMapper
-@using Microsoft.EntityFrameworkCore
+@using global::AutoMapper    
+@using Microsoft.EntityFrameworkCore    
 @using OneSwiss.Server.Extensions
+
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject IDbContextFactory<AppDbContext> ContextFactory
@@ -24,7 +25,9 @@
         <MudStack Row AlignItems="AlignItems.Start" Class="mb-3">
             @if (ShowAddButton)
             {
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="@(() => NavManager.NavigateTo($"{Route}/create"))">Добавить</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                           @onclick="@(() => NavManager.NavigateTo($"{Route}/create"))">Добавить
+                </MudButton>
             }
             @if (TableActionsContent != null)
             {
@@ -75,10 +78,12 @@
                         {
                             @if (RowActionsContent == null)
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => NavigateToItem(context))" Color="Color.Info"/>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               OnClick="@(() => NavigateToItem(context))" Color="Color.Info"/>
                                 @if (ShowDeleteButton)
                                 {
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteItem(context))" Color="Color.Error"/>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   OnClick="@(() => DeleteItem(context))" Color="Color.Error"/>
                                 }
                             }
                             else
@@ -98,101 +103,80 @@
     private bool _isLoading;
     private List<TViewModel> _items = [];
 
-    [Parameter]
-    public string Title { get; set; } = string.Empty;
-    
-    [Parameter] 
-    public bool DisableTableActions { get; set; }
-    
-    [Parameter] 
-    public RenderFragment? TableActionsContent { get; set; }
+    [Parameter] public string Title { get; set; } = string.Empty;
 
-    [Parameter]
-    public RenderFragment? ColumnsContent { get; set; }
+    [Parameter] public bool DisableTableActions { get; set; }
 
-    [Parameter] 
-    public RenderFragment<TViewModel>? RowTemplate { get; set; }
-    
-    [Parameter] 
-    public RenderFragment<TViewModel>? RowActionsContent { get; set; }
+    [Parameter] public RenderFragment? TableActionsContent { get; set; }
+
+    [Parameter] public RenderFragment? ColumnsContent { get; set; }
+
+    [Parameter] public RenderFragment<TViewModel>? RowTemplate { get; set; }
+
+    [Parameter] public RenderFragment<TViewModel>? RowActionsContent { get; set; }
 
     /// <summary>
-    /// Используется при получении сложных моделей со связями
+    ///     Используется при получении сложных моделей со связями
     /// </summary>
     [Parameter]
     public Func<IQueryable<TModel>, IQueryable<TModel>>? ItemsSelector { get; set; }
-    
-    [Parameter] 
-    public Func<TViewModel, string> NameSelector { get; set; } = null!;
-    
-    [Parameter] 
-    public Func<TViewModel, bool> ShowRowActionsPredicate { get; set; } = null!;
 
-    [Parameter] 
-    public string Route { get; set; } = string.Empty;
+    [Parameter] public Func<TViewModel, string> NameSelector { get; set; } = null!;
 
-    [Parameter] 
-    public bool ShowAddButton { get; set; } = true;
-    
-    [Parameter] 
-    public bool ShowDeleteButton { get; set; } = true;
-    
-    [Parameter] 
-    public bool ShowTitle { get; set; } = true;
-    
+    [Parameter] public Func<TViewModel, bool> ShowRowActionsPredicate { get; set; } = null!;
+
+    [Parameter] public string Route { get; set; } = string.Empty;
+
+    [Parameter] public bool ShowAddButton { get; set; } = true;
+
+    [Parameter] public bool ShowDeleteButton { get; set; } = true;
+
+    [Parameter] public bool ShowTitle { get; set; } = true;
+
     /// <summary>
-    /// Обработчик события "Перед удалением", в результате должен вернуть флаг возможности продолжения операции
+    ///     Обработчик события "Перед удалением", в результате должен вернуть флаг возможности продолжения операции
     /// </summary>
     [Parameter]
     public Func<(TModel Model, AppDbContext Context), Task<bool>>? BeforeDelete { get; set; }
-    
-    [Parameter]
-    public EventCallback<TModel> AfterDelete { get; set; }
-    
-    [Parameter] 
-    public string? GroupHeaderStyle { get; set; }
-    
-    [Parameter] 
-    public string? Class { get; set; }
-    
-    [Parameter] 
-    public string? GroupFooterClass { get; set; }
-    
-    [Parameter] 
-    public bool Dense { get; set; }
-    
-    [Parameter] 
-    public bool ReadOnly { get; set; }
-    
-    [Parameter] 
-    public TableGroupDefinition<TViewModel>? GroupBy { get; set; }
-    
-    [Parameter]
-    public RenderFragment<TableGroupData<object, TViewModel>>? GroupHeader { get; set; }
-    
-    [Parameter]
-    public RenderFragment? ColGroup { get; set; }
-    
-    [Parameter] 
-    public bool Hover { get; set; }
-    
-    [Parameter]
-    public Func<AppDbContext, Task<List<TModel>>>? LoadItemsFunc { get; set; }
+
+    [Parameter] public EventCallback<TModel> AfterDelete { get; set; }
+
+    [Parameter] public string? GroupHeaderStyle { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public string? GroupFooterClass { get; set; }
+
+    [Parameter] public bool Dense { get; set; }
+
+    [Parameter] public bool ReadOnly { get; set; }
+
+    [Parameter] public TableGroupDefinition<TViewModel>? GroupBy { get; set; }
+
+    [Parameter] public RenderFragment<TableGroupData<object, TViewModel>>? GroupHeader { get; set; }
+
+    [Parameter] public RenderFragment? ColGroup { get; set; }
+
+    [Parameter] public bool Hover { get; set; }
+
+    [Parameter] public Func<AppDbContext, Task<List<TModel>>>? LoadItemsFunc { get; set; }
 
     protected override async Task OnInitializedAsync()
-        => await UpdateItems();
+    {
+        await UpdateItems();
+    }
 
     public async Task DeleteItem(TViewModel item)
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
-        
+
         if (BeforeDelete != null)
             if (!await BeforeDelete((Mapper.Map<TModel>(item), context)))
                 return;
-        
+
         await DialogService.ShowItemDeletingDialog<TModel>(item.Id, NameSelector(item));
         await UpdateItems();
-        
+
         await AfterDelete.InvokeAsync(Mapper.Map<TModel>(item));
     }
 
@@ -204,7 +188,7 @@
         try
         {
             _isLoading = true;
-            
+
             _items = Mapper.Map<List<TViewModel>>(await GetItems());
         }
         catch (Exception e)
@@ -221,16 +205,17 @@
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
 
-        if (LoadItemsFunc != null) 
+        if (LoadItemsFunc != null)
             return await LoadItemsFunc(context);
-        
+
         if (ItemsSelector == null)
             return await context.Set<TModel>().ToListAsync();
 
         return ItemsSelector.Invoke(context.Set<TModel>()).ToList();
-
     }
 
     private void NavigateToItem(TViewModel vm)
-        => NavManager.NavigateTo($"{Route}/{vm.Id}");
+    {
+        NavManager.NavigateTo($"{Route}/{vm.Id}");
+    }
 }

@@ -2,15 +2,15 @@
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Services
-
 @attribute [ExtAuthorize]
 
 <MudText Typo="Typo.h6" Class="mb-3">Бот Telegram</MudText>
 
 <SettingsForm @ref="_editor" T="Models.TelegramBotSettings"
-                    Validation="@_validator.ValidateValue">
+              Validation="@_validator.ValidateValue">
     <MudStack>
-        <PasswordInput Class="mb-3" Label="Токен" For="@(() => _editor.Model!.Token)" @bind-Value="@_editor.Model!.Token"/>
+        <PasswordInput Class="mb-3" Label="Токен" For="@(() => _editor.Model!.Token)"
+                       @bind-Value="@_editor.Model!.Token"/>
     </MudStack>
 </SettingsForm>
 
@@ -18,13 +18,13 @@
 {
     private SettingsForm<Models.TelegramBotSettings> _editor = null!;
     private readonly Validator _validator = new();
-    
+
     private class Validator : ModelValidator<Models.TelegramBotSettings>
     {
         public Validator()
         {
             RuleFor(x => x.Token)
-                .MustAsync(async (token, cancellationToken) => 
+                .MustAsync(async (token, cancellationToken) =>
                     string.IsNullOrEmpty(token) || await NotificationsService.CheckTelegramBotTokenIsValid(token, cancellationToken))
                 .WithMessage("Невалидный токен или API недоступен");
         }

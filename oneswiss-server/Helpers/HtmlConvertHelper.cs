@@ -1,8 +1,9 @@
-﻿namespace OneSwiss.Server.Helpers
+﻿namespace OneSwiss.Server.Helpers;
+
+public class HtmlConvertHelper
 {
-    public class HtmlConvertHelper
+    public static string DateTimeToString(DateTime date)
     {
-        public static string DateTimeToString(DateTime date)
-            => date.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss");
+        return date.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss");
     }
 }

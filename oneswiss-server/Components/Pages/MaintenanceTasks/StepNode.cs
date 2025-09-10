@@ -1,16 +1,12 @@
 using Blazor.Diagrams.Core.Geometry;
 using Blazor.Diagrams.Core.Models;
 using OneSwiss.Common.Models.MaintenanceTasks;
-using OneSwiss.Server.Models;
 using OneSwiss.Server.Models.MaintenanceTasks;
-using File = OneSwiss.Server.Models.File;
 
 namespace OneSwiss.Server.Components.Pages.MaintenanceTasks;
 
 public class StepNode : NodeModel
 {
-    public MaintenanceStep Step { get; }
-    
     public StepNode(MaintenanceStepKind kind, Point? position = null) : base(position)
     {
         Step = new MaintenanceStep
@@ -18,24 +14,32 @@ public class StepNode : NodeModel
             Kind = kind
         };
     }
-    
+
     public StepNode(MaintenanceStep step, Point? position = null) : base(position)
     {
         Step = step;
     }
+
+    public MaintenanceStep Step { get; }
 
     public StepPort? GetPort(StepPortType type)
     {
         var port = Ports.FirstOrDefault(p => p is StepPort port && port.Type == type);
         return port as StepPort;
     }
-    
+
     public StepPort? GetInPort()
-        => GetPort(StepPortType.In);
-    
+    {
+        return GetPort(StepPortType.In);
+    }
+
     public StepPort? GetSuccessPort()
-        => GetPort(StepPortType.Success);
-    
+    {
+        return GetPort(StepPortType.Success);
+    }
+
     public StepPort? GetFailurePort()
-        => GetPort(StepPortType.Failure);
+    {
+        return GetPort(StepPortType.Failure);
+    }
 }

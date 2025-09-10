@@ -1,5 +1,4 @@
 ﻿using OneSwiss.V8.Extensions;
-using OneSwiss.V8.Platform;
 using OneSwiss.V8.Platform.RemoteAdministration;
 using OneSwiss.V8.Platform.Services;
 
@@ -11,35 +10,36 @@ public class V8
     public void ArgsParserWindowsTest()
     {
         const string argsStr = """
-                            "C:\Program Files\1cv8\8.3.27.1644\bin\ragent.exe" -srvc -agent -regport 1541 -port 1540 -range 1560:1591 -d "E:\\srvinfo" -debug
-                            """;
+                               "C:\Program Files\1cv8\8.3.27.1644\bin\ragent.exe" -srvc -agent -regport 1541 -port 1540 -range 1560:1591 -d "E:\\srvinfo" -debug
+                               """;
         var args = ArgsParser.ParsePairs(argsStr);
 
         Assert.That(args.ItemsCount, Is.EqualTo(8));
-        
+
         Assert.Multiple(() =>
         {
-            Assert.That(args.ItemByIndexAsValue(0)!.Value, Is.EqualTo(@"C:\Program Files\1cv8\8.3.27.1644\bin\ragent.exe"));
+            Assert.That(args.ItemByIndexAsValue(0)!.Value,
+                Is.EqualTo(@"C:\Program Files\1cv8\8.3.27.1644\bin\ragent.exe"));
 
             Assert.That(args.HasOption("srvc"), Is.True);
             Assert.That(args.HasOption("agent"), Is.True);
-            
+
             Assert.That(args.HasParameter("regport", out var value), Is.True);
             Assert.That(value, Is.EqualTo("1541"));
-            
+
             Assert.That(args.HasParameter("port", out value), Is.True);
             Assert.That(value, Is.EqualTo("1540"));
-            
+
             Assert.That(args.HasParameter("range", out value), Is.True);
             Assert.That(value, Is.EqualTo("1560:1591"));
-            
+
             Assert.That(args.HasParameter("d", out value), Is.True);
             Assert.That(value, Is.EqualTo(@"E:\\srvinfo"));
-            
+
             Assert.That(args.HasOption("debug"), Is.True);
         });
     }
-    
+
     [Test]
     public void ArgsParserWindows2Test()
     {
@@ -49,38 +49,40 @@ public class V8
         var args = ArgsParser.ParsePairs(argsStr);
 
         Assert.That(args.ItemsCount, Is.EqualTo(10));
-        
+
         Assert.Multiple(() =>
         {
-            Assert.That(args.ItemByIndexAsValue(0)!.Value, Is.EqualTo(@"D:\Program Files\1cv8\8.3.25.1560\bin\ragent.exe"));
+            Assert.That(args.ItemByIndexAsValue(0)!.Value,
+                Is.EqualTo(@"D:\Program Files\1cv8\8.3.25.1560\bin\ragent.exe"));
 
             Assert.That(args.HasOption("srvc"), Is.True);
             Assert.That(args.HasOption("agent"), Is.True);
-            
+
             Assert.That(args.HasParameter("regport", out var value), Is.True);
             Assert.That(value, Is.EqualTo("2541"));
-            
+
             Assert.That(args.HasParameter("port", out value), Is.True);
             Assert.That(value, Is.EqualTo("2540"));
-            
+
             Assert.That(args.HasParameter("range", out value), Is.True);
             Assert.That(value, Is.EqualTo("2560:2590"));
-            
+
             Assert.That(args.HasParameter("d", out value), Is.True);
             Assert.That(value, Is.EqualTo(@"D:\srvinfo2541"));
-            
+
             Assert.That(args.HasOption("debug"), Is.True);
             Assert.That(args.HasOption("http"), Is.True);
-            
+
             Assert.That(args.HasParameter("DebugServerPort", out value), Is.True);
             Assert.That(value, Is.EqualTo("2550"));
         });
     }
-    
+
     [Test]
     public void FillRasFromWindowsServiceArgsTest()
     {
-        const string args = @"C:\Program Files\1cv8\8.3.27.1644\bin\ras.exe cluster --service --port=1600 localhost:1740";
+        const string args =
+            @"C:\Program Files\1cv8\8.3.27.1644\bin\ras.exe cluster --service --port=1600 localhost:1740";
         var parsed = ArgsParser.ParsePairs(args);
 
         var ras = new RasService();
@@ -92,7 +94,7 @@ public class V8
             Assert.That(ras.RagentPort, Is.EqualTo(1740));
         });
     }
-    
+
     [Test]
     public void FillRagentFromWindowsServiceArgsTest()
     {
@@ -110,7 +112,7 @@ public class V8
             Assert.That(ras.DebugType, Is.EqualTo(RagentDebugType.Http));
         });
     }
-    
+
     [Test]
     public void FillCrServerFromWindowsServiceArgsTest()
     {
@@ -127,7 +129,7 @@ public class V8
             Assert.That(ras.Port, Is.EqualTo(1644));
         });
     }
-    
+
     [Test]
     public void OutputToOutputItemsTest()
     {
@@ -151,11 +153,11 @@ public class V8
                               """;
 
         var items = Rac.OutputToOutputItems(output);
-        
+
         Assert.That(items, Has.Count.EqualTo(1));
-        
+
         var outputItem = items[0];
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(outputItem["cluster"], Is.EqualTo("f3199b6b-0b61-4bc2-98f6-9604fa4d42e6"));
@@ -198,13 +200,13 @@ public class V8
                               allow-access-right-audit-events-recording : 1
                               restart-schedule                          : 
                               """;
-        
-        var clusters = Rac.OutputToOutputItems(output).ToRacObjects<OneSwiss.V8.Platform.RemoteAdministration.V8Cluster>();
-        
+
+        var clusters = Rac.OutputToOutputItems(output).ToRacObjects<V8Cluster>();
+
         Assert.That(clusters, Has.Count.EqualTo(1));
-        
+
         var cluster = clusters[0];
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(cluster.Id, Is.EqualTo("f3199b6b-0b61-4bc2-98f6-9604fa4d42e6"));

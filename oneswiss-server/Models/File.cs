@@ -4,14 +4,13 @@ namespace OneSwiss.Server.Models;
 
 public class File : DatabaseObject
 {
-    [Label("Наименование")]
-    public string Name { get; set; } = string.Empty;
-    [Label("Версия")]
-    public string Version { get; set; } = string.Empty;
-    [Label("Путь к файлу")]
-    public string DataPath { get; set; }  = string.Empty;
-    [Label("Тип файла")]
-    public FileType FileType { get; set; }
+    [Label("Наименование")] public string Name { get; set; } = string.Empty;
+
+    [Label("Версия")] public string Version { get; set; } = string.Empty;
+
+    [Label("Путь к файлу")] public string DataPath { get; set; } = string.Empty;
+
+    [Label("Тип файла")] public FileType FileType { get; set; }
 
     public override string ToString()
     {
@@ -24,7 +23,7 @@ public class File : DatabaseObject
             FileType.Ospx => "скрипт (OneScript)",
             _ => "неизвестный"
         };
-        
+
         return $"{Name} ({Version}, {postfix})";
     }
 }

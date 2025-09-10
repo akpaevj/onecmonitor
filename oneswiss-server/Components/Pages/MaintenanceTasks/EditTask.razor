@@ -1,21 +1,16 @@
 @page "/maintenancetasks/{id:guid}"
 @page "/maintenancetasks/create"
-@using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
-@using OneSwiss.Common.Extensions
-@using OneSwiss.Common.Models.MaintenanceTasks
 @using OneSwiss.Server.Attributes
-@using OneSwiss.Server.Extensions
-@using OneSwiss.Server.Models.MaintenanceTasks
+@using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
 
-@attribute [ExtAuthorize(BuiltInRoles.WriteMaintenanceTasks)]
+@attribute [ExtAuthorize(Roles.WriteMaintenanceTasks)]
 
-<EditItem Id="Id" 
-          IsTemplate="false" 
-          Title="Новая задача обслуживания" 
+<EditItem Id="Id"
+          IsTemplate="false"
+          Title="Новая задача обслуживания"
           Route="maintenancetasks"/>
 
 @code
 {
-    [Parameter]
-    public Guid Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
 }

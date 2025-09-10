@@ -1,22 +1,24 @@
-@using OneSwiss.Server.Components.Shared
-@using OneSwiss.Server.Models
 @using Microsoft.AspNetCore.Components.Authorization
+@using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Extensions
-
+@using OneSwiss.Server.Models
 <AuthorizeView>
     @{
-        var readOnly = context.IsReadOnly(BuiltInRoles.WriteClusterItemsInfo);
-        
+        var readOnly = context.IsReadOnly(Roles.WriteClusterItemsInfo);
+
         <InlineEditDatabaseForm @ref="_editor" T="Cluster" Id="Id" Editable="!readOnly">
             <MudStack>
-                <MudNumericField For="@(() => _editor.Model!.Port)" ReadOnly="true" Variant="Variant.Outlined" Label="Порт" @bind-Value="@_editor.Model!.Port"/>
-                <MudSelect Class="mb-3" Label="Учетные данные администратора" ReadOnly="readOnly" Variant="Variant.Outlined" @bind-Value="@_editor.Model!.CredentialsId" Clearable="@true">
-                    @foreach (var item in _editor.Context!.Credentials.ToList())
-                    {
-                        <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
-                    }
-                </MudSelect>
-
+                <MudNumericField For="@(() => _editor.Model!.Port)" ReadOnly="true" Variant="Variant.Outlined"
+                                 Label="Порт" @bind-Value="@_editor.Model!.Port"/>
+                <ItemSelector
+                    @bind-Value="@_editor.Model!.CredentialsId"
+                    Items="@_editor.Context!.Credentials.Where(c => !c.IsToken).ToList()"
+                    Class="mb-3"
+                    ItemValueSelector="arg => arg.Id"
+                    ItemNameSelector="arg => arg.Name"
+                    Variant="Variant.Outlined"
+                    Label="Учетные данные администратора"
+                    For="@(() => _editor.Model!.CredentialsId)"/>
             </MudStack>
         </InlineEditDatabaseForm>
     }
@@ -25,7 +27,6 @@
 @code
 {
     private InlineEditDatabaseForm<Cluster> _editor = null!;
-    
-    [Parameter]
-    public Guid Id { get; set; }
+
+    [Parameter] public Guid Id { get; set; }
 }

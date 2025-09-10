@@ -13,12 +13,12 @@ public class ReportExtensionConverter : JsonConverter<ReportExtension>
         {
             Name = reader.GetString() ?? string.Empty
         };
-        
+
         reader.Read();
-        
+
         item.Hash = reader.GetString() ?? string.Empty;
         reader.Read();
-        
+
         return item;
     }
 

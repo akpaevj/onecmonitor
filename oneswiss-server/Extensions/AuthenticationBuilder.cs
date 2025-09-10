@@ -12,7 +12,7 @@ public static class AuthenticationBuilder
     {
         var authSection = builder.Configuration.GetSection("Auth");
         var oidcSection = authSection.GetSection("OIDC");
-        
+
         var authMode = authSection.GetValue("Mode", AuthMode.Internal);
         var authBuilder = builder.Services.AddAuthentication(options =>
         {
@@ -32,7 +32,6 @@ public static class AuthenticationBuilder
         });
 
         if (authMode != AuthMode.Internal)
-        {
             authBuilder
                 .AddCookie()
                 .AddOpenIdConnect(options =>
@@ -44,17 +43,16 @@ public static class AuthenticationBuilder
                     options.ResponseType = OpenIdConnectResponseType.Code;
                     options.SaveTokens = true;
                     options.GetClaimsFromUserInfoEndpoint = true;
-                    
+
                     var scopes = oidcSection.GetValue<string[]>("Scopes");
                     scopes?.ToList().ForEach(c => options.Scope.Add(c));
                 });
-        }
 
         builder.Services.AddAuthorizationBuilder()
             .AddPolicy("AgentsAuthenticationPolicy", cfg =>
             {
                 cfg.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
-                
+
                 var requiresAuth = authSection.GetValue("RequireClientsAuthentication", false);
                 cfg.RequireAssertion(handler =>
                 {
@@ -75,14 +73,14 @@ public static class AuthenticationBuilder
                     RequireNonAlphanumeric = false,
                     RequiredUniqueChars = 1,
                     RequireLowercase = false,
-                    RequireUppercase = false,
+                    RequireUppercase = false
                 };
             })
             .AddRoles<ApplicationRole>()
             .AddEntityFrameworkStores<AppDbContext>()
             .AddSignInManager()
             .AddDefaultTokenProviders();
-        
+
         return builder;
     }
 }

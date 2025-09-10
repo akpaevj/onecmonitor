@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace OneSwiss.Common.Converters.Sqlite
+namespace OneSwiss.Common.Converters.Sqlite;
+
+public class DateTimeStringConverter : ValueConverter<DateTime, string>
 {
-    public class DateTimeStringConverter : ValueConverter<DateTime, string>
+    public DateTimeStringConverter() : base(
+        g => g.Kind == DateTimeKind.Utc ? g.ToString() : g.ToUniversalTime().ToString(),
+        s => DateTime.SpecifyKind(DateTime.Parse(s), DateTimeKind.Utc))
     {
-        public DateTimeStringConverter() : base(
-            g => g.Kind == DateTimeKind.Utc ? g.ToString() : g.ToUniversalTime().ToString(), 
-            s => DateTime.SpecifyKind(DateTime.Parse(s), DateTimeKind.Utc)) { }
     }
 }

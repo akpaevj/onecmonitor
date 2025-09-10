@@ -1,7 +1,4 @@
 @page "/maintenancetaskstemplates"
-@inject IDialogService DialogService
-@inject IDbContextFactory<AppDbContext> ContextFactory
-@inject IJSRuntime Js
 @using System.Text
 @using System.Text.Encodings.Web
 @using System.Text.Json
@@ -9,21 +6,24 @@
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
+@inject IDialogService DialogService
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject IJSRuntime Js
 
-@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
+@attribute [ExtAuthorize(Roles.ReadMaintenanceTasks, Roles.WriteMaintenanceTasks)]
 
 <script>
-  window.downloadFileFromStream = async (fileName, contentStreamReference) => {
-    const arrayBuffer = await contentStreamReference.arrayBuffer();
-    const blob = new Blob([arrayBuffer]);
-    const url = URL.createObjectURL(blob);
-    const anchorElement = document.createElement('a');
-    anchorElement.href = url;
-    anchorElement.download = fileName ?? '';
-    anchorElement.click();
-    anchorElement.remove();
-    URL.revokeObjectURL(url);
-  }
+    window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+        const arrayBuffer = await contentStreamReference.arrayBuffer();
+        const blob = new Blob([arrayBuffer]);
+        const url = URL.createObjectURL(blob);
+        const anchorElement = document.createElement('a');
+        anchorElement.href = url;
+        anchorElement.download = fileName ?? '';
+        anchorElement.click();
+        anchorElement.remove();
+        URL.revokeObjectURL(url);
+    }
 </script>
 
 <Index IsTemplate="true" Title="Шаблоны задач обслуживания" Route="maintenancetaskstemplates"></Index>
@@ -38,12 +38,9 @@
             .Include(c => c.InfoBases)
             .Include(c => c.Steps)
             .FirstOrDefaultAsync(c => c.Id == id);
-        
+
         item!.InfoBases.Clear();
-        item.Steps.ForEach(c =>
-        {
-            c.MaintenanceTask = null!;
-        });
+        item.Steps.ForEach(c => { c.MaintenanceTask = null!; });
 
         var jsonStr = JsonSerializer.Serialize(item, new JsonSerializerOptions
         {
@@ -51,17 +48,17 @@
             WriteIndented = true
         });
         var data = Encoding.UTF8.GetBytes(jsonStr);
-        
+
         var fileStream = new MemoryStream(data);
 
         return fileStream;
     }
-    
+
     private async Task DownloadTemplate(Guid id)
     {
         await using var stream = await GetFileStream(id);
         const string fileName = "task_template.json";
-        using var streamRef = new DotNetStreamReference(stream: stream);
+        using var streamRef = new DotNetStreamReference(stream);
 
         await Js.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
     }

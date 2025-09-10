@@ -15,6 +15,7 @@ public class TreeItem(string id, TreeItem? parent = null)
     public bool Visible { get; set; } = true;
     public bool IsSelectable { get; set; } = true;
     public bool IsSelected { get; set; }
+
     public int Level
     {
         get
@@ -31,6 +32,7 @@ public class TreeItem(string id, TreeItem? parent = null)
             return level;
         }
     }
+
     public Type? DynamicComponentType { get; init; }
     public Dictionary<string, object>? Parameters { get; init; }
     public bool ShowEditItemIcon { get; set; }

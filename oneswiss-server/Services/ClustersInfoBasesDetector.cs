@@ -14,7 +14,6 @@ public class ClustersInfoBasesDetector(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
-        {
             try
             {
                 var connections = await connectionsManager.GetActiveAgentsConnections(stoppingToken);
@@ -38,20 +37,22 @@ public class ClustersInfoBasesDetector(
                                     .AsNoTracking()
                                     .FirstOrDefaultAsync(c => c.DefaultV8Admin, token);
 
-                                var dbClusters = await appDbContext.Clusters.Where(c => c.AgentId == connection.AgentInstance!.Id).ToListAsync(token);
+                                var dbClusters = await appDbContext.Clusters
+                                    .Where(c => c.AgentId == connection.AgentInstance!.Id).ToListAsync(token);
                                 var agentClusters = await connection.GetV8Clusters(token);
 
-                                dbClusters.ExceptBy(agentClusters.Select(c => c.Id), i => i.ClusterInternalId).ToList().ForEach(
-                                    c => appDbContext.Clusters.Remove(c));
+                                dbClusters.ExceptBy(agentClusters.Select(c => c.Id), i => i.ClusterInternalId).ToList()
+                                    .ForEach(c => appDbContext.Clusters.Remove(c));
 
-                                agentClusters.ExceptBy(dbClusters.Select(c => c.ClusterInternalId), i => i.Id).ToList().ForEach(c =>
-                                {
-                                    var item = mapper.Map<Cluster>(c);
-                                    item.AgentId = connection.AgentInstance!.Id;
-                                    item.CredentialsId = defaultClusterAdminCredentials?.Id;
-                                    
-                                    appDbContext.Clusters.Add(item);
-                                });
+                                agentClusters.ExceptBy(dbClusters.Select(c => c.ClusterInternalId), i => i.Id).ToList()
+                                    .ForEach(c =>
+                                    {
+                                        var item = mapper.Map<Cluster>(c);
+                                        item.AgentId = connection.AgentInstance!.Id;
+                                        item.CredentialsId = defaultClusterAdminCredentials?.Id;
+
+                                        appDbContext.Clusters.Add(item);
+                                    });
 
                                 agentClusters.ForEach(cluster =>
                                 {
@@ -74,32 +75,36 @@ public class ClustersInfoBasesDetector(
                                     .ToListAsync(token);
 
                                 foreach (var cluster in clusters)
-                                {
                                     try
                                     {
-                                        var dbInfoBases = await appDbContext.InfoBases.Where(c => c.ClusterId == cluster.Id).ToListAsync(token);
+                                        var dbInfoBases = await appDbContext.InfoBases
+                                            .Where(c => c.ClusterId == cluster.Id).ToListAsync(token);
                                         var agentInfoBases = await connection.GetV8InfoBases(cluster, token);
-                                        
-                                        dbInfoBases.ExceptBy(agentInfoBases.Select(c => c.Id), i => i.InfoBaseInternalId).ToList().ForEach(
-                                            c => appDbContext.InfoBases.Remove(c));
 
-                                        agentInfoBases.ExceptBy(dbInfoBases.Select(c => c.InfoBaseInternalId), i => i.Id).ToList().ForEach(c =>
-                                        {
-                                            var item = mapper.Map<InfoBase>(c);
-                                            item.Name = item.InfoBaseName;
-                                            item.ClusterId = cluster.Id;
-                                            item.CredentialsId = defaultInfoBaseAdminCredentials?.Id;
-                                            item.PublishAddress = "http://localhost";
-                                            
-                                            appDbContext.InfoBases.Add(item);
-                                        });
-                                        
+                                        dbInfoBases.ExceptBy(agentInfoBases.Select(c => c.Id),
+                                                i => i.InfoBaseInternalId).ToList()
+                                            .ForEach(c => appDbContext.InfoBases.Remove(c));
+
+                                        agentInfoBases
+                                            .ExceptBy(dbInfoBases.Select(c => c.InfoBaseInternalId), i => i.Id).ToList()
+                                            .ForEach(c =>
+                                            {
+                                                var item = mapper.Map<InfoBase>(c);
+                                                item.Name = item.InfoBaseName;
+                                                item.ClusterId = cluster.Id;
+                                                item.CredentialsId = defaultInfoBaseAdminCredentials?.Id;
+                                                item.PublishAddress = "http://localhost";
+
+                                                appDbContext.InfoBases.Add(item);
+                                            });
+
                                         agentInfoBases.ForEach(infoBase =>
                                         {
-                                            var dbInfoBase = dbInfoBases.FirstOrDefault(c => c.InfoBaseInternalId == infoBase.Id);
+                                            var dbInfoBase = dbInfoBases.FirstOrDefault(c =>
+                                                c.InfoBaseInternalId == infoBase.Id);
                                             if (dbInfoBase == null)
                                                 return;
-                                            
+
                                             mapper.Map(infoBase, dbInfoBase);
                                             dbInfoBase.ClusterId = cluster.Id;
 
@@ -108,17 +113,17 @@ public class ClustersInfoBasesDetector(
                                     }
                                     catch (Exception e)
                                     {
-                                        logger.LogError(e, 
+                                        logger.LogError(e,
                                             $"Ошибка получения списка информационных баз. Агент: {connection.AgentInstance!.InstanceName}. Кластер: {cluster.Name}");
                                     }
-                                }
 
                                 await appDbContext.SaveChangesAsync(token);
                             }
                             catch (Exception e)
                             {
                                 await appDbContext.Database.RollbackTransactionAsync(token);
-                                logger.LogError(e, $"Ошибка получения списка кластеров. Агент: {connection.AgentInstance!.InstanceName}");
+                                logger.LogError(e,
+                                    $"Ошибка получения списка кластеров. Агент: {connection.AgentInstance!.InstanceName}");
                             }
                         });
                     }
@@ -126,11 +131,13 @@ public class ClustersInfoBasesDetector(
                     {
                         // ignore
                     }
-                    
+
                     await Task.Delay(60 * 1000, stoppingToken);
                 }
                 else
+                {
                     await Task.Delay(5 * 1000, stoppingToken);
+                }
             }
             catch (Exception e)
             {
@@ -140,6 +147,5 @@ public class ClustersInfoBasesDetector(
             {
                 await Task.Delay(60 * 1000, stoppingToken);
             }
-        }
     }
 }

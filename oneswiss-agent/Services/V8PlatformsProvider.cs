@@ -8,14 +8,19 @@ namespace OneSwiss.Agent.Services;
 public class V8PlatformsProvider(IConfiguration configuration)
 {
     private readonly string[] _additionalPaths = configuration.GetSection("V8:PlatformPaths").Get<string[]>() ?? [];
-    
+
     public string[] GetExistsPlatformInstallationPaths()
-        => V8Platforms.GetDefaultInstallationPaths()
+    {
+        return V8Platforms.GetDefaultInstallationPaths()
             .Concat(_additionalPaths)
             .Where(Directory.Exists)
             .ToArray();
-    
-    [ContextMethod("ПолучитьУстановленныеПлатформы", "GetInstalledPlatforms", Converter = typeof(ReadOnlyListContextConverter<V8Platform>))]
+    }
+
+    [ContextMethod("ПолучитьУстановленныеПлатформы", "GetInstalledPlatforms",
+        Converter = typeof(ReadOnlyListContextConverter<V8Platform>))]
     public IReadOnlyList<V8Platform> GetInstalledPlatforms()
-        => V8Platforms.GetInstalledPlatforms(_additionalPaths);
+    {
+        return V8Platforms.GetInstalledPlatforms(_additionalPaths);
+    }
 }

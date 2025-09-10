@@ -17,19 +17,17 @@
                         TimeLabelSpacing="TimeSpan.FromMinutes(5)"
                         TimeLabelSpacingRounding="true"
                         TimeLabelSpacingRoundingPadSeries="true"
-                        DataMarkerTooltipTimeLabelFormat="yyyy MMM dd HH:mm:ss" />
+                        DataMarkerTooltipTimeLabelFormat="yyyy MMM dd HH:mm:ss"/>
 </MudPaper>
 
 @code {
-    private List<TimeSeriesChartSeries> _series = [];
+    private readonly List<TimeSeriesChartSeries> _series = [];
     private ITechLogRepository? _techLogRepository;
-    private ChartOptions _options = new();
-    
-    [SupplyParameterFromQuery]
-    public string Property { get; set; }
-    
-    [SupplyParameterFromQuery]
-    public string Filter { get; set; }
+    private readonly ChartOptions _options = new();
+
+    [SupplyParameterFromQuery] public string Property { get; set; }
+
+    [SupplyParameterFromQuery] public string Filter { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

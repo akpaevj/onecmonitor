@@ -5,11 +5,12 @@ namespace OneSwiss.Common.DTO;
 
 [MessagePackObject]
 [ContextClass("Уведомление", "Notification")]
-public class NotificationDto
+public class CustomNotificationDto
 {
     [Key(0)]
     [ContextProperty("Ключ", "Key")]
     public string Key { get; set; }
+
     [Key(1)]
     [ContextProperty("Сообщение", "Message")]
     public string Message { get; set; }

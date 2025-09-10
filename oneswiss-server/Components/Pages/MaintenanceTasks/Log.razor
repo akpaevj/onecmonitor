@@ -11,7 +11,7 @@
 @inject ISnackbar SnackBar
 @rendermode InteractiveServer
 
-@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
+@attribute [ExtAuthorize(Roles.ReadMaintenanceTasks, Roles.WriteMaintenanceTasks)]
 
 <PageTitle>Журнал задачи обслуживания</PageTitle>
 
@@ -28,21 +28,22 @@
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Время">@context.TimeStamp</MudTd>
-                <MudTd DataLabel="Уровень" Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
+                <MudTd DataLabel="Уровень"
+                       Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
                 <MudTd Style="white-space: pre-wrap" DataLabel="Сообщение">@context.Message</MudTd>
             </RowTemplate>
         </MudTable>
     </MudTabPanel>
     @if (_infobaseLogItems.Count > 0)
     {
-        <MudTabPanel Text="Лог по информационным базам"  BadgeDot="true" BadgeColor="_infoBasesLogBadgeColor">
+        <MudTabPanel Text="Лог по информационным базам" BadgeDot="true" BadgeColor="_infoBasesLogBadgeColor">
             <MudTabs Outlined="true" Position="Position.Left" Rounded="true" Border="true"
                      ApplyEffectsToContainer="true" PanelClass="pa-6">
-    
+
                 @foreach (var infoBase in _taskInfoBases)
                 {
                     var logs = _infobaseLogItems.TryGetValue(infoBase.Id, out var item) ? item : [];
-        
+
                     <MudTabPanel Text="@infoBase.Name" BadgeDot="true" BadgeColor="@(GetBadgeColor(logs))">
                         <MudTable T="MaintenanceTaskLogItem" Items="logs" Style="width: 100%" Bordered="true">
                             <HeaderContent>
@@ -52,7 +53,8 @@
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="Время">@context.TimeStamp</MudTd>
-                                <MudTd DataLabel="Уровень" Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
+                                <MudTd DataLabel="Уровень"
+                                       Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
                                 <MudTd Style="white-space: pre-wrap" DataLabel="Сообщение">@context.Message</MudTd>
                             </RowTemplate>
                         </MudTable>
@@ -69,10 +71,9 @@
     private HubConnection? _hubConnection;
     private Color _taskLogBadgeColor = Color.Warning;
     private Color _infoBasesLogBadgeColor = Color.Warning;
-    
-    [Parameter]
-    public Guid Id { get; set; }
-    
+
+    [Parameter] public Guid Id { get; set; }
+
     private IReadOnlyList<InfoBase> _taskInfoBases = [];
     private List<MaintenanceTaskLogItem> _taskLogItems = [];
     private Dictionary<Guid, List<MaintenanceTaskLogItem>> _infobaseLogItems = [];
@@ -88,10 +89,10 @@
             await UpdateItems();
             await InvokeAsync(StateHasChanged);
         });
-        
+
         await _hubConnection.StartAsync();
         await _hubConnection.InvokeAsync("Subscribe", Id);
-        
+
         await UpdateItems();
     }
 
@@ -140,24 +141,24 @@
             _isLoading = false;
         }
     }
-    
+
     private static Color GetTaskTabBadgeColor(List<MaintenanceTaskLogItem> taskLogs, List<MaintenanceTaskLogItem> stepLogs)
     {
         var hasError = taskLogs.Any(c => c.IsError) || stepLogs.Any(c => c.IsError);
         if (hasError)
             return Color.Error;
-        
+
         var finished = taskLogs.Any(c => c.IsFinish);
 
         return finished ? Color.Success : Color.Warning;
     }
-    
+
     private static Color GetInfoBasesTabBadgeColor(int infoBasesCount, List<MaintenanceTaskLogItem> stepLogs)
     {
         var hasError = stepLogs.Any(c => c.IsError);
         if (hasError)
             return Color.Error;
-        
+
         var finished = stepLogs.Count(c => c.IsFinish);
 
         return finished == infoBasesCount ? Color.Success : Color.Warning;

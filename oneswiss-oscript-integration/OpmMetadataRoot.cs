@@ -4,6 +4,5 @@ namespace OneSwiss.OneScript;
 
 public class OpmMetadataRoot
 {
-    [XmlElement("opm-metadata")] 
-    public OpmMetadata Data { get; set; } = null!;
+    [XmlElement("opm-metadata")] public OpmMetadata Data { get; set; } = null!;
 }

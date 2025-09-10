@@ -1,0 +1,62 @@
+@typeparam TValue
+@using System.Linq.Expressions
+@typeparam TItem
+
+<MudSelect
+    T="TValue"
+    Class="@Class"
+    Label="@Label"
+    For="For"
+    @bind-Value="@Value"
+    @bind-Value:after="@(() => ValueChanged.InvokeAsync(Value))"
+    ToStringFunc="ToStringFunc"
+    Clearable="true"
+    ReadOnly="@ReadOnly"
+    Disabled="@Disabled"
+    Variant="@Variant">
+    @foreach (var item in Items)
+    {
+        <MudSelectItem Value="@ItemValueSelector(item)">
+            @if (ItemNameSelector == null)
+            {
+                item?.ToString();
+            }
+            else
+            {
+                @ItemNameSelector(item)
+            }
+        </MudSelectItem>
+    }
+</MudSelect>
+
+@code
+{
+    [Parameter] public string? Label { get; set; }
+
+    [Parameter] public Func<TItem, string>? ItemNameSelector { get; set; }
+
+    [Parameter] public Func<TItem, TValue> ItemValueSelector { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    [Parameter] [Category("Validation")] public Expression<Func<TValue>>? For { get; set; }
+
+    [Parameter] [Category("Data")] public TValue? Value { get; set; }
+
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+
+    [Parameter] public List<TItem> Items { get; set; }
+
+    [Parameter] public Variant Variant { get; set; } = Variant.Text;
+
+    private static string? ToStringFunc(TValue? arg)
+    {
+        if (arg is Guid guid)
+            return guid == Guid.Empty ? string.Empty : guid.ToString();
+
+        return arg?.ToString();
+    }
+}

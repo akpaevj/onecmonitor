@@ -17,13 +17,18 @@
         <MudButton OnClick="Cancel">Отмена</MudButton>
     </DialogActions>
 </MudDialog>
+
 @code {
-    [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; }
-    
-    private void Cancel() => MudDialog.Cancel();
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
 
     public void OnSelectItem(MaintenanceTask obj)
-        => MudDialog.Close(DialogResult.Ok(obj.Id));
+    {
+        MudDialog.Close(DialogResult.Ok(obj.Id));
+    }
 
 }

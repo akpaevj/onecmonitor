@@ -3,15 +3,14 @@
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
 
-@attribute [ExtAuthorize(BuiltInRoles.WriteMaintenanceTasks)]
+@attribute [ExtAuthorize(Roles.WriteMaintenanceTasks)]
 
-<EditItem Id="Id" 
-          IsTemplate="true" 
-          Title="Новый шаблон задачи обслуживания" 
+<EditItem Id="Id"
+          IsTemplate="true"
+          Title="Новый шаблон задачи обслуживания"
           Route="maintenancetaskstemplates"/>
 
 @code
 {
-    [Parameter]
-    public Guid Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
 }

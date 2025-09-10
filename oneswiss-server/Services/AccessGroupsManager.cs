@@ -1,14 +1,25 @@
 using Microsoft.EntityFrameworkCore;
-using OneSwiss.Server.Helpers;
 using OneSwiss.Server.Models;
 
 namespace OneSwiss.Server.Services;
 
 public class AccessGroupsManager(AppDbContext context) : IDisposable, IAsyncDisposable
 {
+    public async ValueTask DisposeAsync()
+    {
+        await context.DisposeAsync();
+    }
+
+    public void Dispose()
+    {
+        context.Dispose();
+    }
+
     public async Task<bool> GroupsExists()
-        => await context.AccessGroups.AnyAsync();
-    
+    {
+        return await context.AccessGroups.AnyAsync();
+    }
+
     public async Task Create(AccessGroup group)
     {
         await context.AccessGroups.AddAsync(group);
@@ -16,15 +27,7 @@ public class AccessGroupsManager(AppDbContext context) : IDisposable, IAsyncDisp
     }
 
     public async Task<AccessGroup?> GetById(Guid id)
-        => await context.AccessGroups.FirstOrDefaultAsync(c => c.Id == id);
-    
-    public void Dispose()
     {
-        context.Dispose();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await context.DisposeAsync();
+        return await context.AccessGroups.FirstOrDefaultAsync(c => c.Id == id);
     }
 }

@@ -4,21 +4,20 @@ using OneSwiss.Common.DTO;
 using OneSwiss.Common.EventLog;
 using OneSwiss.Common.Models;
 using OneSwiss.Common.Services;
-using OneSwiss.Common.Storage;
 using Timer = System.Timers.Timer;
 
 namespace OneSwiss.Agent.Services.EventLog;
 
 public class EventLogExporter : IDisposable
 {
-    private IEventLogRepository? _repository;
-    private readonly ActionBlock<EventLogItem[]>? _senderBlock;
     private readonly BatchBlock<EventLogItem>? _eventsBatchBlock;
+    private readonly ActionBlock<EventLogItem[]>? _senderBlock;
     private readonly Timer _timer = new(5000);
+    private IEventLogRepository? _repository;
 
     public EventLogExporter(EventLogRepositoryManager repositoryManager, IHostApplicationLifetime applicationLifetime)
     {
-        _senderBlock = new ActionBlock<EventLogItem[]>(async batch => 
+        _senderBlock = new ActionBlock<EventLogItem[]>(async batch =>
             await _repository!.WriteEvents(batch, applicationLifetime.ApplicationStopping));
 
         _eventsBatchBlock = new BatchBlock<EventLogItem>(5000, new GroupingDataflowBlockOptions
@@ -27,18 +26,25 @@ public class EventLogExporter : IDisposable
             CancellationToken = applicationLifetime.ApplicationStopping
         });
         _eventsBatchBlock.LinkTo(_senderBlock, new DataflowLinkOptions { PropagateCompletion = true });
-        
+
         _timer.Elapsed += (_, _) => _eventsBatchBlock!.TriggerBatch();
     }
 
-    public async Task Init(IEventLogRepository repository, EventLogSettingsDto settings, CancellationToken cancellationToken)
+    public void Dispose()
+    {
+        _repository?.Dispose();
+        _timer.Dispose();
+    }
+
+    public async Task Init(IEventLogRepository repository, EventLogSettingsDto settings,
+        CancellationToken cancellationToken)
     {
         if (_repository != null)
         {
             _eventsBatchBlock!.TriggerBatch();
             _eventsBatchBlock!.Complete();
             await _senderBlock!.Completion;
-            
+
             _repository?.Dispose();
         }
 
@@ -49,13 +55,15 @@ public class EventLogExporter : IDisposable
 
             _repository = repository;
             await _repository.Connect(cancellationToken);
-        
+
             _timer.Start();
         }
         else
+        {
             _timer.Stop();
+        }
     }
-    
+
     public void Send(EventLogItem eventLogItem)
     {
         if (_repository == null)
@@ -63,11 +71,5 @@ public class EventLogExporter : IDisposable
 
         _timer.Reset();
         _eventsBatchBlock!.Post(eventLogItem);
-    }
-
-    public void Dispose()
-    {
-        _repository?.Dispose();
-        _timer.Dispose();
     }
 }

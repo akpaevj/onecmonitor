@@ -8,7 +8,7 @@ public static class Utf8JsonReaderExtension
     {
         while (reader.TokenType != tokenType)
             reader.Read();
-        
+
         if (skipFindingToken)
             reader.Read();
     }

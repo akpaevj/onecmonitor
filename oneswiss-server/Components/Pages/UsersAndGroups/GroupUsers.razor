@@ -1,15 +1,10 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
-@using OneSwiss.Common.Extensions
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Extensions
-@using OneSwiss.Server.Services
-@using OneSwiss.V8.Edt
-@using OneSwiss.V8.Platform
-@using OneSwiss.V8.Platform.Services
-@using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
-
+@using OneSwiss.Server.Components
+@using OneSwiss.Server.Components.Shared
 @inject ISnackbar Snackbar
 @inject UserManager<ApplicationUser> UserManager
 
@@ -32,14 +27,13 @@
 </DatabaseObjectsTable>
 
 @code {
-    
-    [Parameter]
-    public Guid GroupId { get; set; }
+
+    [Parameter] public Guid GroupId { get; set; }
 
     private async Task<List<ApplicationUser>> LoadItems(AppDbContext arg)
     {
         var result = new List<ApplicationUser>();
-        
+
         result.AddRange(await arg.Users.Where(c => c.GroupId == GroupId).ToListAsync());
         result.AddRange(await LoadChildrenGroupsUsers(GroupId, arg));
 
@@ -49,13 +43,13 @@
     private static async Task<List<ApplicationUser>> LoadChildrenGroupsUsers(Guid groupId, AppDbContext context)
     {
         var result = new List<ApplicationUser>();
-        
+
         var items = await context.UsersGroups
             .AsNoTracking()
             .Include(c => c.Users)
             .Where(c => c.ParentId == groupId)
             .ToListAsync();
-        
+
         result.AddRange(items.SelectMany(c => c.Users));
 
         foreach (var group in items)
@@ -66,12 +60,12 @@
 
     private async Task<bool> BeforeDelete((ApplicationUser Model, AppDbContext Context) tuple)
     {
-        var users = await UserManager.GetUsersInRoleAsync(BuiltInRoles.Administrator);
+        var users = await UserManager.GetUsersInRoleAsync(Roles.Administrator);
 
         var currentUser = users.FirstOrDefault(c => c.Id == tuple.Model.Id);
-        if (currentUser != null) 
+        if (currentUser != null)
             users.Remove(currentUser);
-        
+
         if (users.Count == 0)
             Snackbar.ShowError("После удаления не останется пользователя с административными правами, удаление запрещено");
 

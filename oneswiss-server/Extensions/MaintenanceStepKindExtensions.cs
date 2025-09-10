@@ -5,7 +5,8 @@ namespace OneSwiss.Server.Extensions;
 public static class MaintenanceStepKindExtensions
 {
     public static string GetKindColor(this MaintenanceStepKind kind)
-        => kind switch
+    {
+        return kind switch
         {
             MaintenanceStepKind.LockConnections => "rgba(210, 132, 156, 0.7)",
             MaintenanceStepKind.CloseConnections => "rgba(214, 133, 129, 0.7)",
@@ -19,4 +20,5 @@ public static class MaintenanceStepKindExtensions
             MaintenanceStepKind.CopyInfoBase => "rgba(59, 160, 220, 0.7)",
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
         };
+    }
 }

@@ -2,21 +2,20 @@
 @using global::AutoMapper
 @using Microsoft.EntityFrameworkCore
 @using OneSwiss.Server.Attributes
-@using OneSwiss.Server.Models
-@using OneSwiss.Server.Components.Shared
 @inject IDbContextFactory<AppDbContext> ContextFactory
 @inject IMapper Mapper
 @inject NavigationManager NavManager
 @rendermode InteractiveServer
 
-@attribute [ExtAuthorize(BuiltInRoles.ReadErrorLoggingReports)]
+@attribute [ExtAuthorize(Roles.ReadErrorLoggingReports)]
 
 <PageTitle>Журнал сервиса регистрации ошибок</PageTitle>
 
 <h1 Class="mb-3">Журнал сервиса регистрации ошибок</h1>
 
 
-<MudDataGrid T="ErrorReportViewModel" Items="_items" Dense="true" Hover="true" Filterable="true" FilterMode="DataGridFilterMode.Simple" SortMode="SortMode.Multiple">
+<MudDataGrid T="ErrorReportViewModel" Items="_items" Dense="true" Hover="true" Filterable="true"
+             FilterMode="DataGridFilterMode.Simple" SortMode="SortMode.Multiple">
     <Columns>
         <PropertyColumn Title="Дата" Property="arg => arg.Date"/>
         <PropertyColumn Title="Конфигурация" Property="arg => arg.Configuration"/>
@@ -25,7 +24,8 @@
         <PropertyColumn Title="Доп. инфо" Property="arg => arg.AdditionalInfo"/>
         <TemplateColumn>
             <CellTemplate>
-                <MudIconButton Icon="@Icons.Material.Filled.OpenInFull" OnClick="@(() => NavigateToItem(context.Item!))" Color="Color.Info"/>
+                <MudIconButton Icon="@Icons.Material.Filled.OpenInFull" OnClick="@(() => NavigateToItem(context.Item!))"
+                               Color="Color.Info"/>
             </CellTemplate>
         </TemplateColumn>
     </Columns>
@@ -43,11 +43,11 @@
     private async Task UpdateItems()
     {
         var context = await ContextFactory.CreateDbContextAsync();
-        
+
         var items = await context.ErrorReports.AsNoTracking().OrderByDescending(c => c.CreatedAt).ToListAsync();
         _items = Mapper.Map<List<ErrorReportViewModel>>(items);
     }
-    
+
     private void NavigateToItem(ErrorReportViewModel vm)
     {
         NavManager.NavigateTo($"/errorloggingservice/{vm.Id}");

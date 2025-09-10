@@ -1,16 +1,14 @@
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject AgentsConnectionsManager AgentsConnectionsManager
+@inject ISnackbar Snackbar
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.SignalR.Client
 @using OneSwiss.Common.DTO
 @using OneSwiss.Common.Extensions
 @using OneSwiss.Server.Extensions
-@using OneSwiss.Server.Models
 @using OneSwiss.Server.Services
 @using OneSwiss.V8.Edt
 @using OneSwiss.V8.Platform
 @using OneSwiss.V8.Platform.Services
-@inject IDbContextFactory<AppDbContext> ContextFactory
-@inject AgentsConnectionsManager AgentsConnectionsManager
-@inject ISnackbar Snackbar
 @implements OneSwiss.Server.Components.Shared.IStateChangeable
 
 @if (_isLoading)
@@ -184,14 +182,15 @@ else
     private List<RasService> _rasServices = [];
     private List<CrServer> _crServerServices = [];
     private List<EdtInstallation> _edtInstallations = [];
-    
+
     private bool _isLoading;
-    
-    [Parameter]
-    public Guid Id { get; set; }
+
+    [Parameter] public Guid Id { get; set; }
 
     protected override async Task OnInitializedAsync()
-        => await UpdateAgentInfo();
+    {
+        await UpdateAgentInfo();
+    }
 
     private async Task UpdateAgentInfo()
     {
@@ -203,7 +202,7 @@ else
         try
         {
             await using var context = await ContextFactory.CreateDbContextAsync();
-        
+
             var agent = await context.Agents.FirstOrDefaultAsync(c => c.Id == Id);
 
             if (agent != null)
@@ -228,7 +227,7 @@ else
         }
 
         _isLoading = false;
-        
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -248,4 +247,5 @@ else
     {
         await UpdateAgentInfo();
     }
+
 }

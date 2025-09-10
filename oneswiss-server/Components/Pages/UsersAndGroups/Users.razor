@@ -1,5 +1,4 @@
 @page "/users"
-
 @using System.Globalization
 @using Microsoft.EntityFrameworkCore
 @using MudExtensions
@@ -19,7 +18,7 @@
 
 <MudSplitter EnableSlide="true" @bind-Dimension="_dimension" @bind-Dimension:after="AfterDimensionChanged">
     <StartContent>
-        <TreeView @bind-SelectedItem="_selectedItem" Class="w-100 pe-2" @bind-Items="_items" 
+        <TreeView @bind-SelectedItem="_selectedItem" Class="w-100 pe-2" @bind-Items="_items"
                   ShowAddButton="true" AddButtonCallback="AddButtonCallback"/>
     </StartContent>
     <EndContent>
@@ -42,7 +41,7 @@
     {
         await UpdateItems();
     }
-    
+
     private Task AddButtonCallback()
     {
         NavManager.NavigateTo("/users/groups/create");
@@ -54,7 +53,7 @@
         if (firstRender)
         {
             var dimension = await Js.GetLocalStorageItem<string?>("users_panel_dimension");
-            
+
             if (!string.IsNullOrEmpty(dimension))
             {
                 _dimension = double.Parse(dimension, CultureInfo.InvariantCulture);
@@ -62,13 +61,13 @@
             }
         }
     }
-    
+
     private async Task UpdateItems()
     {
         _items = await LoadItems();
         _selectedItem = _items.FirstOrDefault();
     }
-    
+
     private async Task<List<TreeItem>> LoadItems(Guid? parentId = null)
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
@@ -77,7 +76,7 @@
             .Where(c => c.ParentId == parentId)
             .AsNoTracking()
             .ToListAsync();
-        
+
         return items.Select(c =>
         {
             return new TreeItem(c.Id.ToString())
@@ -102,9 +101,11 @@
         NavManager.NavigateTo($"/users/groups/{arg.Id}");
         return Task.CompletedTask;
     }
-    
+
     private async Task OnDeleteUsersGroup(TreeItem arg)
-        => await DeleteItem(arg);
+    {
+        await DeleteItem(arg);
+    }
 
     private async Task DeleteItem(TreeItem item)
     {
@@ -113,5 +114,8 @@
     }
 
     private async Task AfterDimensionChanged()
-        => await Js.SetLocalStorageItem("users_panel_dimension", _dimension.ToString(CultureInfo.InvariantCulture));
+    {
+        await Js.SetLocalStorageItem("users_panel_dimension", _dimension.ToString(CultureInfo.InvariantCulture));
+    }
+
 }

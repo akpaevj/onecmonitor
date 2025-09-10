@@ -1,5 +1,4 @@
 ﻿@page "/Account/ExternalLogin"
-
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
@@ -54,16 +53,16 @@
     {
         if (_externalLoginInfo is null)
             RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information.", HttpContext);
-        
+
         var nameClaim = Configuration.GetValue<string>("Auth:OIDC:NameClaim") ?? "preferred_username";
         var nameValue = _externalLoginInfo!.Principal.FindFirstValue(nameClaim);
-        
+
         // Sign in the user with this external login provider if the user already has a login.
         var result = await SignInManager.ExternalLoginSignInAsync(
             _externalLoginInfo.LoginProvider,
             nameValue!,
-            isPersistent: false,
-            bypassTwoFactor: true);
+            false,
+            true);
 
         if (result.Succeeded)
         {
@@ -81,7 +80,7 @@
     {
         var displayNameClaim = Configuration.GetValue<string>("Auth:OIDC:DisplayNameClaim") ?? "name";
         var displayNameValue = _externalLoginInfo!.Principal.FindFirstValue(displayNameClaim);
-        
+
         var user = await UserManager.FindByLoginAsync(_externalLoginInfo.LoginProvider, login);
         user!.DisplayName = displayNameValue;
         await UserManager.UpdateAsync(user);

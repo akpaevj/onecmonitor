@@ -6,6 +6,5 @@ namespace OneSwiss.Server.Models.MaintenanceTasks;
 [Owned]
 public class DeleteExtensionStep
 {
-    [MaxLength(200)]
-    public string ExtensionName { get; set; } = string.Empty;
+    [MaxLength(200)] public string ExtensionName { get; set; } = string.Empty;
 }

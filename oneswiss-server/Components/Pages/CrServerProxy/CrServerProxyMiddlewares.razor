@@ -1,0 +1,201 @@
+@using global::OneScript.StandardLibrary.Collections
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Common.Models
+@using OneSwiss.Server.Attributes
+@using OneSwiss.Server.Components.Layout
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Helpers
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Components.Shared
+@using OneSwiss.Server.Services.CrServerProxy
+@using ScriptEngine.Machine
+
+@inject ISnackbar SnackBar
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject CrServerRequestsHandler RequestsHandler
+
+@implements IDisposable
+
+@attribute [ExtAuthorize]
+
+<MudText Typo="Typo.h6" Class="mb-3">Обработчики</MudText>
+
+<MudStack>
+    <MudTable T="CrServerProxyMiddleware"
+              Items="@_items"
+              @bind-SelectedItems="_selectedItems"
+              MultiSelection="true"
+              SelectOnRowClick="false"
+              Dense="true">
+        <ToolBarContent>
+            <MudStack Row Spacing="3">
+                <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="AddNewItem">
+                    Добавить
+                </MudButton>
+                @if (_selectedItems.Count > 0)
+                {
+                    <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Error"
+                               OnClick="DeleteItems">Удалить
+                    </MudButton>
+                }
+            </MudStack>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTd>Режим отладки</MudTd>
+            <MudTd>Исполняемый файл</MudTd>
+            <MudTd>Файл</MudTd>
+            <MudTd>Подключить все</MudTd>
+            <MudTd>Публикации</MudTd>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Режим отладки">
+                <MudSwitch For="@(() => context.DebugMode)" @bind-Value="@context.DebugMode" Color="Color.Primary"/>
+            </MudTd>
+            <MudTd DataLabel="Исполняемый файл">
+                <MudTextField Class="mb-3" For="@(() => context.ExecutablePath)"
+                              @bind-Value="@context.ExecutablePath"
+                              Disabled="@(!context.DebugMode)"/>
+            </MudTd>
+            <MudTd DataLabel="Файл">
+                <ItemSelector
+                    @bind-Value="@context.FileId"
+                    Items="@_context!.Files.Where(c => c.FileType == FileType.Ospx).ToList()"
+                    Class="mb-3"
+                    Disabled="@(context.DebugMode)"
+                    ItemValueSelector="arg => arg.Id"
+                    ItemNameSelector="@(arg => arg.ToString())"
+                    For="@(() => context.FileId)"/>
+            </MudTd>
+            <MudTd DataLabel="Подключить все">
+                <MudSwitch 
+                    For="@(() => context.ConnectAll)" 
+                    @bind-Value="@context.ConnectAll" 
+                    Color="Color.Primary"/>
+            </MudTd>
+            <MudTd DataLabel="Публикации">
+                <ItemsSelector T="CrServerProxyLocation"
+                               @bind-SelectedValues="@context.Locations"
+                               NameSelector="@(item => item.Location)"
+                               Disabled="@(context.ConnectAll)"
+                               Items="@(_context?.CrServerProxyLocations.ToList() ?? [])"/>
+            </MudTd>
+        </RowTemplate>
+        <ChildRowContent>
+            <MiddlewareArguments Items="@context.Arguments"/>
+        </ChildRowContent>
+    </MudTable>
+
+    <MudStack Breakpoint="Breakpoint.SmAndDown" AlignItems="AlignItems.End">
+        <MudSpacer/>
+        <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="Save">Сохранить
+        </MudButton>
+    </MudStack>
+
+</MudStack>
+
+@code
+{
+    private AppDbContext? _context;
+    private List<CrServerProxyMiddleware> _items = [];
+    private HashSet<CrServerProxyMiddleware> _selectedItems = [];
+    
+    protected override async Task OnInitializedAsync()
+    {
+        _context = await ContextFactory.CreateDbContextAsync();
+        await UpdateItems();
+    }
+
+    private async Task Save()
+    {
+        if (Validate())
+        {
+            foreach (var item in _items)
+                ModelHelper.UpdateDbSet(item.Arguments, _context!);
+            
+            ModelHelper.UpdateDbSet(_items, _context!);
+
+            await _context!.SaveChangesAsync();
+            SnackBar.ShowSuccess("Объект записан");
+            
+            RequestsHandler.UpdateMiddlewares();
+        }
+        else
+            SnackBar.ShowError("Объект не записан");
+    }
+
+    private void AddNewItem()
+    {
+        _items.Add(new CrServerProxyMiddleware
+        {
+            Id = Guid.NewGuid()
+        });
+    }
+
+    private async Task UpdateItems()
+    {
+        _items = await _context!.CrServerProxyMiddlewares
+            .Include(c => c.Arguments)
+            .ToListAsync();
+    }
+
+    private void DeleteItems()
+    {
+        foreach (var selectedItem in _selectedItems)
+            _items.Remove(selectedItem);
+    }
+
+    private bool Validate()
+    {
+        var valid = true;
+
+        for (var index = 0; index < _items.Count; index++)
+        {
+            var item = _items[index];
+            
+            if (!item.DebugMode && item.FileId.EmptyOrNull())
+            {
+                valid = false;
+                SnackBar.ShowError($"В строке {index + 1} не указан файл скрипта-обработчика");
+            }
+            
+            if (item.DebugMode)
+            {
+                if (string.IsNullOrEmpty(item.ExecutablePath))
+                {
+                    valid = false;
+                    SnackBar.ShowError($"В строке {index + 1} не указан путь к файлу скрипта-обработчика");
+                }
+                else if (!Path.Exists(item.ExecutablePath))
+                {
+                    valid = false;
+                    SnackBar.ShowError($"Файл по указанному пути в строке {index + 1} не обнаружен");
+                }
+            }
+
+            var argsTest = new MapImpl();
+            
+            for (var i = 0; i < item.Arguments.Count; i++)
+            {
+                var argItem = item.Arguments[i];
+                
+                try
+                {
+                    argsTest.Insert(ValueFactory.Create(argItem.Key));
+                }
+                catch
+                {
+                    valid = false;
+                    SnackBar.ShowError($"Аргумент {i} в строке {index + 1} не является валидным ключом структуры");
+                }
+            }
+        }
+
+        return valid;
+    }
+
+    public void Dispose()
+    {
+        _context?.Dispose();
+    }
+}

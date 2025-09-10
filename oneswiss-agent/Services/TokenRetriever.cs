@@ -4,10 +4,10 @@ namespace OneSwiss.Agent.Services;
 
 public class TokenRetriever(IConfiguration configuration, ILogger<TokenRetriever> logger)
 {
+    private readonly HttpClient _httpClient = new();
     private readonly SemaphoreSlim _locker = new(1);
     private string _cachedToken = string.Empty;
     private DateTime _tokenExpiry;
-    private readonly HttpClient _httpClient = new();
 
     private async Task<TokenResponse> GetAccessTokenAsync()
     {
@@ -17,7 +17,6 @@ public class TokenRetriever(IConfiguration configuration, ILogger<TokenRetriever
 
         var client = new TokenClient(_httpClient, new TokenClientOptions
         {
-            
             Address = tokensEndpoint!,
             ClientId = clientId!,
             ClientSecret = clientSecret
@@ -25,7 +24,7 @@ public class TokenRetriever(IConfiguration configuration, ILogger<TokenRetriever
 
         return await client.RequestTokenAsync("client_credentials");
     }
-    
+
     public async Task<string?> GetValidTokenAsync()
     {
         await _locker.WaitAsync();

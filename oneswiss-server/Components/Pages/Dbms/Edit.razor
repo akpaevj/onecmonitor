@@ -1,22 +1,23 @@
 @page "/dbms/{id:guid}"
 @page "/dbms/create"
 @using FluentValidation
-@using OneSwiss.Server.Components.Shared
 @using OneSwiss.Common.Models
 @using OneSwiss.Server.Attributes
+@using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
 
 @attribute [ExtAuthorize]
 
 <EditDatabaseForm @ref="_editor" T="Dbms"
-                    Id="Id"
-                    NameSelector="@(arg => arg.Name)"
-                    Route="dbms"
-                    Title="Новая СУБД"
-                    Validation="_validator.ValidateValue">
+                  Id="Id"
+                  NameSelector="@(arg => arg.Name)"
+                  Route="dbms"
+                  Title="Новая СУБД"
+                  Validation="_validator.ValidateValue">
     <MudStack>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" Label="Наименование" @bind-Value="@_editor.Model!.Name"/>
-        <MudSelect Class="mb-3" For="@(() => _editor.Model!.Type)" Label="Тип" T="DbmsType" 
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" Label="Наименование"
+                      @bind-Value="@_editor.Model!.Name"/>
+        <MudSelect Class="mb-3" For="@(() => _editor.Model!.Type)" Label="Тип" T="DbmsType"
                    @bind-Value="@_editor.Model!.Type"
                    @bind-Value:after="TypeChanged"/>
         <MudTextField Class="mb-3" For="@(() => _editor.Model!.Host)" Label="Хост" @bind-Value="@_editor.Model!.Host"/>
@@ -28,10 +29,9 @@
 {
     private readonly Validator _validator = new();
     private EditDatabaseForm<Dbms> _editor = null!;
-    
-    [Parameter]
-    public Guid Id { get; set; }
-    
+
+    [Parameter] public Guid Id { get; set; }
+
     class Validator : ModelValidator<Dbms>
     {
         public Validator()
@@ -39,11 +39,11 @@
             RuleFor(c => c.Name)
                 .NotEmpty()
                 .WithMessage("Не заполнено наименование");
-            
+
             RuleFor(c => c.Host)
                 .NotEmpty()
                 .WithMessage("Не заполнен адрес сервера");
-            
+
             RuleFor(c => c.Port)
                 .NotEmpty()
                 .WithMessage("Не заполнен порт сервера");

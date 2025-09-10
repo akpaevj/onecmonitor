@@ -2,11 +2,11 @@
 @if (AgentIsConnected)
 {
     <MudTabs PanelClass="mt-3">
-        <MudTabPanel Text="Данные OneSwiss">
-            <InfoBaseEdit Id="@Id"/>
-        </MudTabPanel>
         <MudTabPanel Text="Данные кластера">
             <V8InfoBaseEdit Id="@Id"></V8InfoBaseEdit>
+        </MudTabPanel>
+        <MudTabPanel Text="Данные OneSwiss">
+            <InfoBaseEdit Id="@Id"/>
         </MudTabPanel>
     </MudTabs>
 }
@@ -16,9 +16,7 @@ else
 }
 
 @code {
-    [Parameter]
-    public Guid Id { get; set; }
-    
-    [Parameter]
-    public bool AgentIsConnected { get; set; }
+    [Parameter] public Guid Id { get; set; }
+
+    [Parameter] public bool AgentIsConnected { get; set; }
 }

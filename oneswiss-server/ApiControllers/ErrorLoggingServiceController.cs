@@ -14,14 +14,16 @@ namespace OneSwiss.Server.ApiControllers;
 [ApiController]
 [Route("api/[controller]")]
 public class ErrorLoggingServiceController(
-    AppDbContext dbContext, 
-    NotificationsService  notificationsService,
+    AppDbContext dbContext,
+    NotificationsService notificationsService,
     ILogger<ErrorLoggingServiceController> logger) : ControllerBase
 {
     [HttpPost("getInfo")]
-    public async Task<IActionResult> GetInfo([FromBody]GetInfoRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetInfo([FromBody] GetInfoRequest request, CancellationToken cancellationToken)
     {
-        var settings = await dbContext.ErrorLoggingServiceSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+        var settings = await dbContext.ErrorLoggingServiceSettings.AsNoTracking()
+            .OrderBy(c => c.Id)
+            .SingleOrDefaultAsync(cancellationToken);
         var needSend = settings?.Enabled ?? false;
 
         if (needSend)
@@ -30,7 +32,7 @@ public class ErrorLoggingServiceController(
             var hash = GetHash(request.ClientStackHash ?? "", request.AppStackHash ?? "");
             needSend = !await dbContext.ErrorReports.AnyAsync(c => c.Hash == hash, cancellationToken);
         }
-        
+
         var content = JsonSerializer.Serialize(new GetInfoResponse
         {
             NeedSendReport = needSend,
@@ -38,22 +40,22 @@ public class ErrorLoggingServiceController(
             DumpType = 1
         });
         var contentData = Encoding.UTF8.GetBytes(content);
-        
+
         Response.Headers.ContentLength = contentData.Length;
-        
+
         return Content(content, "application/json; charset=utf-8");
     }
-    
+
     [HttpPost("pushReport")]
     public async Task<IActionResult> PushReport(CancellationToken cancellationToken)
     {
-        if (Request.Form.Files.Count <= 0) 
+        if (Request.Form.Files.Count <= 0)
             return new EmptyResult();
 
         try
         {
             var unpackingPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            
+
             var file = Request.Form.Files[0];
             await using var stream = file.OpenReadStream();
             ZipFile.ExtractToDirectory(stream, unpackingPath);
@@ -61,9 +63,11 @@ public class ErrorLoggingServiceController(
             var reportPath = Path.Combine(unpackingPath, "report.json");
             var reportData = await System.IO.File.ReadAllTextAsync(reportPath, cancellationToken);
             var report = JsonSerializer.Deserialize<ReportRoot>(reportData, ErrorReportsHelper.ReportSerializerOptions);
-        
+
             if (report == null)
+            {
                 logger.LogError($"Ошибка разбора отчета об ошибке:\n {reportData}");
+            }
             else
             {
                 // Сначала найдем отчет с таким же хешем
@@ -71,7 +75,8 @@ public class ErrorLoggingServiceController(
                 {
                     CreatedAt = DateTime.Now,
                     Report = reportData,
-                    Hash = GetHash(report.ErrorInfo.SystemErrorInfo.ClientStackHash, report.ErrorInfo.ApplicationErrorInfo.StackHash)
+                    Hash = GetHash(report.ErrorInfo.SystemErrorInfo.ClientStackHash,
+                        report.ErrorInfo.ApplicationErrorInfo.StackHash)
                 };
 
                 if (report.Screenshot?.File != null)
@@ -81,7 +86,7 @@ public class ErrorLoggingServiceController(
                 }
 
                 dbContext.ErrorReports.Add(model);
-                
+
                 await dbContext.SaveChangesAsync(cancellationToken);
                 await notificationsService.QueueErrorReportReceived(model.Id, cancellationToken);
             }

@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Text;
 using Microsoft.Extensions.Logging;
 using OneSwiss.V8.Extensions;
 using OneSwiss.V8.Platform.Services;
@@ -9,7 +7,7 @@ namespace OneSwiss.V8.Platform.RemoteAdministration;
 public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localhost", int port = 1545)
 {
     private const string EmptyId = "00000000-0000-0000-0000-000000000000";
-    
+
     public static Rac GetRacForRasService(ILogger<Rac> logger, RasService rasService)
     {
         if (!rasService.Platform.HasRac)
@@ -24,7 +22,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
 
         var output = await GetOutputItems("cluster list", 20);
         var items = output.ToRacObjects<V8Cluster>();
-        
+
         logger.LogTrace("Список кластеров из RAS получен");
 
         return items;
@@ -36,7 +34,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
 
         var output = await GetOutputItems($"cluster info --cluster={clusterId}", 20);
         var item = output.ToRacObjects<V8ClusterDetails>().First();
-        
+
         logger.LogTrace("Информация о кластере из RAS получена");
 
         return item;
@@ -47,15 +45,19 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         var parametersUpdateCommand = string.Join(' ', parameters.Select(c => $"--{c.Key}=\"{c.Value}\""));
         await StartRacAndGetOutput($"cluster update --cluster={clusterId} {parametersUpdateCommand}", 20);
     }
-    
-    public async Task UpdateInfoBaseParameters(string clusterId, string infoBaseId, Dictionary<string, string> parameters,
+
+    public async Task UpdateInfoBaseParameters(string clusterId, string infoBaseId,
+        Dictionary<string, string> parameters,
         string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
     {
         var parametersUpdateCommand = string.Join(' ', parameters.Select(c => $"--{c.Key}=\"{c.Value}\""));
-        await StartRacAndGetOutput($"infobase update --cluster={clusterId} {parametersUpdateCommand} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}", 20);
+        await StartRacAndGetOutput(
+            $"infobase update --cluster={clusterId} {parametersUpdateCommand} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}",
+            20);
     }
 
-    public async Task<List<V8InfoBase>> GetInfoBases(string clusterId, string clusterUser = "", string clusterPassword = "")
+    public async Task<List<V8InfoBase>> GetInfoBases(string clusterId, string clusterUser = "",
+        string clusterPassword = "")
     {
         logger.LogTrace("Запрос списка информационных баз из RAS");
 
@@ -64,7 +66,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
                 $"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} summary list",
                 10);
         var items = output.ToRacObjects<V8InfoBase>();
-        
+
         logger.LogTrace("Список информационных баз из RAS получен");
 
         return items;
@@ -79,15 +81,20 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
             await GetOutputItems(
                 $"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} info --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}",
                 20);
-        var item = output.ToRacObjects<V8InfoBaseDetails>() .First();
-        
+        var item = output.ToRacObjects<V8InfoBaseDetails>().First();
+
         logger.LogTrace("Информация об информационной базе из RAS получена");
 
         return item;
     }
 
-    public async Task BlockConnections(string clusterId, string infoBaseId, string permissionCode, string deniedMessage, string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
-        => await StartRacAndGetOutput($"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=on --scheduled-jobs-deny=on --permission-code={permissionCode} --denied-message=\"{deniedMessage}\"", 30);
+    public async Task BlockConnections(string clusterId, string infoBaseId, string permissionCode, string deniedMessage,
+        string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
+    {
+        await StartRacAndGetOutput(
+            $"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=on --scheduled-jobs-deny=on --permission-code={permissionCode} --denied-message=\"{deniedMessage}\"",
+            30);
+    }
 
     public async Task<V8Connection> GetConnectionInfo(
         string clusterId,
@@ -97,7 +104,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     {
         var ibOutput = await GetInfoBases(clusterId, clusterUser, clusterPassword);
         var infoBases = ibOutput.ToDictionary(c => c.Id, c => c);
-        
+
         logger.LogTrace("Запрос информации о соединении из RAS");
 
         var output = await GetOutputItems(
@@ -108,9 +115,9 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
                 {
                     try
                     {
-                        if (f["infobase"] == EmptyId && infoBases.TryGetValue(f["infobase"], out var infoBase)) 
+                        if (f["infobase"] == EmptyId && infoBases.TryGetValue(f["infobase"], out var infoBase))
                             c.InfoBase = infoBase;
-                        
+
                         if (f["process"] != EmptyId)
                             c.Process = await GetProcessInfo(clusterId, f["process"], clusterUser, clusterPassword);
                     }
@@ -120,7 +127,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
                     }
                 })
             .First();
-        
+
         logger.LogTrace("Информация о соединении из RAS получена");
 
         return item;
@@ -132,16 +139,17 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         string clusterPassword = "")
     {
         var infoBases = (await GetInfoBases(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
-        var processes = (await GetClusterProcesses(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
-        
+        var processes =
+            (await GetClusterProcesses(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
+
         logger.LogTrace("Запрос списка соединений кластера из RAS");
-        
+
         var items = (await GetOutputItems(
                 $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
                 30))
             .ToRacObjects<V8Connection>(["process", "infobase"],
                 (f, c) => FillV8Connection(infoBases, processes, f, c));
-        
+
         logger.LogTrace("Список соединений кластера из RAS получен");
 
         return items;
@@ -156,20 +164,22 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         string password = "")
     {
         var infoBases = (await GetInfoBases(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
-        var processes = (await GetClusterProcesses(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
-        
+        var processes =
+            (await GetClusterProcesses(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
+
         logger.LogTrace("Запрос списка соединений информационной базы из RAS");
-        
+
         var items = (await GetOutputItems(
-                $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}", 30))
+                $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}",
+                30))
             .ToRacObjects<V8Connection>(["process", "infobase"],
                 (f, c) => FillV8Connection(infoBases, processes, f, c));
-        
+
         logger.LogTrace("Список соединений информационной базы из RAS получен");
 
         return items;
     }
-    
+
     private static void FillV8Connection(
         Dictionary<string, V8InfoBase> infoBases,
         Dictionary<string, V8Process> processes,
@@ -178,20 +188,21 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     {
         if (fields["infobase"] != EmptyId && infoBases.TryGetValue(fields["infobase"], out var infoBase))
             item.InfoBase = infoBase;
-        
+
         if (fields["process"] != EmptyId && processes.TryGetValue(fields["process"], out var process))
             item.Process = process;
     }
 
-    public async Task<List<V8Process>> GetClusterProcesses(string clusterId, string clusterUser = "", string clusterPassword = "")
+    public async Task<List<V8Process>> GetClusterProcesses(string clusterId, string clusterUser = "",
+        string clusterPassword = "")
     {
         logger.LogTrace("Запрос списка процессов кластера из RAS");
-        
+
         var items = (await GetOutputItems(
                 $"process --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
                 20))
             .ToRacObjects<V8Process>();
-        
+
         logger.LogTrace("Список процессов кластера из RAS получен");
 
         return items;
@@ -201,12 +212,12 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         string clusterPassword = "")
     {
         logger.LogTrace("Запрос информации о процессе из RAS");
-        
+
         var item = (await GetOutputItems(
                 $"process --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} info --process={processId}",
                 20))
             .ToRacObjects<V8Process>().First();
-        
+
         logger.LogTrace("Информация о процессе из RAS получена");
 
         return item;
@@ -216,16 +227,18 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         string clusterPassword = "")
     {
         var infoBases = (await GetInfoBases(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
-        var processes = (await GetClusterProcesses(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
-        var connections = (await GetClusterConnections(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
-        
+        var processes =
+            (await GetClusterProcesses(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
+        var connections =
+            (await GetClusterConnections(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
+
         logger.LogTrace("Запрос списка сеансов кластера из RAS");
-        
+
         var items = (await GetOutputItems(
                 $"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list", 20))
             .ToRacObjects<V8Session>(["infobase", "connection", "process"],
                 (f, c) => FillV8Session(infoBases, connections, processes, f, c));
-        
+
         logger.LogTrace("Список сеансов кластера из RAS получен");
 
         return items;
@@ -235,17 +248,20 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         string clusterPassword = "", string user = "", string password = "")
     {
         var infoBases = (await GetInfoBases(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
-        var processes = (await GetClusterProcesses(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
-        var connections = (await GetInfoBaseConnections(clusterId, infoBaseId, clusterUser, clusterPassword, user, password)).ToDictionary(c => c.Id, c => c);
-        
+        var processes =
+            (await GetClusterProcesses(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
+        var connections =
+            (await GetInfoBaseConnections(clusterId, infoBaseId, clusterUser, clusterPassword, user, password))
+            .ToDictionary(c => c.Id, c => c);
+
         logger.LogTrace("Запрос списка сеансов информационной базы из RAS");
-        
+
         var items = (await GetOutputItems(
                 $"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId}",
                 20))
             .ToRacObjects<V8Session>(["infobase", "connection", "process"],
                 (f, c) => FillV8Session(infoBases, connections, processes, f, c));
-        
+
         logger.LogTrace("Список сеансов информационной базы из RAS получен");
 
         return items;
@@ -260,28 +276,38 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     {
         if (fields["infobase"] != EmptyId && infoBases.TryGetValue(fields["infobase"], out var infoBase))
             item.InfoBase = infoBase;
-        
+
         if (fields["process"] != EmptyId && processes.TryGetValue(fields["process"], out var process))
             item.Process = process;
-        
+
         if (fields["connection"] != EmptyId && connections.TryGetValue(fields["connection"], out var connection))
             item.Connection = connection;
     }
 
-    public async Task TerminateSession(string clusterId, string sessionId, string clusterUser = "", string clusterPassword = "")
-        => await StartRacAndGetOutput($"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} terminate --session={sessionId}", 20);
-    
-    public async Task UnblockConnections(string clusterId, string infoBaseId, string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
-        => await StartRacAndGetOutput($"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=off --scheduled-jobs-deny=off", 30);
+    public async Task TerminateSession(string clusterId, string sessionId, string clusterUser = "",
+        string clusterPassword = "")
+    {
+        await StartRacAndGetOutput(
+            $"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} terminate --session={sessionId}",
+            20);
+    }
+
+    public async Task UnblockConnections(string clusterId, string infoBaseId, string clusterUser = "",
+        string clusterPassword = "", string user = "", string password = "")
+    {
+        await StartRacAndGetOutput(
+            $"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=off --scheduled-jobs-deny=off",
+            30);
+    }
 
     private async Task<List<Dictionary<string, string>>> GetOutputItems(string command, int commandTimeout)
     {
         var output = await StartRacAndGetOutput(command, commandTimeout);
-        
+
         logger.LogTrace("Парсинг вывода RAC");
-        
+
         var items = OutputToOutputItems(output);
-        
+
         logger.LogTrace("Парсинг вывода RAC завершен");
 
         return items;
@@ -289,9 +315,11 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
 
     public static List<Dictionary<string, string>> OutputToOutputItems(string output)
     {
-        var outputItems = output.Split($"{Environment.NewLine}{Environment.NewLine}", StringSplitOptions.RemoveEmptyEntries).ToList();
+        var outputItems = output
+            .Split($"{Environment.NewLine}{Environment.NewLine}", StringSplitOptions.RemoveEmptyEntries).ToList();
 
-        return outputItems.Select(outputItem => outputItem.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+        return outputItems.Select(outputItem => outputItem
+                .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
                 .Select(c => c.Split(':', 2))
                 .ToDictionary(i => i[0].Trim(), i => i.Length > 1 ? i[1].Trim() : ""))
             .ToList();
@@ -302,10 +330,11 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         if (!platform.HasRac)
             throw new Exception($"{platform.PlatformPath} не содержит исполняемого файла rac");
 
-        var result = await ProcessRunner.RunAsync(platform.RacPath, $"{host}:{port} {command}", null, TimeSpan.FromSeconds(commandTimeout));
+        var result = await ProcessRunner.RunAsync(platform.RacPath, $"{host}:{port} {command}", null,
+            TimeSpan.FromSeconds(commandTimeout));
         if (result.ExitCode != 0)
             throw new Exception($"Ошибка выполнения команды RAC: {result.Error}");
-        
+
         return result.Output;
     }
 }

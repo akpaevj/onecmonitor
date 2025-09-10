@@ -1,14 +1,10 @@
 @using System.Reflection
-@using System.Security.Claims
-@using Microsoft.AspNetCore.Authentication
-@using Microsoft.AspNetCore.Authentication.OpenIdConnect
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.SignalR.Client
-@using OneSwiss.Server.Services
 @using MudBlazor.StaticInput
-@using OneSwiss.Server.Components.Account
 @using OneSwiss.Server.Models
+@using OneSwiss.Server.Services
 @inherits LayoutComponentBase
 @inject ISnackbar SnackbarService
 @inject IHttpContextAccessor ContextAccessor
@@ -27,14 +23,15 @@
 </script>
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme"/>
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
+<MudPopoverProvider/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
 
 <MudLayout>
     <MudAppBar Elevation="1">
         <AuthorizeView>
-            <MudStaticNavDrawerToggle DrawerId="nav-drawer" Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"/>
+            <MudStaticNavDrawerToggle DrawerId="nav-drawer" Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit"
+                                      Edge="Edge.Start"/>
             <AppLabel/>
         </AuthorizeView>
         <MudSpacer/>
@@ -42,7 +39,8 @@
             @if (UpdatesCheckerState.UpdatesAvailable)
             {
                 var text = UpdatesCheckerState?.ReleaseInfo?.Prerelease == true ? "Доступно обновление (pre)" : "Доступно обновление";
-                <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Warning" OnClick="GoToReleasePage">@text</MudButton>
+                <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Warning"
+                           OnClick="GoToReleasePage">@text</MudButton>
             }
             <MudText Class="ms-3">@_user?.ToString()</MudText>
             <MudSwitch
@@ -78,39 +76,41 @@
     bool _drawerOpen = true;
     readonly MudTheme _theme = new();
     private ApplicationUser? _user;
-    
+
     protected override async Task OnInitializedAsync()
     {
         if (ContextAccessor.HttpContext != null)
             _user = await UserManager.GetUserAsync(ContextAccessor.HttpContext.User);
-        
+
         SnackbarService.Configuration.PositionClass = Defaults.Classes.Position.BottomEnd;
-        
+
         if (ContextAccessor.HttpContext?.Request.Cookies.TryGetValue("IsDarkMode", out var value) == true &&
             bool.TryParse(value, out var isDarkMode))
             _isDarkMode = isDarkMode;
-        
+
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(NavManager.ToAbsoluteUri("/updatesHub"))
             .Build();
 
-        _hubConnection.On("UpdatesAvailable", async () =>
-        {
-            await InvokeAsync(StateHasChanged);
-        });
-        
+        _hubConnection.On("UpdatesAvailable", async () => { await InvokeAsync(StateHasChanged); });
+
         await _hubConnection.StartAsync();
     }
-    
+
     private async Task SetIsDarkModeCookie()
-        => await Js.InvokeVoidAsync("blazorSetCookie", "IsDarkMode", _isDarkMode, 7, false);
+    {
+        await Js.InvokeVoidAsync("blazorSetCookie", "IsDarkMode", _isDarkMode, 7, false);
+    }
 
     private async Task OnChangeTheme()
-        => await SetIsDarkModeCookie();
+    {
+        await SetIsDarkModeCookie();
+    }
 
     private async Task GoToReleasePage()
     {
         if (UpdatesCheckerState.ReleaseInfo != null)
-            await Js.InvokeVoidAsync("open", UpdatesCheckerState.ReleaseInfo.HtmlUrl, "_blank"); 
+            await Js.InvokeVoidAsync("open", UpdatesCheckerState.ReleaseInfo.HtmlUrl, "_blank");
     }
+
 }

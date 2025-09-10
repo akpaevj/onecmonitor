@@ -5,26 +5,30 @@
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Models
 
-@attribute [ExtAuthorize(BuiltInRoles.ReadMaintenanceTasks, BuiltInRoles.WriteMaintenanceTasks)]
+@attribute [ExtAuthorize(Roles.ReadMaintenanceTasks, Roles.WriteMaintenanceTasks)]
 
 <EditDatabaseForm @ref="_editor" T="ConfigurationRepository"
-                    Id="Id"
-                    Route="configurationrepositories"
-                    Title="Новое хранилище конфигураций"
-                    NameSelector="@(c => c.Name)"
-                    Validation="_validator.ValidateValue"
-                    ModelSelector="ModelSelector"
-                    OnInitialize="OnInitialize">
+                  Id="Id"
+                  Route="configurationrepositories"
+                  Title="Новое хранилище конфигураций"
+                  NameSelector="@(c => c.Name)"
+                  Validation="_validator.ValidateValue"
+                  ModelSelector="ModelSelector">
     <MudStack>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" ReadOnly="true" Label="Наименование" @bind-Value="@_editor.Model!.Name"/>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Host)" ReadOnly="true" Label="Хост" @bind-Value="@_editor.Model!.Host"/>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Port)" ReadOnly="true" Label="Порт" @bind-Value="@_editor.Model!.Port"/>
-        <MudSelect Class="mb-3" For="@(() => _editor.Model!.CredentialsId)" Label="Учетные данные" @bind-Value="@_editor.Model!.CredentialsId" Clearable="true">
-            @foreach (var item in _credentials)
-            {
-                <MudSelectItem Value="@((Guid?)item.Id)">@item.Name</MudSelectItem>
-            }
-        </MudSelect>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Name)" ReadOnly="true" Label="Наименование"
+                      @bind-Value="@_editor.Model!.Name"/>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Host)" ReadOnly="true" Label="Хост"
+                      @bind-Value="@_editor.Model!.Host"/>
+        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Port)" ReadOnly="true" Label="Порт"
+                      @bind-Value="@_editor.Model!.Port"/>
+        <ItemSelector
+            @bind-Value="@_editor.Model!.CredentialsId"
+            Items="@_editor.Context!.Credentials.Where(c => !c.IsToken).ToList()"
+            Class="mb-3"
+            ItemValueSelector="arg => arg.Id"
+            ItemNameSelector="arg => arg.Name"
+            Label="Учетные данные"
+            For="@(() => _editor.Model!.CredentialsId)"/>
         <MudTable T="ConfigurationRepositoryUser" Items="@_editor.Model!.Users">
             <ToolBarContent>
                 <MudText>Пользователи</MudText>
@@ -53,20 +57,14 @@
 {
     private readonly Validator _validator = new();
     private EditDatabaseForm<ConfigurationRepository> _editor = null!;
-    
-    private List<Credentials> _credentials;
-    
-    [Parameter]
-    public Guid Id { get; set; }
-    
-    private async Task OnInitialize((ConfigurationRepository Model, AppDbContext Context) obj)
-    {
-        _credentials = await obj.Context.Credentials.ToListAsync();
-    }
-    
+
+    [Parameter] public Guid Id { get; set; }
+
     private static IQueryable<ConfigurationRepository> ModelSelector(IQueryable<ConfigurationRepository> arg)
-        => arg.Include(c => c.Users);
-    
+    {
+        return arg.Include(c => c.Users);
+    }
+
     class Validator : ModelValidator<ConfigurationRepository>
     {
         public Validator()

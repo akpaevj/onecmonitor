@@ -8,14 +8,16 @@
 @inject NavigationManager NavManager
 @inject IDbContextFactory<AppDbContext> ContextFactory
 
-@attribute [ExtAuthorize(BuiltInRoles.ReadErrorLoggingReports)]
+@attribute [ExtAuthorize(Roles.ReadErrorLoggingReports)]
 
 <PageTitle>Отчет об ошибке</PageTitle>
 
 <h1 Class="mb-3">Отчет об ошибке</h1>
 
 <MudStack Row AlignItems="AlignItems.Start" Class="mb-3">
-    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavManager.NavigateTo($"errorloggingservice"))" Class="mb-3">Назад</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+               OnClick="@(() => NavManager.NavigateTo("errorloggingservice"))" Class="mb-3">Назад
+    </MudButton>
 </MudStack>
 
 <MudStack AlignItems="AlignItems.Stretch" StretchItems="StretchItems.All">
@@ -26,7 +28,7 @@
         <MudCardContent>
             @{
                 var error = _model!.ErrorInfo.ApplicationErrorInfo.Errors[0];
-                    
+
                 var stackBuilder = new StringBuilder();
                 var prefix = "";
 
@@ -35,7 +37,7 @@
                     stackBuilder.AppendLine($"{prefix}{item.Module} : {item.Line} : {item.Code.Trim()}");
                     prefix += "\t";
                 }
-                    
+
                 <MudStack>
                     <MudText>@error.Text</MudText>
                     <MudStack Row>
@@ -140,7 +142,8 @@
                 <MudText>Скриншот</MudText>
             </MudCardHeader>
             <MudCardContent>
-                <MudImage Src="@_screenShot" Alt="Скриншот экрана пользователя" Fluid="true" ObjectFit="ObjectFit.Fill"/>
+                <MudImage Src="@_screenShot" Alt="Скриншот экрана пользователя" Fluid="true"
+                          ObjectFit="ObjectFit.Fill"/>
             </MudCardContent>
         </MudCard>
     }
@@ -148,8 +151,7 @@
 
 @code
 {
-    [Parameter]
-    public Guid Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
 
     private ReportRoot? _model;
     private string _screenShot = string.Empty;
@@ -157,7 +159,7 @@
     protected override async Task OnInitializedAsync()
     {
         await using var context = await ContextFactory.CreateDbContextAsync();
-        
+
         var report = await context.ErrorReports.FindAsync(Id);
         _model = JsonSerializer.Deserialize<ReportRoot>(report!.Report, ErrorReportsHelper.ReportSerializerOptions);
 

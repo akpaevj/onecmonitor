@@ -9,21 +9,21 @@ namespace OneSwiss.Agent.Services.TechLog;
 
 public class TechLogExporter
 {
-    private readonly TechLogRepositoryManager _repositoryManager;
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ILogger<TechLogExporter> _logger;
-
-    private ITechLogRepository? _repository;
+    private readonly TechLogRepositoryManager _repositoryManager;
+    private BatchBlock<TjEvent>? _batchBlock;
     private CancellationTokenSource? _cts;
     private Timer? _flushTimer;
+    private ActionBlock<TechLogEventContent>? _parseBlock;
+
+    private ITechLogRepository? _repository;
 
     private ActionBlock<TjEvent[]>? _sendBlock;
-    private BatchBlock<TjEvent>? _batchBlock;
-    private ActionBlock<TechLogEventContent>? _parseBlock;
 
     public TechLogExporter(
         TechLogRepositoryManager repositoryManager,
-        IHostApplicationLifetime applicationLifetime, 
+        IHostApplicationLifetime applicationLifetime,
         ILogger<TechLogExporter> logger)
     {
         _repositoryManager = repositoryManager;
@@ -45,7 +45,7 @@ public class TechLogExporter
     {
         _repository = _repositoryManager.GetInstance();
         _repository.Connect(cancellationToken);
-        
+
         var sendBlockOptions = new ExecutionDataflowBlockOptions
         {
             MaxDegreeOfParallelism = 1,
@@ -60,7 +60,7 @@ public class TechLogExporter
 
                 _logger.LogTrace("Tj events batch has been sent to the database");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send tech log events batch to the database");
             }
@@ -75,7 +75,7 @@ public class TechLogExporter
         var parseBlockOptions = new ExecutionDataflowBlockOptions
         {
             MaxDegreeOfParallelism = Environment.ProcessorCount,
-            BoundedCapacity = 10000,
+            BoundedCapacity = 10000
         };
         _parseBlock = new ActionBlock<TechLogEventContent>(async i =>
         {
@@ -91,7 +91,7 @@ public class TechLogExporter
                 _logger.LogError(ex, $"Ошибка разбора события технологического журнала: {i.Content}");
             }
         }, parseBlockOptions);
-        
+
         cancellationToken.Register(_parseBlock.Complete);
 
         _ = _parseBlock.Completion.ContinueWith(_ => _batchBlock.Complete(), cancellationToken);
@@ -102,7 +102,8 @@ public class TechLogExporter
         _flushTimer.Start();
     }
 
-    public async Task ProcessTjEventContent(TechLogEventContent eventContent, CancellationToken cancellationToken = default)
+    public async Task ProcessTjEventContent(TechLogEventContent eventContent,
+        CancellationToken cancellationToken = default)
     {
         _logger.LogTrace("Отправка события технологического журнала в блок разбора");
         await _parseBlock!.SendAsync(eventContent, cancellationToken);

@@ -9,40 +9,22 @@ using OneSwiss.Common.TechLog;
 
 namespace OneSwiss.Agent.Services.TechLog;
 
-public class TechLogReadersManager : IDisposable
+public class TechLogReadersManager(
+    AgentInstance agentInstance,
+    TechLogRepositoryManager repositoryManager,
+    TechLogExporter exporter,
+    ILogger<TechLogReadersManager> logger)
+    : IDisposable
 {
-    private readonly TechLogRepositoryManager _repositoryManager;
-    private readonly TechLogExporter _exporter;
-    private readonly ILogger<TechLogReadersManager> _logger;
-    
-    private readonly AgentInstance _agentInstance;
-    private CancellationTokenSource? _cts;
-    
     private readonly MemoryCache _filesLastPositionCache = new(new MemoryCacheOptions());
-    private ITechLogRepository? _repository;
-    
-    private readonly SemaphoreSlim _readersLock = new(1, 1);
     private readonly Dictionary<string, (CancellationTokenSource Cts, TechLogReader Reader)> _readers = new();
+
+    private readonly SemaphoreSlim _readersLock = new(1, 1);
+    private CancellationTokenSource? _cts;
+    private ITechLogRepository? _repository;
 
     public EventHandler<string>? ReadingFinished;
 
-    public TechLogReadersManager(
-        IServiceProvider serviceProvider,
-        TechLogRepositoryManager repositoryManager,
-        TechLogExporter exporter,
-        ILogger<TechLogReadersManager> logger)
-    {
-        _repositoryManager = repositoryManager;
-        
-        _exporter = exporter;
-        _logger = logger;
-        
-        using var scope = serviceProvider.CreateAsyncScope();
-        using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        _agentInstance = dbContext.AgentInstance.AsNoTracking().First();
-    }
-    
     public async Task Init(TechLogSettingsDto settings, CancellationToken cancellationToken)
     {
         cancellationToken.Register(() =>
@@ -54,7 +36,7 @@ public class TechLogReadersManager : IDisposable
         if (settings.Enabled)
         {
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            _repository = _repositoryManager.GetInstance();
+            _repository = repositoryManager.GetInstance();
             await _repository.Connect(cancellationToken);
         }
     }
@@ -78,14 +60,14 @@ public class TechLogReadersManager : IDisposable
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"Ошибка добавления читателя файла {path}");
+            logger.LogError(e, $"Ошибка добавления читателя файла {path}");
         }
         finally
         {
             _readersLock.Release();
         }
     }
-    
+
     public async Task RemoveReader(string path, CancellationToken cancellationToken)
     {
         await _readersLock.WaitAsync(cancellationToken);
@@ -100,7 +82,7 @@ public class TechLogReadersManager : IDisposable
 
             _readers.Remove(path);
 
-            _logger.LogTrace($"Читатель файла технологического журнала удален: {path}");
+            logger.LogTrace($"Читатель файла технологического журнала удален: {path}");
         }
         catch (Exception e)
         {
@@ -117,9 +99,9 @@ public class TechLogReadersManager : IDisposable
     {
         var cts = CancellationTokenSource.CreateLinkedTokenSource(_cts!.Token);
         _readers.Add(reader.FilePath, (cts, reader));
-        
-        _logger.LogTrace($"Читатель файла технологического журнала добавлен: {reader.FilePath}");
-        
+
+        logger.LogTrace($"Читатель файла технологического журнала добавлен: {reader.FilePath}");
+
         try
         {
             while (!cts.IsCancellationRequested)
@@ -132,14 +114,14 @@ public class TechLogReadersManager : IDisposable
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Ошибка чтения файла технологического журнала: {reader.FilePath}");
+                    logger.LogError(ex, $"Ошибка чтения файла технологического журнала: {reader.FilePath}");
                 }
 
                 if (read)
                 {
                     var message = new TechLogEventContent
                     {
-                        AgentId = _agentInstance.Id,
+                        AgentId = agentInstance.Id,
                         SeanceId = fileInfo.SeanceId,
                         TemplateId = fileInfo.TemplateId,
                         FileName = fileInfo.FileName,
@@ -147,28 +129,30 @@ public class TechLogReadersManager : IDisposable
                         Content = reader.EventContent
                     };
 
-                    await _exporter.ProcessTjEventContent(message, cts.Token);
+                    await exporter.ProcessTjEventContent(message, cts.Token);
 
                     CachePosition(cacheKey, message.EndPosition);
                 }
                 else
+                {
                     break;
+                }
             }
 
-            _logger.LogTrace($"Окончание чтения файла технологического журнала: {reader.FilePath}");
+            logger.LogTrace($"Окончание чтения файла технологического журнала: {reader.FilePath}");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Ошибка чтения файла технологического журнала: {reader.FilePath}");
+            logger.LogError(ex, $"Ошибка чтения файла технологического журнала: {reader.FilePath}");
         }
-        
+
         ReadingFinished?.Invoke(this, reader.FilePath);
     }
-    
+
     private static string GetCacheKey(TechLogFileInfo fileInfo)
     {
         var builder = new StringBuilder();
-        
+
         builder.Append(fileInfo.SeanceId);
         builder.Append('_');
         builder.Append(fileInfo.TemplateId);
@@ -186,11 +170,15 @@ public class TechLogReadersManager : IDisposable
                 _filesLastPositionCache.Set(cacheKey, newPosition, TimeSpan.FromHours(1));
         }
         else
+        {
             _filesLastPositionCache.Set(cacheKey, newPosition, TimeSpan.FromHours(1));
+        }
     }
 
     private bool TryGetPositionFromCache(string cacheKey, out long position)
-        => _filesLastPositionCache.TryGetValue(cacheKey, out position);
+    {
+        return _filesLastPositionCache.TryGetValue(cacheKey, out position);
+    }
 
     private static TechLogFileInfo GetFileInfo(string path)
     {
@@ -201,29 +189,30 @@ public class TechLogReadersManager : IDisposable
         return new TechLogFileInfo(seanceId, templateId, fileName);
     }
 
-    private async Task<long> GetLastFilePosition(TechLogFileInfo fileInfo, string cacheKey, CancellationToken cancellationToken)
+    private async Task<long> GetLastFilePosition(TechLogFileInfo fileInfo, string cacheKey,
+        CancellationToken cancellationToken)
     {
         if (TryGetPositionFromCache(cacheKey, out var position))
             return position;
 
         try
         {
-            _logger.LogTrace($"Запрос последней позиции файла {fileInfo.FileName}");
-            
+            logger.LogTrace($"Запрос последней позиции файла {fileInfo.FileName}");
+
             return await _repository!.GetLastTechLogPosition(
-                _agentInstance.Id.ToString(), 
-                fileInfo.SeanceId.ToString(), 
-                fileInfo.TemplateId.ToString(), 
+                agentInstance.Id.ToString(),
+                fileInfo.SeanceId.ToString(),
+                fileInfo.TemplateId.ToString(),
                 fileInfo.FileName,
                 cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Ошибка получения последней позиции файла {fileInfo.FileName}");
+            logger.LogError(ex, $"Ошибка получения последней позиции файла {fileInfo.FileName}");
             throw;
         }
     }
-
+    
     public void Dispose()
     {
         _filesLastPositionCache.Dispose();
