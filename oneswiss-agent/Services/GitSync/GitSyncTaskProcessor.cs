@@ -9,7 +9,6 @@ namespace OneSwiss.Agent.Services.GitSync;
 
 public class GitSyncTaskProcessor : IDisposable
 {
-    private readonly SemaphoreSlim _commitSemaphore = new(1);
     private readonly AgentsResourcesProvider _agentsResourcesProvider;
     private readonly string _ibcmdDataDirs;
     private readonly string _infoBasesPath;
@@ -189,8 +188,6 @@ public class GitSyncTaskProcessor : IDisposable
             SetHeadBranchTrackedBranch(rep);
             
             InitRepositoryConfig(rep);
-            
-            //PushChanges(rep);
 
             await InitLfs(_task.Items);
 
@@ -309,32 +306,23 @@ public class GitSyncTaskProcessor : IDisposable
     private async Task CommitChanges(GitSyncTaskItemProcessor itemProcessor, ConfigRepositoryReportItem version,
         ConfigRepositoryUserDto user)
     {
-        await _commitSemaphore.WaitAsync();
-
-        try
-        {
-            await WriteUploadVersion(itemProcessor, version);
+        await WriteUploadVersion(itemProcessor, version);
             
-            using var repo = new Repository(_repoFolder);
+        using var repo = new Repository(_repoFolder);
 
-            var path = $"{Path.GetRelativePath(_repoFolder, itemProcessor.RepoFolder)}/*";
-            Commands.Stage(repo, path);
+        var path = $"{Path.GetRelativePath(_repoFolder, itemProcessor.RepoFolder)}/*";
+        Commands.Stage(repo, path);
 
-            var metadataPath = Path.GetRelativePath(_repoFolder, GetItemMetadataPath(itemProcessor));
-            Commands.Stage(repo, metadataPath);
+        var metadataPath = Path.GetRelativePath(_repoFolder, GetItemMetadataPath(itemProcessor));
+        Commands.Stage(repo, metadataPath);
 
-            var author = new Signature(user.Name, user.GitUser, version.CreatedAt);
+        var author = new Signature(user.Name, user.GitUser, version.CreatedAt);
 
-            repo.Commit(version.Comment, author, author, new CommitOptions
-            {
-                AllowEmptyCommit = true,
-                PrettifyMessage = true
-            });
-        }
-        finally
+        repo.Commit(version.Comment, author, author, new CommitOptions
         {
-            _commitSemaphore.Release();
-        }
+            AllowEmptyCommit = true,
+            PrettifyMessage = true
+        });
     }
 
     private void StartPushing(CancellationToken cancellationToken)
@@ -461,7 +449,6 @@ public class GitSyncTaskProcessor : IDisposable
 
     public void Dispose()
     {
-        _commitSemaphore.Dispose();
         _cts?.Dispose();
     }
 }
