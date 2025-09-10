@@ -86,7 +86,7 @@ public class CrServerRequestsHandler : IDisposable
         var dbMiddlewares = context.CrServerProxyMiddlewares
             .AsNoTracking()
             .Include(c => c.File)
-            .Include(c => c.Location.ConfigurationRepository)
+            .Include(c => c.Locations).ThenInclude(c => c.ConfigurationRepository)
             .Include(c => c.Arguments)
             .ToList();
         
@@ -97,14 +97,13 @@ public class CrServerRequestsHandler : IDisposable
             if (middleware.ConnectAll)
                 _forAllMiddlewares.Add(scriptInfo);
             else
-            {
-                var key = middleware.Location.Id;
-                
-                if (_exactMiddlewares.TryGetValue(key, out var middlewares))
-                    middlewares.Add(scriptInfo);
-                else
-                    _exactMiddlewares.TryAdd(key, [scriptInfo]);
-            }
+                foreach (var key in middleware.Locations.Select(crServerProxyLocation => crServerProxyLocation.Id))
+                {
+                    if (_exactMiddlewares.TryGetValue(key, out var middlewares))
+                        middlewares.Add(scriptInfo);
+                    else
+                        _exactMiddlewares.TryAdd(key, [scriptInfo]);
+                }
         }
     }
     

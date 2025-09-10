@@ -46,7 +46,7 @@
             <MudTd>Исполняемый файл</MudTd>
             <MudTd>Файл</MudTd>
             <MudTd>Подключить все</MudTd>
-            <MudTd>Публикация</MudTd>
+            <MudTd>Публикации</MudTd>
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Режим отладки">
@@ -68,17 +68,17 @@
                     For="@(() => context.FileId)"/>
             </MudTd>
             <MudTd DataLabel="Подключить все">
-                <MudSwitch For="@(() => context.ConnectAll)" @bind-Value="@context.ConnectAll" Color="Color.Primary"/>
+                <MudSwitch 
+                    For="@(() => context.ConnectAll)" 
+                    @bind-Value="@context.ConnectAll" 
+                    Color="Color.Primary"/>
             </MudTd>
-            <MudTd DataLabel="Публикация">
-                <ItemSelector
-                    @bind-Value="@context.LocationId"
-                    Items="@_context!.CrServerProxyLocations.ToList()"
-                    Class="mb-3"
-                    Disabled="@context.ConnectAll"
-                    ItemValueSelector="arg => arg.Id"
-                    ItemNameSelector="@(arg => arg.Location)"
-                    For="@(() => context.LocationId)"/>
+            <MudTd DataLabel="Публикации">
+                <ItemsSelector T="CrServerProxyLocation"
+                               @bind-SelectedValues="@context.Locations"
+                               NameSelector="@(item => item.Location)"
+                               Disabled="@(context.ConnectAll)"
+                               Items="@(_context?.CrServerProxyLocations.ToList() ?? [])"/>
             </MudTd>
         </RowTemplate>
         <ChildRowContent>
@@ -152,13 +152,7 @@
         for (var index = 0; index < _items.Count; index++)
         {
             var item = _items[index];
-
-            if (!item.ConnectAll && item.LocationId == Guid.Empty)
-            {
-                valid = false;
-                SnackBar.ShowError($"В строке {index + 1} не указана публикация");
-            }
-
+            
             if (!item.DebugMode && item.FileId.EmptyOrNull())
             {
                 valid = false;
