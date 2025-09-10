@@ -210,6 +210,9 @@
 
     private void AfterValidation(GitSyncTask obj)
     {
+        if (Id != Guid.Empty)
+            return;
+
         var repository = _editor.Context!.GitRepositories
             .Include(c => c.Token)
             .FirstOrDefault(c => c.Id == obj.GitRepositoryId);
