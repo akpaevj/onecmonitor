@@ -157,62 +157,61 @@
         try
         {
             await BeforeValidation.InvokeAsync(Model);
-        }
-        catch (Exception e)
-        {
-            SnackBar.ShowError(e);
-            return;
-        }
-        
-        await Form.Validate();
+            
+            await Form.Validate();
 
-        if (Validation != null)
-        {
-            foreach (var item in _additionalValidableProperties)
+            if (Validation != null)
             {
-                var errors = await Validation.Invoke(Model!, item);
-                var enumerable = errors.ToList();
+                foreach (var item in _additionalValidableProperties)
+                {
+                    var errors = await Validation.Invoke(Model!, item);
+                    var enumerable = errors.ToList();
 
-                var addValid = enumerable.Count == 0;
+                    var addValid = enumerable.Count == 0;
                 
-                if (addValid) 
-                    continue;
+                    if (addValid) 
+                        continue;
                 
-                Form.IsValid = false;
+                    Form.IsValid = false;
                 
-                enumerable.ForEach(c => SnackBar.ShowError(c));
+                    enumerable.ForEach(c => SnackBar.ShowError(c));
+                }
             }
-        }
         
-        if (!Form.IsValid)
-        {
-            SnackBar.ShowError("Объект не записан");
-            return;
-        }
-
-        await AfterValidation.InvokeAsync(Model);
-        
-        try
-        {
-            var model = await GetModel(false);
-
-            if (model != null)
+            if (!Form.IsValid)
             {
-                Context!.Entry(model).CurrentValues.SetValues(Model!);
-                await OnUpdate.InvokeAsync(model);
+                SnackBar.ShowError("Объект не записан");
+                return;
             }
-            else
-                Context!.Entry(Model!).State = EntityState.Added;
 
-            if (OnSave != null)
-                await OnSave.Invoke(model ?? Model!);
+            await AfterValidation.InvokeAsync(Model);
+        
+            try
+            {
+                var model = await GetModel(false);
+
+                if (model != null)
+                {
+                    Context!.Entry(model).CurrentValues.SetValues(Model!);
+                    await OnUpdate.InvokeAsync(model);
+                }
+                else
+                    Context!.Entry(Model!).State = EntityState.Added;
+
+                if (OnSave != null)
+                    await OnSave.Invoke(model ?? Model!);
             
-            await Context!.SaveChangesAsync();
-            await AfterSave.InvokeAsync(model ?? Model!);
+                await Context!.SaveChangesAsync();
+                await AfterSave.InvokeAsync(model ?? Model!);
             
-            SnackBar.ShowSuccess("Объект записан", false);
+                SnackBar.ShowSuccess("Объект записан", false);
             
-            NavigateBack();
+                NavigateBack();
+            }
+            catch (Exception e)
+            {
+                SnackBar.ShowError(e);
+            }
         }
         catch (Exception e)
         {
