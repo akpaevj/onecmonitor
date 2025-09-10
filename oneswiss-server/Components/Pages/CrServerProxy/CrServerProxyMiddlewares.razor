@@ -153,10 +153,10 @@
         {
             var item = _items[index];
 
-            if (item.LocationId == Guid.Empty)
+            if (!item.ConnectAll && item.LocationId == Guid.Empty)
             {
                 valid = false;
-                SnackBar.ShowError($"В строке {index + 1} не указана локация");
+                SnackBar.ShowError($"В строке {index + 1} не указана публикация");
             }
 
             if (!item.DebugMode && item.FileId.EmptyOrNull())
