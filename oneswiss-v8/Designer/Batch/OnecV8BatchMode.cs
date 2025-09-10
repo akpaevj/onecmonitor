@@ -357,6 +357,7 @@ public sealed class OnecV8BatchMode : IDisposable
         if (!disposing)
             return;
 
+        _process?.Kill();
         _process?.Dispose();
         _process = null;
         
