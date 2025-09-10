@@ -100,9 +100,21 @@ public class GitSyncTaskItemProcessor(
                 _extensionName);
             
             logger.LogTrace($"Загрузка версии конфигурации из хранилища окончена - {item.ExportFolder}");
-
-            ThrowIfCancelled();
-            
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Ошибка обновления конфигурации из файлов");
+            throw;
+        }
+        
+        ThrowIfCancelled();
+        
+        try
+        {
             logger.LogTrace($"Начало выгрузки файлов конфигурации - {item.ExportFolder}");
             
             await IbcmdWrapper.ExportXmlFiles(platform, dataFolder, IbFolder, RepoFolder, _extensionName);
