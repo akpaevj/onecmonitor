@@ -126,10 +126,7 @@ public abstract class IbcmdWrapper
 
     private static async Task StartIbcmd(V8Platform platform, List<string> args)
     {
-        var result = await ProcessRunner.RunAsync(platform.IbcmdPath, args);
-
-        if (result.ExitCode != 0)
-            throw new Exception(result.Error);
+        await ProcessRunner.RunAndThrowAsync(platform.IbcmdPath, args);
     }
 
     private static List<string> PrepareCommonArgs(string dataPath)
