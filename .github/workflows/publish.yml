@@ -27,10 +27,10 @@ jobs:
         cache: 'npm'
 
     - name: Восстановление зависимостей npm
-      run: npm ci
+      run: cd oneswiss-server | npm ci
 
     - name: Сборка TypeScript
-      run: npm run build
+      run: cd oneswiss-server | npm run build
 
     - name: Восстановление зависимостей
       run: dotnet restore
