@@ -1,0 +1,89 @@
+name: Сборка, публикация и упаковка
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  NODE_VERSION: '20.x'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Установка .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Установка Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Восстановление зависимостей npm
+      run: npm ci
+
+    - name: Сборка TypeScript
+      run: npm run build
+
+    - name: Восстановление зависимостей
+      run: dotnet restore
+
+    - name: Сборка проектов
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Publish for Windows x64
+      run: |
+        dotnet publish oneswiss-agent/oneswiss-agent.csproj \
+          --configuration Release \
+          --runtime win-x64 \
+          --self-contained true \
+          --output publish/win-x64/oneswiss-agent \
+          /p:PublishSingleFile=true \
+          /p:PublishTrimmed=true
+
+        dotnet publish oneswiss-server/oneswiss-server.csproj \
+          --configuration Release \
+          --runtime win-x64 \
+          --self-contained true \
+          --output publish/win-x64/oneswiss-server \
+          /p:PublishSingleFile=true \
+          /p:PublishTrimmed=true
+
+    - name: Publish for Linux x64
+      run: |
+        dotnet publish oneswiss-agent/oneswiss-agent.csproj \
+          --configuration Release \
+          --runtime linux-x64 \
+          --self-contained true \
+          --output publish/linux-x64/oneswiss-agent \
+          /p:PublishSingleFile=true \
+          /p:PublishTrimmed=true
+
+        dotnet publish oneswiss-server/oneswiss-server.csproj \
+          --configuration Release \
+          --runtime linux-x64 \
+          --self-contained true \
+          --output publish/linux-x64/oneswiss-server \
+          /p:PublishSingleFile=true \
+          /p:PublishTrimmed=true
+
+    - name: Упаковка публикаций в архив
+      run: |
+        cd publish/win-x64
+        zip -r ../../artifacts/oneswiss-win-x64.zip .
+        cd ../linux-x64
+        zip -r ../../artifacts/oneswiss-linux-x64.zip .
+
+    - name: Загрузка артефактов
+      uses: actions/upload-artifact@v4
+      with:
+        name: published-apps
+        path: artifacts/
+        retention-days: 7
