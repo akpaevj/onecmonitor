@@ -1,6 +1,6 @@
 using System.Threading.Channels;
 
-namespace OneSwiss.Agent.Services;
+namespace OneSwiss.Common.Services;
 
 public class MonitorQueue<T>
 {

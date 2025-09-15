@@ -7,6 +7,8 @@ namespace OneSwiss.Server.Models.MaintenanceTasks;
 public class LoadConfigurationStep
 {
     public bool FromConfigRepository { get; set; }
+    public bool LoadExactVersion { get; set; }
+    public int Version { get; set; }
     public Guid? FileId { get; set; }
     public Guid? ConfigurationRepositoryId { get; set; }
 

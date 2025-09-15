@@ -11,6 +11,7 @@ public class ConfigurationRepository : DatabaseObject
     public bool Deleted { get; set; }
     public Guid AgentId { get; set; }
     public Guid? CredentialsId { get; set; }
+    public int LastReadVersion { get; set; }
 
     public Agent Agent { get; set; }
 

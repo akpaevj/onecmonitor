@@ -14,12 +14,20 @@ public class LoadExtensionStepDto
     [ContextProperty("ИзХранилищаКонфигурации", "FromConfigRepository")]
     [Key(1)]
     public bool FromConfigRepository { get; set; }
+    
+    [ContextProperty("ЗагружатьКонкретнуюВерсию", "LoadExactVersion")]
+    [Key(2)]
+    public bool LoadExactVersion { get; set; }
+    
+    [ContextProperty("Версия", "Version")]
+    [Key(3)]
+    public int Version { get; set; }
 
     [ContextProperty("Файл", "File")]
-    [Key(2)]
+    [Key(4)]
     public FileDto? File { get; set; }
 
     [ContextProperty("ХранилищеКонфигурации", "ConfigurationRepository")]
-    [Key(3)]
+    [Key(5)]
     public ConfigurationRepositoryDto? ConfigurationRepository { get; set; }
 }

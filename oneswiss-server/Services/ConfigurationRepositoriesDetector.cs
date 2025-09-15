@@ -1,12 +1,14 @@
+using System.Collections.Concurrent;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using OneSwiss.Common.Services;
 using OneSwiss.Server.Models;
 
 namespace OneSwiss.Server.Services;
 
 public class ConfigurationRepositoriesDetector(
     AgentsConnectionsManager connectionsManager,
-    IMapper mapper,
+    MonitorQueue<(Guid RepoId, int Version)> newReposVersionsQueue,
     IServiceProvider serviceProvider,
     ILogger<ConfigurationRepositoriesDetector> logger) : BackgroundService
 {
@@ -18,6 +20,8 @@ public class ConfigurationRepositoriesDetector(
 
             if (connections.Count > 0)
             {
+                var reposWithNewVersions = new ConcurrentBag<(Guid, int)>();
+                
                 try
                 {
                     await Parallel.ForEachAsync(connections, stoppingToken, async (connection, token) =>
@@ -67,8 +71,11 @@ public class ConfigurationRepositoriesDetector(
                                             Host = sysInfo.HostName,
                                             Port = crService.Port,
                                             AgentId = connection.AgentInstance!.Id,
-                                            CredentialsId = defaultAdmin?.Id
+                                            CredentialsId = defaultAdmin?.Id,
+                                            LastReadVersion = details.LastVersion
                                         }, token);
+                                        
+                                        reposWithNewVersions.Add((id, details.LastVersion));
 
                                         foreach (var configUser in details.Users)
                                             await appDbContext.ConfigRepositoryUsers.AddAsync(
@@ -81,10 +88,17 @@ public class ConfigurationRepositoriesDetector(
                                     }
                                     else
                                     {
+                                        var lastReadVersion = foundRep.LastReadVersion;
+                                        
                                         foundRep.Name = repository;
                                         foundRep.Host = sysInfo.HostName;
                                         foundRep.Port = crService.Port;
                                         foundRep.AgentId = connection.AgentInstance!.Id;
+                                        foundRep.LastReadVersion = details.LastVersion;
+
+                                        if (details.LastVersion != 0 && details.LastVersion > lastReadVersion)
+                                            foreach (var version in Enumerable.Range(lastReadVersion + 1, details.LastVersion - lastReadVersion))
+                                                reposWithNewVersions.Add((foundRep.Id, version));
 
                                         // Сначала отметим удаленных
                                         var existIds = details.Users.Select(c => c.Id).ToList();
@@ -136,6 +150,9 @@ public class ConfigurationRepositoriesDetector(
                     // ignore
                 }
 
+                foreach (var repoWithNewVersion in reposWithNewVersions)
+                    await HandleNewRepositoryVersion(repoWithNewVersion.Item1, repoWithNewVersion.Item2, stoppingToken);
+
                 await Task.Delay(60 * 1000, stoppingToken);
             }
             else
@@ -144,4 +161,7 @@ public class ConfigurationRepositoriesDetector(
             }
         }
     }
+    
+    private async Task HandleNewRepositoryVersion(Guid configurationRepositoryId, int version, CancellationToken cancellationToken)
+        => await newReposVersionsQueue.QueueAsync((configurationRepositoryId, version), cancellationToken);
 }

@@ -15,6 +15,6 @@ public class MaintenanceTaskLogHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         if (Context.Items.TryGetValue("taskId", out var taskId))
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, (string)taskId!);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, ((Guid)taskId!).ToString());
     }
 }

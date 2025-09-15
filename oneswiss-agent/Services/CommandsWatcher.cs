@@ -408,15 +408,18 @@ internal class CommandsWatcher
 
         using var db = new ConfigRepositoryConnection(Path.Combine(crServer.Directory, request.Repository));
 
+        var users = db.ReadUsers();
+        
         var result = new ConfigRepositoryDetailsDto
         {
             Id = db.ReadId(),
             Platform = crServer.Platform,
-            Users = db.ReadUsers().Select(c => new ConfigRepositoryUserDto
+            Users = users.Select(c => new ConfigRepositoryUserDto
             {
                 Id = c.Id,
                 Name = c.Name
-            }).ToList()
+            }).ToList(),
+            LastVersion = db.ReadVersions(users).MaxBy(c => c.Number)?.Number ?? -1
         };
 
         await _server.SendConfigRepositoryDetails(message, result, cancellationToken);

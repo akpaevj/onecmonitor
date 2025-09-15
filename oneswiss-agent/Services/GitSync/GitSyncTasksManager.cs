@@ -1,5 +1,6 @@
 using OneSwiss.Agent.Helpers;
 using OneSwiss.Common.DTO;
+using OneSwiss.Common.Services;
 
 namespace OneSwiss.Agent.Services.GitSync;
 
