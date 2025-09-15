@@ -114,6 +114,9 @@ builder.Services.AddHostedService<CrServerConnectionsDisconnecter>();
 builder.Services.AddSingleton<CrServerConnectionsPool>();
 builder.Services.AddSingleton<CrServerRequestsHandler>();
 
+builder.Services.AddSingleton<MonitorQueue<(Guid RepoId, int Version)>>();
+builder.Services.AddHostedService<NewConfigRepositoryVersionHandler>();
+
 builder.Services.AddControllers();
 
 var app = builder.Build();

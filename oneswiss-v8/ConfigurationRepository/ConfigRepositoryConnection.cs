@@ -72,6 +72,36 @@ public class ConfigRepositoryConnection(string path) : IDisposable
             };
         }
     }
+    
+    public IEnumerable<ConfigRepositoryVersion> ReadVersions(List<ConfigRepositoryUser> users, int startVersion = -1)
+    {
+        OpenIfNeed();
+
+        var table = _connection.Tables.FirstOrDefault(c => c.Name == "VERSIONS");
+        if (table == null)
+            throw new Exception("Таблица версий не обнаружена");
+
+        var u = users.ToDictionary(c => c.Id, c => c);
+
+        foreach (var tableRow in _connection["VERSIONS"].Rows)
+        {
+            var userId = tableRow["USERID"].AsGuid();
+            if (userId == Guid.Empty)
+                continue;
+
+            var version = (decimal)tableRow["VERNUM"];
+            if (startVersion > -1 && version < startVersion)
+                continue;
+
+            yield return new ConfigRepositoryVersion
+            {
+                Number = (int)version,
+                Comment = tableRow["COMMENT"]?.ToString() ?? string.Empty,
+                User = u[userId],
+                DateTime = (DateTime)tableRow["VERDATE"]
+            };
+        }
+    }
 
     private void OpenIfNeed()
     {

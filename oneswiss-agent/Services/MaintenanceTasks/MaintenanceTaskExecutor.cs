@@ -6,6 +6,7 @@ using OneSwiss.Common.DTO;
 using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Common.Extensions;
 using OneSwiss.Common.Models.MaintenanceTasks;
+using OneSwiss.Common.Services;
 using OneSwiss.OneScript;
 using OneSwiss.V8.Designer.Agent;
 using OneSwiss.V8.Designer.Batch;
@@ -478,9 +479,9 @@ public class MaintenanceTaskExecutor : BackgroundService
                 switch (c.Kind)
                 {
                     case MaintenanceStepKind.LoadConfiguration when c.LoadConfigurationStep!.FromConfigRepository:
-                        return (Step: c, c.LoadConfigurationStep!.ConfigurationRepository);
+                        return (Step: c, c.LoadConfigurationStep!.ConfigurationRepository, Version: c.LoadConfigurationStep!.LoadExactVersion ? c.LoadConfigurationStep!.Version : -1);
                     case MaintenanceStepKind.LoadExtension when c.LoadExtensionStep!.FromConfigRepository:
-                        return (Step: c, c.LoadExtensionStep!.ConfigurationRepository);
+                        return (Step: c, c.LoadExtensionStep!.ConfigurationRepository, Version: c.LoadExtensionStep!.LoadExactVersion ? c.LoadExtensionStep!.Version : -1);
                     default:
                         throw new NotImplementedException();
                 }
@@ -515,7 +516,8 @@ public class MaintenanceTaskExecutor : BackgroundService
                     configPath,
                     address,
                     stepInfo.ConfigurationRepository.Credentials!.User,
-                    stepInfo.ConfigurationRepository.Credentials!.Password);
+                    stepInfo.ConfigurationRepository.Credentials!.Password,
+                    stepInfo.Version);
 
                 var file = new FileDto
                 {
@@ -824,7 +826,7 @@ public class MaintenanceTaskExecutor : BackgroundService
     {
         var filePath = context.Files[context.Step.StartExternalDataProcessorStep!.File.Id];
 
-        var batch = context.GetBatchEnterprise();
+        using var batch = context.GetBatchEnterprise();
         batch.ExecuteExternalDataProcessor(
             filePath,
             context.InfoBase!.Credentials?.User ?? "",

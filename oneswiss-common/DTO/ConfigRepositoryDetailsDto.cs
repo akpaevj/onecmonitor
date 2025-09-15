@@ -11,4 +11,5 @@ public class ConfigRepositoryDetailsDto
     [Key(1)] public V8Platform Platform { get; set; } = null!;
 
     [Key(2)] public List<ConfigRepositoryUserDto> Users { get; set; } = [];
+    [Key(3)] public int LastVersion { get; set; }
 }

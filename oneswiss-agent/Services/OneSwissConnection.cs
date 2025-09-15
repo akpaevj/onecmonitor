@@ -24,9 +24,7 @@ public class OneSwissConnection(
 
     public async Task Start(bool mainConnection = false)
     {
-        var token = _authRequired ? await tokenRetriever.GetValidTokenAsync() : null;
-
-        await Start(_serverAddress, token, async () =>
+        await Start(_serverAddress, async () => _authRequired ? await tokenRetriever.GetValidTokenAsync() : null, async () =>
         {
             await WriteMessageToStream(MessageType.AgentInfo,
                 new AgentInstanceDto

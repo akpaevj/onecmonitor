@@ -5,15 +5,14 @@ namespace OneSwiss.Common;
 
 public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection(logger)
 {
-    private string? _bearerToken;
+    private Func<Task<string?>> _getBearerTokenFunc;
     private string _serverAddress = null!;
-
-
-    protected async Task Start(string address, string? bearerToken, Func<Task> afterConnectCallback,
+    
+    protected async Task Start(string address, Func<Task<string?>> getBearerTokenFunc, Func<Task> afterConnectCallback,
         CancellationToken cancellationToken)
     {
         _serverAddress = address;
-        _bearerToken = bearerToken;
+        _getBearerTokenFunc = getBearerTokenFunc;
 
         Disconnected += (_, _) =>
         {
@@ -68,11 +67,13 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
 
         var uri = new Uri($"{_serverAddress}/ws/agents");
 
-        logger.LogTrace($"Адрес сервера: {uri}");
+        logger.LogTrace("Адрес сервера: {Uri}", uri);
 
         var s = new ClientWebSocket();
-        if (_bearerToken != null)
-            s.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");
+
+        var bearerToken = await _getBearerTokenFunc();
+        if (bearerToken != null)
+            s.Options.SetRequestHeader("Authorization", $"Bearer {bearerToken}");
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(10));

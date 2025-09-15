@@ -49,9 +49,9 @@
                       OnUpdate="OnUpdate"
                       Editable="_editable">
         <MudStack>
-            <MudStack Row Class="mb-3" Breakpoint="Breakpoint.MdAndDown" AlignItems="AlignItems.Center"
-                      StretchItems="StretchItems.All">
-                <MudTextField Class="w-100" For="@(() => _editor.Model!.Description)" Variant="Variant.Outlined"
+            <MudStack Row Class="mb-3" Breakpoint="Breakpoint.MdAndDown" StretchItems="StretchItems.All" AlignItems="AlignItems.Center">
+                <MudTextField For="@(() => _editor.Model!.Description)" Variant="Variant.Outlined"
+                              Class="w-100"
                               Label="Наименование" @bind-Value="@_editor.Model!.Description"/>
                 <MudSwitch Label="Задача общего назначения"
                            @bind-Value:get="@_editor.Model!.CommonDestination"
@@ -60,22 +60,28 @@
                 @if (_editor.Model!.CommonDestination)
                 {
                     <ItemsSelector T="Agent"
-                                   Class="w-100"
                                    @bind-SelectedValues="_editor.Model!.Agents"
                                    Items="@_editor.Context!.Agents.ToList()"
                                    Title="Агенты"
+                                   Class="w-100"
                                    NameSelector="item => item.InstanceName"/>
                 }
                 else
                 {
                     <ItemsSelector T="InfoBase"
-                                   Class="w-100"
                                    @bind-SelectedValues="_editor.Model!.InfoBases"
                                    Items="@_editor.Context!.InfoBases.ToList()"
+                                   Class="w-100"
                                    Title="Информационные базы"
                                    NameSelector="item => item.Name"/>
                 }
             </MudStack>
+            @if (ShowStartWithNewVersionFlag())
+            {
+                <MudSwitch Label="Запускать задачу по шаблону при обнаружении новой версии в хранилище"
+                           @bind-Value="@_editor.Model!.StartWhenDiscoverNewConfigVersion"
+                           Color="Color.Primary"/>
+            }
             <MudPaper Class="rounded-lg mud-background-gray pa-2">
                 <MudStack Row Wrap="Wrap.Wrap" Class="mb-2" Spacing="0">
                     @foreach (var item in GetAvailableStepKinds())
@@ -119,7 +125,7 @@
 
     [CascadingParameter] public Task<AuthenticationState>? AuthStateTask { get; set; }
 
-    public BlazorDiagram Diagram { get; set; } = null!;
+    public StepsDiagram Diagram { get; set; } = null!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -150,14 +156,7 @@
         return arg
             .Include(c => c.Agents)
             .Include(c => c.InfoBases)
-            .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
-            .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep)
-            .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep)
-            .Include(c => c.Steps).ThenInclude(c => c.UpdateConfigurationStep)
-            .Include(c => c.Steps).ThenInclude(c => c.DeleteExtensionStep)
-            .Include(c => c.Steps).ThenInclude(c => c.ExecuteOneScriptStep)
-            .Include(c => c.Steps).ThenInclude(c => c.LockConnectionsStep)
-            .Include(c => c.Steps).ThenInclude(c => c.StartExternalDataProcessorStep);
+            .IncludeSteps();
     }
 
     private void BeforeValidation(MaintenanceTask obj)
@@ -177,22 +176,17 @@
     private async Task InitModelFromTemplate(MaintenanceTask task, AppDbContext context)
     {
         // Запомним уже сформированный для модели id
+        // ReSharper disable once EntityFramework.NPlusOne.IncompleteDataQuery
         var template = (await context.MaintenanceTasks
             .AsNoTracking()
             .Include(c => c.Agents)
             .Include(c => c.InfoBases)
-            .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
-            .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep)
-            .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep)
-            .Include(c => c.Steps).ThenInclude(c => c.UpdateConfigurationStep)
-            .Include(c => c.Steps).ThenInclude(c => c.ExecuteOneScriptStep)
-            .Include(c => c.Steps).ThenInclude(c => c.StartExternalDataProcessorStep)
-            .Include(c => c.Steps).ThenInclude(c => c.DeleteExtensionStep)
-            .Include(c => c.Steps).ThenInclude(c => c.LockConnectionsStep)
+            .IncludeSteps()
             .FirstOrDefaultAsync(c => c.Id == TemplateId))!;
 
         task.Description = template.Description;
         task.IsTemplate = IsTemplate;
+        task.StartWhenDiscoverNewConfigVersion = false;
         task.CommonDestination = template.CommonDestination;
 
         task.Agents = template.Agents;
@@ -209,7 +203,7 @@
 
     private void InitDiagram()
     {
-        Diagram = new BlazorDiagram(new BlazorDiagramOptions
+        Diagram = new StepsDiagram(new BlazorDiagramOptions
         {
             Zoom =
             {
@@ -224,6 +218,10 @@
                 SnappingRadius = 25
             }
         });
+        Diagram.UpdateTask += (_, _) =>
+        {
+            InvokeAsync(StateHasChanged);
+        };
 
         Diagram.RegisterComponent<StepNode, StepWidget>();
 
@@ -472,6 +470,12 @@
             ]
         };
     }
+
+    private bool ShowStartWithNewVersionFlag()
+        =>
+            IsTemplate && Diagram.StepNodes
+                .Any(node => node.Step.LoadExtensionStep?.FromConfigRepository == true || 
+                             node.Step.LoadConfigurationStep?.FromConfigRepository == true);
 
     class Validator : ModelValidator<MaintenanceTask>
     {
