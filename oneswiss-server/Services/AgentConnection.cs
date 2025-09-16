@@ -105,7 +105,7 @@ public class AgentConnection : FastConnection
     private async Task HandleCrServerPlatformRequest(Message message, CancellationToken cancellationToken)
     {
         var request = ParseMessageData<CrServerPlatformRequestDto>(message.Data, cancellationToken);
-        var service = _interAgencyCommunicationService.GetCrServerPlatform(request, cancellationToken);
+        var service = await _interAgencyCommunicationService.GetCrServerPlatform(request, cancellationToken);
 
         await Send(MessageType.V8Platform, service, message, cancellationToken);
     }
