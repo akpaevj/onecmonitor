@@ -52,10 +52,10 @@ public class ErrorLoggingServiceController(
         if (Request.Form.Files.Count <= 0)
             return new EmptyResult();
 
+        var unpackingPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+
         try
         {
-            var unpackingPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-
             var file = Request.Form.Files[0];
             await using var stream = file.OpenReadStream();
             ZipFile.ExtractToDirectory(stream, unpackingPath);
@@ -94,6 +94,11 @@ public class ErrorLoggingServiceController(
         catch (Exception e)
         {
             logger.LogError(e, "Ошибка обработки отчета об ошибке");
+        }
+        finally
+        {
+            if (Directory.Exists(unpackingPath))
+                Directory.Delete(unpackingPath, true);
         }
 
         return new EmptyResult();
