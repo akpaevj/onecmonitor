@@ -5,8 +5,8 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>OneSwiss.Server</RootNamespace>
-        <Version>0.4.1</Version>
-        <AssemblyVersion>0.4.1</AssemblyVersion>
+        <Version>0.4.2</Version>
+        <AssemblyVersion>0.4.2</AssemblyVersion>
         <ApplicationIcon>../icon.ico</ApplicationIcon>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
@@ -37,6 +37,7 @@
         <PackageReference Include="MudBlazor" Version="8.10.0"/>
         <PackageReference Include="Octokit" Version="14.0.0"/>
         <PackageReference Include="RestSharp" Version="112.1.0"/>
+        <PackageReference Include="YAXLib" Version="4.3.0" />
         <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.3"/>
     </ItemGroup>
 

@@ -183,49 +183,35 @@ public class CrServerRequestsHandler : IDisposable
 
             try
             {
-                var document = await GetRequestContent(context, cancellationToken);
+                _logger.LogTrace("Начало преобразования документа запроса - {RepositoryName}", repository.Name);
+                var filePath = Path.GetTempFileName();
+                using var processor = new RequestStreamProcessor(filePath, repository.Name);
+                var details = await processor.ProcessAsync(context, cancellationToken);
+                _logger.LogTrace("Преобразование документа запроса завершено - {RepositoryName}", repository.Name);
+                
                 var handlerWrapper =
-                    new RequestHandlerWrapper(connection, context, location, repository.Name, document);
-
-                FixCrAlias(document, repository.Name);
-
-                if (document.Root == null)
-                    await Send(connection, context, document, cancellationToken);
+                    new RequestHandlerWrapper(this,
+                        connection,
+                        context,
+                        location,
+                        repository.Name,
+                        details.Comment ?? string.Empty,
+                        filePath);
+                
+                _logger.LogTrace("Начало обработки запроса - {RepositoryName}", repository.Name);
+                
+                if (details.IsCommit && commitMiddlewares.Count > 0)
+                    ExecuteMiddlewares(handlerWrapper, commitMiddlewares, CommitHandlerName);
+                else if (details.IsChangeVersion && changeVersionMiddlewares.Count > 0)
+                    ExecuteMiddlewares(handlerWrapper, changeVersionMiddlewares, ChangeVersionHandlerName);
                 else
-                {
-                    var requestName = document.Root?.Attribute("name")?.Value;
-
-                    switch (requestName)
-                    {
-                        case "DevDepotAdmin_openDevDepot":
-                            await HandleOpenDevDepot(connection, context, document, cancellationToken);
-                            break;
-                        case "DevDepot_commitObjects":
-                            if (commitMiddlewares.Count == 0)
-                                await Send(connection, context, document, cancellationToken);
-                            else
-                            {
-                                handlerWrapper.Comment = GetCommitComment(document);
-                                ExecuteMiddlewares(handlerWrapper, commitMiddlewares, CommitHandlerName);
-                            }
-                            break;
-                        case "DevDepot_changeVersion":
-                            if (changeVersionMiddlewares.Count == 0)
-                                await Send(connection, context, document, cancellationToken);
-                            else
-                            {
-                                handlerWrapper.Comment = GetChangeVersionNewComment(document);
-                                ExecuteMiddlewares(handlerWrapper, changeVersionMiddlewares, ChangeVersionHandlerName);
-                            }
-                            break;
-                        default:
-                            await Send(connection, context, document, cancellationToken);
-                            break;
-                    }
-                }
+                    await Send(repository.Name, connection, context, filePath, cancellationToken);
+                
+                _logger.LogTrace("Обработка запроса завершена - {RepositoryName}", repository.Name);
             }
             catch (Exception e)
             {
+                _logger.LogError(e, "Обработка запроса завершена с ошибкой - {RepositoryName}", repository.Name);
                 await RaiseException(context, e.Message);
             }
             finally
@@ -235,6 +221,7 @@ public class CrServerRequestsHandler : IDisposable
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "Обработка запроса завершена с ошибкой - {RepositoryName}", repository.Name);
             await RaiseException(context, e.Message);
         }
     }
@@ -275,21 +262,9 @@ public class CrServerRequestsHandler : IDisposable
         
         return result;
     }
-
-    private static async Task HandleOpenDevDepot(
-        CrServerConnection connection,
-        HttpContext context,
-        XDocument document,
-        CancellationToken cancellationToken)
-    {
-        FixAliasName(document);
-        await Send(connection, context, document, cancellationToken);
-    }
     
     public static async Task RaiseException(HttpContext context, string message)
     {
-        var response = new HttpResponseMessage(HttpStatusCode.OK);
-
         using var memoryStream = new MemoryStream();
         
         var crException = CrServerException.Create(message);
@@ -304,91 +279,47 @@ public class CrServerRequestsHandler : IDisposable
         
         var serializer = new XmlSerializer(typeof(CrServerException));
         serializer.Serialize(writer, crException, CrServerProtocolConstants.Namespaces);
-        memoryStream.Position = 0;
+
+        await SendResponseToClient(context, memoryStream);
+    }
+    
+    private static async Task SendResponseToClient(HttpContext context, Stream responseStream)
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        responseStream.Position = 0;
         
-        response.Content  = new StreamContent(memoryStream);
-        response.Content.Headers.ContentLength = memoryStream.Length;
+        response.Content  = new StreamContent(responseStream);
+        response.Content.Headers.ContentLength = responseStream.Length;
         response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/xml");
 
         await context.CopyProxyHttpResponse(response);
     }
     
-    internal static async Task Send(CrServerConnection connection, HttpContext context, XDocument document, CancellationToken cancellationToken)
+    internal async Task Send(
+        string repositoryName,
+        CrServerConnection connection,
+        HttpContext context,
+        string requestFile,
+        CancellationToken cancellationToken)
     {
-        using var memoryStream = new MemoryStream();
-        
-        await memoryStream.WriteAsync(MessageEncoding.GetBytes(document.ToString()), cancellationToken);
-        await WriteEndOfMessageSignature(memoryStream, cancellationToken);
-        
-        var proxyRequest = context.CreateProxyHttpRequest(memoryStream);
-        var response = await connection.SendRequest(proxyRequest, cancellationToken);
+        await using var stream = new FileStream(requestFile, FileMode.Open);
+        stream.Position = stream.Length;
+        await WriteEndOfMessageSignature(stream, cancellationToken);
 
+        _logger.LogTrace("Отправка обработанного запроса - {RepositoryName}", repositoryName);
+        var proxyRequest = context.CreateProxyHttpRequest(stream);
+        var response = await connection.SendRequest(proxyRequest, cancellationToken);
+        _logger.LogTrace("Отправка обработанного запроса завершена - {RepositoryName}", repositoryName);
+            
+        _logger.LogTrace("Отправка ответа клиенту - {RepositoryName}", repositoryName);
         await context.CopyProxyHttpResponse(response);
+        _logger.LogTrace("Отправка ответа клиенту завершена - {RepositoryName}", repositoryName);
     }
 
-    private static async Task WriteEndOfMessageSignature(MemoryStream stream, CancellationToken cancellationToken)
+    private static async Task WriteEndOfMessageSignature(FileStream stream, CancellationToken cancellationToken)
     {
         await stream.WriteAsync(EomSignature, cancellationToken);
         stream.Seek(0, SeekOrigin.Begin);
-    }
-
-    /// <summary>
-    /// Метод исправляет алиас в запросе подключения клиента к серверу хранилищ
-    /// </summary>
-    /// <param name="document">Документ исходного запроса клиента</param>
-    /// <param name="repositoryName">Имя хранилища конфигураций</param>
-    private static void FixCrAlias(XDocument document, string repositoryName)
-    {
-        var alias = document.Root!.Attribute("alias")?.Value;
-        if (alias == null)
-            return;
-        
-        document.Root!.Attribute("alias")?.SetValue(repositoryName);
-    }
-    
-    /// <summary>
-    /// Метод исправляет имя алиаса в элементе alias запроса подключения клиента к серверу хранилищ
-    /// </summary>
-    /// <param name="document">Документ исходного запроса клиента</param>
-    private static void FixAliasName(XDocument document)
-    {
-        var nameSpace = document.Root!.GetNamespaceOfPrefix("crs");
-        
-        var alias = document.Root!.Attribute("alias")?.Value;
-        if (alias == null)
-            return;
-        
-        var aliasNode = document.Root!.Descendants(nameSpace!.GetName("alias")).FirstOrDefault();
-        aliasNode?.Attribute("value")?.SetValue(alias);
-    }
-    
-    private static string GetCommitComment(XDocument document)
-    {
-        var nameSpace = document.Root!.GetNamespaceOfPrefix("crs");
-        
-        var commentNode = document.Root!.Descendants(nameSpace!.GetName("comment")).FirstOrDefault();
-        return commentNode == null ? string.Empty : commentNode.Value;
-    }
-    
-    private static string GetChangeVersionNewComment(XDocument document)
-    {
-        var nameSpace = document.Root!.GetNamespaceOfPrefix("crs");
-        
-        var newVersionNode = document.Root!.Descendants(nameSpace!.GetName("newVersion")).FirstOrDefault();
-
-        var newVersionCommentNode = newVersionNode?.Descendants(nameSpace.GetName("comment")).FirstOrDefault();
-        return newVersionCommentNode == null ? string.Empty : newVersionCommentNode.Value;
-    }
-    
-    private static async Task<XDocument> GetRequestContent(HttpContext context, CancellationToken cancellationToken)
-    {
-        var request = context.Request;
-        
-        using var memoryStream = new MemoryStream();
-        await request.Body.CopyToAsync(memoryStream, cancellationToken);
-        memoryStream.Position = 0;
-        
-        return XDocument.Load(memoryStream);
     }
 
     private static class CrServerProtocolConstants

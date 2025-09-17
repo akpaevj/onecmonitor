@@ -7,7 +7,7 @@ namespace OneSwiss.Server.ApiControllers;
 [ApiController]
 [Route("cr")]
 [AllowAnonymous]
-public class ConfigurationRepositoryProxyController(CrServerRequestsHandler requestsHandler) : ControllerBase
+public class ConfigurationRepositoryProxyController(CrServerRequestsHandler requestsHandler, ILogger<ConfigurationRepositoryProxyController> logger) : ControllerBase
 {
     [HttpPost("{*path}")]
     [DisableRequestSizeLimit]

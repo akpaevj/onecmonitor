@@ -400,19 +400,28 @@ public class MaintenanceTaskExecutor : BackgroundService
         var filesToDownload = new List<FileDto>();
 
         foreach (var maintenanceStepDto in task.Steps)
-            if (maintenanceStepDto.Kind == MaintenanceStepKind.ExecuteOneScript &&
-                !maintenanceStepDto.ExecuteOneScriptStep!.DebugMode)
-                filesToDownload.Add(maintenanceStepDto.ExecuteOneScriptStep!.File);
-            else if (maintenanceStepDto.Kind == MaintenanceStepKind.StartExternalDataProcessor)
-                filesToDownload.Add(maintenanceStepDto.StartExternalDataProcessorStep!.File);
-            else if (maintenanceStepDto.Kind == MaintenanceStepKind.UpdateConfiguration)
-                filesToDownload.Add(maintenanceStepDto.UpdateConfigurationStep!.File);
-            else if (maintenanceStepDto.Kind == MaintenanceStepKind.LoadConfiguration &&
-                     !maintenanceStepDto.LoadConfigurationStep!.FromConfigRepository)
-                filesToDownload.Add(maintenanceStepDto.LoadConfigurationStep!.File!);
-            else if (maintenanceStepDto.Kind == MaintenanceStepKind.LoadExtension &&
-                     !maintenanceStepDto.LoadExtensionStep!.FromConfigRepository)
-                filesToDownload.Add(maintenanceStepDto.LoadExtensionStep!.File!);
+            // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
+            switch (maintenanceStepDto.Kind)
+            {
+                case MaintenanceStepKind.ExecuteOneScript when
+                    !maintenanceStepDto.ExecuteOneScriptStep!.DebugMode:
+                    filesToDownload.Add(maintenanceStepDto.ExecuteOneScriptStep!.File);
+                    break;
+                case MaintenanceStepKind.StartExternalDataProcessor:
+                    filesToDownload.Add(maintenanceStepDto.StartExternalDataProcessorStep!.File);
+                    break;
+                case MaintenanceStepKind.UpdateConfiguration:
+                    filesToDownload.Add(maintenanceStepDto.UpdateConfigurationStep!.File);
+                    break;
+                case MaintenanceStepKind.LoadConfiguration when
+                    !maintenanceStepDto.LoadConfigurationStep!.FromConfigRepository:
+                    filesToDownload.Add(maintenanceStepDto.LoadConfigurationStep!.File!);
+                    break;
+                case MaintenanceStepKind.LoadExtension when
+                    !maintenanceStepDto.LoadExtensionStep!.FromConfigRepository:
+                    filesToDownload.Add(maintenanceStepDto.LoadExtensionStep!.File!);
+                    break;
+            }
 
         if (filesToDownload.Count == 0)
             return [];

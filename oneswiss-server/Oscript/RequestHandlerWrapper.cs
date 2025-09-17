@@ -9,11 +9,13 @@ namespace OneSwiss.Server.Oscript;
 
 [ContextClass("КонтекстОбработчикаЗапроса", "RequestHandlerContext")]
 public class RequestHandlerWrapper(
+    CrServerRequestsHandler requestsHandler,
     CrServerConnection connection,
     HttpContext context,
     string location,
     string repository,
-    XDocument requestBody) : AutoContext<RequestHandlerWrapper>
+    string comment,
+    string requestFile) : AutoContext<RequestHandlerWrapper>
 {
     [ContextProperty("АдресПубликации", "Location", CanWrite = false)]
     public string Location => location;
@@ -22,10 +24,7 @@ public class RequestHandlerWrapper(
     public string Repository => repository;
 
     [ContextProperty("Комментарий", "Comment", CanWrite = false)]
-    public string Comment { get; set; } = string.Empty;
-    
-    [ContextProperty("ТелоЗапроса", "RequestBody", CanWrite = false)]
-    public string RequestBody => requestBody.ToString();
+    public string Comment { get; set; } = comment;
 
     [ContextProperty("ДополнительныеПараметры", "AdditionalParameters", CanWrite = false)]
     public MapImpl AdditionalParameters { get; set; } = new();
@@ -33,7 +32,7 @@ public class RequestHandlerWrapper(
     [ContextMethod("ПередатьЗапрос", "PostRequest")]
     public void PostRequest()
     {
-        CrServerRequestsHandler.Send(connection, context, requestBody, CancellationToken.None).Wait();
+        requestsHandler.Send(repository, connection, context, requestFile, CancellationToken.None).Wait();
     }
     
     [ContextMethod("ВызватьИсключение", "RaiseException")]
