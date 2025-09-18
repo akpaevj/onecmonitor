@@ -112,7 +112,7 @@
 
             SnackBar.ShowSuccess("База данных инициализирована");
 
-            var settings = _editor.Context!.TechLogSettings
+            var settings = await _editor.Context!.TechLogSettings
                 .Include(c => c.Credentials)
                 .Include(c => c.Dbms)
                 .SingleOrDefaultAsync();

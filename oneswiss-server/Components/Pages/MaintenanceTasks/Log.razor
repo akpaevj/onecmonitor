@@ -1,7 +1,9 @@
 @page "/maintenancetasks/{id:guid}/log"
+@using System.ComponentModel.DataAnnotations
 @using Dapper
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.EntityFrameworkCore
+@using OneSwiss.Common.Extensions
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Extensions
 @using OneSwiss.Server.Models
@@ -28,8 +30,14 @@
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Время">@context.TimeStamp</MudTd>
-                <MudTd DataLabel="Уровень"
-                       Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
+                <MudTd DataLabel="Уровень">
+                    @{
+                        var level = GetLogItemLevel(context);
+                        <MudChip T="string" Variant="Variant.Text" Color="@GetLogItemLevelColor(level)">
+                            @level.GetDisplay()
+                        </MudChip>
+                    }
+                </MudTd>
                 <MudTd Style="white-space: pre-wrap" DataLabel="Сообщение">@context.Message</MudTd>
             </RowTemplate>
         </MudTable>
@@ -53,8 +61,14 @@
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="Время">@context.TimeStamp</MudTd>
-                                <MudTd DataLabel="Уровень"
-                                       Class="@(context.IsError ? "mud-error-text" : "mud-info-text")">@(context.IsError ? "Ошибка" : "Инфо")</MudTd>
+                                <MudTd DataLabel="Уровень">
+                                    @{
+                                        var level = GetLogItemLevel(context);
+                                        <MudChip T="string" Variant="Variant.Text" Color="@GetLogItemLevelColor(level)">
+                                            @level.GetDisplay()
+                                        </MudChip>
+                                    }
+                                </MudTd>
                                 <MudTd Style="white-space: pre-wrap" DataLabel="Сообщение">@context.Message</MudTd>
                             </RowTemplate>
                         </MudTable>
@@ -173,5 +187,24 @@
             return Color.Error;
 
         return finished ? Color.Success : Color.Warning;
+    }
+    
+    private static Color GetLogItemLevelColor(LogItemLevel result)
+        => result switch
+        {
+            LogItemLevel.Error => Color.Error,
+            LogItemLevel.Info => Color.Info,
+            _ => throw new ArgumentOutOfRangeException(nameof(result), result, null)
+        };
+
+    private static LogItemLevel GetLogItemLevel(MaintenanceTaskLogItem item)
+        => item.IsError ? LogItemLevel.Error : LogItemLevel.Info;
+    
+    private enum LogItemLevel
+    {
+        [Display(Name = "Ошибка")]
+        Error,
+        [Display(Name = "Инфо")]
+        Info
     }
 }

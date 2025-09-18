@@ -8,7 +8,7 @@
 <MudNavMenu>
     <AuthorizeView>
         <Authorized>
-            <MudNavLink Href="" Class="mt-1 mb-1" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Success"
+            <MudNavLink Href="" Class="mt-1 mb-1" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Secondary"
                         Match="NavLinkMatch.All">Панель
             </MudNavLink>
             @if (context.IsInRoles(Roles.ReadMaintenanceTasks, Roles.WriteMaintenanceTasks))
@@ -46,7 +46,7 @@
             @if (context.IsAdmin())
             {
                 <MudNavGroup Title="Общее" Expanded="true" Icon="@Icons.Material.Filled.Settings"
-                             IconColor="Color.Secondary">
+                             IconColor="Color.Tertiary">
                     <MudNavLink Href="settings">Настройки</MudNavLink>
                     <MudNavLink Href="credentials">Учетные данные и токены</MudNavLink>
                     <MudNavLink Href="dbms">СУБД</MudNavLink>

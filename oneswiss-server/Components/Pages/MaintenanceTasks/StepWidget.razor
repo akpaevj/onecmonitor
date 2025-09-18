@@ -112,13 +112,22 @@
 
         @if (Node.Step.Kind == MaintenanceStepKind.LoadExtension)
         {
-            <MudTextField Class="mb-1" Label="Имя расширения" For="@(() => Node.Step.LoadExtensionStep.ExtensionName)"
-                          @bind-Value="@Node.Step.LoadExtensionStep.ExtensionName"/>
-            <MudSwitch Class="mb-1" Label="Из хранилища" @bind-Value="@Node.Step.LoadExtensionStep.FromConfigRepository"
+            <MudTextField Class="mb-1" Label="Имя расширения" For="@(() => Node.Step.LoadExtensionStep!.ExtensionName)"
+                          @bind-Value="@Node.Step.LoadExtensionStep!.ExtensionName"/>
+            <MudSwitch Class="mb-1" Label="Из хранилища" @bind-Value="@Node.Step.LoadExtensionStep!.FromConfigRepository"
                        @bind-Value:after="SetNeedRenderTask" Color="Color.Primary"/>
 
             @if (Node.Step.LoadExtensionStep.FromConfigRepository)
             {
+                <ItemSelector
+                    @bind-Value="@Node.Step.LoadExtensionStep.BaseConfigurationRepositoryId"
+                    Items="@_context!.ConfigRepositories.Where(c => c.CredentialsId != null).ToList()"
+                    Class="mb-"
+                    ItemValueSelector="arg => arg.Id"
+                    Label="Хранилище базовой конфигурации"
+                    ItemNameSelector="arg => arg.ToString()"
+                    For="@(() => Node.Step.LoadExtensionStep.BaseConfigurationRepositoryId)"/>
+                
                 <MudSelect Class="mb-1" Label="Хранилище"
                            For="@(() => Node.Step.LoadExtensionStep.ConfigurationRepositoryId)"
                            @bind-Value="@Node.Step.LoadExtensionStep.ConfigurationRepositoryId" Clearable="true">

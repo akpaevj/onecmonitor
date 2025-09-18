@@ -6,18 +6,16 @@ namespace OneSwiss.V8.ConfigurationRepository;
 
 public class ConfigRepositoryConnection(string path) : IDisposable
 {
-    private readonly FileDatabaseConnection _connection = new(Path.Combine(path, "1cv8ddb.1CD"));
+    private readonly string _dbpath = Path.Combine(path, "1cv8ddb.1CD");
+    private FileDatabaseConnection? _connection;
 
-    public void Dispose()
-    {
-        _connection.Dispose();
-    }
+    public bool DatabaseExists => File.Exists(_dbpath);
 
     public Guid ReadId()
     {
         OpenIfNeed();
 
-        var firstRow = _connection["DEPOT"].Rows.FirstOrDefault();
+        var firstRow = _connection!["DEPOT"].Rows.FirstOrDefault();
         if (firstRow == null)
             throw new Exception("Таблица DEPOT не содержит записей");
 
@@ -28,7 +26,7 @@ public class ConfigRepositoryConnection(string path) : IDisposable
     {
         OpenIfNeed();
 
-        var table = _connection.Tables.FirstOrDefault(c => c.Name == "USERS");
+        var table = _connection!.Tables.FirstOrDefault(c => c.Name == "USERS");
         if (table == null)
             throw new Exception("Таблица пользователей не обнаружена");
 
@@ -47,7 +45,7 @@ public class ConfigRepositoryConnection(string path) : IDisposable
     {
         OpenIfNeed();
 
-        var table = _connection.Tables.FirstOrDefault(c => c.Name == "VERSIONS");
+        var table = _connection!.Tables.FirstOrDefault(c => c.Name == "VERSIONS");
         if (table == null)
             throw new Exception("Таблица версий не обнаружена");
 
@@ -77,7 +75,7 @@ public class ConfigRepositoryConnection(string path) : IDisposable
     {
         OpenIfNeed();
 
-        var table = _connection.Tables.FirstOrDefault(c => c.Name == "VERSIONS");
+        var table = _connection!.Tables.FirstOrDefault(c => c.Name == "VERSIONS");
         if (table == null)
             throw new Exception("Таблица версий не обнаружена");
 
@@ -92,9 +90,12 @@ public class ConfigRepositoryConnection(string path) : IDisposable
             var version = (decimal)tableRow["VERNUM"];
             if (startVersion > -1 && version < startVersion)
                 continue;
+            
+            var code = (string?)tableRow["CODE"];
 
             yield return new ConfigRepositoryVersion
             {
+                ConfigVersion = code ?? string.Empty,
                 Number = (int)version,
                 Comment = tableRow["COMMENT"]?.ToString() ?? string.Empty,
                 User = u[userId],
@@ -105,7 +106,14 @@ public class ConfigRepositoryConnection(string path) : IDisposable
 
     private void OpenIfNeed()
     {
+        _connection ??= new FileDatabaseConnection(_dbpath);
+
         if (!_connection.Opened)
             _connection.Open();
+    }
+    
+    public void Dispose()
+    {
+        _connection?.Dispose();
     }
 }

@@ -2,7 +2,7 @@ namespace OneSwiss.Server.Services.CrServerProxy;
 
 public class CrServerConnectionsDisconnecter(CrServerConnectionsPool pool, ILogger<CrServerConnectionsDisconnecter> logger) : BackgroundService
 {
-    private const int TtlMinutes = 2;
+    private const int TtlMinutes = 60;
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -10,7 +10,7 @@ public class CrServerConnectionsDisconnecter(CrServerConnectionsPool pool, ILogg
         {
             foreach (var poolServersConnection in pool.ServersConnections.Where(poolServersConnection => !poolServersConnection.Blocked))
             {
-                if (!poolServersConnection.Connected)
+                if (poolServersConnection is { Connected: false, Blocked: false })
                     CloseConnection(poolServersConnection, "соединение завершено сервером хранилищ");
                 else if (poolServersConnection.LastUsingTimestamp != DateTime.MinValue &&
                          poolServersConnection.LastUsingTimestamp > DateTime.Now.AddMinutes(-TtlMinutes))
@@ -26,6 +26,6 @@ public class CrServerConnectionsDisconnecter(CrServerConnectionsPool pool, ILogg
         pool.RemoveServerConnection(connection);
         connection.Dispose();
 
-        logger.LogTrace($"Соединение с сервером хранилищ закрыто. Причина: {reason}");
+        logger.LogTrace("Соединение с сервером хранилищ закрыто. Причина: {Reason}", reason);
     }
 }

@@ -117,6 +117,9 @@ public class AgentConnection : FastConnection
 
         var tasks = await dbContext.GitSyncTasks
             .AsNoTracking()
+            .Include(c => c.Items).ThenInclude(c => c.BaseConfigurationRepository.Agent)
+            .Include(c => c.Items).ThenInclude(c => c.BaseConfigurationRepository.Credentials)
+            .Include(c => c.Items).ThenInclude(c => c.BaseConfigurationRepository.Users)
             .Include(c => c.Items).ThenInclude(c => c.ConfigurationRepository.Agent)
             .Include(c => c.Items).ThenInclude(c => c.ConfigurationRepository.Credentials)
             .Include(c => c.Items).ThenInclude(c => c.ConfigurationRepository.Users)

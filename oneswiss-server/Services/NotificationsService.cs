@@ -33,11 +33,11 @@ public class NotificationsService(
         messageBuilder.AppendLine($"""
                                    💬 Сообщение:
                                    ```
-                                   {report!.ErrorInfo.ApplicationErrorInfo.Errors[0].Text}
+                                   {Markdown.Escape(report!.ErrorInfo.ApplicationErrorInfo.Errors[0].Text)}
                                    ```
                                    👣 Стек:
                                    ```js
-                                   {report.GetStack()}
+                                   {Markdown.Escape(report.GetStack())}
                                    ```
                                    """);
 
@@ -105,7 +105,7 @@ public class NotificationsService(
                 return;
 
             message = $"""
-                       ‼️ Синхронизация хранилища "{configRepository!.Name}" остановлена
+                       ‼️ Синхронизация хранилища "{Markdown.Escape(configRepository.Name)}" остановлена
                        ℹ️ Репозиторий Git:
                        {Markdown.Escape(item.GitRepository.Name)}
                        📝 Причина: 

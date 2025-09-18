@@ -99,6 +99,8 @@ public class AgentsConnectionsManager(
                 .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.ConfigurationRepository.Agent)
                 .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.ConfigurationRepository.Credentials)
                 .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.File)
+                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.BaseConfigurationRepository.Agent)
+                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.BaseConfigurationRepository.Credentials)
                 .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.ConfigurationRepository.Agent)
                 .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.ConfigurationRepository.Credentials)
                 .Include(c => c.Steps).ThenInclude(c => c.UpdateConfigurationStep.File)

@@ -115,9 +115,12 @@ public class GitSyncTaskProcessor : IDisposable
             var repoFolder = Path.Combine(_repoFolder, foldersName);
 
             var platform = await _agentsResourcesProvider.GetCrServerPlatform(item.ConfigurationRepository, _cts.Token);
+            var basePlatform = item.BaseConfigurationRepository != null
+                ? await _agentsResourcesProvider.GetCrServerPlatform(item.BaseConfigurationRepository, _cts.Token)
+                : null;
 
             var itemProcessor =
-                new GitSyncTaskItemProcessor(platform, item, ibcmdDataFolder, ibFolder, repoFolder, _itemLogger);
+                new GitSyncTaskItemProcessor(platform, basePlatform, item, ibcmdDataFolder, ibFolder, repoFolder, _itemLogger);
 
             // ReSharper disable once AsyncVoidMethod
             itemProcessor.Stopped += async void (_, args) =>

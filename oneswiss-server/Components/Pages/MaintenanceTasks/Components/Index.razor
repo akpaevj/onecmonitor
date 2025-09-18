@@ -1,4 +1,8 @@
+@using System.ComponentModel
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
 @using Microsoft.AspNetCore.Components.Authorization
+@using OneSwiss.Common.Extensions
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Shared
 @using OneSwiss.Server.Extensions
@@ -19,7 +23,7 @@
                           ItemsSelector="ItemsSelector"
                           ReadOnly="@authState.IsReadOnly(Roles.WriteMaintenanceTasks)">
         <TableActionsContent>
-            <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="CreateFromTemplate" Class="mb-3">Из
+            <MudButton Color="Color.Tertiary" Variant="Variant.Outlined" OnClick="CreateFromTemplate" Class="mb-3">Из
                 шаблона
             </MudButton>
         </TableActionsContent>
@@ -28,7 +32,7 @@
             @if (!IsTemplate)
             {
                 <MudTh>Время начала</MudTh>
-                <MudTh>Есть ошибки</MudTh>
+                <MudTh>Состояние</MudTh>
                 <MudTh>Время окончания</MudTh>
             }
         </ColumnsContent>
@@ -36,10 +40,15 @@
             <MudTd DataLabel="Описание">@context.Description</MudTd>
             @if (!IsTemplate)
             {
-                <MudTd DataLabel="Время начала">@context.StartDateTime</MudTd>
-                <MudTd Class="@(context.IsFaulted ? "mud-error-text" : "mud-success-text")"
-                       DataLabel="Есть ошибки">@context.IsFaulted</MudTd>
-                <MudTd DataLabel="Время окончания">@context.FinishDateTime</MudTd>
+                var state = GetTaskState(context);
+                
+                <MudTd DataLabel="Время начала">@GetDateTimePresentation(context.StartDateTime)</MudTd>
+                <MudTd DataLabel="Состояние">
+                    <MudChip T="string" Variant="Variant.Text" Color="@TaskStateColor(state)">
+                        @state.GetDisplay()
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Время окончания">@GetDateTimePresentation(context.FinishDateTime)</MudTd>
             }
         </RowTemplate>
         <RowActionsContent>
@@ -120,5 +129,41 @@
     private IQueryable<MaintenanceTask> ItemsSelector(IQueryable<MaintenanceTask> arg)
     {
         return arg.Where(c => c.IsTemplate == IsTemplate);
+    }
+
+    private static string GetDateTimePresentation(DateTime dt)
+        => dt == DateTime.MinValue ? string.Empty : dt.ToString(CultureInfo.CurrentCulture);
+
+    private static Color TaskStateColor(TaskResult result)
+        => result switch
+        {
+            TaskResult.New => Color.Info,
+            TaskResult.Started => Color.Warning,
+            TaskResult.FinishedWithErrors => Color.Error,
+            TaskResult.FinishedSuccessfully => Color.Success,
+            _ => throw new ArgumentOutOfRangeException(nameof(result), result, null)
+        };
+    
+    private enum TaskResult
+    {
+        [Display(Name = "Новая")]
+        New,
+        [Display(Name = "Выполняется")]
+        Started,
+        [Display(Name = "Завершена с ошибками")]
+        FinishedWithErrors,
+        [Display(Name = "Завершена успешно")]
+        FinishedSuccessfully
+    }
+
+    private static TaskResult GetTaskState(MaintenanceTask task)
+    {
+        if (task.StartDateTime == DateTime.MinValue)
+            return TaskResult.New;
+        
+        if (task.FinishDateTime == DateTime.MinValue)
+            return TaskResult.Started;
+            
+        return task.IsFaulted ? TaskResult.FinishedWithErrors : TaskResult.FinishedSuccessfully;
     }
 }

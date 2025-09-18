@@ -26,8 +26,12 @@ public class LoadExtensionStepDto
     [ContextProperty("Файл", "File")]
     [Key(4)]
     public FileDto? File { get; set; }
+    
+    [ContextProperty("ХранилищеБазовойКонфигурации", "BaseConfigurationRepository")]
+    [Key(5)]
+    public ConfigurationRepositoryDto? BaseConfigurationRepository { get; set; }
 
     [ContextProperty("ХранилищеКонфигурации", "ConfigurationRepository")]
-    [Key(5)]
+    [Key(6)]
     public ConfigurationRepositoryDto? ConfigurationRepository { get; set; }
 }
