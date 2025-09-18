@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Google.Protobuf;
 using OneSwiss.Agent.Extensions;
 using OneSwiss.Agent.Helpers;
 using OneSwiss.Agent.Oscript;
@@ -455,6 +456,13 @@ public class MaintenanceTaskExecutor : BackgroundService
                 }
                 case MaintenanceStepKind.LoadExtension when step.LoadExtensionStep!.FromConfigRepository:
                 {
+                    var basePlatform = await _agentsResourcesProvider.GetCrServerPlatform(
+                        step.LoadExtensionStep.BaseConfigurationRepository!.Agent.Id,
+                        step.LoadExtensionStep.BaseConfigurationRepository.Port,
+                        cancellationToken);
+                    
+                    result.Add(step.LoadExtensionStep.BaseConfigurationRepository.Id, basePlatform);
+                    
                     var platform = await _agentsResourcesProvider.GetCrServerPlatform(
                         step.LoadExtensionStep.ConfigurationRepository!.Agent.Id,
                         step.LoadExtensionStep.ConfigurationRepository.Port,
@@ -488,9 +496,15 @@ public class MaintenanceTaskExecutor : BackgroundService
                 switch (c.Kind)
                 {
                     case MaintenanceStepKind.LoadConfiguration when c.LoadConfigurationStep!.FromConfigRepository:
-                        return (Step: c, c.LoadConfigurationStep!.ConfigurationRepository, Version: c.LoadConfigurationStep!.LoadExactVersion ? c.LoadConfigurationStep!.Version : -1);
+                        return (Step: c, c.LoadConfigurationStep!.ConfigurationRepository,
+                            Version: c.LoadConfigurationStep!.LoadExactVersion ? c.LoadConfigurationStep!.Version : -1,
+                            Extension: string.Empty,
+                            BaseConfigurationRepository: null);
                     case MaintenanceStepKind.LoadExtension when c.LoadExtensionStep!.FromConfigRepository:
-                        return (Step: c, c.LoadExtensionStep!.ConfigurationRepository, Version: c.LoadExtensionStep!.LoadExactVersion ? c.LoadExtensionStep!.Version : -1);
+                        return (Step: c, c.LoadExtensionStep!.ConfigurationRepository,
+                            Version: c.LoadExtensionStep!.LoadExactVersion ? c.LoadExtensionStep!.Version : -1,
+                            Extension: c.LoadExtensionStep.ExtensionName,
+                            c.LoadExtensionStep!.BaseConfigurationRepository);
                     default:
                         throw new NotImplementedException();
                 }
@@ -501,7 +515,7 @@ public class MaintenanceTaskExecutor : BackgroundService
 
         await SendTaskLog(task, "Выгрузка конфигураций из хранилищ", false, false, cancellationToken);
 
-        Parallel.ForEach(fromRepsSteps, stepInfo =>
+        await Parallel.ForEachAsync(fromRepsSteps, cancellationToken, async (stepInfo, token) =>
         {
             var isExtension = stepInfo.Step.Kind == MaintenanceStepKind.LoadExtension;
             var extension = isExtension ? "cfe" : "cf";
@@ -516,17 +530,36 @@ public class MaintenanceTaskExecutor : BackgroundService
 
                 OnecV8BatchMode.CreateFileInfoBase(platform, tempIbPath);
 
+                if (!string.IsNullOrEmpty(stepInfo.Extension) && stepInfo.BaseConfigurationRepository != null)
+                {
+                    var basePlatform = reposPlatforms[stepInfo.BaseConfigurationRepository!.Id];
+                    
+                    var baseAddress =
+                        $"tcp://{stepInfo.BaseConfigurationRepository!.Host}:{stepInfo.BaseConfigurationRepository.Port}/{stepInfo.BaseConfigurationRepository.Name}";
+                    
+                    using var baseBatch = OnecV8BatchMode.CreateDesignerBatch(basePlatform, tempIbPath);
+                    
+                    baseBatch.UpdateConfigFromRepository(
+                        baseAddress,
+                        stepInfo.BaseConfigurationRepository.Credentials?.User ?? "",
+                        stepInfo.BaseConfigurationRepository.Credentials?.Password ?? "");
+
+                    await IbcmdWrapper.AddExtension(basePlatform, string.Empty, tempIbPath, stepInfo.Extension, "UL");
+                }
+                
                 var configPath = Path.Join(Path.GetTempPath(), $"{Guid.NewGuid()}.{extension}");
                 var address =
                     $"tcp://{stepInfo.ConfigurationRepository.Host}:{stepInfo.ConfigurationRepository.Port}/{stepInfo.ConfigurationRepository.Name}";
 
                 using var batch = OnecV8BatchMode.CreateDesignerBatch(platform, tempIbPath);
+                
                 batch.DumpConfigRepository(
                     configPath,
                     address,
                     stepInfo.ConfigurationRepository.Credentials!.User,
                     stepInfo.ConfigurationRepository.Credentials!.Password,
-                    stepInfo.Version);
+                    stepInfo.Version,
+                    stepInfo.Extension);
 
                 var file = new FileDto
                 {

@@ -15,11 +15,15 @@ public class LoadExtensionStep
     public string ExtensionName { get; set; } = string.Empty;
 
     public Guid? FileId { get; set; }
+    public Guid? BaseConfigurationRepositoryId { get; set; }
     public Guid? ConfigurationRepositoryId { get; set; }
 
     [ForeignKey(nameof(FileId))] 
     public File? File { get; set; }
 
+    [ForeignKey(nameof(BaseConfigurationRepositoryId))]
+    public ConfigurationRepository? BaseConfigurationRepository { get; set; }
+    
     [ForeignKey(nameof(ConfigurationRepositoryId))]
     public ConfigurationRepository? ConfigurationRepository { get; set; }
 }

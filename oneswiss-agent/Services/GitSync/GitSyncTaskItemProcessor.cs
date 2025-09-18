@@ -9,6 +9,7 @@ namespace OneSwiss.Agent.Services.GitSync;
 
 public class GitSyncTaskItemProcessor(
     V8Platform platform,
+    V8Platform? basePlatform,
     GitSyncTaskItemDto item,
     string dataFolder,
     string ibFolder,
@@ -17,6 +18,10 @@ public class GitSyncTaskItemProcessor(
     : IDisposable
 {
     private string _extensionName = string.Empty;
+    
+    private readonly string _baseRepoConnectionString = item.BaseConfigurationRepository != null ?
+        $"tcp://{item.BaseConfigurationRepository.Host}:{item.BaseConfigurationRepository.Port}/{item.BaseConfigurationRepository.Name}" : string.Empty;
+    
     private readonly string _repoConnectionString =
         $"tcp://{item.ConfigurationRepository.Host}:{item.ConfigurationRepository.Port}/{item.ConfigurationRepository.Name}";
 
@@ -84,10 +89,39 @@ public class GitSyncTaskItemProcessor(
         ConfigRepositoryReportItem version,
         ConfigRepositoryUserDto user)
     {
-        using var batch = OnecV8BatchMode.CreateDesignerBatch(platform, IbFolder);
-
+        if (!string.IsNullOrEmpty(_baseRepoConnectionString))
+        {
+            try
+            {
+                using var batch = OnecV8BatchMode.CreateDesignerBatch(basePlatform!, IbFolder);
+            
+                logger.LogTrace($"Начало загрузки версии базовой конфигурации из хранилища - {item.ExportFolder}");
+            
+                batch.UpdateConfigFromRepository(
+                    _baseRepoConnectionString,
+                    TaskItem.BaseConfigurationRepository!.Credentials?.User ?? "",
+                    TaskItem.BaseConfigurationRepository.Credentials?.Password ?? "",
+                    string.Empty,
+                    string.Empty,
+                    version.Version);
+            
+                logger.LogTrace($"Загрузка версии базовой конфигурации из хранилища окончена - {item.ExportFolder}");
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Ошибка обновления базовой конфигурации из хранилища");
+                throw;
+            }
+        }
+        
         try
         {
+            using var batch = OnecV8BatchMode.CreateDesignerBatch(platform, IbFolder);
+            
             logger.LogTrace($"Начало загрузки версии конфигурации из хранилища - {item.ExportFolder}");
             
             batch.UpdateConfigFromRepository(
@@ -107,7 +141,7 @@ public class GitSyncTaskItemProcessor(
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Ошибка обновления конфигурации из файлов");
+            logger.LogError(e, "Ошибка обновления конфигурации из хранилища");
             throw;
         }
         
@@ -115,13 +149,13 @@ public class GitSyncTaskItemProcessor(
         
         try
         {
-            logger.LogTrace($"Начало выгрузки файлов конфигурации - {item.ExportFolder}");
+            logger.LogTrace("Начало выгрузки файлов конфигурации - {ItemExportFolder}", item.ExportFolder);
             
             await IbcmdWrapper.ExportXmlFiles(platform, dataFolder, IbFolder, RepoFolder, _extensionName);
             
-            logger.LogTrace($"Выгрузка файлов конфигурации окончена - {item.ExportFolder}");
+            logger.LogTrace("Выгрузка файлов конфигурации окончена - {ItemExportFolder}", item.ExportFolder);
             
-            logger.LogTrace($"Начало фиксации изменений в git - {item.ExportFolder}");
+            logger.LogTrace("Начало фиксации изменений в git - {ItemExportFolder}", item.ExportFolder);
 
             await versionUploadedFunc(new VersionUploadedArgs
             {
@@ -129,7 +163,7 @@ public class GitSyncTaskItemProcessor(
                 User = user
             });
             
-            logger.LogTrace($"Фиксация изменений в git окончена - {item.ExportFolder}");
+            logger.LogTrace("Фиксация изменений в git окончена - {ItemExportFolder}", item.ExportFolder);
 
             ThrowIfCancelled();
         }

@@ -48,7 +48,7 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
             }
             catch (Exception ex)
             {
-                logger.LogError(ex,
+                logger.LogWarning(ex,
                     "Ошибка подключения к серверу. Следующая попытка подключения будет выполнена через 10 сек");
                 await Task.Delay(10 * 1000, cancellationToken);
             }
@@ -60,7 +60,7 @@ public class ServerConnection(ILogger<ServerConnection> logger) : FastConnection
 
     private async Task Reconnect(CancellationToken cancellationToken)
     {
-        logger.LogTrace($"Попытка подключения к {_serverAddress}");
+        logger.LogTrace("Попытка подключения к {ServerAddress}", _serverAddress);
 
         Socket?.Dispose();
         Socket = null;

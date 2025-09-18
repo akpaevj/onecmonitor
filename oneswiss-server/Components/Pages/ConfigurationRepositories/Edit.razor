@@ -29,7 +29,7 @@
             ItemNameSelector="arg => arg.Name"
             Label="Учетные данные"
             For="@(() => _editor.Model!.CredentialsId)"/>
-        <MudTable T="ConfigurationRepositoryUser" Items="@_editor.Model!.Users">
+        <MudTable T="ConfigurationRepositoryUser" Items="@_editor.Model!.Users" Dense="true">
             <ToolBarContent>
                 <MudText>Пользователи</MudText>
             </ToolBarContent>

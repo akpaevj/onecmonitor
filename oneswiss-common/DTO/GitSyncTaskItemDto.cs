@@ -14,13 +14,17 @@ public class GitSyncTaskItemDto
     [ContextProperty("ХранилищеКонфигурации", "ConfigurationRepository")]
     [Key(1)]
     public ConfigurationRepositoryDto ConfigurationRepository { get; set; }
+    
+    [ContextProperty("ХранилищеБазовойКонфигурации", "BaseConfigurationRepository")]
+    [Key(2)]
+    public ConfigurationRepositoryDto? BaseConfigurationRepository { get; set; }
 
     [ContextProperty("Активна", "IsActive")]
-    [Key(2)]
+    [Key(3)]
     public bool IsActive { get; set; }
     
     [ContextProperty("ЭтоРасширение", "IsExtension")]
-    [Key(3)]
+    [Key(4)]
     public bool IsExtension { get; set; }
 
     [ContextProperty("Имя", "Name")]
