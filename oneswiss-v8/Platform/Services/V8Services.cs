@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.ServiceProcess;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
+using OneSwiss.V8.ConfigurationRepository;
 using OneSwiss.V8.Extensions;
 
 namespace OneSwiss.V8.Platform.Services;
@@ -461,6 +462,11 @@ public static partial class V8Services
 
         return Directory
             .GetDirectories(directory)
+            .Where(c =>
+            {
+                using var conn = new ConfigRepositoryConnection(c);
+                return conn.DatabaseExists;
+            })
             .Select(Path.GetFileName)
             .ToList()!;
     }
