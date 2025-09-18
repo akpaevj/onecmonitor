@@ -290,9 +290,11 @@ public abstract class FastConnection(ILogger<FastConnection> logger) : IDisposab
                     }
                     else if (message.Header.Type is MessageType.DataStreamChunk)
                     {
+                        var data = MessagePackSerializer.Deserialize<byte[]>(message.Data, null, _cancellationToken);
+                        
                         logger.LogTrace(
-                            $"Для потока вызова {header.CallId} получена часть бинарных данных: {message.Data.Length} байт");
-                        await stream.WriteAsync(message.Data, _cancellationToken);
+                            $"Для потока вызова {header.CallId} получена часть бинарных данных: {data.Length} байт");
+                        await stream.WriteAsync(data, _cancellationToken);
                     }
                 }
                 else if (_calls.TryGetValue(message.Header.CallId, out var cts))
