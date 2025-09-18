@@ -36,7 +36,7 @@ public class TokenRetriever(IConfiguration configuration, ILogger<TokenRetriever
 
             var token = await GetAccessTokenAsync();
             _cachedToken = token.AccessToken!;
-            _tokenExpiry = DateTime.Now.AddMinutes(token.ExpiresIn - 5);
+            _tokenExpiry = DateTime.Now.AddSeconds(token.ExpiresIn - 5);
 
             return token.AccessToken!;
         }
