@@ -92,12 +92,12 @@ public class EventLogExporter : IAsyncDisposable
             {
                 // ignore
             }
-            
-            if (_repository is not null)
-            {
-                _repository.Dispose();
-                _repository = null;
-            }
+        }
+        
+        if (_repository is not null)
+        {
+            _repository.Dispose();
+            _repository = null;
         }
         
         _eventsBatchBlock = null;
