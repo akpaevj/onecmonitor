@@ -11,7 +11,7 @@ public class BracketsEventLogReader(
     ILogger<IEventLogReader> logger)
     : IEventLogReader
 {
-    private CancellationTokenSource _cts;
+    private CancellationTokenSource? _cts;
     private readonly LgfDataProvider _lgfDataProvider = new(Path.Combine(infoBaseInfo.LogPath, "1Cv8.lgf"));
 
     public event EventHandler? Stopped;
@@ -132,6 +132,8 @@ public class BracketsEventLogReader(
 
     public void Dispose()
     {
+        _cts?.Cancel();
+        _cts?.Dispose();
         _lgfDataProvider.Dispose();
     }
 }

@@ -15,7 +15,7 @@ namespace OneSwiss.Server.Migrations
                 table: "EventLogSettings",
                 type: "INTEGER",
                 nullable: false,
-                defaultValue: 0);
+                defaultValue: 365);
 
             migrationBuilder.CreateTable(
                 name: "EventLogExportItems",

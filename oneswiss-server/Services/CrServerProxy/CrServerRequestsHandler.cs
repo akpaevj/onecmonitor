@@ -185,10 +185,12 @@ public class CrServerRequestsHandler : IDisposable
             _logger.LogTrace("Блокировка соединения к серверу хранилищ- {RepositoryName}", repository.Name);
             connection.BlockConnection();
 
+            string? filePath = null;
+            
             try
             {
                 _logger.LogTrace("Начало преобразования документа запроса - {RepositoryName}", repository.Name);
-                var filePath = Path.GetTempFileName();
+                filePath = Path.GetTempFileName();
                 using var processor = new RequestStreamProcessor(filePath, repository.Name);
                 var details = await processor.ProcessAsync(context, cancellationToken);
                 _logger.LogTrace("Преобразование документа запроса завершено - {RepositoryName}", repository.Name);
@@ -223,6 +225,9 @@ public class CrServerRequestsHandler : IDisposable
             {
                 _logger.LogTrace("Разблокировка соединения к серверу хранилищ- {RepositoryName}", repository.Name);
                 connection.UnblockConnection();
+                
+                if (!string.IsNullOrEmpty(filePath))
+                    try { System.IO.File.Delete(filePath); } catch { /* ignore */ }
             }
         }
         catch (Exception e)

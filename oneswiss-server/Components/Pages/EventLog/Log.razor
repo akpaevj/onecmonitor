@@ -226,12 +226,6 @@
         return string.Join(" AND ", filters);
     }
 
-    public void Dispose()
-    {
-        _cts?.Dispose();
-        _repository?.Dispose();
-    }
-
     private string RowClassFunc(EventLogItem arg1, int arg2)
     {
         return _selectedItem?.Id == arg1.Id ? "selected-eventlogitem" : string.Empty;
@@ -275,7 +269,8 @@
     
     private async Task AddFieldFilter((string Field, string Value) obj)
     {
-        var additionalText = $"{obj.Field} = '{obj.Value}'";
+        var safeValue = obj.Value.Replace("'", "''");
+        var additionalText = $"{obj.Field} = '{safeValue}'";
 
         if (_filter.Contains(additionalText))
             return;
@@ -290,5 +285,13 @@
 
     private async Task<List<string>> GetEventsTypes(string filter)
         => await _repository!.GetEventsTypes(filter, CancellationToken.None);
+    
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _context?.Dispose();
+        _repository?.Dispose();
+    }
 
 }

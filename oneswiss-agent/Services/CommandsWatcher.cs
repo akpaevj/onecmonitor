@@ -44,13 +44,12 @@ internal class CommandsWatcher
         GitSyncTasksManager gitSyncTasksManager, 
         MonitorQueue<EventLogSettingsDto> eventLogSettingsQueue)
     {
-        var scope = serviceProvider.CreateAsyncScope();
         _racLogger = racLogger;
         _gitSyncTasksQueue = gitSyncTasksQueue;
         _gitSyncTasksManager = gitSyncTasksManager;
         _eventLogSettingsQueue = eventLogSettingsQueue;
         _rasHolder = rasHolder;
-        _server = scope.ServiceProvider.GetRequiredService<OneSwissConnection>();
+        _server = serviceProvider.GetRequiredService<OneSwissConnection>();
         _techLogRepositoryManager = techLogRepositoryManager;
         _v8PlatformsProvider = v8PlatformsProvider;
         _v8ServicesProvider = v8ServicesProvider;
