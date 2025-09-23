@@ -201,7 +201,7 @@ public class MaintenanceTaskExecutor : BackgroundService
 
                     if (hasStepsForDesigner && canUseDesignerAgent)
                     {
-                        agent = context.StartDesignerAgent(Path.GetDirectoryName(localFilesFolder)!);
+                        agent = await context.StartDesignerAgent(Path.GetDirectoryName(localFilesFolder)!);
 
                         context.DesignerAgentClient = new DesignerAgentClient(
                             context.InfoBase.Credentials?.User ?? "",
@@ -334,7 +334,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                 await LoadExtension(context);
                 break;
             case MaintenanceStepKind.UpdateConfiguration:
-                UpdateConfiguration(context);
+                await UpdateConfiguration(context);
                 break;
             case MaintenanceStepKind.LoadConfiguration:
                 await LoadConfiguration(context);
@@ -343,7 +343,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                 await DeleteExtension(context);
                 break;
             case MaintenanceStepKind.StartExternalDataProcessor:
-                StartExternalDataProcessor(context);
+                await StartExternalDataProcessor(context);
                 break;
             case MaintenanceStepKind.ExecuteOneScript:
                 ExecuteOneScript(context);
@@ -528,7 +528,7 @@ public class MaintenanceTaskExecutor : BackgroundService
 
                 var platform = reposPlatforms[stepInfo.ConfigurationRepository!.Id];
 
-                OnecV8BatchMode.CreateFileInfoBase(platform, tempIbPath);
+                await OnecV8BatchMode.CreateFileInfoBase(platform, tempIbPath);
 
                 if (!string.IsNullOrEmpty(stepInfo.Extension) && stepInfo.BaseConfigurationRepository != null)
                 {
@@ -539,7 +539,7 @@ public class MaintenanceTaskExecutor : BackgroundService
                     
                     using var baseBatch = OnecV8BatchMode.CreateDesignerBatch(basePlatform, tempIbPath);
                     
-                    baseBatch.UpdateConfigFromRepository(
+                    await baseBatch.UpdateConfigFromRepository(
                         baseAddress,
                         stepInfo.BaseConfigurationRepository.Credentials?.User ?? "",
                         stepInfo.BaseConfigurationRepository.Credentials?.Password ?? "");
@@ -553,7 +553,7 @@ public class MaintenanceTaskExecutor : BackgroundService
 
                 using var batch = OnecV8BatchMode.CreateDesignerBatch(platform, tempIbPath);
                 
-                batch.DumpConfigRepository(
+                await batch.DumpConfigRepository(
                     configPath,
                     address,
                     stepInfo.ConfigurationRepository.Credentials!.User,
@@ -686,7 +686,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         else
         {
             using var batch = context.GetBatchDesigner();
-            batch.LoadExtension(
+            await batch.LoadExtension(
                 context.Step.LoadExtensionStep.ExtensionName,
                 filePath,
                 context.InfoBase!.Credentials?.User ?? "",
@@ -798,7 +798,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         else
         {
             using var batchGet = context.GetBatchDesigner();
-            var allExtensions = batchGet.GetExtensionsList(
+            var allExtensions = await batchGet.GetExtensionsList(
                 context.InfoBase!.Credentials?.User ?? "",
                 context.InfoBase.Credentials?.Password ?? "",
                 context.AccessCode,
@@ -810,7 +810,7 @@ public class MaintenanceTaskExecutor : BackgroundService
             foreach (var extension in extensionsToDeleting)
             {
                 using var batchDeleting = context.GetBatchDesigner();
-                batchDeleting.DeleteExtension(
+                await batchDeleting.DeleteExtension(
                     extension,
                     context.InfoBase.Credentials?.User ?? "",
                     context.InfoBase.Credentials?.Password ?? "",
@@ -838,7 +838,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         else
         {
             using var batch = context.GetBatchDesigner();
-            batch.LoadConfiguration(
+            await batch.LoadConfiguration(
                 filePath,
                 context.InfoBase!.Credentials?.User ?? "",
                 context.InfoBase.Credentials?.Password ?? "",
@@ -849,12 +849,12 @@ public class MaintenanceTaskExecutor : BackgroundService
         }
     }
 
-    private static void UpdateConfiguration(MaintenanceStepContext context)
+    private static async Task UpdateConfiguration(MaintenanceStepContext context)
     {
         var filePath = context.Files[context.Step.UpdateConfigurationStep!.File.Id];
 
         using var batch = context.GetBatchDesigner();
-        batch.UpdateConfiguration(
+        await batch.UpdateConfiguration(
             filePath,
             context.InfoBase!.Credentials?.User ?? "",
             context.InfoBase.Credentials?.Password ?? "",
@@ -864,12 +864,12 @@ public class MaintenanceTaskExecutor : BackgroundService
         AddStepLogItem(context, batch.OutFileContent);
     }
 
-    private static void StartExternalDataProcessor(MaintenanceStepContext context)
+    private static async Task StartExternalDataProcessor(MaintenanceStepContext context)
     {
         var filePath = context.Files[context.Step.StartExternalDataProcessorStep!.File.Id];
 
         using var batch = context.GetBatchEnterprise();
-        batch.ExecuteExternalDataProcessor(
+        await batch.ExecuteExternalDataProcessor(
             filePath,
             context.InfoBase!.Credentials?.User ?? "",
             context.InfoBase.Credentials?.Password ?? "",

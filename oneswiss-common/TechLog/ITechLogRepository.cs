@@ -23,6 +23,6 @@ public interface ITechLogRepository : IDisposable
     Task<List<TjEvent>> GetTjEvents(int count, int offset, string filter = "",
         CancellationToken cancellationToken = default);
 
-    Task<int> GetTjEventsCount(string filter = "", CancellationToken cancellationToken = default);
+    Task<int> GetRowsCount(string filter = "", CancellationToken cancellationToken = default);
     Task DeleteTechLogSeanceData(string seanceId, CancellationToken cancellationToken = default);
 }

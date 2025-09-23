@@ -157,6 +157,8 @@ public class CrServerRequestsHandler : IDisposable
     
     public async Task HandleRequest(HttpContext context, string rawLocation, CancellationToken cancellationToken)
     {
+        _logger.LogTrace("Обработка входящего запроса - {Location}", rawLocation);
+        
         var location = rawLocation.ToUpper().Trim('/').Trim('\\');
         
         if (!_serviceEnabled)
@@ -179,12 +181,16 @@ public class CrServerRequestsHandler : IDisposable
         try
         {
             var connection = _connectionsPool.GetServerConnection(context, repository);
+            
+            _logger.LogTrace("Блокировка соединения к серверу хранилищ- {RepositoryName}", repository.Name);
             connection.BlockConnection();
 
+            string? filePath = null;
+            
             try
             {
                 _logger.LogTrace("Начало преобразования документа запроса - {RepositoryName}", repository.Name);
-                var filePath = Path.GetTempFileName();
+                filePath = Path.GetTempFileName();
                 using var processor = new RequestStreamProcessor(filePath, repository.Name);
                 var details = await processor.ProcessAsync(context, cancellationToken);
                 _logger.LogTrace("Преобразование документа запроса завершено - {RepositoryName}", repository.Name);
@@ -196,7 +202,8 @@ public class CrServerRequestsHandler : IDisposable
                         location,
                         repository.Name,
                         details.Comment ?? string.Empty,
-                        filePath);
+                        filePath,
+                        _logger);
                 
                 _logger.LogTrace("Начало обработки запроса - {RepositoryName}", repository.Name);
                 
@@ -216,7 +223,11 @@ public class CrServerRequestsHandler : IDisposable
             }
             finally
             {
+                _logger.LogTrace("Разблокировка соединения к серверу хранилищ- {RepositoryName}", repository.Name);
                 connection.UnblockConnection();
+                
+                if (!string.IsNullOrEmpty(filePath))
+                    try { System.IO.File.Delete(filePath); } catch { /* ignore */ }
             }
         }
         catch (Exception e)

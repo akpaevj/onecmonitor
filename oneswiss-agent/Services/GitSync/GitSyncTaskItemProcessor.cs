@@ -30,7 +30,7 @@ public class GitSyncTaskItemProcessor(
     public EventHandler<Exception>? Stopped;
     public string RepoFolder { get; } = repoFolder;
     public string IbFolder { get; } = ibFolder;
-    public GitSyncTaskItemDto TaskItem { get; set; } = item;
+    public GitSyncTaskItemDto TaskItem { get; } = item;
 
     public async Task Start(Func<VersionUploadedArgs, Task> versionUploadedFunc, Func<GitSyncTaskItemProcessor, Task<int>> readVersionFunc, CancellationToken stoppingToken)
     {
@@ -95,9 +95,9 @@ public class GitSyncTaskItemProcessor(
             {
                 using var batch = OnecV8BatchMode.CreateDesignerBatch(basePlatform!, IbFolder);
             
-                logger.LogTrace($"Начало загрузки версии базовой конфигурации из хранилища - {item.ExportFolder}");
+                logger.LogTrace($"Начало загрузки версии базовой конфигурации из хранилища - {TaskItem.ExportFolder}");
             
-                batch.UpdateConfigFromRepository(
+                await batch.UpdateConfigFromRepository(
                     _baseRepoConnectionString,
                     TaskItem.BaseConfigurationRepository!.Credentials?.User ?? "",
                     TaskItem.BaseConfigurationRepository.Credentials?.Password ?? "",
@@ -105,7 +105,7 @@ public class GitSyncTaskItemProcessor(
                     string.Empty,
                     version.Version);
             
-                logger.LogTrace($"Загрузка версии базовой конфигурации из хранилища окончена - {item.ExportFolder}");
+                logger.LogTrace($"Загрузка версии базовой конфигурации из хранилища окончена - {TaskItem.ExportFolder}");
             }
             catch (OperationCanceledException)
             {
@@ -122,9 +122,9 @@ public class GitSyncTaskItemProcessor(
         {
             using var batch = OnecV8BatchMode.CreateDesignerBatch(platform, IbFolder);
             
-            logger.LogTrace($"Начало загрузки версии конфигурации из хранилища - {item.ExportFolder}");
+            logger.LogTrace($"Начало загрузки версии конфигурации из хранилища - {TaskItem.ExportFolder}");
             
-            batch.UpdateConfigFromRepository(
+            await batch.UpdateConfigFromRepository(
                 _repoConnectionString,
                 TaskItem.ConfigurationRepository.Credentials?.User ?? "",
                 TaskItem.ConfigurationRepository.Credentials?.Password ?? "",
@@ -133,7 +133,7 @@ public class GitSyncTaskItemProcessor(
                 version.Version,
                 _extensionName);
             
-            logger.LogTrace($"Загрузка версии конфигурации из хранилища окончена - {item.ExportFolder}");
+            logger.LogTrace($"Загрузка версии конфигурации из хранилища окончена - {TaskItem.ExportFolder}");
         }
         catch (OperationCanceledException)
         {
@@ -149,13 +149,13 @@ public class GitSyncTaskItemProcessor(
         
         try
         {
-            logger.LogTrace("Начало выгрузки файлов конфигурации - {ItemExportFolder}", item.ExportFolder);
+            logger.LogTrace("Начало выгрузки файлов конфигурации - {ItemExportFolder}", TaskItem.ExportFolder);
             
             await IbcmdWrapper.ExportXmlFiles(platform, dataFolder, IbFolder, RepoFolder, _extensionName);
             
-            logger.LogTrace("Выгрузка файлов конфигурации окончена - {ItemExportFolder}", item.ExportFolder);
+            logger.LogTrace("Выгрузка файлов конфигурации окончена - {ItemExportFolder}", TaskItem.ExportFolder);
             
-            logger.LogTrace("Начало фиксации изменений в git - {ItemExportFolder}", item.ExportFolder);
+            logger.LogTrace("Начало фиксации изменений в git - {ItemExportFolder}", TaskItem.ExportFolder);
 
             await versionUploadedFunc(new VersionUploadedArgs
             {
@@ -163,7 +163,7 @@ public class GitSyncTaskItemProcessor(
                 User = user
             });
             
-            logger.LogTrace("Фиксация изменений в git окончена - {ItemExportFolder}", item.ExportFolder);
+            logger.LogTrace("Фиксация изменений в git окончена - {ItemExportFolder}", TaskItem.ExportFolder);
 
             ThrowIfCancelled();
         }
@@ -186,7 +186,7 @@ public class GitSyncTaskItemProcessor(
         {
             using var batch = OnecV8BatchMode.CreateDesignerBatch(platform, IbFolder);
 
-            var reader = batch.GetConfigRepositoryReportReader(
+            var reader = await batch.GetConfigRepositoryReportReader(
                 _repoConnectionString,
                 TaskItem.ConfigurationRepository.Credentials?.User ?? "",
                 TaskItem.ConfigurationRepository.Credentials?.Password ?? "",
@@ -226,7 +226,7 @@ public class GitSyncTaskItemProcessor(
 
         if (Directory.GetFiles(IbFolder).Length == 0)
         {
-            OnecV8BatchMode.CreateFileInfoBase(platform, IbFolder);
+            await OnecV8BatchMode.CreateFileInfoBase(platform, IbFolder);
 
             if (TaskItem.IsExtension)
                 await IbcmdWrapper.AddExtension(platform, dataFolder, IbFolder, _extensionName, "UL");

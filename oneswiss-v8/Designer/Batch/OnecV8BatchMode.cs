@@ -5,17 +5,19 @@ namespace OneSwiss.V8.Designer.Batch;
 
 public sealed class OnecV8BatchMode : IDisposable
 {
+    private readonly V8Platform _platform;
     private readonly List<string> _arguments = [];
-    private readonly string _mode;
-    private readonly ProcessStartInfo _processStartInfo;
     private bool _needRaiseEvent = true;
     private string _outFilePath = string.Empty;
     private Process? _process;
 
     private OnecV8BatchMode(V8Platform platform, string mode)
     {
-        _mode = mode;
-        _processStartInfo = InitProcessStartInfo(platform);
+        if (!platform.HasOnecV8)
+            throw new Exception($"{platform.PlatformPath} не содержит исполняемый файл 1cv8");
+
+        _platform = platform;
+        _arguments.Add(mode);
     }
 
     public string OutFileContent { get; private set; } = string.Empty;
@@ -59,16 +61,16 @@ public sealed class OnecV8BatchMode : IDisposable
         return batch;
     }
 
-    public static void CreateFileInfoBase(V8Platform platform, string path)
+    public static async Task CreateFileInfoBase(V8Platform platform, string path)
     {
         using var batch = new OnecV8BatchMode(platform, "CREATEINFOBASE");
         batch._arguments.Add($"\"File=\"{path}\";\"");
         batch.AddOutArgument();
 
-        batch.Start(true);
+        await batch.Start(true);
     }
 
-    public void StartSshAgent(string baseDirectoryPath = "", bool visible = false, bool waitForExit = false)
+    public async Task StartSshAgent(string baseDirectoryPath = "", bool visible = false, bool waitForExit = false)
     {
         _arguments.Add("/AgentMode");
         _arguments.Add("/AgentSSHHostKeyAuto");
@@ -79,68 +81,68 @@ public sealed class OnecV8BatchMode : IDisposable
         if (visible)
             _arguments.Add("/Visible");
 
-        Start(waitForExit);
+        await Start(waitForExit);
     }
 
-    public void ExecuteExternalDataProcessor(string path, string user, string password, string accessCode = "",
+    public async Task ExecuteExternalDataProcessor(string path, string user, string password, string accessCode = "",
         bool waitForExit = false)
     {
         AddBatchModeCommonArgs(user, password, accessCode);
 
         _arguments.Add($"/Execute\"{path}\"");
 
-        Start(waitForExit);
+        await Start(waitForExit);
     }
 
-    public void LoadConfiguration(string cfPath, string user, string password, string accessCode = "",
+    public async Task LoadConfiguration(string cfPath, string user, string password, string accessCode = "",
         bool waitForExit = false)
     {
         AddBatchModeCommonArgs(user, password, accessCode);
 
         _arguments.Add($"/LoadCfg\"{cfPath}\" /UpdateDBCfg -Dynamic- -Server -SessionTerminate force");
 
-        Start(waitForExit);
+        await Start(waitForExit);
     }
 
-    public void UpdateConfiguration(string cfuPath, string user, string password, string accessCode = "",
+    public async Task UpdateConfiguration(string cfuPath, string user, string password, string accessCode = "",
         bool waitForExit = false)
     {
         AddBatchModeCommonArgs(user, password, accessCode);
 
         _arguments.Add($"/UpdateCfg\"{cfuPath}\" /UpdateDBCfg -Dynamic- -Server -SessionTerminate force");
 
-        Start(waitForExit);
+        await Start(waitForExit);
     }
 
-    public string[] GetExtensionsList(string user, string password, string accessCode = "", bool waitForExit = false)
+    public async Task<string[]> GetExtensionsList(string user, string password, string accessCode = "", bool waitForExit = false)
     {
         AddBatchModeCommonArgs(user, password, accessCode);
 
         _arguments.Add("/DumpDBCfgList -AllExtensions");
 
-        Start(waitForExit);
+        await Start(waitForExit);
 
         return OutFileContent.Split('\n').Select(c => c.Trim()).ToArray();
     }
 
-    public void LoadExtension(string extensionName, string cfePath, string user, string password,
+    public async Task LoadExtension(string extensionName, string cfePath, string user, string password,
         string accessCode = "", bool waitForExit = false)
     {
         AddBatchModeCommonArgs(user, password, accessCode);
 
         _arguments.Add($"/LoadCfg\"{cfePath}\" -Extension\"{extensionName}\" /UpdateDBCfg");
 
-        Start(waitForExit);
+        await Start(waitForExit);
     }
 
-    public void DeleteExtension(string extensionName, string user, string password, string accessCode = "",
+    public async Task DeleteExtension(string extensionName, string user, string password, string accessCode = "",
         bool waitForExit = false)
     {
         AddBatchModeCommonArgs(user, password, accessCode);
 
         _arguments.Add($"/DeleteCfg -Extension\"{extensionName}\"");
 
-        Start(waitForExit);
+        await Start(waitForExit);
     }
 
     /// <summary>
@@ -151,7 +153,7 @@ public sealed class OnecV8BatchMode : IDisposable
     /// <param name="password">Пароль пользователя хранилища</param>
     /// <param name="version">Номер версии, с которой начинается строиться отчет. -1 если необходимо выгрузить последнюю версию</param>
     /// <returns>Читатель отчета хранилища конфигураций</returns>
-    public ConfigRepositoryReportReader GetConfigRepositoryReportReader(
+    public async Task<ConfigRepositoryReportReader> GetConfigRepositoryReportReader(
         string connectionString,
         string user,
         string password,
@@ -173,12 +175,12 @@ public sealed class OnecV8BatchMode : IDisposable
         if (!string.IsNullOrEmpty(extension))
             _arguments.Add($"-Extension {extension}");
 
-        Start(true);
+        await Start(true);
 
         return new ConfigRepositoryReportReader(reportPath);
     }
 
-    public void DumpConfigToFiles(string path, string user = "", string password = "", string extension = "",
+    public async Task DumpConfigToFiles(string path, string user = "", string password = "", string extension = "",
         bool isUpdate = false)
     {
         AddBatchModeCommonArgs(user, password);
@@ -193,7 +195,7 @@ public sealed class OnecV8BatchMode : IDisposable
 
         _arguments.Add("-force");
 
-        Start(true);
+        await Start(true);
     }
 
     /// <summary>
@@ -205,7 +207,7 @@ public sealed class OnecV8BatchMode : IDisposable
     /// <param name="password">Пароль пользователя хранилища</param>
     /// <param name="version">Версия хранилища</param>
     /// <param name="extension">Имя расширения</param>
-    public void DumpConfigRepository(string path, string connectionString, string user, string password,
+    public async Task DumpConfigRepository(string path, string connectionString, string user, string password,
         int version = -1, string extension = "")
     {
         DisableStartupDialogAndMessages();
@@ -220,7 +222,7 @@ public sealed class OnecV8BatchMode : IDisposable
         if (!string.IsNullOrEmpty(extension))
             _arguments.Add($"-Extension\"{extension}\"");
 
-        Start(true);
+        await Start(true);
     }
 
     /// <summary>
@@ -233,7 +235,7 @@ public sealed class OnecV8BatchMode : IDisposable
     /// <param name="password">Пароль пользователя ИБ</param>
     /// <param name="version">Версия хранилища</param>
     /// <param name="extension">Имя расширения</param>
-    public void UpdateConfigFromRepository(string connectionString, string repUser, string repPassword,
+    public async Task UpdateConfigFromRepository(string connectionString, string repUser, string repPassword,
         string user = "", string password = "", int version = -1, string extension = "")
     {
         AddBatchModeCommonArgs(user, password);
@@ -249,7 +251,7 @@ public sealed class OnecV8BatchMode : IDisposable
         if (!string.IsNullOrEmpty(extension))
             _arguments.Add($"-Extension\"{extension}\"");
 
-        Start(true);
+        await Start(true);
     }
 
     /// <summary>
@@ -261,28 +263,40 @@ public sealed class OnecV8BatchMode : IDisposable
         Dispose();
     }
 
-    private void Start(bool waitForExit = false)
+    private async Task Start(bool waitForExit = false)
     {
-        _processStartInfo.Arguments = string.Join(" ", _arguments);
+        if (waitForExit)
+        {
+            var result = await ProcessRunner.RunAsync(_platform.OnecV8Path, _arguments);
+            
+            SetOutFileContent();
+            
+            if (result.ExitCode != 0)
+                throw new Exception(string.IsNullOrEmpty(OutFileContent.Trim()) ? result.Error : OutFileContent);
+        }
+        else
+        {
+            var processStartInfo = new ProcessStartInfo(_platform.OnecV8Path, string.Join(" ", _arguments));
+            
+            _process = new Process();
+            _process.StartInfo = processStartInfo;
 
-        _process = new Process();
-        _process.StartInfo = _processStartInfo;
+            if (!waitForExit)
+                _process.Exited += Exited;
 
-        if (!waitForExit)
-            _process.Exited += Exited;
+            if (!_process.Start())
+                throw new Exception($"Failed to start {processStartInfo.FileName} {processStartInfo.Arguments}");
 
-        if (!_process.Start())
-            throw new Exception($"Failed to start {_processStartInfo.FileName} {_processStartInfo.Arguments}");
+            if (!waitForExit)
+                return;
 
-        if (!waitForExit)
-            return;
+            _process.WaitForExit();
 
-        _process.WaitForExit();
+            SetOutFileContent();
 
-        SetOutFileContent();
-
-        if (_process.ExitCode != 0)
-            throw new Exception(OutFileContent);
+            if (_process.ExitCode != 0)
+                throw new Exception(OutFileContent);
+        }
     }
 
     private void AddConfigRepositoryCommonArgs(string connectionString, string user, string password)
@@ -290,22 +304,6 @@ public sealed class OnecV8BatchMode : IDisposable
         _arguments.Add($"/ConfigurationRepositoryF\"{connectionString}\"");
         _arguments.Add($"/ConfigurationRepositoryN{user}");
         _arguments.Add($"/ConfigurationRepositoryP{password}");
-    }
-
-    private ProcessStartInfo InitProcessStartInfo(V8Platform platform)
-    {
-        if (!platform.HasOnecV8)
-            throw new Exception($"{platform.PlatformPath} doesn't contain 1cv8 executable");
-
-        var psi = new ProcessStartInfo
-        {
-            FileName = platform.OnecV8Path,
-            CreateNoWindow = true,
-            UseShellExecute = false
-        };
-        _arguments.Add(_mode);
-
-        return psi;
     }
 
     private void AddBatchModeCommonArgs(string user = "", string password = "", string accessCode = "")

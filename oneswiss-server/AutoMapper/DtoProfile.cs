@@ -27,6 +27,7 @@ public class DtoProfile : Profile
         CreateMap<GitSyncSettings, GitSyncSettingsDto>().ReverseMap();
 
         CreateMap<EventLogSettings, EventLogSettingsDto>().ReverseMap();
+        CreateMap<EventLogExportItem, EventLogExportItemDto>().ReverseMap();
 
         CreateMap<TechLogSettings, TechLogSettingsDto>().ReverseMap();
 

@@ -2,6 +2,7 @@
 @inject NavigationManager NavigationManager
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
+@using MudBlazor.Utilities
 @using OneSwiss.Server.Extensions
 @implements IDisposable
 
@@ -34,6 +35,13 @@
                 <MudNavLink hidden="@_errorLoggingServiceDisabled" Class="mb-1" Href="errorLoggingService"
                             Icon="@Icons.Material.Filled.BugReport" IconColor="Color.Error">
                     Сервис регистрации ошибок
+                </MudNavLink>
+            }
+            @if (context.IsInRoles(Roles.ReadEventLog))
+            {
+                <MudNavLink hidden="@_eventLogExportDisabled" Class="mb-1" Href="eventlog"
+                            Icon="@Icons.Material.Filled.TextFields" IconColor="Color.Primary">
+                    Журнал регистрации
                 </MudNavLink>
             }
             @if (context.IsInRoles(Roles.ReadGitRepositories, Roles.WriteGitRepositories))
@@ -76,6 +84,7 @@
     private string? currentUrl;
     private bool _techLogDisabled = true;
     private bool _errorLoggingServiceDisabled = true;
+    private bool _eventLogExportDisabled = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,6 +103,9 @@
 
         var tls = await context.TechLogSettings.SingleOrDefaultAsync();
         _techLogDisabled = !tls?.Enabled ?? true;
+        
+        var el = await context.EventLogSettings.SingleOrDefaultAsync();
+        _eventLogExportDisabled = !el?.Enabled ?? true;
     }
 
     public async Task NotifyStateHasChanged()

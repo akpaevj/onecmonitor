@@ -2,12 +2,12 @@
 @using OneSwiss.Server.Attributes
 @using OneSwiss.Server.Components.Pages.AccessGroups
 @using OneSwiss.Server.Components.Pages.ErrorLoggingService
-@using OneSwiss.Server.Components.Pages.EventLogSettings
 @using OneSwiss.Server.Components.Pages.GitRepositories.GitSyncTasks
 @using OneSwiss.Server.Components.Pages.Notifications
 @using OneSwiss.Server.Components.Pages.TechLog
 @using OneSwiss.Server.Components.Pages.UsersAndGroups
 @using OneSwiss.Server.Components.Pages.CrServerProxy
+@using OneSwiss.Server.Components.Pages.EventLog
 
 @inject NavigationManager NavManager
 
@@ -27,7 +27,10 @@
         <TechLogSettings/>
     </MudTabPanel>
     <MudTabPanel Text="Журнал регистрации" ID="@("eventLog")">
-        <EventLogSettings/>
+        <MudStack>
+            <EventLogSettings/>
+            <EventLogExportItems/>
+        </MudStack>
     </MudTabPanel>
     <MudTabPanel Text="Сервис регистрации ошибок" ID="@("errorReporting")">
         <ErrorLoggingServiceSettings/>

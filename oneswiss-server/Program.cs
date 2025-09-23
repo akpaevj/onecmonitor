@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Console;
+using MudBlazor;
 using MudBlazor.Services;
 using MudExtensions.Services;
 using OneSwiss.Common.DTO;
@@ -93,7 +94,6 @@ builder.Services.AddSingleton<FilesProvider>();
 builder.Services.AddAutoMapper(_ => { }, typeof(DtoProfile).Assembly);
 
 builder.Services.AddSingleton<TechLogRepositoryManager>();
-builder.Services.AddSingleton<EventLogRepositoryManager>();
 
 builder.Services.AddScoped<TechLogAnalyzer>();
 builder.Services.AddDbContextFactory<AppDbContext>();
@@ -116,6 +116,8 @@ builder.Services.AddSingleton<CrServerRequestsHandler>();
 
 builder.Services.AddSingleton<MonitorQueue<(Guid RepoId, int Version)>>();
 builder.Services.AddHostedService<NewConfigRepositoryVersionHandler>();
+
+builder.Services.AddHostedService<EventLogExportConnector>();
 
 builder.Services.AddControllers();
 
@@ -182,16 +184,6 @@ app.Lifetime.ApplicationStarted.Register(() =>
 
     if (techLogSettings != null)
         techLogRepositoryManager.UpdateSettings(mapper.Map<TechLogSettingsDto>(techLogSettings));
-
-    var eventLogRepositoryManager = scope.ServiceProvider.GetRequiredService<EventLogRepositoryManager>();
-
-    var eventLogSettings = db.EventLogSettings
-        .Include(c => c.Credentials)
-        .Include(c => c.Dbms)
-        .SingleOrDefault();
-
-    if (eventLogSettings != null)
-        eventLogRepositoryManager.UpdateSettings(mapper.Map<EventLogSettingsDto>(eventLogSettings));
 });
 
 await app.RunAsync();

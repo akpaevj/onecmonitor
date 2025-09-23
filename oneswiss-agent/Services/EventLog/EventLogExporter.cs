@@ -3,73 +3,157 @@ using OneSwiss.Agent.Extensions;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.EventLog;
 using OneSwiss.Common.Models;
-using OneSwiss.Common.Services;
+using OneSwiss.V8.Platform.Brackets;
 using Timer = System.Timers.Timer;
 
 namespace OneSwiss.Agent.Services.EventLog;
 
-public class EventLogExporter : IDisposable
+public class EventLogExporter : IAsyncDisposable
 {
-    private readonly BatchBlock<EventLogItem>? _eventsBatchBlock;
-    private readonly ActionBlock<EventLogItem[]>? _senderBlock;
-    private readonly Timer _timer = new(5000);
+    private BatchBlock<EventLogItem>? _eventsBatchBlock;
+    private ActionBlock<EventLogItem[]>? _senderBlock;
+    private readonly Timer _timer;
     private IEventLogRepository? _repository;
+    private readonly IHostApplicationLifetime _applicationLifetime;
+    private bool _disposed;
 
-    public EventLogExporter(EventLogRepositoryManager repositoryManager, IHostApplicationLifetime applicationLifetime)
+    public EventLogExporter(IHostApplicationLifetime applicationLifetime)
     {
-        _senderBlock = new ActionBlock<EventLogItem[]>(async batch =>
-            await _repository!.WriteEvents(batch, applicationLifetime.ApplicationStopping));
-
-        _eventsBatchBlock = new BatchBlock<EventLogItem>(5000, new GroupingDataflowBlockOptions
+        _applicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
+        
+        _timer = new Timer(5000)
         {
-            BoundedCapacity = 5000 * 3,
-            CancellationToken = applicationLifetime.ApplicationStopping
-        });
-        _eventsBatchBlock.LinkTo(_senderBlock, new DataflowLinkOptions { PropagateCompletion = true });
-
-        _timer.Elapsed += (_, _) => _eventsBatchBlock!.TriggerBatch();
-    }
-
-    public void Dispose()
-    {
-        _repository?.Dispose();
-        _timer.Dispose();
+            AutoReset = true
+        };
+        _timer.Elapsed += (_, _) => _eventsBatchBlock?.TriggerBatch();
     }
 
     public async Task Init(IEventLogRepository repository, EventLogSettingsDto settings,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
-        if (_repository != null)
-        {
-            _eventsBatchBlock!.TriggerBatch();
-            _eventsBatchBlock!.Complete();
-            await _senderBlock!.Completion;
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-            _repository?.Dispose();
-        }
+        // Останавливаем текущий пайплайн и отправляем оставшиеся данные
+        await CleanupCurrentPipelineAsync();
 
         if (settings.Enabled)
         {
-            if (settings.Dbms.Type != DbmsType.ClickHouse)
-                throw new Exception("DbmsType must be ClickHouse");
-
-            _repository = repository;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             await _repository.Connect(cancellationToken);
+
+            _senderBlock = new ActionBlock<EventLogItem[]>(async batch =>
+            {
+                if (_repository is null) return;
+                await _repository.WriteEvents(batch, _applicationLifetime.ApplicationStopping);
+            }, new ExecutionDataflowBlockOptions
+            {
+                CancellationToken = _applicationLifetime.ApplicationStopping,
+                MaxDegreeOfParallelism = 1,
+                BoundedCapacity = 2
+            });
+
+            _eventsBatchBlock = new BatchBlock<EventLogItem>(5000, new GroupingDataflowBlockOptions
+            {
+                BoundedCapacity = 5000 * 3,
+                CancellationToken = _applicationLifetime.ApplicationStopping
+            });
+
+            _eventsBatchBlock.LinkTo(_senderBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
             _timer.Start();
         }
         else
         {
             _timer.Stop();
+            _repository = null;
         }
+    }
+
+    private async Task CleanupCurrentPipelineAsync()
+    {
+        _timer.Stop();
+        
+        if (_eventsBatchBlock is not null)
+        {
+            try
+            {
+                _eventsBatchBlock.TriggerBatch();
+                _eventsBatchBlock.Complete();
+                
+                if (_senderBlock is not null)
+                {
+                    var completionTask = _senderBlock.Completion;
+                    var timeoutTask = Task.Delay(TimeSpan.FromSeconds(30), _applicationLifetime.ApplicationStopping);
+                    
+                    await Task.WhenAny(completionTask, timeoutTask);
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+        
+        if (_repository is not null)
+        {
+            _repository.Dispose();
+            _repository = null;
+        }
+        
+        _eventsBatchBlock = null;
+        _senderBlock = null;
     }
 
     public void Send(EventLogItem eventLogItem)
     {
-        if (_repository == null)
-            throw new InvalidOperationException("EventLogExporter is not initialized");
-
         _timer.Reset();
-        _eventsBatchBlock!.Post(eventLogItem);
+
+        if (!_eventsBatchBlock!.Post(eventLogItem))
+            throw new InvalidOperationException("Ошибка отправки события. Блок накопления завершен или переполнен");
+    }
+
+    public async Task<DateTime> GetLastEventDateTime(string infoBaseId, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_repository is null)
+            throw new InvalidOperationException("EventLogExporter не инициализирован");
+
+        return await _repository.GetLastEventDateTime(infoBaseId, cancellationToken);
+    }
+
+    public async Task FlushAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_eventsBatchBlock is not null)
+        {
+            _eventsBatchBlock.TriggerBatch();
+            await Task.Delay(100, cancellationToken);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        
+        _disposed = true;
+        
+        try
+        {
+            await CleanupCurrentPipelineAsync();
+        }
+        finally
+        {
+            _timer.Dispose();
+
+            _repository?.Dispose();
+        }
+    }
+
+    // Реализация IDisposable для совместимости
+    public void Dispose()
+    {
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
 }

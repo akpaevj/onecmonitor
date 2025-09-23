@@ -1,0 +1,36 @@
+@typeparam T
+
+@if (!string.IsNullOrEmpty(Value?.ToString()))
+{
+    <MudTextField 
+        Variant="Variant.Outlined" 
+        Margin="Margin.Dense" 
+        ReadOnly="true" 
+        AutoGrow="true" 
+        Label="@Label" 
+        Value="@Value"
+        AdornmentIcon="@Icons.Material.Filled.FilterList"
+        Adornment="@(string.IsNullOrEmpty(FilterField) ? Adornment.None : Adornment.End)"
+        OnAdornmentClick="AddFilterInternal"/>
+}
+
+@code {
+
+    [Parameter] 
+    public string Label { get; set; } = string.Empty;
+    
+    [Parameter]
+    public T? Value { get; set; }
+
+    [Parameter] 
+    public string FilterField { get; set; } = string.Empty;
+    
+    [Parameter] 
+    public EventCallback<(string Field, string Value)> AddFilter { get; set; }
+
+    private void AddFilterInternal()
+    {
+        AddFilter.InvokeAsync((FilterField, Value?.ToString() ?? ""));
+    }
+
+}

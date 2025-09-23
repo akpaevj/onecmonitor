@@ -8,7 +8,6 @@ public class CrServerConnection(string key, string host, int port) : IDisposable
     private HttpClient? _httpClient;
 
     public string Key { get; } = key;
-    public DateTime LastUsingTimestamp { get; private set; } = DateTime.MinValue;
     public bool Connected  => _tcpClient?.Connected ?? false;
     public bool Blocked { get; private set; }
     
@@ -20,10 +19,7 @@ public class CrServerConnection(string key, string host, int port) : IDisposable
         await InitTcpClient(cancellationToken);
         InitHttpClient();
         
-        var response = await _httpClient!.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        LastUsingTimestamp = DateTime.Now;
-
-        return response;
+        return await _httpClient!.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
     }
     
     public void BlockConnection()
@@ -62,6 +58,7 @@ public class CrServerConnection(string key, string host, int port) : IDisposable
             KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always
         };
         _httpClient = new HttpClient(handler);
+        _httpClient.Timeout = Timeout.InfiniteTimeSpan;
         // Любое значение, что-бы обойти проверку объекта в clr. реальный адрес задается в сокете хэндлера клиента
         _httpClient.BaseAddress = new Uri("http://localhost");
     }

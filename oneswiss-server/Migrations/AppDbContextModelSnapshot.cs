@@ -696,6 +696,29 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("ErrorReports");
                 });
 
+            modelBuilder.Entity("OneSwiss.Server.Models.EventLogExportItem", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InfoBaseId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ttl")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InfoBaseId");
+
+                    b.ToTable("EventLogExportItems");
+                });
+
             modelBuilder.Entity("OneSwiss.Server.Models.EventLogSettings", b =>
                 {
                     b.Property<string>("Id")
@@ -712,6 +735,9 @@ namespace OneSwiss.Server.Migrations
 
                     b.Property<string>("DbmsId")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("DefaultTtl")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("Enabled")
                         .HasColumnType("INTEGER");
@@ -1466,6 +1492,17 @@ namespace OneSwiss.Server.Migrations
                     b.HasOne("OneSwiss.Server.Models.NotificationRecipient", null)
                         .WithMany("CustomNotifications")
                         .HasForeignKey("NotificationRecipientId");
+                });
+
+            modelBuilder.Entity("OneSwiss.Server.Models.EventLogExportItem", b =>
+                {
+                    b.HasOne("OneSwiss.Server.Models.InfoBase", "InfoBase")
+                        .WithMany()
+                        .HasForeignKey("InfoBaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InfoBase");
                 });
 
             modelBuilder.Entity("OneSwiss.Server.Models.EventLogSettings", b =>

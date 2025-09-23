@@ -42,6 +42,9 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Reference Include="Microsoft.Extensions.Logging.EventLog">
+          <HintPath>..\..\..\.nuget\packages\microsoft.extensions.logging.eventlog\9.0.7\lib\net9.0\Microsoft.Extensions.Logging.EventLog.dll</HintPath>
+        </Reference>
         <Reference Include="OneScript.Core">
             <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
         </Reference>

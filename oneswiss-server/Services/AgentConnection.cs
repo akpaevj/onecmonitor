@@ -18,16 +18,15 @@ namespace OneSwiss.Server.Services;
 
 public class AgentConnection : FastConnection
 {
-    public delegate void AgentConnectedHandler(AgentConnection agentConnection);
-
-    public delegate void AgentDisconnectedHandler(AgentConnection agentConnection);
-
     private readonly InterAgencyCommunicationService _interAgencyCommunicationService;
     private readonly ILogger<AgentConnection> _logger;
     private readonly IMapper _mapper;
     private readonly NotificationsService _notificationsService;
     private readonly IServiceProvider _serviceProvider;
 
+    public delegate void AgentConnectedHandler(AgentConnection agentConnection);
+    public delegate void AgentDisconnectedHandler(AgentConnection agentConnection);
+    
     public AgentConnection(
         WebSocket socket,
         IServiceProvider serviceProvider,
@@ -141,6 +140,14 @@ public class AgentConnection : FastConnection
                 .Include(c => c.Dbms)
                 .Include(c => c.Credentials)
                 .SingleOrDefaultAsync(cancellationToken) ?? new EventLogSettings();
+        var eventLogExportItems =
+            await dbContext.EventLogExportItems
+                .AsNoTracking()
+                .Include(c => c.InfoBase.Cluster)
+                .Where(c => c.InfoBase.Cluster.AgentId == AgentInstance!.Id)
+                .ToListAsync(cancellationToken);
+        var eventLogSettingsDto = _mapper.Map<EventLogSettingsDto>(eventLogSettings);
+        eventLogSettingsDto.Items = _mapper.Map<List<EventLogExportItemDto>>(eventLogExportItems);
 
         var techLogSettings =
             await dbContext.TechLogSettings
@@ -159,7 +166,7 @@ public class AgentConnection : FastConnection
 
         var settings = new SettingsDto
         {
-            EventLogSettings = _mapper.Map<EventLogSettingsDto>(eventLogSettings),
+            EventLogSettings = eventLogSettingsDto,
             TechLogSettings = techLogSettingsDto,
             GitSyncSettings = _mapper.Map<GitSyncSettingsDto>(gitSyncSettings)
         };

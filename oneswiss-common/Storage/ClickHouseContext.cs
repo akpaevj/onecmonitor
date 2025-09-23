@@ -4,6 +4,7 @@ using ClickHouse.Client.Copy;
 using Dapper;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.EventLog;
+using OneSwiss.Common.Helpers;
 using OneSwiss.Common.Models;
 using OneSwiss.Common.TechLog;
 
@@ -44,13 +45,14 @@ public class ClickHouseContext(
             $"""
              CREATE TABLE IF NOT EXISTS {_tablePath}
              (
+                 Id UUID,
+                 TtlDate DateTime('UTC') Codec(Delta, LZ4),
+                 InfoBaseId LowCardinality(String),
                  InfoBaseName LowCardinality(String),
                  Level LowCardinality(String),
                  Date DateTime('UTC') Codec(Delta, LZ4),
                  ApplicationName LowCardinality(String),
-                 ApplicationPresentation LowCardinality(String),
                  Event LowCardinality(String),
-                 EventPresentation LowCardinality(String),
                  User LowCardinality(String),
                  UserName LowCardinality(String),
                  Computer LowCardinality(String),
@@ -73,55 +75,57 @@ public class ClickHouseContext(
              engine = MergeTree()
              PARTITION BY toYYYYMM(Date)
              ORDER BY Date
-             TTL Date + INTERVAL 1 MONTH DELETE
+             TTL TtlDate DELETE
              """;
 
         await _connection!.ExecuteAsync(createTableCmd);
     }
 
-    public async Task<DateTime> GetLastEventDateTime(string infoBaseName, CancellationToken cancellationToken)
+    public async Task<DateTime> GetLastEventDateTime(string infoBaseId, CancellationToken cancellationToken)
     {
         await Connect(cancellationToken);
 
-        return await _connection!.QuerySingleAsync<DateTime>($"SELECT MAX(Date) FROM {_tablePath}");
+        return await _connection!.QuerySingleAsync<DateTime>($"SELECT MAX(Date) FROM {_tablePath} WHERE InfoBaseId = '{infoBaseId}'");
     }
 
     public async Task WriteEvents(EventLogItem[] events, CancellationToken cancellationToken)
     {
         await Connect(cancellationToken);
 
+        IReadOnlyCollection<string> readOnlyCollection = [
+            "Id",
+            "TtlDate",
+            "InfoBaseId",
+            "InfoBaseName",
+            "Level",
+            "Date",
+            "ApplicationName",
+            "Event",
+            "User",
+            "UserName",
+            "Computer",
+            "Metadata",
+            "MetadataPresentation",
+            "Comment",
+            "Data",
+            "DataPresentation",
+            "TransactionStatus",
+            "TransactionId",
+            "TransactionDateTime",
+            "Connection",
+            "Session",
+            "ServerName",
+            "Port",
+            "SyncPort",
+            "SessionDataSeparation",
+            "SessionDataSeparationPresentation"
+        ];
         using var bulk = new ClickHouseBulkCopy(_connection)
         {
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             BatchSize = events.Length,
             ColumnNames =
-            [
-                "InfoBaseName",
-                "Level",
-                "Date",
-                "ApplicationName",
-                "ApplicationPresentation",
-                "Event",
-                "EventPresentation",
-                "User",
-                "UserName",
-                "Computer",
-                "Metadata",
-                "MetadataPresentation",
-                "Comment",
-                "Data",
-                "DataPresentation",
-                "TransactionStatus",
-                "TransactionId",
-                "TransactionDateTime",
-                "Connection",
-                "Session",
-                "ServerName",
-                "Port",
-                "SyncPort",
-                "SessionDataSeparation",
-                "SessionDataSeparationPresentation"
-            ],
+            readOnlyCollection,
             DestinationTableName = _tablePath
         };
 
@@ -129,43 +133,104 @@ public class ClickHouseContext(
 
         var items = events.Select(c => new object[]
         {
+            c.Id,
+            c.TtlDate,
+            c.InfoBaseId,
             c.InfoBaseName,
             c.Level,
-            DateTime.Parse(c.Date),
+            c.Date.ToUniversalTime(),
             c.ApplicationName,
-            c.ApplicationPresentation,
             c.Event,
-            c.EventPresentation,
             c.User,
             c.UserName,
             c.Computer,
-            c.Metadata.RootElement.ToString(),
-            c.MetadataPresentation.RootElement.ToString(),
+            c.Metadata,
+            c.MetadataPresentation,
             c.Comment,
-            c.Data.RootElement.ToString(),
-            c.DataPresentation.RootElement.ToString(),
+            c.Data,
+            c.DataPresentation,
             c.TransactionStatus,
-            c.TransactionID == string.Empty
-                ? "0"
-                : c.TransactionID[(c.TransactionID.IndexOf('(') + 1)..c.TransactionID.IndexOf(')')],
-            c.TransactionID == string.Empty
-                ? DateTime.MinValue
-                : DateTime.Parse(c.TransactionID[..c.TransactionID.IndexOf('(')]),
-            c.Connection == string.Empty ? "0" : c.Connection,
-            c.Session == string.Empty ? "0" : c.Session,
+            c.TransactionID,
+            c.TransactionDateTime,
+            c.Connection,
+            c.Session,
             c.ServerName,
-            c.Port == string.Empty ? "0" : c.Port,
-            c.SyncPort == string.Empty ? "0" : c.SyncPort,
-            c.SessionDataSeparation.RootElement.ToString(),
-            c.SessionDataSeparationPresentation.RootElement.ToString()
+            c.Port,
+            c.SyncPort,
+            c.SessionDataSeparation,
+            c.SessionDataSeparationPresentation
         });
 
         await bulk.WriteToServerAsync(items, cancellationToken);
     }
-
-    public void Dispose()
+    
+    public async Task<List<string>> GetEventsTypes(string filter = "", CancellationToken cancellationToken = default)
     {
-        _connection?.Dispose();
+        await Connect(cancellationToken);
+
+        var queryText = new StringBuilder(
+            $"""
+             SELECT DISTINCT on (Event)
+                Event
+             FROM {_tablePath}
+             """);
+
+        if (!string.IsNullOrEmpty(filter))
+        {
+            queryText.Append("\nWHERE ");
+            queryText.Append(filter);
+        }
+
+        var result = await _connection!.QueryAsync<string>(queryText.ToString());
+
+        return result.ToList();
+    }
+    
+    public async Task<List<EventLogItem>> GetEventLogItems(string filter = "", CancellationToken cancellationToken = default)
+    {
+        await Connect(cancellationToken);
+
+        var queryText = new StringBuilder(
+            $"""
+             SELECT 
+                 *
+             FROM {_tablePath}
+             """);
+
+        if (!string.IsNullOrEmpty(filter))
+        {
+            queryText.Append("\nWHERE ");
+            queryText.Append(filter);
+        }
+
+        var result = await _connection!.QueryAsync<EventLogItem>(queryText.ToString());
+
+        return result.ToList();
+    }
+
+    public async Task<List<EventLogItem>> GetEventLogItems(int count, int offset, string filter = "",
+        CancellationToken cancellationToken = default)
+    {
+        await Connect(cancellationToken);
+
+        var queryText = new StringBuilder(
+            $"""
+             SELECT 
+                 *
+             FROM {_tablePath}
+             """);
+
+        if (!string.IsNullOrEmpty(filter))
+        {
+            queryText.Append("\nWHERE ");
+            queryText.Append(filter);
+        }
+
+        queryText.Append($" ORDER BY Date DESC LIMIT {count} OFFSET {offset}");
+
+        var result = await _connection!.QueryAsync<EventLogItem>(queryText.ToString());
+
+        return result.ToList();
     }
 
     public async Task InitTechLogTable(CancellationToken cancellationToken)
@@ -408,7 +473,7 @@ public class ClickHouseContext(
         return result.ToList();
     }
 
-    public async Task<int> GetTjEventsCount(string filter = "", CancellationToken cancellationToken = default)
+    public async Task<int> GetRowsCount(string filter = "", CancellationToken cancellationToken = default)
     {
         await Connect(cancellationToken);
 
@@ -463,5 +528,10 @@ public class ClickHouseContext(
     private string BuildConnectionString()
     {
         return $"Host={dbms.Host};Port={dbms.Port};Username={credentials.User};Password={credentials.Password}";
+    }
+    
+    public void Dispose()
+    {
+        _connection?.Dispose();
     }
 }

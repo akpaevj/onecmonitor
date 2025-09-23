@@ -15,7 +15,8 @@ public class RequestHandlerWrapper(
     string location,
     string repository,
     string comment,
-    string requestFile) : AutoContext<RequestHandlerWrapper>
+    string requestFile,
+    ILogger<CrServerRequestsHandler> logger) : AutoContext<RequestHandlerWrapper>
 {
     [ContextProperty("АдресПубликации", "Location", CanWrite = false)]
     public string Location => location;
@@ -32,13 +33,31 @@ public class RequestHandlerWrapper(
     [ContextMethod("ПередатьЗапрос", "PostRequest")]
     public void PostRequest()
     {
-        requestsHandler.Send(repository, connection, context, requestFile, CancellationToken.None).Wait();
+        HandleAggregateException(() => requestsHandler.Send(repository, connection, context, requestFile, CancellationToken.None).Wait(),
+            "Ошибка отправки запроса серверу хранилищ");
     }
     
     [ContextMethod("ВызватьИсключение", "RaiseException")]
     public void RaiseException(string message)
     {
-        CrServerRequestsHandler.RaiseException(context, message).Wait();
+        HandleAggregateException(() => CrServerRequestsHandler.RaiseException(context, message).Wait(),
+            "Ошибка отправки исключения конфигуратору");
+
+    }
+
+    private void HandleAggregateException(Action action, string errorText)
+    {
+        try
+        {
+            action.Invoke();
+        }
+        catch (AggregateException e)
+        {
+            foreach (var eInnerException in e.InnerExceptions)
+                logger.LogError(eInnerException, errorText);
+
+            throw;
+        }
     }
 
     internal void SetAdditionalParameters(Dictionary<string, string> parameters)
