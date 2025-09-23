@@ -73,9 +73,8 @@ public class EventLogExportManager(
         {
             _cts?.Cancel();
             _cts?.Dispose();
+            DisposeReaders();
         }
-
-        DisposeReaders();
     }
 
     ~EventLogExportManager()

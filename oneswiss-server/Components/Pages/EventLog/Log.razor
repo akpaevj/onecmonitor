@@ -134,7 +134,7 @@
 
     private CancellationTokenSource? _cts;
 
-    private readonly int _totalItems = 0;
+    private int _totalItems = 0;
     private string _filter = string.Empty;
     private EventLogItem? _selectedItem;
 
@@ -151,16 +151,23 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _cts = new CancellationTokenSource();
+        try
+        {
+            _cts = new CancellationTokenSource();
 
-        _context = await ContextFactory.CreateDbContextAsync();
-        var settings = await _context.EventLogSettings
-            .Include(c => c.Dbms)
-            .Include(c => c.Credentials)
-            .SingleOrDefaultAsync();
+            _context = await ContextFactory.CreateDbContextAsync();
+            var settings = await _context.EventLogSettings
+                .Include(c => c.Dbms)
+                .Include(c => c.Credentials)
+                .SingleOrDefaultAsync();
 
-        var settingsDto = Mapper.Map<EventLogSettingsDto>(settings);
-        _repository = settingsDto.GetDbContext();
+            var settingsDto = Mapper.Map<EventLogSettingsDto>(settings);
+            _repository = settingsDto.GetDbContext();
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError($"Ошибка инициализации: {e.Message}");
+        }
     }
 
     private async Task<TableData<EventLogItem>> ServerData(TableState state, CancellationToken cancellationToken)
@@ -179,10 +186,12 @@
             if (items.Count > 0)
                 _table.SetSelectedItem(items.First());
 
+            _totalItems = await _repository.GetRowsCount(filter, cancellationToken);
+
             return new TableData<EventLogItem>
             {
                 Items = items,
-                TotalItems = await _repository.GetRowsCount(filter, cancellationToken)
+                TotalItems = _totalItems
             };
         }
         catch (Exception e)

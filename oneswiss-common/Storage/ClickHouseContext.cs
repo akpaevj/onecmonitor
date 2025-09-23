@@ -4,6 +4,7 @@ using ClickHouse.Client.Copy;
 using Dapper;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.EventLog;
+using OneSwiss.Common.Helpers;
 using OneSwiss.Common.Models;
 using OneSwiss.Common.TechLog;
 
@@ -137,7 +138,7 @@ public class ClickHouseContext(
             c.InfoBaseId,
             c.InfoBaseName,
             c.Level,
-            c.Date,
+            c.Date.ToUniversalTime(),
             c.ApplicationName,
             c.Event,
             c.User,

@@ -42,11 +42,10 @@ internal class LgpReader : IDisposable
 
             var eventDate = DateTime.ParseExact(values[0].StringValue, "yyyyMMddHHmmss",
                 CultureInfo.InvariantCulture);
+            eventDate = DateTime.SpecifyKind(eventDate, DateTimeKind.Local);
             
             if (eventDate <= lastEventDateTime)
                 continue;
-            
-            DateTime.SpecifyKind(eventDate, DateTimeKind.Utc);
             
             var item = new EventLogItem
             {
