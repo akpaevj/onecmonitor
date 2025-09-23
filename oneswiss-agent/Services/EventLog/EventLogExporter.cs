@@ -36,8 +36,8 @@ public class EventLogExporter : IDisposable
         if (_repository != null)
         {
             _eventsBatchBlock!.TriggerBatch();
-            _eventsBatchBlock!.Complete();
-            await _senderBlock!.Completion;
+            /*_eventsBatchBlock!.Complete();
+            await _senderBlock!.Completion;*/
 
             _repository?.Dispose();
         }

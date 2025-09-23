@@ -182,6 +182,7 @@
 
             _eventsTypes = await GetEventsTypes(string.Empty);
             var items = await _repository!.GetEventLogItems(state.PageSize, state.Page * state.PageSize, filter, cancellationToken);
+            items.ForEach(c => c.Date = c.Date.ToLocalTime());
 
             if (items.Count > 0)
                 _table.SetSelectedItem(items.First());
