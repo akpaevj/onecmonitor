@@ -15,14 +15,16 @@ internal class LgpReader : IDisposable
     
     private readonly StreamReader _streamReader;
     private readonly IEnumerable<BracketValue> _bracketsStream;
+    private readonly BracketsParser _parser;
 
     public LgpReader(string lgpPath, LgfDataProvider lgfDataProvider)
     {
-        _streamReader = new StreamReader(lgpPath);
+        var fs = new FileStream(lgpPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        _streamReader = new StreamReader(fs, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         SkipSignature();
         
-        var parser = new BracketsParser();
-        _bracketsStream = parser.ParseStream(_streamReader);
+        _parser = new BracketsParser();
+        _bracketsStream = _parser.ParseStream(_streamReader);
 
         _lgfDataProvider = lgfDataProvider;
     }
@@ -104,8 +106,11 @@ internal class LgpReader : IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (disposing)
-            _streamReader.Dispose();
+        if (!disposing) 
+            return;
+        
+        _parser.Dispose();
+        _streamReader.Dispose();
     }
 
     public void Dispose()

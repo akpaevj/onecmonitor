@@ -81,11 +81,11 @@ public class ClickHouseContext(
         await _connection!.ExecuteAsync(createTableCmd);
     }
 
-    public async Task<DateTime> GetLastEventDateTime(string infoBaseName, CancellationToken cancellationToken)
+    public async Task<DateTime> GetLastEventDateTime(string infoBaseId, CancellationToken cancellationToken)
     {
         await Connect(cancellationToken);
 
-        return await _connection!.QuerySingleAsync<DateTime>($"SELECT MAX(Date) FROM {_tablePath}");
+        return await _connection!.QuerySingleAsync<DateTime>($"SELECT MAX(Date) FROM {_tablePath} WHERE InfoBaseId = '{infoBaseId}'");
     }
 
     public async Task WriteEvents(EventLogItem[] events, CancellationToken cancellationToken)
