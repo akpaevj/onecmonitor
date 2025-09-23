@@ -4,9 +4,9 @@ namespace OneSwiss.Common.Helpers;
 
 public class ClickHouseHelper
 {
-    public static string SerializeDateTime(DateTime dateTime)
+    public static string SerializeDateTime(DateTime dateTime, bool toUtc = true)
     {
-        return dateTime.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.ffffff");
+        return toUtc ? dateTime.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.ffffff") : dateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff");
     }
 
     public static string SerializeArray(int[] items)

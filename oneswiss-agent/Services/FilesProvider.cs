@@ -28,8 +28,8 @@ public class FilesProvider
         InitGitRepositoriesFolder();
     }
 
-    public string TechLogFolder { get; private set; }
-    public string GitSyncFolder { get; private set; }
+    public string TechLogFolder { get; private set; } = null!;
+    public string GitSyncFolder { get; private set; } = null!;
 
     public async Task<List<DownloadedFileDescription>> DownloadFiles(List<FileDto> files,
         CancellationToken cancellationToken = default)

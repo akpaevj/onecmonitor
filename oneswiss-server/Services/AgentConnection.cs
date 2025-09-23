@@ -141,6 +141,13 @@ public class AgentConnection : FastConnection
                 .Include(c => c.Dbms)
                 .Include(c => c.Credentials)
                 .SingleOrDefaultAsync(cancellationToken) ?? new EventLogSettings();
+        var eventLogExportItems =
+            await dbContext.EventLogExportItems
+                .AsNoTracking()
+                .Include(c => c.InfoBase.Cluster)
+                .ToListAsync(cancellationToken);
+        var eventLogSettingsDto = _mapper.Map<EventLogSettingsDto>(eventLogSettings);
+        eventLogSettingsDto.Items = _mapper.Map<List<EventLogExportItemDto>>(eventLogExportItems);
 
         var techLogSettings =
             await dbContext.TechLogSettings
@@ -159,7 +166,7 @@ public class AgentConnection : FastConnection
 
         var settings = new SettingsDto
         {
-            EventLogSettings = _mapper.Map<EventLogSettingsDto>(eventLogSettings),
+            EventLogSettings = eventLogSettingsDto,
             TechLogSettings = techLogSettingsDto,
             GitSyncSettings = _mapper.Map<GitSyncSettingsDto>(gitSyncSettings)
         };

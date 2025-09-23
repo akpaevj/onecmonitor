@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Reflection;
 using MessagePack;
+using OneSwiss.Agent.Services.EventLog;
 using OneSwiss.Agent.Services.GitSync;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.DTO.MaintenanceTasks;
@@ -16,11 +17,11 @@ internal class CommandsWatcher
 {
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly EdtInstallationsProvider _edtPInstallationsProvider;
-    private readonly EventLogRepositoryManager _eventLogRepositoryManager;
     private readonly GitSyncTasksManager _gitSyncTasksManager;
     private readonly MonitorQueue<List<GitSyncTaskDto>> _gitSyncTasksQueue;
     private readonly ILogger<CommandsWatcher> _logger;
     private readonly MonitorQueue<MaintenanceTaskDto> _maintenanceTasksQueue;
+    private readonly MonitorQueue<EventLogSettingsDto> _eventLogSettingsQueue;
     private readonly ILogger<Rac> _racLogger;
     private readonly RasHolder _rasHolder;
     private readonly OneSwissConnection _server;
@@ -31,7 +32,6 @@ internal class CommandsWatcher
     public CommandsWatcher(
         IServiceProvider serviceProvider,
         TechLogRepositoryManager techLogRepositoryManager,
-        EventLogRepositoryManager eventLogRepositoryManager,
         MonitorQueue<MaintenanceTaskDto> maintenanceTasksQueue,
         RasHolder rasHolder,
         IHostApplicationLifetime appLifetime,
@@ -41,16 +41,17 @@ internal class CommandsWatcher
         ILogger<CommandsWatcher> logger,
         ILogger<Rac> racLogger,
         MonitorQueue<List<GitSyncTaskDto>> gitSyncTasksQueue,
-        GitSyncTasksManager gitSyncTasksManager)
+        GitSyncTasksManager gitSyncTasksManager, 
+        MonitorQueue<EventLogSettingsDto> eventLogSettingsQueue)
     {
         var scope = serviceProvider.CreateAsyncScope();
         _racLogger = racLogger;
         _gitSyncTasksQueue = gitSyncTasksQueue;
         _gitSyncTasksManager = gitSyncTasksManager;
+        _eventLogSettingsQueue = eventLogSettingsQueue;
         _rasHolder = rasHolder;
         _server = scope.ServiceProvider.GetRequiredService<OneSwissConnection>();
         _techLogRepositoryManager = techLogRepositoryManager;
-        _eventLogRepositoryManager = eventLogRepositoryManager;
         _v8PlatformsProvider = v8PlatformsProvider;
         _v8ServicesProvider = v8ServicesProvider;
         _edtPInstallationsProvider = edtPInstallationsProvider;
@@ -164,10 +165,10 @@ internal class CommandsWatcher
         await _server.SendInstalledPlatforms(message, platforms.ToList(), cancellationToken);
     }
 
-    private void ApplySettings(SettingsDto settingsDto, CancellationToken cancellationToken)
+    private async Task ApplySettings(SettingsDto settingsDto, CancellationToken cancellationToken)
     {
         _techLogRepositoryManager.UpdateSettings(settingsDto.TechLogSettings);
-        _eventLogRepositoryManager.UpdateSettings(settingsDto.EventLogSettings);
+        await _eventLogSettingsQueue.QueueAsync(settingsDto.EventLogSettings, cancellationToken);
         _gitSyncTasksManager.UpdateSettings(settingsDto.GitSyncSettings);
     }
 
@@ -175,7 +176,7 @@ internal class CommandsWatcher
     {
         var settings =
             MessagePackSerializer.Deserialize<SettingsDto>(message.Data, cancellationToken: cancellationToken);
-        ApplySettings(settings, cancellationToken);
+        await ApplySettings(settings, cancellationToken);
 
         await _server.Ok(message, cancellationToken);
     }
@@ -192,7 +193,7 @@ internal class CommandsWatcher
     private async Task UpdateSettings(CancellationToken cancellationToken)
     {
         var response = await _server.GetSettings(cancellationToken);
-        ApplySettings(response, cancellationToken);
+        await ApplySettings(response, cancellationToken);
     }
 
     private async Task RequestGitSyncTasks(CancellationToken cancellationToken)

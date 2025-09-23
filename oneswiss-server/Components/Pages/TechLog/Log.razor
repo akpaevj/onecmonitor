@@ -132,7 +132,7 @@
             return new TableData<TjEvent>
             {
                 Items = items,
-                TotalItems = await _techLogRepository.GetTjEventsCount(filter, cancellationToken)
+                TotalItems = await _techLogRepository.GetRowsCount(filter, cancellationToken)
             };
         }
         catch (Exception e)

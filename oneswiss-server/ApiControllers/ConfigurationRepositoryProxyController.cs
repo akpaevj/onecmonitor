@@ -7,11 +7,13 @@ namespace OneSwiss.Server.ApiControllers;
 [ApiController]
 [Route("cr")]
 [AllowAnonymous]
-public class ConfigurationRepositoryProxyController(CrServerRequestsHandler requestsHandler, ILogger<ConfigurationRepositoryProxyController> logger) : ControllerBase
+public class ConfigurationRepositoryProxyController(CrServerRequestsHandler requestsHandler) : ControllerBase
 {
     [HttpPost("{*path}")]
     [DisableRequestSizeLimit]
     [AllowAnonymous]
     public async Task DesignerCall(string path, CancellationToken cancellationToken)
-        => await requestsHandler.HandleRequest(HttpContext, path, cancellationToken);
+    {
+        await requestsHandler.HandleRequest(HttpContext, path, cancellationToken);
+    }
 }

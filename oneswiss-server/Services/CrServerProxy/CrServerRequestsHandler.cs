@@ -157,6 +157,8 @@ public class CrServerRequestsHandler : IDisposable
     
     public async Task HandleRequest(HttpContext context, string rawLocation, CancellationToken cancellationToken)
     {
+        _logger.LogTrace("Обработка входящего запроса - {Location}", rawLocation);
+        
         var location = rawLocation.ToUpper().Trim('/').Trim('\\');
         
         if (!_serviceEnabled)
@@ -179,6 +181,8 @@ public class CrServerRequestsHandler : IDisposable
         try
         {
             var connection = _connectionsPool.GetServerConnection(context, repository);
+            
+            _logger.LogTrace("Блокировка соединения к серверу хранилищ- {RepositoryName}", repository.Name);
             connection.BlockConnection();
 
             try
@@ -196,7 +200,8 @@ public class CrServerRequestsHandler : IDisposable
                         location,
                         repository.Name,
                         details.Comment ?? string.Empty,
-                        filePath);
+                        filePath,
+                        _logger);
                 
                 _logger.LogTrace("Начало обработки запроса - {RepositoryName}", repository.Name);
                 
@@ -216,6 +221,7 @@ public class CrServerRequestsHandler : IDisposable
             }
             finally
             {
+                _logger.LogTrace("Разблокировка соединения к серверу хранилищ- {RepositoryName}", repository.Name);
                 connection.UnblockConnection();
             }
         }

@@ -24,12 +24,12 @@
                     </MudCardHeader>
                     <MudCardContent>
                         <MudStack>
-                            <MudTextField Disabled="true" ReadOnly="readOnly" For="@(() => _details.Model.Name)"
+                            <MudTextField Disabled="true" ReadOnly="readOnly" For="@(() => _details.Model!.Name)"
                                           Variant="Variant.Outlined" Label="Наименование"
-                                          @bind-Value="@_details.Model.Name"/>
-                            <MudTextField For="@(() => _details.Model.Description)" ReadOnly="readOnly"
+                                          @bind-Value="@_details.Model!.Name"/>
+                            <MudTextField For="@(() => _details.Model!.Description)" ReadOnly="readOnly"
                                           Variant="Variant.Outlined" Label="Описание"
-                                          @bind-Value="@_details.Model.Description"/>
+                                          @bind-Value="@_details.Model!.Description"/>
                             <ItemSelector
                                 @bind-Value="@_details.Model!.SecurityLevel"
                                 Items="Enum.GetValues<V8SecurityLevel>().ToList()"
@@ -74,9 +74,9 @@
                     </MudCardHeader>
                     <MudCardContent>
                         <MudStack>
-                            <MudSwitch For="@(() => _details.Model.SessionsDeny)" ReadOnly="readOnly"
+                            <MudSwitch For="@(() => _details.Model!.SessionsDeny)" ReadOnly="readOnly"
                                        Color="Color.Primary" Label="Блокировка начала сеансов включена"
-                                       @bind-Value="@_details.Model.SessionsDeny"/>
+                                       @bind-Value="@_details.Model!.SessionsDeny"/>
                             <MudSwitch For="@(() => _details.Model.ScheduledJobsDeny)" ReadOnly="readOnly"
                                        Color="Color.Primary" Label="Блокировка регламентных заданий включена"
                                        @bind-Value="@_details.Model.ScheduledJobsDeny"/>
@@ -104,13 +104,13 @@
                     </MudCardHeader>
                     <MudCardContent>
                         <MudStack>
-                            <MudTextField For="@(() => _details.Model.ExternalSessionManagerConnectionString)"
+                            <MudTextField For="@(() => _details.Model!.ExternalSessionManagerConnectionString)"
                                           ReadOnly="readOnly" Variant="Variant.Outlined"
                                           Label="Внешнее управление сеансами"
-                                          @bind-Value="@_details.Model.ExternalSessionManagerConnectionString"/>
-                            <MudSwitch For="@(() => _details.Model.ExternalSessionManagerRequired)" ReadOnly="readOnly"
+                                          @bind-Value="@_details.Model!.ExternalSessionManagerConnectionString"/>
+                            <MudSwitch For="@(() => _details.Model!.ExternalSessionManagerRequired)" ReadOnly="readOnly"
                                        Color="Color.Primary" Label="Обязательное использование внешнее управление"
-                                       @bind-Value="@_details.Model.ExternalSessionManagerRequired"/>
+                                       @bind-Value="@_details.Model!.ExternalSessionManagerRequired"/>
                             <ItemSelector
                                 @bind-Value="@_details.Model!.SecurityProfileName"
                                 Items="@_securityProfiles"
@@ -147,20 +147,20 @@
                     <MudCardContent>
                         <MudStack>
                             <MudNumericField
-                                For="@(() => _details.Model.ConfigurationUnloadDelayByWorkingProcessWithoutActiveUsers)"
+                                For="@(() => _details.Model!.ConfigurationUnloadDelayByWorkingProcessWithoutActiveUsers)"
                                 ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек."
                                 Variant="Variant.Outlined" Label="Задержка выгрузки конфигурации рабочим процессом"
-                                @bind-Value="@_details.Model.ConfigurationUnloadDelayByWorkingProcessWithoutActiveUsers"/>
+                                @bind-Value="@_details.Model!.ConfigurationUnloadDelayByWorkingProcessWithoutActiveUsers"/>
                             <MudNumericField
-                                For="@(() => _details.Model.MinimumScheduledJobsStartPeriodWithoutActiveUsers)"
+                                For="@(() => _details.Model!.MinimumScheduledJobsStartPeriodWithoutActiveUsers)"
                                 ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек."
                                 Variant="Variant.Outlined" Label="Минимальный период запуска регламентных заданий"
-                                @bind-Value="@_details.Model.MinimumScheduledJobsStartPeriodWithoutActiveUsers"/>
+                                @bind-Value="@_details.Model!.MinimumScheduledJobsStartPeriodWithoutActiveUsers"/>
                             <MudNumericField
-                                For="@(() => _details.Model.MaximumScheduledJobsStartShiftWithoutActiveUsers)"
+                                For="@(() => _details.Model!.MaximumScheduledJobsStartShiftWithoutActiveUsers)"
                                 ReadOnly="readOnly" Adornment="Adornment.End" AdornmentText="сек."
                                 Variant="Variant.Outlined" Label="Максимальный сдвиг запуска регламентных заданий"
-                                @bind-Value="@_details.Model.MaximumScheduledJobsStartShiftWithoutActiveUsers"/>
+                                @bind-Value="@_details.Model!.MaximumScheduledJobsStartShiftWithoutActiveUsers"/>
                         </MudStack>
                     </MudCardContent>
                 </MudCard>

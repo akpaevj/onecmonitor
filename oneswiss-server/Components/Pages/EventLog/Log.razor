@@ -1,0 +1,294 @@
+@page "/eventlog"
+@inject IDbContextFactory<AppDbContext> ContextFactory
+@inject ISnackbar SnackBar
+@inject IMapper Mapper
+@using System.ComponentModel.DataAnnotations
+@using global::AutoMapper
+@using Microsoft.EntityFrameworkCore
+@using OneSwiss.Common.DTO
+@using OneSwiss.Common.EventLog
+@using OneSwiss.Common.Extensions
+@using OneSwiss.Common.Helpers
+@using OneSwiss.Server.Attributes
+@using OneSwiss.Server.Extensions
+@using OneSwiss.Server.Models
+@using OneSwiss.Server.Components.Shared
+@inject AppDbContext Context
+@implements IDisposable
+@rendermode InteractiveServer
+
+@attribute [ExtAuthorize(Roles.ReadEventLog)]
+
+<style>
+    .selected-eventlogitem {
+        background-color: rgba(0, 0, 0, 0.15);
+    }
+</style>
+
+<PageTitle>Журнал регистрации</PageTitle>
+
+<h1 Class="mb-3">Журнал регистрации</h1>
+
+<MudStack>
+    <MudStack Row AlignItems="AlignItems.Center" StretchItems="StretchItems.All">
+        <MudDateRangePicker @ref="_picker" Variant="Variant.Outlined" Label="Период" @bind-DateRange="@_period" Margin="Margin.Dense" @bind-DateRange:after="AfterFilterChanged" AutoClose="true">
+            <PickerActions>
+                <MudButton Class="mr-auto align-self-start" OnClick="@(() => _picker.ClearAsync())">Clear</MudButton>
+                <MudButton OnClick="@(() => _picker.CloseAsync(false))">Cancel</MudButton>
+                <MudButton Color="Color.Primary" OnClick="@(() => _picker.CloseAsync())">OK</MudButton>
+            </PickerActions>
+        </MudDateRangePicker>
+        <ItemsSelector T="InfoBase"
+                       Class="w-100"
+                       @bind-SelectedValues="@_selectedInfoBases"
+                       @bind-SelectedValues:after="AfterFilterChanged"
+                       Items="@Context!.EventLogExportItems.Select(c => c.InfoBase).ToList()"
+                       Margin="Margin.Dense"
+                       Title="Информационные базы"
+                       NameSelector="@(item => item.Name)"/>
+    </MudStack>
+    <MudStack Row AlignItems="AlignItems.Center" StretchItems="StretchItems.All">
+        <ItemsSelector T="string"
+                       Class="w-100 m-0"
+                       Items="_eventsTypes"
+                       @bind-SelectedValues="@_selectedEventsTypes"
+                       @bind-SelectedValues:after="AfterFilterChanged"
+                       Title="События"
+                       Margin="Margin.Dense"
+                       NoWrap="true"
+                       NameSelector="@(item => item)"/>
+        <MudTextField @bind-Value="_filter" @bind-Value:after="AfterFilterChanged"
+                      Placeholder="Выражение WHERE"
+                      Adornment="Adornment.Start"
+                      Variant="Variant.Outlined"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      AdornmentColor="Color.Primary"
+                      Margin="Margin.Dense"
+                      InputMode="InputMode.search"
+                      Class="w-100 m-0"/>
+    </MudStack>
+    <MudStack Row StretchItems="StretchItems.All" AlignItems="AlignItems.Stretch">
+        <MudTable @ref="_table" Style="width: 100%" T="EventLogItem"
+                  RowClassFunc="RowClassFunc"
+                  Dense="true"
+                  @bind-SelectedItem="_selectedItem"
+                  ServerData="ServerData"
+                  TotalItems="_totalItems">
+            <HeaderContent>
+                <MudTh>ИБ</MudTh>
+                <MudTh>Дата</MudTh>
+                <MudTh>Событие</MudTh>
+                <MudTh>Уровень</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="ИБ">@context.InfoBaseName</MudTd>
+                <MudTd DataLabel="Дата">@context.Date</MudTd>
+                <MudTd DataLabel="Событие">
+                    <MudStack Row>
+                        <MudIconButton Icon="@Icons.Material.Filled.FilterList" Size="Size.Small"
+                                       OnClick="@(() => AddFieldFilter(("Event", context.Event)))"/>
+                        @context.Event
+                    </MudStack>
+                </MudTd>
+                @{
+                    var level = GetEventLevel(context);
+                    
+                    <MudTd DataLabel="Уровень">
+                        <MudChip T="string" Variant="Variant.Text" Color="@TaskEventLevelColor(level)" Icon="@Icons.Material.Filled.FilterList" OnClick="@(() => AddFieldFilter(("Level", context.Level)))">
+                            @level.GetDisplay()
+                        </MudChip>
+                    </MudTd>
+                }
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager/>
+            </PagerContent>
+        </MudTable>
+        <MudCard Class="w-100">
+            <MudCardHeader>
+                <MudText>Детали</MudText>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudStack>
+                    <EventLogItemField Label="Приложение" Value="@_selectedItem?.ApplicationName" AddFilter="AddFieldFilter" FilterField="@nameof(_selectedItem.ApplicationName)"/>
+                    <EventLogItemField Label="Пользователь" Value="@_selectedItem?.UserName" AddFilter="AddFieldFilter" FilterField="@nameof(_selectedItem.UserName)"/>
+                    <EventLogItemField Label="Компьютер" Value="@_selectedItem?.Computer" AddFilter="AddFieldFilter" FilterField="@nameof(_selectedItem.Computer)"/>
+                    <EventLogItemField Label="Метаданные" Value="@_selectedItem?.MetadataPresentation" AddFilter="AddFieldFilter" FilterField="@nameof(_selectedItem.MetadataPresentation)"/>
+                    <EventLogItemField Label="Комментарий" Value="@_selectedItem?.Comment"/>
+                    <EventLogItemField Label="Данные" Value="@_selectedItem?.DataPresentation"/>
+                    <EventLogItemField Label="Статус транзакции" Value="@_selectedItem?.TransactionStatus" AddFilter="AddFieldFilter" FilterField="@nameof(_selectedItem.TransactionStatus)"/>
+                    <EventLogItemField Label="Дата транзакции" Value="@_selectedItem?.TransactionDateTime"/>
+                    <EventLogItemField Label="Идентификатор транзакции" Value="@_selectedItem?.TransactionID" AddFilter="AddFieldFilter" FilterField="TransactionId"/>
+                    <EventLogItemField Label="Соединение" Value="@_selectedItem?.Connection" AddFilter="AddFieldFilter" FilterField="@nameof(_selectedItem.Connection)"/>
+                    <EventLogItemField Label="Сессия" Value="@_selectedItem?.Session" AddFilter="AddFieldFilter" FilterField="@nameof(_selectedItem.Session)"/>
+                    <EventLogItemField Label="Имя сервера" Value="@_selectedItem?.ServerName" AddFilter="AddFieldFilter" FilterField="@nameof(_selectedItem.ServerName)"/>
+                    <EventLogItemField Label="Порт" Value="@_selectedItem?.Port" AddFilter="AddFieldFilter" FilterField="@nameof(_selectedItem.Port)"/>
+                    <EventLogItemField Label="Разделитель" Value="@_selectedItem?.SessionDataSeparationPresentation" AddFilter="AddFieldFilter" FilterField="@nameof(_selectedItem.SessionDataSeparationPresentation)"/>
+                </MudStack>
+            </MudCardContent>
+        </MudCard>
+    </MudStack>
+</MudStack>
+
+@code {
+
+    private CancellationTokenSource? _cts;
+
+    private readonly int _totalItems = 0;
+    private string _filter = string.Empty;
+    private EventLogItem? _selectedItem;
+
+    private IEventLogRepository? _repository;
+    private AppDbContext? _context;
+    private MudTable<EventLogItem> _table;
+
+    private DateRange _period = new(DateTime.Now.Date, DateTime.Now.AddDays(5).Date);
+    private List<InfoBase> _selectedInfoBases = [];
+    private MudDateRangePicker _picker;
+
+    private List<string> _eventsTypes = [];
+    private List<string> _selectedEventsTypes = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _cts = new CancellationTokenSource();
+
+        _context = await ContextFactory.CreateDbContextAsync();
+        var settings = await _context.EventLogSettings
+            .Include(c => c.Dbms)
+            .Include(c => c.Credentials)
+            .SingleOrDefaultAsync();
+
+        var settingsDto = Mapper.Map<EventLogSettingsDto>(settings);
+        _repository = settingsDto.GetDbContext();
+    }
+
+    private async Task<TableData<EventLogItem>> ServerData(TableState state, CancellationToken cancellationToken)
+    {
+        _selectedItem = null;
+
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var filter = PrepareFilter();
+
+            _eventsTypes = await GetEventsTypes(string.Empty);
+            var items = await _repository!.GetEventLogItems(state.PageSize, state.Page * state.PageSize, filter, cancellationToken);
+
+            if (items.Count > 0)
+                _table.SetSelectedItem(items.First());
+
+            return new TableData<EventLogItem>
+            {
+                Items = items,
+                TotalItems = await _repository.GetRowsCount(filter, cancellationToken)
+            };
+        }
+        catch (Exception e)
+        {
+            SnackBar.ShowError(e);
+            return new TableData<EventLogItem>();
+        }
+    }
+
+    private string PrepareFilter()
+    {
+        var infoBasesFilter = _selectedInfoBases.Count switch
+        {
+            0 => string.Empty,
+            _ => $"InfoBaseId IN [{string.Join(',', _selectedInfoBases.Select(c => $"'{c.InfoBaseInternalId}'"))}]"
+        };
+
+        var periodFilter = string.Empty;
+
+        if (_period is { Start: not null, End: not null })
+            periodFilter = $"Date BETWEEN toDateTime64('{ClickHouseHelper.SerializeDateTime(_period.Start.Value.Date, false)}', 6, 'UTC') AND toDateTime64('{ClickHouseHelper.SerializeDateTime(_period.End.Value.Date.AddDays(1).AddTicks(-1), false)}', 6, 'UTC')";
+        else if (_period?.Start.HasValue == true)
+            periodFilter = $"Date >= toDateTime64('{ClickHouseHelper.SerializeDateTime(_period.Start.Value.Date, false)}', 6, 'UTC')";
+        else if (_period?.End.HasValue == true)
+            periodFilter = $"Date <= toDateTime64('{ClickHouseHelper.SerializeDateTime(_period.End.Value.Date.AddDays(1).AddTicks(-1), false)}', 6, 'UTC')";
+
+        var eventTypesFilter = _selectedEventsTypes.Count switch
+        {
+            0 => string.Empty,
+            _ => $"Event IN [{string.Join(',', _selectedEventsTypes.Select(c => $"'{c}'"))}]"
+        };
+
+        var filters = new List<string>
+        {
+            infoBasesFilter,
+            periodFilter,
+            eventTypesFilter,
+            _filter.Trim()
+        }.Where(c => !string.IsNullOrEmpty(c)).ToList();
+
+        return string.Join(" AND ", filters);
+    }
+
+    public void Dispose()
+    {
+        _cts?.Dispose();
+        _repository?.Dispose();
+    }
+
+    private string RowClassFunc(EventLogItem arg1, int arg2)
+    {
+        return _selectedItem?.Id == arg1.Id ? "selected-eventlogitem" : string.Empty;
+    }
+
+    private async Task AfterFilterChanged()
+    {
+        await _table.ReloadServerData();
+    }
+
+    private static Color TaskEventLevelColor(EventLevel result)
+        => result switch
+        {
+            EventLevel.Info => Color.Info,
+            EventLevel.Warning => Color.Warning,
+            EventLevel.Error => Color.Error,
+            EventLevel.Note => Color.Tertiary,
+            _ => throw new ArgumentOutOfRangeException(nameof(result), result, null)
+        };
+    
+    private enum EventLevel
+    {
+        [Display(Name = "Инфо")]
+        Info,
+        [Display(Name = "Ошибка")]
+        Error,
+        [Display(Name = "Предупреждение")]
+        Warning,
+        [Display(Name = "Примечание")]
+        Note
+    }
+
+    private static EventLevel GetEventLevel(EventLogItem item)
+        => item.Level switch
+        {
+            "I" => EventLevel.Info,
+            "W" => EventLevel.Warning,
+            "E" => EventLevel.Error,
+            _ => EventLevel.Note
+        };
+    
+    private async Task AddFieldFilter((string Field, string Value) obj)
+    {
+        var additionalText = $"{obj.Field} = '{obj.Value}'";
+
+        if (_filter.Contains(additionalText))
+            return;
+
+        if (string.IsNullOrEmpty(_filter))
+            _filter = additionalText;
+        else
+            _filter += $" and {additionalText}";
+
+        await _table.ReloadServerData();
+    }
+
+    private async Task<List<string>> GetEventsTypes(string filter)
+        => await _repository!.GetEventsTypes(filter, CancellationToken.None);
+
+}

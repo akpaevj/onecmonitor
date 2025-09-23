@@ -32,6 +32,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<MaintenanceTaskLogItem> MaintenanceTaskLogs { get; set; }
     public DbSet<MaintenanceStep> MaintenanceSteps { get; set; }
     public DbSet<EventLogSettings> EventLogSettings { get; set; }
+    public DbSet<EventLogExportItem> EventLogExportItems { get; set; }
     public DbSet<ErrorLoggingServiceSettings> ErrorLoggingServiceSettings { get; set; }
     public DbSet<ErrorReport> ErrorReports { get; set; }
     public DbSet<ConfigurationRepository> ConfigRepositories { get; set; }

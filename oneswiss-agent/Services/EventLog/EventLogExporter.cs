@@ -15,7 +15,7 @@ public class EventLogExporter : IDisposable
     private readonly Timer _timer = new(5000);
     private IEventLogRepository? _repository;
 
-    public EventLogExporter(EventLogRepositoryManager repositoryManager, IHostApplicationLifetime applicationLifetime)
+    public EventLogExporter(IHostApplicationLifetime applicationLifetime)
     {
         _senderBlock = new ActionBlock<EventLogItem[]>(async batch =>
             await _repository!.WriteEvents(batch, applicationLifetime.ApplicationStopping));
@@ -28,12 +28,6 @@ public class EventLogExporter : IDisposable
         _eventsBatchBlock.LinkTo(_senderBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
         _timer.Elapsed += (_, _) => _eventsBatchBlock!.TriggerBatch();
-    }
-
-    public void Dispose()
-    {
-        _repository?.Dispose();
-        _timer.Dispose();
     }
 
     public async Task Init(IEventLogRepository repository, EventLogSettingsDto settings,
@@ -71,5 +65,14 @@ public class EventLogExporter : IDisposable
 
         _timer.Reset();
         _eventsBatchBlock!.Post(eventLogItem);
+    }
+
+    public async Task<DateTime> GetLastEventDateTime(string infoBaseId, CancellationToken cancellationToken)
+        => await _repository!.GetLastEventDateTime(infoBaseId, cancellationToken);
+    
+    public void Dispose()
+    {
+        _repository?.Dispose();
+        _timer.Dispose();
     }
 }

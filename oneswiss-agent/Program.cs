@@ -54,10 +54,10 @@ var host = Host.CreateDefaultBuilder(args)
 
         services.AddSingleton<MonitorQueue<MaintenanceTaskDto>>();
         services.AddHostedService<MaintenanceTaskExecutor>();
-
-        services.AddSingleton<EventLogRepositoryManager>();
+        
         services.AddSingleton<EventLogExporter>();
-        services.AddSingleton<EventLogExportManager>();
+        services.AddSingleton<MonitorQueue<EventLogSettingsDto>>();
+        services.AddHostedService<EventLogExportManager>();
 
         services.AddSingleton<TechLogRepositoryManager>();
         services.AddSingleton<TechLogExporter>();
@@ -93,7 +93,6 @@ await using (var scope = host.Services.CreateAsyncScope())
 }
 
 host.Services.GetRequiredService<TechLogManager>();
-host.Services.GetRequiredService<EventLogExportManager>();
 
 _ = host.Services.GetRequiredService<CommandsWatcher>()
     .Start(appLifetime.ApplicationStopping).ConfigureAwait(false);

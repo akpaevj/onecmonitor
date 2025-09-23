@@ -4,7 +4,7 @@ using OneSwiss.Server.Services;
 
 namespace OneSwiss.Server.ApiControllers;
 
-public class AgentsController(AgentsConnectionsManager connectionsManager, IConfiguration configuration)
+public class AgentsController(AgentsConnectionsManager connectionsManager)
     : ControllerBase
 {
     [Route("ws/agents")]

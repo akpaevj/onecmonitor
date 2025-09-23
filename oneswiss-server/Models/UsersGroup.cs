@@ -3,7 +3,7 @@ namespace OneSwiss.Server.Models;
 public class UsersGroup : DatabaseObject
 {
     public bool IsBuiltIn { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     public Guid? ParentId { get; set; }
     public UsersGroup? Parent { get; set; }

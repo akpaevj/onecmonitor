@@ -4,8 +4,8 @@ using OneSwiss.V8.Platform;
 
 namespace OneSwiss.Agent.Services.EventLog;
 
-public class EventLogReader(InfoBaseInfo infoBaseInfo, EventLogExporter exporter, ILogger<EventLogReader> logger)
-    : IDisposable
+public class IbcmdEventLogReader(InfoBaseInfo infoBaseInfo, EventLogExporter exporter, ILogger<IEventLogReader> logger)
+    : IEventLogReader
 {
     private Ibcmd? _ibcmd;
 
@@ -15,13 +15,13 @@ public class EventLogReader(InfoBaseInfo infoBaseInfo, EventLogExporter exporter
         GC.SuppressFinalize(this);
     }
 
-    public event EventHandler<(int, string)>? ProcessExited;
+    public event EventHandler? Stopped;
 
-    public void Start()
+    public void Start(DateTime startDateTime, CancellationToken cancellationToken)
     {
         _ibcmd = new Ibcmd(infoBaseInfo.Platform);
         _ibcmd.EventLogItemRead += EventLogItemHandler;
-        _ibcmd.ProcessExited += (sender, i) => ProcessExited?.Invoke(sender, i);
+        _ibcmd.ProcessExited += (sender, i) => Stopped?.Invoke(this, EventArgs.Empty);
 
         _ibcmd.ExportEventLog(infoBaseInfo.LogPath);
     }
@@ -31,7 +31,7 @@ public class EventLogReader(InfoBaseInfo infoBaseInfo, EventLogExporter exporter
         try
         {
             var item = JsonSerializer.Deserialize<EventLogItem>(eventData);
-            item!.InfoBaseName = infoBaseInfo.Name;
+            item!.InfoBaseId = infoBaseInfo.InfoBaseId;
 
             exporter.Send(item);
         }
@@ -55,7 +55,7 @@ public class EventLogReader(InfoBaseInfo infoBaseInfo, EventLogExporter exporter
         }
     }
 
-    ~EventLogReader()
+    ~IbcmdEventLogReader()
     {
         Dispose(false);
     }

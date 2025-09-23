@@ -41,18 +41,18 @@ public class MaintenanceStepContext
             InfoBase.InfoBaseName);
     }
 
-    public OnecV8BatchMode StartDesignerAgent(string baseDirectoryPath)
+    public async Task<OnecV8BatchMode> StartDesignerAgent(string baseDirectoryPath)
     {
         var batch = OnecV8BatchMode.CreateDesignerBatch(Platform, $"{InfoBase!.Cluster.Host}:{InfoBase.Cluster.Port}",
             InfoBase.InfoBaseName);
-        batch.StartSshAgent(baseDirectoryPath);
+        await batch.StartSshAgent(baseDirectoryPath);
 
         return batch;
     }
 
     public OnecV8BatchMode GetBatchEnterprise()
     {
-        return OnecV8BatchMode.CreateEnterpriseBatch(Platform, $"{InfoBase.Cluster.Host}:{InfoBase.Cluster.Port}",
+        return OnecV8BatchMode.CreateEnterpriseBatch(Platform, $"{InfoBase!.Cluster.Host}:{InfoBase.Cluster.Port}",
             InfoBase.InfoBaseName);
     }
 }

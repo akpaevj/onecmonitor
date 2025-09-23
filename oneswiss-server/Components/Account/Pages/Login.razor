@@ -87,7 +87,7 @@
             _errorMessage = "Неправильный логин или пароль";
     }
 
-    public async Task SsoLogin()
+    public Task SsoLogin()
     {
         var uri = NavManager.GetUriWithQueryParameters("/Account/PerformExternalLogin", new Dictionary<string, object?>
         {
@@ -96,6 +96,8 @@
         });
 
         NavManager.NavigateTo(uri);
+        
+        return Task.CompletedTask;
     }
 
     private sealed class InputModel

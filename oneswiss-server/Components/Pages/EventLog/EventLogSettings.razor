@@ -22,29 +22,35 @@
               OnInitialize="OnInitialize">
     <MudStack>
         <MudSwitch Class="mb-3" Label="Включен" @bind-Value="@_editor.Model!.Enabled" Color="Color.Primary"></MudSwitch>
-        <ItemSelector
-            @bind-Value="@_editor.Model!.DbmsId"
-            Items="@_editor.Context!.Dbms.AsNoTracking().ToList()"
-            Class="mb-3"
-            ItemValueSelector="arg => arg.Id"
-            ItemNameSelector="arg => arg.Name"
-            Label="СУБД"
-            For="@(() => _editor.Model!.DbmsId)"/>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.DatabaseName)" Label="Имя базы данных"
-                      @bind-Value="@_editor.Model!.DatabaseName"></MudTextField>
-        <MudTextField Class="mb-3" For="@(() => _editor.Model!.Table)" Label="Имя таблицы"
-                      @bind-Value="@_editor.Model!.Table"></MudTextField>
-        <ItemSelector
-            @bind-Value="@_editor.Model!.CredentialsId"
-            Items="@_editor.Context.Credentials.Where(c => !c.IsToken).ToList()"
-            Class="mb-3"
-            ItemValueSelector="arg => arg.Id"
-            ItemNameSelector="arg => arg.Name"
-            Label="Учетные данные"
-            For="@(() => _editor.Model!.CredentialsId)"/>
+        <MudStack Row>
+            <ItemSelector
+                @bind-Value="@_editor.Model!.DbmsId"
+                Items="@_editor.Context!.Dbms.AsNoTracking().ToList()"
+                Class="mb-3"
+                ItemValueSelector="arg => arg.Id"
+                ItemNameSelector="arg => arg.Name"
+                Label="СУБД"
+                For="@(() => _editor.Model!.DbmsId)"/>
+            <ItemSelector
+                @bind-Value="@_editor.Model!.CredentialsId"
+                Items="@_editor.Context.Credentials.Where(c => !c.IsToken).ToList()"
+                Class="mb-3"
+                ItemValueSelector="arg => arg.Id"
+                ItemNameSelector="arg => arg.Name"
+                Label="Учетные данные"
+                For="@(() => _editor.Model!.CredentialsId)"/>
+        </MudStack>
+        <MudStack Row>
+            <MudTextField Class="mb-3" For="@(() => _editor.Model!.DatabaseName)" Label="Имя базы данных"
+                          @bind-Value="@_editor.Model!.DatabaseName"></MudTextField>
+            <MudTextField Class="mb-3" For="@(() => _editor.Model!.Table)" Label="Имя таблицы"
+                          @bind-Value="@_editor.Model!.Table"></MudTextField>
+        </MudStack>
         <MudTextField Class="mb-3" For="@(() => _editor.Model!.InfoBaseNameRegex)"
                       Label="Шаблон регулярного выражения для имени ИБ"
                       @bind-Value="@_editor.Model!.InfoBaseNameRegex"></MudTextField>
+        <MudNumericField Class="mb-3" Label="TTL по умолчанию" For="@(() => _editor.Model!.DefaultTtl)"
+                      @bind-Value="@_editor.Model!.DefaultTtl"/>
     </MudStack>
 </SettingsForm>
 
@@ -61,19 +67,19 @@
 
     private async Task AfterSave(Models.EventLogSettings obj)
     {
-        if (!obj.Enabled)
-            return;
-
-        try
+        if (obj.Enabled)
         {
-            await InitDataBase();
+            try
+            {
+                await InitDataBase();
 
-            SnackBar.ShowSuccess("База данных инициализирована");
-        }
-        catch (Exception e)
-        {
-            SnackBar.ShowError(e);
-            return;
+                SnackBar.ShowSuccess("База данных инициализирована");
+            }
+            catch (Exception e)
+            {
+                SnackBar.ShowError(e);
+                return;
+            }
         }
 
         try
@@ -103,11 +109,6 @@
             settingsDto.Table);
 
         await context.InitEventLogTable(_cts!.Token);
-    }
-
-    public void Dispose()
-    {
-        _cts?.Dispose();
     }
 
     private class Validator : ModelValidator<Models.EventLogSettings>

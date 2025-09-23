@@ -17,10 +17,12 @@ public class EventLogSettings : DatabaseObject
     [MaxLength(100)]
     public string Table { get; set; } = string.Empty;
 
-    [Label("Учетные данные")] public Guid? CredentialsId { get; set; }
-
+    [Label("Учетные данные")] 
+    public Guid? CredentialsId { get; set; }
+    
     [Label("Шаблон регулярного выражения для имени ИБ")]
     public string InfoBaseNameRegex { get; set; } = string.Empty;
+    public int DefaultTtl { get; set; } = 365;
 
     public Dbms? Dbms { get; set; }
     public Credentials? Credentials { get; set; }
