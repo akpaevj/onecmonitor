@@ -12,7 +12,8 @@ public class EventLogExportManager(
     V8ServicesProvider v8ServicesProvider,
     EventLogExporter exporter,
     ILogger<IEventLogReader> logReaderLogger,
-    MonitorQueue<EventLogSettingsDto> settingsQueue)
+    MonitorQueue<EventLogSettingsDto> settingsQueue,
+    ILogger<EventLogExportManager> logger)
     : BackgroundService
 {
     private CancellationTokenSource? _cts;
@@ -23,28 +24,36 @@ public class EventLogExportManager(
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            var settings = await settingsQueue.DequeueAsync(cancellationToken);
-            await InitFromSettings(settings, cancellationToken);
-            
-            DisposeReaders();
-
-            if (!settings.Enabled) 
-                continue;
-            
-            foreach (var exportItem in settings.Items.Where(c => c.IsActive))
+            try
             {
-                var ragent = v8ServicesProvider.GetActiveRagentByPort(exportItem.InfoBase.Cluster.RagentPort);
-                var clusterCatalog = Path.Combine(ragent.WorkingDirectory, $"reg_{exportItem.InfoBase.Cluster.Port}");
-                var infoBaseLogCatalog = Path.Combine(clusterCatalog, exportItem.InfoBase.InfoBaseInternalId, "1Cv8Log");
+                var settings = await settingsQueue.DequeueAsync(cancellationToken);
+                await InitFromSettings(settings, cancellationToken);
+            
+                DisposeReaders();
 
-                var infoBaseInfo = new InfoBaseInfo(ragent.Platform, infoBaseLogCatalog,
-                    exportItem.InfoBase.InfoBaseName, exportItem.InfoBase.InfoBaseInternalId, exportItem.Ttl);
+                if (!settings.Enabled) 
+                    continue;
+            
+                foreach (var exportItem in settings.Items.Where(c => c.IsActive))
+                {
+                    var ragent = v8ServicesProvider.GetActiveRagentByPort(exportItem.InfoBase.Cluster.RagentPort);
+                    var clusterCatalog = Path.Combine(ragent.WorkingDirectory, $"reg_{exportItem.InfoBase.Cluster.Port}");
+                    var infoBaseLogCatalog = Path.Combine(clusterCatalog, exportItem.InfoBase.InfoBaseInternalId, "1Cv8Log");
+
+                    var infoBaseInfo = new InfoBaseInfo(ragent.Platform, infoBaseLogCatalog,
+                        exportItem.InfoBase.InfoBaseName, exportItem.InfoBase.InfoBaseInternalId, exportItem.Ttl);
                 
-                var reader = new BracketsEventLogReader(infoBaseInfo, exporter, logReaderLogger);
-                _readers.Add(reader);
+                    var reader = new BracketsEventLogReader(infoBaseInfo, exporter, logReaderLogger);
+                    _readers.Add(reader);
                 
-                var position = await exporter.GetLastEventDateTime(infoBaseInfo.InfoBaseId, _cts!.Token);
-                reader.Start(position, _cts!.Token);
+                    var position = await exporter.GetLastEventDateTime(infoBaseInfo.InfoBaseId, _cts!.Token);
+                    reader.Start(position, _cts!.Token);
+                }
+            }
+            catch (OperationCanceledException) {}
+            catch (Exception e)
+            {
+                logger.LogError(e, "Ошибка обработки новых настроек экспорта журнала регистрации");
             }
         }
     }
@@ -53,12 +62,15 @@ public class EventLogExportManager(
     {
         if (_cts != null)
             await _cts.CancelAsync();
-
+        
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         _settings = settings;
         
-        await exporter.Init(settings.GetDbContext(), _settings, _cts.Token);
+        if (settings.Enabled)
+            await exporter.Init(_settings.GetDbContext(), _settings, _cts.Token);
+        else
+            await exporter.FlushAsync(_cts.Token);
     }
 
     private void DisposeReaders()

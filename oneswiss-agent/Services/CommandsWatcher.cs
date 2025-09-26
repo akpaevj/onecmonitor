@@ -136,7 +136,7 @@ internal class CommandsWatcher
         }
         catch (Exception ex)
         {
-            _logger.LogTrace(ex, "Ошибка обработки сообщения");
+            _logger.LogError(ex, "Ошибка обработки сообщения");
             await _server.Error(message, ex.Message, _applicationLifetime.ApplicationStopping);
         }
     }
