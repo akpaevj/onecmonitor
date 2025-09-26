@@ -13,7 +13,7 @@ public static class EventLogSettingsExtensions
         if (settings == null)
             throw new Exception("Не установлены настройки хранилища журнала регистрации");
 
-        if (settings.Dbms.Type != DbmsType.ClickHouse)
+        if (settings.Dbms?.Type != DbmsType.ClickHouse)
             throw new Exception("Only ClickHouse is supported");
 
         return new ClickHouseContext(settings.Dbms, settings.Credentials, settings.DatabaseName, settings.Table);
