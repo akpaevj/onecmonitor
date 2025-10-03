@@ -46,7 +46,7 @@ public class BracketsEventLogReader(
                                 foreach (var eventLogItem in stream)
                                 {
                                     eventLogItem.TtlDate = DateTime.UtcNow.AddDays(infoBaseInfo.Ttl);
-                                    exporter.Send(eventLogItem);
+                                    await exporter.Send(eventLogItem);
                                 }
 
                                 if (NewLgpFilesExist(currentLgpFileInfo!))

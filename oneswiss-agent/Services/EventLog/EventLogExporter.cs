@@ -1,9 +1,8 @@
 using System.Threading.Tasks.Dataflow;
+using ClickHouse.Client;
 using OneSwiss.Agent.Extensions;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.EventLog;
-using OneSwiss.Common.Models;
-using OneSwiss.V8.Platform.Brackets;
 using Timer = System.Timers.Timer;
 
 namespace OneSwiss.Agent.Services.EventLog;
@@ -14,13 +13,14 @@ public class EventLogExporter : IAsyncDisposable
     private ActionBlock<EventLogItem[]>? _senderBlock;
     private readonly Timer _timer;
     private IEventLogRepository? _repository;
-    private readonly IHostApplicationLifetime _applicationLifetime;
+    private readonly ILogger<EventLogExporter> _logger;
+    private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    public EventLogExporter(IHostApplicationLifetime applicationLifetime)
+    public EventLogExporter(ILogger<EventLogExporter> logger)
     {
-        _applicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
-        
+        _logger = logger;
+
         _timer = new Timer(5000)
         {
             AutoReset = true
@@ -31,6 +31,14 @@ public class EventLogExporter : IAsyncDisposable
     public async Task Init(IEventLogRepository repository, EventLogSettingsDto settings,
         CancellationToken cancellationToken = default)
     {
+        if (_cts != null)
+        {
+            await _cts.CancelAsync();
+            _cts.Dispose();
+        }
+        
+        _cts =  CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         // Останавливаем текущий пайплайн и отправляем оставшиеся данные
@@ -39,15 +47,34 @@ public class EventLogExporter : IAsyncDisposable
         if (settings.Enabled)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-            await _repository.Connect(cancellationToken);
+            await _repository.Connect(_cts!.Token);
 
             _senderBlock = new ActionBlock<EventLogItem[]>(async batch =>
             {
-                if (_repository is null) return;
-                await _repository.WriteEvents(batch, _applicationLifetime.ApplicationStopping);
+                while (!_cts!.Token.IsCancellationRequested)
+                {
+                    if (_repository is null) 
+                        break;
+
+                    try
+                    {
+                        await _repository.WriteEvents(batch, _cts!.Token);
+                        break;
+                    }
+                    catch (OperationCanceledException) { break; }
+                    catch (Exception e)
+                    {
+                        if (e is ClickHouseServerException { ErrorCode: 241 })
+                            _logger.LogWarning(e, "Ошибка отправки данных в ClickHouse");
+                        else
+                            _logger.LogError(e, "Ошибка отправки данных в ClickHouse");
+                        
+                        await Task.Delay(60 * 1000, _cts!.Token);
+                    }
+                }
             }, new ExecutionDataflowBlockOptions
             {
-                CancellationToken = _applicationLifetime.ApplicationStopping,
+                CancellationToken = _cts!.Token,
                 MaxDegreeOfParallelism = 1,
                 BoundedCapacity = 2
             });
@@ -55,7 +82,7 @@ public class EventLogExporter : IAsyncDisposable
             _eventsBatchBlock = new BatchBlock<EventLogItem>(5000, new GroupingDataflowBlockOptions
             {
                 BoundedCapacity = 5000 * 3,
-                CancellationToken = _applicationLifetime.ApplicationStopping
+                CancellationToken = _cts!.Token
             });
 
             _eventsBatchBlock.LinkTo(_senderBlock, new DataflowLinkOptions { PropagateCompletion = true });
@@ -83,7 +110,7 @@ public class EventLogExporter : IAsyncDisposable
                 if (_senderBlock is not null)
                 {
                     var completionTask = _senderBlock.Completion;
-                    var timeoutTask = Task.Delay(TimeSpan.FromSeconds(30), _applicationLifetime.ApplicationStopping);
+                    var timeoutTask = Task.Delay(TimeSpan.FromSeconds(30), _cts!.Token);
                     
                     await Task.WhenAny(completionTask, timeoutTask);
                 }
@@ -104,12 +131,15 @@ public class EventLogExporter : IAsyncDisposable
         _senderBlock = null;
     }
 
-    public void Send(EventLogItem eventLogItem)
+    public async Task Send(EventLogItem eventLogItem)
     {
         _timer.Reset();
-
-        if (!_eventsBatchBlock!.Post(eventLogItem))
-            throw new InvalidOperationException("Ошибка отправки события. Блок накопления завершен или переполнен");
+        
+        while (!_cts!.Token.IsCancellationRequested)
+            if (_eventsBatchBlock!.Post(eventLogItem))
+                break;
+            else
+                await Task.Delay(100, _cts!.Token);
     }
 
     public async Task<DateTime> GetLastEventDateTime(string infoBaseId, CancellationToken cancellationToken = default)
@@ -146,8 +176,8 @@ public class EventLogExporter : IAsyncDisposable
         finally
         {
             _timer.Dispose();
-
             _repository?.Dispose();
+            _cts?.Dispose();
         }
     }
 

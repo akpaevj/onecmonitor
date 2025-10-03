@@ -1,4 +1,5 @@
 using System.Threading.Tasks.Dataflow;
+using ClickHouse.Client;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.Models;
 using OneSwiss.Common.Services;
@@ -54,15 +55,23 @@ public class TechLogExporter
 
         _sendBlock = new ActionBlock<TjEvent[]>(async tjEvents =>
         {
-            try
+            while (!cancellationToken.IsCancellationRequested)
             {
-                await _repository.WriteEvents(tjEvents, cancellationToken);
-
-                _logger.LogTrace("Tj events batch has been sent to the database");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send tech log events batch to the database");
+                try
+                {
+                    await _repository.WriteEvents(tjEvents, cancellationToken);
+                    _logger.LogTrace("Tj events batch has been sent to the database");
+                    break;
+                }
+                catch (Exception e)
+                {
+                    if (e is ClickHouseServerException { ErrorCode: 241 })
+                        _logger.LogWarning(e, "Ошибка отправки данных в ClickHouse");
+                    else
+                        _logger.LogError(e, "Ошибка отправки данных в ClickHouse");
+                        
+                    await Task.Delay(60 * 1000, cancellationToken);
+                }
             }
         }, sendBlockOptions);
 
@@ -86,6 +95,7 @@ public class TechLogExporter
                 else
                     _logger.LogError($"Ошибка разбора события технологического журнала: {i.Content}");
             }
+            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Ошибка разбора события технологического журнала: {i.Content}");

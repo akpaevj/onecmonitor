@@ -15,7 +15,9 @@ internal class LgfDataProvider : IDisposable
 
     public LgfDataProvider(string path)
     {
-        _streamReader = new StreamReader(path);
+        var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        _streamReader = new StreamReader(fs);
+        
         SkipSignature();
         
         _parser = new BracketsParser();

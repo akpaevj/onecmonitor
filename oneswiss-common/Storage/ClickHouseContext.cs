@@ -73,7 +73,7 @@ public class ClickHouseContext(
                  SessionDataSeparationPresentation String Codec(ZSTD),
              )
              engine = MergeTree()
-             PARTITION BY toYYYYMM(Date)
+             PARTITION BY (toYYYYMM(Date), InfoBaseId)
              ORDER BY Date
              TTL TtlDate DELETE
              """;

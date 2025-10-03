@@ -95,27 +95,30 @@ public class AgentsConnectionsManager(
         try
         {
             var task = await context.MaintenanceTasks
-                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.File)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.ConfigurationRepository.Agent)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.ConfigurationRepository.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.File)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.BaseConfigurationRepository.Agent)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.BaseConfigurationRepository.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.ConfigurationRepository.Agent)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.ConfigurationRepository.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.UpdateConfigurationStep.File)
-                .Include(c => c.Steps).ThenInclude(c => c.ExecuteOneScriptStep.File)
-                .Include(c => c.Steps).ThenInclude(c => c.StartExternalDataProcessorStep.File)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.SourceCredentials)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
-                .ThenInclude(c => c.SourceInfoBase.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
-                .ThenInclude(c => c.SourceInfoBase.Cluster.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.DestinationCredentials)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
-                .ThenInclude(c => c.DestinationInfoBase.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
-                .ThenInclude(c => c.DestinationInfoBase.Cluster.Credentials)
+                    
+                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep!.File)
+                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep!.ConfigurationRepository!.Agent)
+                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep!.ConfigurationRepository!.Credentials)
+                
+                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep!.File)
+                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep!.BaseConfigurationRepository!.Agent)
+                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep!.BaseConfigurationRepository!.Credentials)
+                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep!.ConfigurationRepository!.Agent)
+                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep!.ConfigurationRepository!.Credentials)
+                
+                .Include(c => c.Steps).ThenInclude(c => c.UpdateConfigurationStep!.File)
+                
+                .Include(c => c.Steps).ThenInclude(c => c.ExecuteOneScriptStep!.File)
+                
+                .Include(c => c.Steps).ThenInclude(c => c.StartExternalDataProcessorStep!.File)
+                
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c!.SourceCredentials)
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c!.SourceInfoBase!.Credentials)
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c!.SourceInfoBase!.Cluster.Credentials)
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c!.DestinationCredentials)
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c!.DestinationInfoBase!.Credentials)
+                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c!.DestinationInfoBase!.Cluster.Credentials)
+                
                 .Include(c => c.Agents)
                 .Include(c => c.InfoBases).ThenInclude(c => c.Credentials)
                 .Include(c => c.InfoBases).ThenInclude(c => c.Cluster).ThenInclude(c => c.Agent)
