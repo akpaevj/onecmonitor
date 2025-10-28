@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using OneSwiss.V8.ConfigurationRepository;
 using OneSwiss.V8.Extensions;
+using OneSwiss.V8.Helpers;
 
 namespace OneSwiss.V8.Platform.Services;
 
@@ -193,7 +194,7 @@ public static partial class V8Services
                 continue;
 
             // Если путь к исполняемому файлу службы не включает в себя путь одной из установленных платформ, то это не служба 1С
-            var executablePath = args.ItemByIndexAsValue(0)!.Value;
+            var executablePath = PathHelper.ResolvePath(args.ItemByIndexAsValue(0)!.Value);
 
             var isOnecService = platforms.Any(c => executablePath.Contains(c.PlatformPath, StringComparison.InvariantCultureIgnoreCase));
             if (!isOnecService)
@@ -317,8 +318,7 @@ public static partial class V8Services
                 continue;
 
             // Если путь к исполняемому файлу службы не включает в себя путь одной из установленных платформ, то это не служба 1С 
-            var executablePath = args.ItemByIndexAsValue(0)!.Value;
-
+            var executablePath = PathHelper.ResolvePath(args.ItemByIndexAsValue(0)!.Value);
             var isOnecService = platforms.Any(c => executablePath.Contains(c.PlatformPath));
             if (!isOnecService)
                 continue;
