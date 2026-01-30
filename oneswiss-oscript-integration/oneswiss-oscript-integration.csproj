@@ -1,38 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <RootNamespace>OneSwiss.OneScript</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj"/>
+      <PackageReference Include="OneScript" Version="2.0.0" />
+      <PackageReference Include="OneScript.DebugServices" Version="2.0.0" />
+      <PackageReference Include="OneScript.Hosting" Version="2.0.0" />
+      <PackageReference Include="OneScript.StandardLibrary" Version="2.0.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="OneScript.Core">
-            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Core.dll</HintPath>
-        </Reference>
-        <Reference Include="OneScript.DebugServices">
-            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.DebugServices.dll</HintPath>
-        </Reference>
-        <Reference Include="OneScript.Language">
-            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.Language.dll</HintPath>
-        </Reference>
-        <Reference Include="OneScript.StandardLibrary">
-            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\OneScript.StandardLibrary.dll</HintPath>
-        </Reference>
-        <Reference Include="oscript">
-            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\oscript.dll</HintPath>
-        </Reference>
-        <Reference Include="ScriptEngine">
-            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.dll</HintPath>
-        </Reference>
-        <Reference Include="ScriptEngine.HostedScript">
-            <HintPath>..\..\OneScript\src\oscript\bin\Release\net8.0\ScriptEngine.HostedScript.dll</HintPath>
-        </Reference>
+        <ProjectReference Include="..\oneswiss-v8\oneswiss-v8.csproj" />
     </ItemGroup>
 
 </Project>

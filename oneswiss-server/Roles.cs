@@ -17,6 +17,8 @@ public static class Roles
     public const string ReadGitRepositories = "ReadGitRepositories";
     public const string WriteGitRepositories = "WriteGitRepositories";
     public const string ReadEventLog = "ReadEventLog";
+    public const string ReadBuildTasks = "ReadBuildTasks";
+    public const string ConfigBuildTasks = "ConfigBuildTasks";
     private static readonly List<(string Name, string Description)> _roles;
 
     static Roles()
@@ -49,6 +51,8 @@ public static class Roles
             ReadGitRepositories => "Чтение репозиториев Git",
             WriteGitRepositories => "Запись репозиториев Git",
             ReadEventLog => "Чтение журнала регистрации",
+            ReadBuildTasks => "Чтение задач сборки",
+            ConfigBuildTasks => "Настройка задач сборки",
             _ => throw new ArgumentOutOfRangeException(nameof(role), role, null)
         };
     }

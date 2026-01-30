@@ -8,6 +8,8 @@ using OneSwiss.Common.DTO;
 using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Common.Services;
 using OneSwiss.V8.ConfigurationRepository;
+using OneSwiss.V8.Designer.Agent;
+using OneSwiss.V8.Designer.Batch;
 using OneSwiss.V8.Platform.RemoteAdministration;
 using V8Cluster = OneSwiss.V8.Platform.RemoteAdministration.V8Cluster;
 

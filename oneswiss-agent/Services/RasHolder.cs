@@ -8,13 +8,11 @@ using OneSwiss.V8.Platform.Services;
 
 namespace OneSwiss.Agent.Services;
 
-[ContextClass("МенеджерRas", "RasManager")]
 public class RasHolder(V8ServicesProvider v8ServicesProvider) : IDisposable
 {
     private readonly List<Process> _processes = [];
     private readonly Dictionary<int, RasService> _rasServiceModels = [];
 
-    [ContextMethod("ПолучитьСлужбыRas", "GetRasServices", Converter = typeof(ListContextConverter<RasService>))]
     public List<RasService> GetRasServices()
     {
         var services = v8ServicesProvider.GetRasServices();
@@ -23,7 +21,6 @@ public class RasHolder(V8ServicesProvider v8ServicesProvider) : IDisposable
         return services;
     }
 
-    [ContextMethod("ПолучитьЗапущеннуюСлужбуRasДляRagent", "GetActiveRasForRagent")]
     public RasService GetActiveRasForRagent(RagentService ragent)
     {
         var service = GetRasServices()

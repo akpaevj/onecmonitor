@@ -33,7 +33,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<RasHolder>();
         services.AddDbContext<AppDbContext>();
 
-        services.AddSingleton<AgentInstance>(sp =>
+        services.AddSingleton(sp =>
         {
             using var scope = sp.CreateScope();
 
@@ -44,7 +44,7 @@ var host = Host.CreateDefaultBuilder(args)
         });
 
         services.AddTransient<OneSwissConnection>();
-        services.AddKeyedTransient<OneSwissConnection>(OneSwissConnection.CommonKey, (sp, _) =>
+        services.AddKeyedTransient(OneSwissConnection.CommonKey, (sp, _) =>
         {
             var connection = sp.GetRequiredService<OneSwissConnection>();
             connection.Start().Wait();
@@ -101,7 +101,7 @@ host.Run();
 
 return;
 
-AgentInstance CreateAgentInstance(IConfiguration configuration, AppDbContext appDbContext)
+static AgentInstance CreateAgentInstance(IConfiguration configuration, AppDbContext appDbContext)
 {
     var agentInstance = appDbContext.AgentInstance.AsNoTracking().SingleOrDefault();
 

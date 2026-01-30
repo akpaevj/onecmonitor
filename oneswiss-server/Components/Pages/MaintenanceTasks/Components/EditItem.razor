@@ -49,32 +49,18 @@
                       OnUpdate="OnUpdate"
                       Editable="_editable">
         <MudStack>
-            <MudStack Row Class="mb-3" Breakpoint="Breakpoint.MdAndDown" StretchItems="StretchItems.All" AlignItems="AlignItems.Center">
-                <MudTextField For="@(() => _editor.Model!.Description)" Variant="Variant.Outlined"
+            <MudStack Row Class="mb-3" Breakpoint="Breakpoint.MdAndDown" StretchItems="StretchItems.All" AlignItems="AlignItems.Start">
+                <MudTextField For="@(() => _editor.Model!.Description)" 
+                              Variant="Variant.Outlined"
                               Class="w-100"
                               Label="Наименование" @bind-Value="@_editor.Model!.Description"/>
-                <MudSwitch Label="Задача общего назначения"
-                           @bind-Value:get="@_editor.Model!.CommonDestination"
-                           @bind-Value:set="SetTaskType"
-                           Color="Color.Primary"/>
-                @if (_editor.Model!.CommonDestination)
-                {
-                    <ItemsSelector T="Agent"
-                                   @bind-SelectedValues="_editor.Model!.Agents"
-                                   Items="@_editor.Context!.Agents.ToList()"
-                                   Title="Агенты"
-                                   Class="w-100"
-                                   NameSelector="item => item.InstanceName"/>
-                }
-                else
-                {
-                    <ItemsSelector T="InfoBase"
-                                   @bind-SelectedValues="_editor.Model!.InfoBases"
-                                   Items="@_editor.Context!.InfoBases.ToList()"
-                                   Class="w-100"
-                                   Title="Информационные базы"
-                                   NameSelector="item => item.Name"/>
-                }
+                <ItemsSelector T="InfoBase"
+                               @bind-SelectedValues="_editor.Model!.InfoBases"
+                               Items="@_editor.Context!.InfoBases.ToList()"
+                               Class="w-100"
+                               Margin="Margin.None"
+                               Title="Информационные базы"
+                               NameSelector="item => item.Name" />
             </MudStack>
             @if (ShowStartWithNewVersionFlag())
             {

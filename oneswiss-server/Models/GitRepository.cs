@@ -8,5 +8,6 @@ public class GitRepository : DatabaseObject
     public string Address { get; set; } = string.Empty;
     public Guid TokenId { get; set; }
 
-    [ForeignKey(nameof(TokenId))] public Credentials Token { get; set; }
+    [ForeignKey(nameof(TokenId))] 
+    public Credentials Token { get; set; }
 }

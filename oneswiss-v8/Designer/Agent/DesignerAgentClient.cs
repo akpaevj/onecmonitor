@@ -119,6 +119,36 @@ public sealed class DesignerAgentClient : IDisposable
         await MessagesChannel.EnsureNextSuccess();
     }
 
+    public async Task<string> DumpConfiguration()
+    {
+        var path = Guid.NewGuid().ToString();
+        var listFilePath = Path.GetTempFileName();
+
+        try
+        {
+            Directory.CreateDirectory(path);
+
+            File.WriteAllText(listFilePath, "Configuration");
+
+            WriteCommand($"config dump-config-to-files --dir=\"{path}\" --list-file=\"{listFilePath}\"");
+            var messages = await MessagesChannel.ReadTillSuccess();
+
+            return File.ReadAllText(Path.Combine(path, "Configuration.xml"));
+        }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, true);
+
+            if (File.Exists(listFilePath))
+                File.Delete(listFilePath);
+        }
+    }
+
     public void UpdateDbCfg()
     {
         WriteCommand("config update-db-cfg --dynamic-disable --server --session-terminate=force");

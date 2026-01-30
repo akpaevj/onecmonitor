@@ -56,14 +56,17 @@
     private string? _errorMessage;
     private AuthenticationScheme? _oidcScheme;
 
-    [CascadingParameter] private HttpContext HttpContext { get; set; } = null!;
+    [CascadingParameter] 
+    private HttpContext HttpContext { get; set; } = null!;
 
-    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+    [CascadingParameter] 
+    private Task<AuthenticationState>? AuthState { get; set; }
 
     [SupplyParameterFromForm(FormName = "internalLogin")]
     private InputModel Input { get; set; } = new();
 
-    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery] 
+    private string? ReturnUrl { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

@@ -22,6 +22,14 @@
                     <MudNavLink Href="maintenancetaskstemplates">Шаблоны задач обслуживания</MudNavLink>
                 </MudNavGroup>
             }
+            @if (context.IsInRoles(Roles.ReadBuildTasks, Roles.ConfigBuildTasks))
+            {
+                <MudNavGroup Class="mb-1" Title="Сборка" Expanded="true"
+                             Icon="@Icons.Material.Filled.Build" IconColor="Color.Success">
+                    <MudNavLink Href="build/config">Настройки</MudNavLink>
+                    <MudNavLink Href="build/tasks">Задачи</MudNavLink>
+                </MudNavGroup>
+            }
             @if (context.IsInRoles(Roles.ReadTechLogSeances, Roles.WriteTechLogSeances))
             {
                 <MudNavGroup hidden="@_techLogDisabled" Class="mb-1" Title="Технологический журнал"
