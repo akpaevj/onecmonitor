@@ -18,8 +18,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "oneswiss-oscript-integratio
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "oneswiss-tests", "oneswiss-tests\oneswiss-tests.csproj", "{59D53F09-56F7-42FD-909A-5610E888B62A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{C5A93068-0B0D-4DAA-BFF4-A1A25FFF2E96}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -50,10 +48,6 @@ Global
 		{59D53F09-56F7-42FD-909A-5610E888B62A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{59D53F09-56F7-42FD-909A-5610E888B62A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{59D53F09-56F7-42FD-909A-5610E888B62A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C5A93068-0B0D-4DAA-BFF4-A1A25FFF2E96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C5A93068-0B0D-4DAA-BFF4-A1A25FFF2E96}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C5A93068-0B0D-4DAA-BFF4-A1A25FFF2E96}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C5A93068-0B0D-4DAA-BFF4-A1A25FFF2E96}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
