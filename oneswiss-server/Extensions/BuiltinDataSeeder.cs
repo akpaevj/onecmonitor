@@ -14,7 +14,6 @@ public static class BuiltinDataSeeder
         await scope.ServiceProvider.SeedAccessGroups();
         await scope.ServiceProvider.SeedUsersGroups();
         await scope.ServiceProvider.SeedUsers();
-        await scope.ServiceProvider.SeedGitSyncSettings();
 
         var groupsManager = scope.ServiceProvider.GetRequiredService<UserGroupsManager>();
         await groupsManager.UpdateUsersRoles();
@@ -84,23 +83,5 @@ public static class BuiltinDataSeeder
             ParentId = BuiltInDbData.EveryoneGroup.Id
         };
         await manager.Create(adminsGroup, [BuiltInDbData.AdminsAccessGroup.Id]);
-    }
-
-    private static async Task SeedGitSyncSettings(this IServiceProvider serviceProvider)
-    {
-        await using var context = serviceProvider.GetRequiredService<AppDbContext>();
-
-        var settings = await context.GitSyncSettings.FirstOrDefaultAsync();
-        if (settings != null)
-            return;
-
-        await context.GitSyncSettings.AddAsync(new GitSyncSettings
-        {
-            Enabled = false,
-            BranchName = "dev",
-            LfsTrackers = "*.cf, *.bin, *.png, *.gif, *.bmp, *.jpg, *.zip"
-        });
-
-        await context.SaveChangesAsync();
     }
 }

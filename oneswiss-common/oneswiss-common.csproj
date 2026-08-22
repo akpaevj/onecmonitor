@@ -20,8 +20,8 @@
         </PackageReference>
         <PackageReference Include="Google.Protobuf" Version="3.33.2" />
         <PackageReference Include="Grpc.Core.Api" Version="2.76.0" />
-        <PackageReference Include="MessagePack" Version="3.1.4" />
-        <PackageReference Include="MessagePack.Annotations" Version="3.1.4" />
+        <PackageReference Include="MessagePack" Version="3.1.8" />
+        <PackageReference Include="MessagePack.Annotations" Version="3.1.8" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.1" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.1" />

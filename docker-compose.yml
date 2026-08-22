@@ -1,0 +1,96 @@
+# Стек для развёртывания: PostgreSQL + oneswiss-server (Web API) + oneswiss-web (веб-панель),
+# каждый в своём контейнере.
+#
+#   docker compose up -d --build
+#
+# Образы именуются через IMAGE_REGISTRY/IMAGE_TAG (см. .env.example) - это позволяет собрать их
+# один раз и запушить в любой registry командой `docker compose push`, не редактируя сам файл:
+#   IMAGE_REGISTRY=registry.example.com/myuser/ docker compose build
+#   IMAGE_REGISTRY=registry.example.com/myuser/ docker compose push
+#
+# Перед использованием этого файла не только для локальной пробы, смените все значения-заглушки
+# ниже (пароль БД, ключ подписи JWT) и пересмотрите volumes/порты под своё окружение.
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: oneswiss
+      POSTGRES_USER: oneswiss
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oneswiss -d oneswiss"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    image: ${IMAGE_REGISTRY:-}oneswiss-server:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: oneswiss-server/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=oneswiss;Username=oneswiss;Password=change-me"
+
+      # Адрес веб-панели, для CORS. Приведите в соответствие с тем, где реально опубликован oneswiss-web.
+      Ui__ReactUrl: "http://localhost:3000"
+
+      # --- Аутентификация ---
+      
+      # -- Агентов --
+      # Требовать от агентов предъявления валидного JWT при подключении к этому серверу.
+      Auth__RequireClientsAuthentication: "false"
+      # Должен быть длинным случайным секретом - используется для подписи JWT, выдаваемых веб-панели и агентам.
+      Auth__Jwt__SigningKey: change-me-to-a-long-random-secret-at-least-32-chars
+
+      # -- Пользователей --
+      # Internal (только логин/пароль) или Mixed (Internal + OIDC/SSO, см. Auth__OIDC__* ниже).
+      Auth__Mode: "Internal"
+      # Используется только при Auth__Mode=Mixed - внешний OIDC/SSO провайдер для интерактивного входа пользователей.
+      # Auth__OIDC__Authority: "https://my.company.com/realms/master"
+      # Auth__OIDC__ClientId: "oneswiss"
+      # Auth__OIDC__ClientSecret: "change-me"
+      # Auth__OIDC__Scopes__0: "profile"
+      # Auth__OIDC__Scopes__1: "openid"
+      # Auth__OIDC__NameClaim: "preferred_username"
+      # Auth__OIDC__DisplayNameClaim: "name"
+
+      # --- Reverse proxy ---
+      # IP пограничного прокси (nginx/traefik/IIS и т.п.) перед этим контейнером, если он есть -
+      # чтобы ASP.NET Core доверял его заголовкам X-Forwarded-For/X-Forwarded-Proto. Список
+      # заголовков, которые должен выставлять сам прокси, см. в README.md, раздел
+      # "Работа за reverse proxy".
+      # ProxyAddress: "10.10.0.1"
+    ports:
+      - "7002:7002"
+    volumes:
+      - server_data:/app/Data
+
+  web:
+    image: ${IMAGE_REGISTRY:-}oneswiss-web:${IMAGE_TAG:-latest}
+    build:
+      context: ./oneswiss-web
+    restart: unless-stopped
+    depends_on:
+      - server
+    environment:
+      # Браузер обращается к бэкенду напрямую - адрес, по которому бэкенд реально доступен из
+      # БРАУЗЕРА пользователя (не имя сервиса в Docker-сети). Читается docker-entrypoint.sh при
+      # каждом старте контейнера (а не запекается при сборке) - можно менять и перезапускать
+      # контейнер без пересборки образа, в том числе уже опубликованного в registry. По умолчанию
+      # берётся из PUBLIC_BACKEND_URL (см. .env.example) - для реального развёртывания задайте
+      # там публичный домен/IP сервера, а не localhost.
+      NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_BACKEND_URL:-http://localhost:7002}
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
+  server_data:

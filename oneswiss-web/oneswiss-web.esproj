@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.1948920">
+  <PropertyGroup>
+    <StartupCommand>npm run dev</StartupCommand>
+    <BuildCommand>npm run build</BuildCommand>
+    <CleanCommand>npm run lint</CleanCommand>
+    <ShouldRunBuildScript>false</ShouldRunBuildScript>
+    <SiteUrlToLaunchAfterPublish>http://localhost:3000/</SiteUrlToLaunchAfterPublish>
+  </PropertyGroup>
+</Project>

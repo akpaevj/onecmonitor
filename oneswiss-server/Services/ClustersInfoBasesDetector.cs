@@ -121,7 +121,6 @@ public class ClustersInfoBasesDetector(
                             }
                             catch (Exception e)
                             {
-                                await appDbContext.Database.RollbackTransactionAsync(token);
                                 logger.LogError(e,
                                     $"Ошибка получения списка кластеров. Агент: {connection.AgentInstance!.InstanceName}");
                             }

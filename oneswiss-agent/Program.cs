@@ -7,7 +7,6 @@ using OneSwiss.Agent.Models;
 using OneSwiss.Agent.Oscript;
 using OneSwiss.Agent.Services;
 using OneSwiss.Agent.Services.EventLog;
-using OneSwiss.Agent.Services.GitSync;
 using OneSwiss.Agent.Services.MaintenanceTasks;
 using OneSwiss.Agent.Services.TechLog;
 using OneSwiss.Common.DTO;
@@ -64,9 +63,6 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<TechLogFoldersManager>();
         services.AddSingleton<TechLogReadersManager>();
         services.AddSingleton<TechLogManager>();
-
-        services.AddSingleton<MonitorQueue<List<GitSyncTaskDto>>>();
-        services.AddSingleton<GitSyncTasksManager>();
 
         services.AddSingleton<CommandsWatcher>();
         services.AddSingleton<AgentsResourcesProvider>();

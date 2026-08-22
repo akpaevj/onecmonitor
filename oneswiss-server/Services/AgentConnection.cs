@@ -69,17 +69,11 @@ public class AgentConnection : FastConnection
                     case MessageType.SettingsRequest:
                         await HandleSettingsRequest(message, cancellationToken);
                         break;
-                    case MessageType.GitSyncTasksRequest:
-                        await HandleGitSyncTasksRequest(message, cancellationToken);
-                        break;
                     case MessageType.FileRequest:
                         await SendFile(message, cancellationToken);
                         break;
                     case MessageType.QueueCustomNotificationRequest:
                         await QueueCustomNotification(message, cancellationToken);
-                        break;
-                    case MessageType.GitSyncTaskProcessorStopped:
-                        await HandleGitSyncTaskProcessorStopped(message, cancellationToken);
                         break;
                     case MessageType.CrServerPlatformRequest:
                         await HandleCrServerPlatformRequest(message, cancellationToken);
@@ -109,26 +103,6 @@ public class AgentConnection : FastConnection
         await Send(MessageType.V8Platform, service, message, cancellationToken);
     }
 
-    private async Task<List<GitSyncTaskDto>> GetGitSyncTasks(CancellationToken cancellationToken)
-    {
-        await using var scope = _serviceProvider.CreateAsyncScope();
-        await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var tasks = await dbContext.GitSyncTasks
-            .AsNoTracking()
-            .Include(c => c.Items).ThenInclude(c => c.BaseConfigurationRepository.Agent)
-            .Include(c => c.Items).ThenInclude(c => c.BaseConfigurationRepository.Credentials)
-            .Include(c => c.Items).ThenInclude(c => c.BaseConfigurationRepository.Users)
-            .Include(c => c.Items).ThenInclude(c => c.ConfigurationRepository.Agent)
-            .Include(c => c.Items).ThenInclude(c => c.ConfigurationRepository.Credentials)
-            .Include(c => c.Items).ThenInclude(c => c.ConfigurationRepository.Users)
-            .Include(c => c.GitRepository.Token)
-            .Where(c => c.AgentId == AgentInstance!.Id)
-            .ToListAsync(cancellationToken);
-
-        return _mapper.Map<List<GitSyncTaskDto>>(tasks);
-    }
-
     private async Task<SettingsDto> GetSettings(CancellationToken cancellationToken)
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
@@ -156,19 +130,13 @@ public class AgentConnection : FastConnection
                 .Include(c => c.Credentials)
                 .SingleOrDefaultAsync(cancellationToken) ?? new TechLogSettings();
 
-        var gitSyncSettings =
-            await dbContext.GitSyncSettings
-                .AsNoTracking()
-                .SingleOrDefaultAsync(cancellationToken) ?? new GitSyncSettings();
-
         var techLogSettingsDto = _mapper.Map<TechLogSettingsDto>(techLogSettings);
         techLogSettingsDto.Seances = await GetTechLogSeances(cancellationToken);
 
         var settings = new SettingsDto
         {
             EventLogSettings = eventLogSettingsDto,
-            TechLogSettings = techLogSettingsDto,
-            GitSyncSettings = _mapper.Map<GitSyncSettingsDto>(gitSyncSettings)
+            TechLogSettings = techLogSettingsDto
         };
 
         return settings;
@@ -179,49 +147,9 @@ public class AgentConnection : FastConnection
         await Send(MessageType.Settings, await GetSettings(cancellationToken), message, cancellationToken);
     }
 
-    private async Task HandleGitSyncTasksRequest(Message message, CancellationToken cancellationToken)
-    {
-        await Send(MessageType.GitSyncTasks, await GetGitSyncTasks(cancellationToken), message, cancellationToken);
-    }
-
-    private async Task HandleGitSyncTaskProcessorStopped(Message message, CancellationToken cancellationToken)
-    {
-        var request = ParseMessageData<GitSyncTasksProcessorStopped>(message.Data, cancellationToken);
-
-        await using var scope = _serviceProvider.CreateAsyncScope();
-        await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var task = await dbContext.GitSyncTasks
-            .Include(gitSyncTask => gitSyncTask.Items)
-            .FirstOrDefaultAsync(c => c.Id == request.TaskId, cancellationToken);
-
-        if (request.ConfigurationRepositoryId == Guid.Empty)
-        {
-            task!.IsActive = false;
-        }
-        else
-        {
-            var taskItem =
-                task!.Items.FirstOrDefault(c => c.ConfigurationRepositoryId == request.ConfigurationRepositoryId);
-            taskItem!.IsActive = false;
-        }
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        await _notificationsService.QueueGitSyncStopped(task!.Id, request.ConfigurationRepositoryId, request.Reason,
-            cancellationToken);
-
-        await SendOk(message, cancellationToken);
-    }
-
     public async Task SendSettingsRequest(CancellationToken cancellationToken)
     {
         await Send(MessageType.Settings, await GetSettings(cancellationToken), cancellationToken);
-    }
-
-    public async Task SendGitSyncTasks(CancellationToken cancellationToken)
-    {
-        await Send(MessageType.GitSyncTasks, await GetGitSyncTasks(cancellationToken), cancellationToken);
     }
 
     public async Task<List<V8Platform>> GetInstalledPlatforms(CancellationToken cancellationToken)
@@ -347,6 +275,148 @@ public class AgentConnection : FastConnection
             cancellationToken);
     }
 
+    public async Task<List<V8Lock>> GetV8Locks(Cluster cluster, InfoBase? infoBase,
+        CancellationToken cancellationToken)
+    {
+        return await Get<V8LocksRequestDto, List<V8Lock>>(
+            MessageType.V8LocksRequest,
+            MessageType.V8Locks,
+            new V8LocksRequestDto
+            {
+                Cluster = _mapper.Map<ClusterDto>(cluster),
+                InfoBase = infoBase == null ? null : _mapper.Map<InfoBaseDto>(infoBase)
+            },
+            cancellationToken);
+    }
+
+    public async Task<List<V8Server>> GetV8Servers(Cluster cluster, CancellationToken cancellationToken)
+    {
+        return await Get<ClusterDto, List<V8Server>>(
+            MessageType.V8ServersRequest,
+            MessageType.V8Servers,
+            _mapper.Map<ClusterDto>(cluster),
+            cancellationToken);
+    }
+
+    public async Task<List<V8Manager>> GetV8Managers(Cluster cluster, CancellationToken cancellationToken)
+    {
+        return await Get<ClusterDto, List<V8Manager>>(
+            MessageType.V8ManagersRequest,
+            MessageType.V8Managers,
+            _mapper.Map<ClusterDto>(cluster),
+            cancellationToken);
+    }
+
+    public async Task<List<V8ManagerService>> GetV8ManagerServices(Cluster cluster,
+        CancellationToken cancellationToken)
+    {
+        return await Get<ClusterDto, List<V8ManagerService>>(
+            MessageType.V8ManagerServicesRequest,
+            MessageType.V8ManagerServices,
+            _mapper.Map<ClusterDto>(cluster),
+            cancellationToken);
+    }
+
+    public async Task<string> GetV8AgentVersion(Cluster cluster, CancellationToken cancellationToken)
+    {
+        return await Get<ClusterDto, string>(
+            MessageType.V8AgentVersionRequest,
+            MessageType.V8AgentVersion,
+            _mapper.Map<ClusterDto>(cluster),
+            cancellationToken);
+    }
+
+    public async Task<List<V8SecurityProfile>> GetV8SecurityProfiles(Cluster cluster,
+        CancellationToken cancellationToken)
+    {
+        return await Get<ClusterDto, List<V8SecurityProfile>>(
+            MessageType.V8SecurityProfilesRequest,
+            MessageType.V8SecurityProfiles,
+            _mapper.Map<ClusterDto>(cluster),
+            cancellationToken);
+    }
+
+    public async Task<List<V8ResourceCounter>> GetV8ResourceCounters(Cluster cluster,
+        CancellationToken cancellationToken)
+    {
+        return await Get<ClusterDto, List<V8ResourceCounter>>(
+            MessageType.V8ResourceCountersRequest,
+            MessageType.V8ResourceCounters,
+            _mapper.Map<ClusterDto>(cluster),
+            cancellationToken);
+    }
+
+    public async Task<List<V8ResourceLimit>> GetV8ResourceLimits(Cluster cluster,
+        CancellationToken cancellationToken)
+    {
+        return await Get<ClusterDto, List<V8ResourceLimit>>(
+            MessageType.V8ResourceLimitsRequest,
+            MessageType.V8ResourceLimits,
+            _mapper.Map<ClusterDto>(cluster),
+            cancellationToken);
+    }
+
+    public async Task<List<V8AssignmentRule>> GetV8AssignmentRules(Cluster cluster, string serverId,
+        CancellationToken cancellationToken)
+    {
+        return await Get<V8AssignmentRulesRequestDto, List<V8AssignmentRule>>(
+            MessageType.V8AssignmentRulesRequest,
+            MessageType.V8AssignmentRules,
+            new V8AssignmentRulesRequestDto
+            {
+                Cluster = _mapper.Map<ClusterDto>(cluster),
+                ServerId = serverId
+            },
+            cancellationToken);
+    }
+
+    public async Task<List<V8ServiceSetting>> GetV8ServiceSettings(Cluster cluster, string serverId,
+        CancellationToken cancellationToken)
+    {
+        return await Get<V8ServiceSettingsRequestDto, List<V8ServiceSetting>>(
+            MessageType.V8ServiceSettingsRequest,
+            MessageType.V8ServiceSettings,
+            new V8ServiceSettingsRequestDto
+            {
+                Cluster = _mapper.Map<ClusterDto>(cluster),
+                ServerId = serverId
+            },
+            cancellationToken);
+    }
+
+    public async Task<List<V8BinaryDataStorage>> GetV8BinaryDataStorages(InfoBase infoBase,
+        CancellationToken cancellationToken)
+    {
+        return await Get<InfoBaseDto, List<V8BinaryDataStorage>>(
+            MessageType.V8BinaryDataStoragesRequest,
+            MessageType.V8BinaryDataStorages,
+            _mapper.Map<InfoBaseDto>(infoBase),
+            cancellationToken);
+    }
+
+    public async Task<List<V8Connection>> GetV8Connections(Cluster cluster, InfoBase? infoBase,
+        CancellationToken cancellationToken)
+    {
+        return await Get<V8ConnectionsRequestDto, List<V8Connection>>(
+            MessageType.V8ConnectionsRequest,
+            MessageType.V8Connections,
+            new V8ConnectionsRequestDto
+            {
+                Cluster = _mapper.Map<ClusterDto>(cluster),
+                InfoBase = infoBase == null ? null : _mapper.Map<InfoBaseDto>(infoBase)
+            },
+            cancellationToken);
+    }
+
+    public async Task<List<V8License>> GetV8Licenses(Cluster cluster, CancellationToken cancellationToken)
+    {
+        return await Get<ClusterDto, List<V8License>>(
+            MessageType.V8LicensesRequest,
+            MessageType.V8Licenses,
+            _mapper.Map<ClusterDto>(cluster),
+            cancellationToken);
+    }
+
     public async Task<List<V8Process>> GetV8Processes(Cluster cluster, CancellationToken cancellationToken)
     {
         return await Get<ClusterDto, List<V8Process>>(
@@ -424,41 +494,45 @@ public class AgentConnection : FastConnection
         await using var scope = _serviceProvider.CreateAsyncScope();
         await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        await dbContext.Database.BeginTransactionAsync(cancellationToken);
-
-        try
+        var strategy = dbContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            var foundItem = await dbContext.Agents.AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == AgentInstance.Id, cancellationToken);
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-            if (foundItem == null)
+            try
             {
-                var agent = new Agent
+                var foundItem = await dbContext.Agents.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Id == AgentInstance.Id, cancellationToken);
+
+                if (foundItem == null)
                 {
-                    Id = AgentInstance.Id,
-                    InstanceName = AgentInstance.InstanceName
-                };
-                dbContext.Agents.Add(agent);
+                    var agent = new Agent
+                    {
+                        Id = AgentInstance.Id,
+                        InstanceName = AgentInstance.InstanceName
+                    };
+                    dbContext.Agents.Add(agent);
 
-                await dbContext.SaveChangesAsync(cancellationToken);
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                }
+                else if (foundItem.InstanceName != AgentInstance.InstanceName)
+                {
+                    foundItem.InstanceName = AgentInstance.InstanceName;
+
+                    dbContext.Entry(foundItem).State = EntityState.Modified;
+
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                }
+
+                await transaction.CommitAsync(cancellationToken);
+
+                AgentConnected?.Invoke(this);
             }
-            else if (foundItem.InstanceName != AgentInstance.InstanceName)
+            catch (Exception)
             {
-                foundItem.InstanceName = AgentInstance.InstanceName;
-
-                dbContext.Entry(foundItem).State = EntityState.Modified;
-
-                await dbContext.SaveChangesAsync(cancellationToken);
+                await transaction.RollbackAsync(cancellationToken);
             }
-
-            await dbContext.Database.CommitTransactionAsync(cancellationToken);
-
-            AgentConnected?.Invoke(this);
-        }
-        catch (Exception ex)
-        {
-            await dbContext.Database.RollbackTransactionAsync(cancellationToken);
-        }
+        });
     }
 
     private async Task HandleMaintenanceStepLog(Message requestMessage, CancellationToken cancellationToken)
@@ -473,47 +547,63 @@ public class AgentConnection : FastConnection
             await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var taskLogHub = scope.ServiceProvider.GetRequiredService<IHubContext<MaintenanceTaskLogHub>>();
 
-            await dbContext.Database.BeginTransactionAsync(cancellationToken);
+            MaintenanceTask? task = null;
+            var hasTaskFinishLogItem = false;
 
+            // SendOk/уведомление/рассылка в хаб вынесены за пределы транзакции: CreateExecutionStrategy
+            // может повторить весь блок при транзиентном сбое БД, а эти действия повторять нельзя.
+            var strategy = dbContext.Database.CreateExecutionStrategy();
             try
             {
-                log.ForEach(c => c.TimeStamp = c.TimeStamp.AddSeconds(AgentInstance!.UtcOffset));
-                await dbContext.MaintenanceTaskLogs.AddRangeAsync(log, cancellationToken);
+                await strategy.ExecuteAsync(async () =>
+                {
+                    await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-                await dbContext.SaveChangesAsync(cancellationToken);
+                    try
+                    {
+                        log.ForEach(c => c.TimeStamp = c.TimeStamp.AddSeconds(AgentInstance!.UtcOffset));
+                        await dbContext.MaintenanceTaskLogs.AddRangeAsync(log, cancellationToken);
 
-                var task = await dbContext.MaintenanceTasks
-                    .Include(c => c.InfoBases)
-                    .FirstOrDefaultAsync(c => c.Id == result[0].TaskId, cancellationToken);
+                        await dbContext.SaveChangesAsync(cancellationToken);
 
-                task!.IsFaulted = await dbContext.MaintenanceTaskLogs
-                    .AsNoTracking()
-                    .AnyAsync(c => c.TaskId == task.Id && c.IsError, cancellationToken);
+                        task = await dbContext.MaintenanceTasks
+                            .Include(c => c.InfoBases)
+                            .FirstOrDefaultAsync(c => c.Id == result[0].TaskId, cancellationToken);
 
-                var hasTaskFinishLogItem = await dbContext.MaintenanceTaskLogs
-                    .AsNoTracking()
-                    .AnyAsync(c => c.TaskId == task.Id && c.StepId == null && c.IsFinish, cancellationToken);
+                        task!.IsFaulted = await dbContext.MaintenanceTaskLogs
+                            .AsNoTracking()
+                            .AnyAsync(c => c.TaskId == task.Id && c.IsError, cancellationToken);
 
-                if (hasTaskFinishLogItem)
-                    task.FinishDateTime = DateTime.Now;
+                        hasTaskFinishLogItem = await dbContext.MaintenanceTaskLogs
+                            .AsNoTracking()
+                            .AnyAsync(c => c.TaskId == task.Id && c.StepId == null && c.IsFinish, cancellationToken);
 
-                await dbContext.SaveChangesAsync(cancellationToken);
-                await dbContext.Database.CommitTransactionAsync(cancellationToken);
+                        if (hasTaskFinishLogItem)
+                            task.FinishDateTime = DateTime.UtcNow;
 
-                await SendOk(requestMessage, cancellationToken);
-
-                if (hasTaskFinishLogItem)
-                    await _notificationsService.QueueMaintenanceTaskCompleted(task.Id, cancellationToken);
-
-                await taskLogHub.Clients.Group(task.Id.ToString()).SendAsync("LogUpdated", cancellationToken);
+                        await dbContext.SaveChangesAsync(cancellationToken);
+                        await transaction.CommitAsync(cancellationToken);
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        throw;
+                    }
+                });
             }
             catch (Exception e)
             {
-                await dbContext.Database.RollbackTransactionAsync(cancellationToken);
                 _logger.LogError(e, "Ошибка записи лога шага обслуживания");
-
                 await SendError(requestMessage, e.Message, cancellationToken);
+                return;
             }
+
+            await SendOk(requestMessage, cancellationToken);
+
+            if (hasTaskFinishLogItem)
+                await _notificationsService.QueueMaintenanceTaskCompleted(task!.Id, cancellationToken);
+
+            await taskLogHub.Clients.Group(task!.Id.ToString()).SendAsync("LogUpdated", cancellationToken);
         }
         else
         {

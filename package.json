@@ -1,0 +1,10 @@
+{
+  "name": "onecmonitor",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,green \"dotnet run --project oneswiss-server\" \"npm run dev --prefix oneswiss-web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

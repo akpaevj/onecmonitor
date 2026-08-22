@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Server.Hubs;
 using OneSwiss.Server.Models;
+using OneSwiss.Server.Models.MaintenanceTasks;
 
 namespace OneSwiss.Server.Services;
 
@@ -77,57 +78,69 @@ public class AgentsConnectionsManager(
             await connection.SendSettingsRequest(cancellationToken);
     }
 
-    public async Task RaiseUpdateGitSyncTasks(CancellationToken cancellationToken)
-    {
-        var connections = await GetActiveAgentsConnections(cancellationToken);
-
-        foreach (var connection in connections)
-            await connection.SendGitSyncTasks(cancellationToken);
-    }
-
     public async Task StartMaintenanceTask(Guid id, CancellationToken cancellationToken = default)
     {
         await using var scope = serviceProvider.CreateAsyncScope();
         await using var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        MaintenanceTask? task = null;
+        MaintenanceTaskDto? taskDto = null;
+
+        // Уведомление агентов вынесено за пределы транзакции: CreateExecutionStrategy может
+        // повторить весь блок при транзиентном сбое БД, а отправку команды агентам повторять
+        // нельзя - иначе на транзиентном сбое агент получит одну и ту же задачу дважды.
+        var strategy = context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                task = await context.MaintenanceTasks
+                    .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.File)
+                    .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.ConfigurationRepository.Agent)
+                    .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.ConfigurationRepository.Credentials)
+                    .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.File)
+                    .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.BaseConfigurationRepository.Agent)
+                    .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.BaseConfigurationRepository.Credentials)
+                    .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.ConfigurationRepository.Agent)
+                    .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.ConfigurationRepository.Credentials)
+                    .Include(c => c.Steps).ThenInclude(c => c.UpdateConfigurationStep.File)
+                    .Include(c => c.Steps).ThenInclude(c => c.ExecuteOneScriptStep.File)
+                    .Include(c => c.Steps).ThenInclude(c => c.StartExternalDataProcessorStep.File)
+                    .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.SourceCredentials)
+                    .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
+                    .ThenInclude(c => c.SourceInfoBase.Credentials)
+                    .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
+                    .ThenInclude(c => c.SourceInfoBase.Cluster.Credentials)
+                    .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.DestinationCredentials)
+                    .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
+                    .ThenInclude(c => c.DestinationInfoBase.Credentials)
+                    .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
+                    .ThenInclude(c => c.DestinationInfoBase.Cluster.Credentials)
+                    .Include(c => c.Agents)
+                    .Include(c => c.InfoBases).ThenInclude(c => c.Credentials)
+                    .Include(c => c.InfoBases).ThenInclude(c => c.Cluster).ThenInclude(c => c.Agent)
+                    .Include(c => c.InfoBases).ThenInclude(c => c.Cluster).ThenInclude(c => c.Credentials)
+                    .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+                task!.StartDateTime = DateTime.UtcNow;
+                await context.SaveChangesAsync(cancellationToken);
+
+                taskDto = mapper.Map<MaintenanceTaskDto>(task);
+
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
 
         try
         {
-            var task = await context.MaintenanceTasks
-                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.File)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.ConfigurationRepository.Agent)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadConfigurationStep.ConfigurationRepository.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.File)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.BaseConfigurationRepository.Agent)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.BaseConfigurationRepository.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.ConfigurationRepository.Agent)
-                .Include(c => c.Steps).ThenInclude(c => c.LoadExtensionStep.ConfigurationRepository.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.UpdateConfigurationStep.File)
-                .Include(c => c.Steps).ThenInclude(c => c.ExecuteOneScriptStep.File)
-                .Include(c => c.Steps).ThenInclude(c => c.StartExternalDataProcessorStep.File)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.SourceCredentials)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
-                .ThenInclude(c => c.SourceInfoBase.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
-                .ThenInclude(c => c.SourceInfoBase.Cluster.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep).ThenInclude(c => c.DestinationCredentials)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
-                .ThenInclude(c => c.DestinationInfoBase.Credentials)
-                .Include(c => c.Steps).ThenInclude(c => c.CopyInfoBaseStep)
-                .ThenInclude(c => c.DestinationInfoBase.Cluster.Credentials)
-                .Include(c => c.Agents)
-                .Include(c => c.InfoBases).ThenInclude(c => c.Credentials)
-                .Include(c => c.InfoBases).ThenInclude(c => c.Cluster).ThenInclude(c => c.Agent)
-                .Include(c => c.InfoBases).ThenInclude(c => c.Cluster).ThenInclude(c => c.Credentials)
-                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
-
-            task!.StartDateTime = DateTime.Now;
-            await context.SaveChangesAsync(cancellationToken);
-
-            var taskDto = mapper.Map<MaintenanceTaskDto>(task);
-
-            var taskAgents = task.CommonDestination switch
+            var taskAgents = task!.CommonDestination switch
             {
                 false => task.InfoBases.Select(c => c.Cluster.Agent.Id).Distinct().ToList(),
                 true => task.Agents.Select(c => c.Id).Distinct().ToList()
@@ -135,14 +148,30 @@ public class AgentsConnectionsManager(
             var connections = await GetActiveAgentsConnections(cancellationToken);
 
             foreach (var connection in connections.Where(c => taskAgents.Contains(c.AgentInstance!.Id)))
-                await connection.StartMaintenanceTask(taskDto, cancellationToken);
-
-            await transaction.CommitAsync(cancellationToken);
+                await connection.StartMaintenanceTask(taskDto!, cancellationToken);
         }
-        catch
+        catch (Exception e)
         {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
+            // StartDateTime уже закоммичен в БД до этой точки (см. комментарий выше про
+            // execution strategy). Если уведомление агента не удалось, задача иначе навсегда
+            // "зависает" в состоянии "выполняется" без единой записи в логе и без возможности
+            // перезапуска (Start блокирует повторный запуск при StartDateTime != MinValue).
+            logger.LogError(e, "Ошибка уведомления агента о запуске задачи обслуживания");
+
+            var message = e.Message.Length > 200 ? e.Message[..200] : e.Message;
+            context.MaintenanceTaskLogs.Add(new MaintenanceTaskLogItem
+            {
+                TimeStamp = DateTime.UtcNow,
+                IsError = true,
+                IsFinish = true,
+                Message = $"Ошибка уведомления агента о запуске задачи: {message}",
+                TaskId = task!.Id
+            });
+
+            task.IsFaulted = true;
+            task.FinishDateTime = DateTime.UtcNow;
+
+            await context.SaveChangesAsync(cancellationToken);
         }
     }
 

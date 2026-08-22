@@ -3,7 +3,6 @@ using System.Net.Sockets;
 using System.Reflection;
 using MessagePack;
 using OneSwiss.Agent.Services.EventLog;
-using OneSwiss.Agent.Services.GitSync;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.DTO.MaintenanceTasks;
 using OneSwiss.Common.Services;
@@ -19,8 +18,6 @@ internal class CommandsWatcher
 {
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly EdtInstallationsProvider _edtPInstallationsProvider;
-    private readonly GitSyncTasksManager _gitSyncTasksManager;
-    private readonly MonitorQueue<List<GitSyncTaskDto>> _gitSyncTasksQueue;
     private readonly ILogger<CommandsWatcher> _logger;
     private readonly MonitorQueue<MaintenanceTaskDto> _maintenanceTasksQueue;
     private readonly MonitorQueue<EventLogSettingsDto> _eventLogSettingsQueue;
@@ -42,13 +39,9 @@ internal class CommandsWatcher
         EdtInstallationsProvider edtPInstallationsProvider,
         ILogger<CommandsWatcher> logger,
         ILogger<Rac> racLogger,
-        MonitorQueue<List<GitSyncTaskDto>> gitSyncTasksQueue,
-        GitSyncTasksManager gitSyncTasksManager, 
         MonitorQueue<EventLogSettingsDto> eventLogSettingsQueue)
     {
         _racLogger = racLogger;
-        _gitSyncTasksQueue = gitSyncTasksQueue;
-        _gitSyncTasksManager = gitSyncTasksManager;
         _eventLogSettingsQueue = eventLogSettingsQueue;
         _rasHolder = rasHolder;
         _server = serviceProvider.GetRequiredService<OneSwissConnection>();
@@ -99,6 +92,45 @@ internal class CommandsWatcher
                 case MessageType.V8SessionsRequest:
                     await SendV8Sessions(message, _applicationLifetime.ApplicationStopping);
                     break;
+                case MessageType.V8ConnectionsRequest:
+                    await SendV8Connections(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8LicensesRequest:
+                    await SendV8Licenses(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8LocksRequest:
+                    await SendV8Locks(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8ServersRequest:
+                    await SendV8Servers(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8ManagersRequest:
+                    await SendV8Managers(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8ManagerServicesRequest:
+                    await SendV8ManagerServices(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8AgentVersionRequest:
+                    await SendV8AgentVersion(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8SecurityProfilesRequest:
+                    await SendV8SecurityProfiles(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8ResourceCountersRequest:
+                    await SendV8ResourceCounters(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8ResourceLimitsRequest:
+                    await SendV8ResourceLimits(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8AssignmentRulesRequest:
+                    await SendV8AssignmentRules(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8ServiceSettingsRequest:
+                    await SendV8ServiceSettings(message, _applicationLifetime.ApplicationStopping);
+                    break;
+                case MessageType.V8BinaryDataStoragesRequest:
+                    await SendV8BinaryDataStorages(message, _applicationLifetime.ApplicationStopping);
+                    break;
                 case MessageType.V8ProcessesRequest:
                     await SendV8Processes(message, _applicationLifetime.ApplicationStopping);
                     break;
@@ -113,9 +145,6 @@ internal class CommandsWatcher
                     break;
                 case MessageType.Settings:
                     await HandleSettings(message, _applicationLifetime.ApplicationStopping);
-                    break;
-                case MessageType.GitSyncTasks:
-                    await HandleGitSyncTasks(message, _applicationLifetime.ApplicationStopping);
                     break;
                 case MessageType.MaintenanceTask:
                     await HandleMaintenanceTask(message, _applicationLifetime.ApplicationStopping);
@@ -157,7 +186,6 @@ internal class CommandsWatcher
         await _server.Start(true);
 
         await UpdateSettings(token);
-        await RequestGitSyncTasks(token);
     }
 
     private async Task SendInstalledPlatforms(Message message, CancellationToken cancellationToken)
@@ -170,7 +198,6 @@ internal class CommandsWatcher
     {
         _techLogRepositoryManager.UpdateSettings(settingsDto.TechLogSettings);
         await _eventLogSettingsQueue.QueueAsync(settingsDto.EventLogSettings, cancellationToken);
-        _gitSyncTasksManager.UpdateSettings(settingsDto.GitSyncSettings);
     }
 
     private async Task HandleSettings(Message message, CancellationToken cancellationToken)
@@ -182,25 +209,10 @@ internal class CommandsWatcher
         await _server.Ok(message, cancellationToken);
     }
 
-    private async Task HandleGitSyncTasks(Message message, CancellationToken cancellationToken)
-    {
-        var tasks = MessagePackSerializer.Deserialize<List<GitSyncTaskDto>>(message.Data,
-            cancellationToken: cancellationToken);
-        await _gitSyncTasksQueue.QueueAsync(tasks, cancellationToken);
-
-        await _server.Ok(message, cancellationToken);
-    }
-
     private async Task UpdateSettings(CancellationToken cancellationToken)
     {
         var response = await _server.GetSettings(cancellationToken);
         await ApplySettings(response, cancellationToken);
-    }
-
-    private async Task RequestGitSyncTasks(CancellationToken cancellationToken)
-    {
-        var response = await _server.GetGitSyncTasks(cancellationToken);
-        await _gitSyncTasksQueue.QueueAsync(response, cancellationToken);
     }
 
     private async Task SendV8Clusters(Message message, CancellationToken cancellationToken)
@@ -310,6 +322,242 @@ internal class CommandsWatcher
         };
 
         await _server.SendV8Sessions(message, result, cancellationToken);
+    }
+
+    private async Task SendV8Locks(Message message, CancellationToken cancellationToken)
+    {
+        var request =
+            MessagePackSerializer.Deserialize<V8LocksRequestDto>(message.Data, cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(request.Cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = request.InfoBase switch
+        {
+            null => await rac.GetClusterLocks(
+                request.Cluster.ClusterInternalId,
+                request.Cluster.Credentials?.User ?? "",
+                request.Cluster.Credentials?.Password ?? ""),
+            _ => await rac.GetInfoBaseLocks(
+                request.Cluster.ClusterInternalId,
+                request.InfoBase.InfoBaseInternalId,
+                request.Cluster.Credentials?.User ?? "",
+                request.Cluster.Credentials?.Password ?? "")
+        };
+
+        await _server.SendV8Locks(message, result, cancellationToken);
+    }
+
+    private async Task SendV8Servers(Message message, CancellationToken cancellationToken)
+    {
+        var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = await rac.GetServers(
+            cluster.ClusterInternalId,
+            cluster.Credentials?.User ?? "",
+            cluster.Credentials?.Password ?? "");
+
+        await _server.SendV8Servers(message, result, cancellationToken);
+    }
+
+    private async Task SendV8Managers(Message message, CancellationToken cancellationToken)
+    {
+        var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = await rac.GetManagers(
+            cluster.ClusterInternalId,
+            cluster.Credentials?.User ?? "",
+            cluster.Credentials?.Password ?? "");
+
+        await _server.SendV8Managers(message, result, cancellationToken);
+    }
+
+    private async Task SendV8ManagerServices(Message message, CancellationToken cancellationToken)
+    {
+        var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = await rac.GetManagerServices(
+            cluster.ClusterInternalId,
+            cluster.Credentials?.User ?? "",
+            cluster.Credentials?.Password ?? "");
+
+        await _server.SendV8ManagerServices(message, result, cancellationToken);
+    }
+
+    private async Task SendV8AgentVersion(Message message, CancellationToken cancellationToken)
+    {
+        var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var version = await rac.GetAgentVersion();
+
+        await _server.SendV8AgentVersion(message, version, cancellationToken);
+    }
+
+    private async Task SendV8SecurityProfiles(Message message, CancellationToken cancellationToken)
+    {
+        var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = await rac.GetSecurityProfiles(
+            cluster.ClusterInternalId,
+            cluster.Credentials?.User ?? "",
+            cluster.Credentials?.Password ?? "");
+
+        await _server.SendV8SecurityProfiles(message, result, cancellationToken);
+    }
+
+    private async Task SendV8ResourceCounters(Message message, CancellationToken cancellationToken)
+    {
+        var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = await rac.GetResourceCounters(
+            cluster.ClusterInternalId,
+            cluster.Credentials?.User ?? "",
+            cluster.Credentials?.Password ?? "");
+
+        await _server.SendV8ResourceCounters(message, result, cancellationToken);
+    }
+
+    private async Task SendV8ResourceLimits(Message message, CancellationToken cancellationToken)
+    {
+        var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = await rac.GetResourceLimits(
+            cluster.ClusterInternalId,
+            cluster.Credentials?.User ?? "",
+            cluster.Credentials?.Password ?? "");
+
+        await _server.SendV8ResourceLimits(message, result, cancellationToken);
+    }
+
+    private async Task SendV8AssignmentRules(Message message, CancellationToken cancellationToken)
+    {
+        var request =
+            MessagePackSerializer.Deserialize<V8AssignmentRulesRequestDto>(message.Data,
+                cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(request.Cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = await rac.GetAssignmentRules(
+            request.Cluster.ClusterInternalId,
+            request.ServerId,
+            request.Cluster.Credentials?.User ?? "",
+            request.Cluster.Credentials?.Password ?? "");
+
+        await _server.SendV8AssignmentRules(message, result, cancellationToken);
+    }
+
+    private async Task SendV8ServiceSettings(Message message, CancellationToken cancellationToken)
+    {
+        var request =
+            MessagePackSerializer.Deserialize<V8ServiceSettingsRequestDto>(message.Data,
+                cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(request.Cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = await rac.GetServiceSettings(
+            request.Cluster.ClusterInternalId,
+            request.ServerId,
+            request.Cluster.Credentials?.User ?? "",
+            request.Cluster.Credentials?.Password ?? "");
+
+        await _server.SendV8ServiceSettings(message, result, cancellationToken);
+    }
+
+    private async Task SendV8BinaryDataStorages(Message message, CancellationToken cancellationToken)
+    {
+        var infoBase =
+            MessagePackSerializer.Deserialize<InfoBaseDto>(message.Data, cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(infoBase.Cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = await rac.GetBinaryDataStorages(
+            infoBase.Cluster.ClusterInternalId,
+            infoBase.InfoBaseInternalId,
+            infoBase.Cluster.Credentials?.User ?? "",
+            infoBase.Cluster.Credentials?.Password ?? "",
+            infoBase.Credentials?.User ?? "",
+            infoBase.Credentials?.Password ?? "");
+
+        await _server.SendV8BinaryDataStorages(message, result, cancellationToken);
+    }
+
+    private async Task SendV8Connections(Message message, CancellationToken cancellationToken)
+    {
+        var request =
+            MessagePackSerializer.Deserialize<V8ConnectionsRequestDto>(message.Data,
+                cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(request.Cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = request.InfoBase switch
+        {
+            null => await rac.GetClusterConnections(
+                request.Cluster.ClusterInternalId,
+                request.Cluster.Credentials?.User ?? "",
+                request.Cluster.Credentials?.Password ?? ""),
+            _ => await rac.GetInfoBaseConnections(
+                request.Cluster.ClusterInternalId,
+                request.InfoBase.InfoBaseInternalId,
+                request.Cluster.Credentials?.User ?? "",
+                request.Cluster.Credentials?.Password ?? "",
+                request.InfoBase.Credentials?.User ?? "",
+                request.InfoBase.Credentials?.Password ?? "")
+        };
+
+        await _server.SendV8Connections(message, result, cancellationToken);
+    }
+
+    private async Task SendV8Licenses(Message message, CancellationToken cancellationToken)
+    {
+        var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
+
+        var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
+        var ras = _rasHolder.GetActiveRasForRagent(ragent);
+        var rac = Rac.GetRacForRasService(_racLogger, ras);
+
+        var result = await rac.GetLicenses(
+            cluster.ClusterInternalId,
+            cluster.Credentials?.User ?? "",
+            cluster.Credentials?.Password ?? "");
+
+        await _server.SendV8Licenses(message, result, cancellationToken);
     }
 
     private async Task SendV8Processes(Message message, CancellationToken cancellationToken)

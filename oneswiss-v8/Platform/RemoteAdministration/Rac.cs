@@ -16,6 +16,176 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         return new Rac(logger, rasService.Platform, "localhost", rasService.Port);
     }
 
+    public async Task<string> GetAgentVersion()
+    {
+        logger.LogTrace("Запрос версии агента кластера из RAS");
+
+        // "agent version" is the one RAC command that prints a bare value instead of "field: value"
+        // lines, so it can't go through GetOutputItems/ToRacObjects like everything else.
+        var output = await StartRacAndGetOutput("agent version", 10);
+
+        logger.LogTrace("Версия агента кластера из RAS получена");
+
+        return output.Trim();
+    }
+
+    public async Task<List<V8Server>> GetServers(string clusterId, string clusterUser = "",
+        string clusterPassword = "")
+    {
+        logger.LogTrace("Запрос списка рабочих серверов кластера из RAS");
+
+        var items = (await GetOutputItems(
+                $"server --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                20))
+            .ToRacObjects<V8Server>();
+
+        logger.LogTrace("Список рабочих серверов кластера из RAS получен");
+
+        return items;
+    }
+
+    public async Task<List<V8Manager>> GetManagers(string clusterId, string clusterUser = "",
+        string clusterPassword = "")
+    {
+        logger.LogTrace("Запрос списка менеджеров кластера из RAS");
+
+        var items = (await GetOutputItems(
+                $"manager --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                20))
+            .ToRacObjects<V8Manager>();
+
+        logger.LogTrace("Список менеджеров кластера из RAS получен");
+
+        return items;
+    }
+
+    public async Task<List<V8ManagerService>> GetManagerServices(string clusterId, string clusterUser = "",
+        string clusterPassword = "")
+    {
+        logger.LogTrace("Запрос списка сервисов менеджера кластера из RAS");
+
+        var items = (await GetOutputItems(
+                $"service --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                20))
+            .ToRacObjects<V8ManagerService>();
+
+        logger.LogTrace("Список сервисов менеджера кластера из RAS получен");
+
+        return items;
+    }
+
+    public async Task<List<V8SecurityProfile>> GetSecurityProfiles(string clusterId, string clusterUser = "",
+        string clusterPassword = "")
+    {
+        logger.LogTrace("Запрос списка профилей безопасности кластера из RAS");
+
+        var items = (await GetOutputItems(
+                $"profile --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                20))
+            .ToRacObjects<V8SecurityProfile>();
+
+        logger.LogTrace("Список профилей безопасности кластера из RAS получен");
+
+        return items;
+    }
+
+    public async Task<List<V8ResourceCounter>> GetResourceCounters(string clusterId, string clusterUser = "",
+        string clusterPassword = "")
+    {
+        logger.LogTrace("Запрос списка счетчиков потребления ресурсов кластера из RAS");
+
+        var items = (await GetOutputItems(
+                $"counter --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                20))
+            .ToRacObjects<V8ResourceCounter>();
+
+        logger.LogTrace("Список счетчиков потребления ресурсов кластера из RAS получен");
+
+        return items;
+    }
+
+    public async Task<List<V8ResourceLimit>> GetResourceLimits(string clusterId, string clusterUser = "",
+        string clusterPassword = "")
+    {
+        logger.LogTrace("Запрос списка ограничений потребления ресурсов кластера из RAS");
+
+        var items = (await GetOutputItems(
+                $"limit --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                20))
+            .ToRacObjects<V8ResourceLimit>();
+
+        logger.LogTrace("Список ограничений потребления ресурсов кластера из RAS получен");
+
+        return items;
+    }
+
+    public async Task<List<V8AssignmentRule>> GetAssignmentRules(string clusterId, string serverId,
+        string clusterUser = "", string clusterPassword = "")
+    {
+        logger.LogTrace("Запрос списка требований назначения рабочего сервера из RAS");
+
+        var items = (await GetOutputItems(
+                $"rule --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --server={serverId}",
+                20))
+            .ToRacObjects<V8AssignmentRule>();
+
+        logger.LogTrace("Список требований назначения рабочего сервера из RAS получен");
+
+        return items;
+    }
+
+    public async Task<List<V8ServiceSetting>> GetServiceSettings(string clusterId, string serverId,
+        string clusterUser = "", string clusterPassword = "")
+    {
+        logger.LogTrace("Запрос списка настроек сервисов рабочего сервера из RAS");
+
+        var items = (await GetOutputItems(
+                $"service-setting --cluster={clusterId} --server={serverId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                20))
+            .ToRacObjects<V8ServiceSetting>();
+
+        logger.LogTrace("Список настроек сервисов рабочего сервера из RAS получен");
+
+        return items;
+    }
+
+    public async Task<List<V8BinaryDataStorage>> GetBinaryDataStorages(string clusterId, string infoBaseId,
+        string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
+    {
+        logger.LogTrace("Запрос списка хранилищ двоичных данных информационной базы из RAS");
+
+        var items = (await GetOutputItems(
+                $"binary-data-storage --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} list",
+                20))
+            .ToRacObjects<V8BinaryDataStorage>();
+
+        logger.LogTrace("Список хранилищ двоичных данных информационной базы из RAS получен");
+
+        return items;
+    }
+
+    public async Task<List<V8License>> GetLicenses(string clusterId, string clusterUser = "",
+        string clusterPassword = "")
+    {
+        logger.LogTrace("Запрос списка выданных лицензий кластера из RAS");
+
+        var processLicenses = (await GetOutputItems(
+                $"process --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --licenses",
+                20))
+            .ToRacObjects<V8License>();
+        processLicenses.ForEach(l => l.Source = "process");
+
+        var sessionLicenses = (await GetOutputItems(
+                $"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --licenses",
+                20))
+            .ToRacObjects<V8License>();
+        sessionLicenses.ForEach(l => l.Source = "session");
+
+        logger.LogTrace("Список выданных лицензий кластера из RAS получен");
+
+        return [..processLicenses, ..sessionLicenses];
+    }
+
     public async Task<List<V8Cluster>> GetClusters()
     {
         logger.LogTrace("Запрос списка кластеров из RAS");
@@ -282,6 +452,61 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
 
         if (fields["connection"] != EmptyId && connections.TryGetValue(fields["connection"], out var connection))
             item.Connection = connection;
+    }
+
+    public async Task<List<V8Lock>> GetClusterLocks(string clusterId, string clusterUser = "",
+        string clusterPassword = "")
+    {
+        var connections =
+            (await GetClusterConnections(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
+        var sessions =
+            (await GetClusterSessions(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
+
+        logger.LogTrace("Запрос списка блокировок кластера из RAS");
+
+        var items = (await GetOutputItems(
+                $"lock --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                20))
+            .ToRacObjects<V8Lock>(["connection", "session"],
+                (f, c) => FillV8Lock(connections, sessions, f, c));
+
+        logger.LogTrace("Список блокировок кластера из RAS получен");
+
+        return items;
+    }
+
+    public async Task<List<V8Lock>> GetInfoBaseLocks(string clusterId, string infoBaseId, string clusterUser = "",
+        string clusterPassword = "")
+    {
+        var connections =
+            (await GetClusterConnections(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
+        var sessions =
+            (await GetClusterSessions(clusterId, clusterUser, clusterPassword)).ToDictionary(c => c.Id, c => c);
+
+        logger.LogTrace("Запрос списка блокировок информационной базы из RAS");
+
+        var items = (await GetOutputItems(
+                $"lock --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId}",
+                20))
+            .ToRacObjects<V8Lock>(["connection", "session"],
+                (f, c) => FillV8Lock(connections, sessions, f, c));
+
+        logger.LogTrace("Список блокировок информационной базы из RAS получен");
+
+        return items;
+    }
+
+    private static void FillV8Lock(
+        Dictionary<string, V8Connection> connections,
+        Dictionary<string, V8Session> sessions,
+        Dictionary<string, string> fields,
+        V8Lock item)
+    {
+        if (fields["connection"] != EmptyId && connections.TryGetValue(fields["connection"], out var connection))
+            item.Connection = connection;
+
+        if (fields["session"] != EmptyId && sessions.TryGetValue(fields["session"], out var session))
+            item.Session = session;
     }
 
     public async Task TerminateSession(string clusterId, string sessionId, string clusterUser = "",

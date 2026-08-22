@@ -1,23 +1,16 @@
 using System.Net;
+using System.Text.Json.Serialization;
 using AutoMapper;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Console;
-using MudBlazor;
-using MudBlazor.Services;
-using MudExtensions.Services;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.Services;
 using OneSwiss.Server;
 using OneSwiss.Server.ApiControllers;
 using OneSwiss.Server.AutoMapper;
-using OneSwiss.Server.Components;
-using OneSwiss.Server.Components.Account;
-using OneSwiss.Server.Components.Pages.MaintenanceTasks;
 using OneSwiss.Server.Extensions;
 using OneSwiss.Server.Hubs;
 using OneSwiss.Server.Services;
@@ -69,22 +62,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
 
-// Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents(options =>
-    {
-        options.RootComponents.RegisterForJavaScript<StepWidget>("StepWidget");
-    });
-
-builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AccessGroupsManager>();
 builder.Services.AddScoped<UserGroupsManager>();
-builder.Services.AddScoped<IdentityUserAccessor>();
-builder.Services.AddScoped<IdentityRedirectManager>();
-builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-
-builder.Services.AddMudServices();
-builder.Services.AddMudExtensions();
 
 builder.Services.AddSingleton<NotificationsService>();
 builder.Services.AddHostedService<NotificationsProcessor>();
@@ -98,7 +77,27 @@ builder.Services.AddSingleton<TechLogRepositoryManager>();
 builder.Services.AddScoped<TechLogAnalyzer>();
 builder.Services.AddDbContextFactory<AppDbContext>();
 
-builder.Services.AddCors();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactSpa", policy =>
+    {
+        var reactUrl = builder.Configuration.GetValue<string>("Ui:ReactUrl");
+
+        if (!string.IsNullOrWhiteSpace(reactUrl))
+        {
+            policy.WithOrigins(reactUrl)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+
+            return;
+        }
+
+        policy.AllowAnyHeader()
+            .AllowAnyMethod()
+            .SetIsOriginAllowed(_ => true);
+    });
+});
 
 builder.Services.AddSingleton<AgentsConnectionsManager>();
 builder.Services.AddHostedService<ClustersInfoBasesDetector>();
@@ -119,7 +118,8 @@ builder.Services.AddHostedService<NewConfigRepositoryVersionHandler>();
 
 builder.Services.AddHostedService<EventLogExportConnector>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 var app = builder.Build();
 
@@ -144,17 +144,11 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseWebSockets();
 app.UseResponseCompression();
-app.UseAntiforgery();
-app.MapStaticAssets();
-
-// Add additional endpoints required by the Identity /Account Razor components.
-app.MapAdditionalIdentityEndpoints();
+app.UseCors("ReactSpa");
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
-
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode()
-    .RequireAuthorization();
 
 app.MapHub<AgentConnectionsHub>("/agentsHub");
 app.MapHub<MaintenanceTaskLogHub>("/taskLogHub");

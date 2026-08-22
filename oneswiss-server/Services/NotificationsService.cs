@@ -75,47 +75,6 @@ public class NotificationsService(
         await QueueNotification(dbContext, NotificationType.MaintenanceTaskCompleted, message, cancellationToken);
     }
 
-    public async Task QueueGitSyncStopped(Guid id, Guid itemId, string reason, CancellationToken cancellationToken)
-    {
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-        var item = await dbContext.GitSyncTasks
-            .Include(gitSyncTask => gitSyncTask.GitRepository)
-            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
-
-        if (item == null)
-            return;
-
-        string message;
-
-        if (itemId == Guid.Empty)
-        {
-            message = $"""
-                       ‼️ Синхронизация репозитория "{Markdown.Escape(item.GitRepository.Name)}" остановлена
-                       📝 Причина: 
-                       {Markdown.Escape(reason)}
-                       """;
-        }
-        else
-        {
-            var configRepository =
-                await dbContext.ConfigRepositories.FirstOrDefaultAsync(c => c.Id == itemId, cancellationToken);
-
-            if (configRepository == null)
-                return;
-
-            message = $"""
-                       ‼️ Синхронизация хранилища "{Markdown.Escape(configRepository.Name)}" остановлена
-                       ℹ️ Репозиторий Git:
-                       {Markdown.Escape(item.GitRepository.Name)}
-                       📝 Причина: 
-                       {Markdown.Escape(reason)}
-                       """;
-        }
-
-        await QueueNotification(dbContext, NotificationType.GitSyncStopped, message, cancellationToken);
-    }
-
     public async Task QueueCustomNotification(string key, string message, CancellationToken cancellationToken)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -129,7 +88,7 @@ public class NotificationsService(
             foreach (var recipient in recipients)
                 await dbContext.Notifications.AddAsync(new Notification
                 {
-                    CreatedAt = DateTime.Now,
+                    CreatedAt = DateTime.UtcNow,
                     Type = NotificationType.Custom,
                     Recipient = recipient.SendTo,
                     Channel = recipient.Channel,
@@ -157,7 +116,7 @@ public class NotificationsService(
                 await dbContext.Notifications.AddAsync(new Notification
                 {
                     Id = Guid.NewGuid(),
-                    CreatedAt = DateTime.Now,
+                    CreatedAt = DateTime.UtcNow,
                     Type = notificationType,
                     Recipient = recipient.SendTo,
                     Channel = recipient.Channel,

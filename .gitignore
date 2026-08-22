@@ -371,3 +371,6 @@ oneswiss-server/appsettings.Development.json
 oneswiss-agent/appsettings.Development.json
 Publish/
 .idea/
+
+# docker compose переменные (IMAGE_REGISTRY и т.п.) - .env.example коммитим, .env - нет
+.env
