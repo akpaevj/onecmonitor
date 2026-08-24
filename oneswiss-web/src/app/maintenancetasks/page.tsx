@@ -11,10 +11,11 @@ import { ApiError } from "@/lib/api/client";
 import {
   createMaintenanceTask,
   deleteMaintenanceTask,
-  getMaintenanceTaskTemplate,
   getMaintenanceTaskTemplatesLookup,
+  getMaintenanceTaskTemplateStructure,
   getMaintenanceTasks,
   startMaintenanceTask,
+  updateMaintenanceTaskStructure,
   type MaintenanceTaskListItem,
   type MaintenanceTaskTemplateLookupItem,
 } from "@/lib/api/maintenance-tasks";
@@ -157,12 +158,21 @@ export default function MaintenanceTasksPage() {
     setMessage(null);
 
     try {
-      const template = await getMaintenanceTaskTemplate(selectedTemplateId);
+      const template = await getMaintenanceTaskTemplateStructure(selectedTemplateId);
       const created = await createMaintenanceTask({
         description: template.description,
         startDateTime: EMPTY_DATE,
         finishDateTime: EMPTY_DATE,
         isFaulted: false,
+      });
+      await updateMaintenanceTaskStructure(created.id, {
+        ...template,
+        description: template.description,
+        isTemplate: false,
+        startDateTime: EMPTY_DATE,
+        finishDateTime: EMPTY_DATE,
+        isFaulted: false,
+        startWhenDiscoverNewConfigVersion: false,
       });
       router.push(`/maintenancetasks/${created.id}`);
       router.refresh();

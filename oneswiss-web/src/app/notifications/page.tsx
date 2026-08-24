@@ -13,6 +13,7 @@ import {
   type EnumOptionItem,
   type NotificationRecipientItem,
 } from "@/lib/api/notifications-settings";
+import { generateUuid } from "@/lib/uuid";
 
 export default function NotificationsPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -80,7 +81,7 @@ export default function NotificationsPage() {
     setRecipients((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: generateUuid(),
         channel: channels[0]?.value ?? "Telegram",
         sendTo: "",
         notificationTypes: [],

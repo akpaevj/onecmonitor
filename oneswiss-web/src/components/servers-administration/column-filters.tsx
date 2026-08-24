@@ -4,6 +4,7 @@ import { Plus, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { generateUuid } from "@/lib/uuid";
 
 export type ColumnFilterType = "text" | "number" | "boolean" | "date";
 
@@ -166,7 +167,7 @@ export function useColumnFilters<T>(defs: ColumnFilterDef<T>[]) {
     setFilters((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: generateUuid(),
         columnKey: firstDef.key,
         operator: defaultOperatorForType(firstDef.type),
         value: "",

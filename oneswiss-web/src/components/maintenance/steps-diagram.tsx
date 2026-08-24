@@ -15,7 +15,8 @@ import createEngine from "@projectstorm/react-diagrams";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { MaintenanceTaskExportStepDto } from "@/lib/api/maintenance-tasks";
+import type { MaintenanceTaskEditorLookupsDto, MaintenanceTaskExportStepDto } from "@/lib/api/maintenance-tasks";
+import { normalizeStepByKind, stepKindOptions, stepNodeKindOptions } from "@/components/maintenance/step-kinds";
 
 type DiagramStep = MaintenanceTaskExportStepDto;
 
@@ -27,6 +28,7 @@ type StepsDiagramProps = {
   onRemoveStep: (stepId: string) => void;
   onMoveStep: (stepId: string, x: number, y: number) => void;
   onUpdateStep: (stepId: string, updater: (current: DiagramStep) => DiagramStep) => void;
+  lookups: MaintenanceTaskEditorLookupsDto | null;
   disabled?: boolean;
 };
 
@@ -44,53 +46,31 @@ type StepDiagramContextValue = {
   onSelectStep: (stepId: string) => void;
   onRemoveStep: (stepId: string) => void;
   onUpdateStep: (stepId: string, updater: (current: DiagramStep) => DiagramStep) => void;
+  lookups: MaintenanceTaskEditorLookupsDto | null;
   disabled: boolean;
 };
 
 const StepDiagramContext = createContext<StepDiagramContextValue | null>(null);
-const stepKinds = [
-  "LockConnections",
-  "CloseConnections",
-  "UnlockConnections",
-  "LoadExtension",
-  "DeleteExtension",
-  "UpdateConfiguration",
-  "LoadConfiguration",
-  "StartExternalDataProcessor",
-  "ExecuteOneScript",
-  "CopyInfoBase",
-] as const;
 
-const stepKindLabels: Record<string, string> = {
-  LockConnections: "Блокировка соединений",
-  CloseConnections: "Закрытие сеансов",
-  UnlockConnections: "Разблокировка соединений",
-  LoadExtension: "Загрузка расширения",
-  DeleteExtension: "Удаление расширения",
-  UpdateConfiguration: "Обновление конфигурации",
-  LoadConfiguration: "Загрузка конфигурации",
-  StartExternalDataProcessor: "Запуск внешней обработки",
-  ExecuteOneScript: "Выполнение скрипта",
-  CopyInfoBase: "Копирование базы",
-};
+const stepKindLabels: Record<string, string> = Object.fromEntries(
+  stepKindOptions.map((option) => [option.value, option.label])
+);
 
 const stepKindChipClass: Record<string, string> = {
-  LockConnections: "bg-pink-200 text-pink-900",
-  CloseConnections: "bg-red-200 text-red-900",
-  UnlockConnections: "bg-orange-200 text-orange-900",
-  LoadExtension: "bg-amber-200 text-amber-900",
-  DeleteExtension: "bg-lime-200 text-lime-900",
-  UpdateConfiguration: "bg-emerald-200 text-emerald-900",
-  LoadConfiguration: "bg-green-200 text-green-900",
-  StartExternalDataProcessor: "bg-cyan-200 text-cyan-900",
-  ExecuteOneScript: "bg-sky-200 text-sky-900",
-  CopyInfoBase: "bg-violet-200 text-violet-900",
+  LockConnections: "bg-pink-200 text-pink-900 dark:bg-pink-900/50 dark:text-pink-200",
+  CloseConnections: "bg-red-200 text-red-900 dark:bg-red-900/50 dark:text-red-200",
+  UnlockConnections: "bg-orange-200 text-orange-900 dark:bg-orange-900/50 dark:text-orange-200",
+  LoadExtension: "bg-amber-200 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200",
+  DeleteExtension: "bg-lime-200 text-lime-900 dark:bg-lime-900/50 dark:text-lime-200",
+  UpdateConfiguration: "bg-emerald-200 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-200",
+  LoadConfiguration: "bg-green-200 text-green-900 dark:bg-green-900/50 dark:text-green-200",
+  StartExternalDataProcessor: "bg-cyan-200 text-cyan-900 dark:bg-cyan-900/50 dark:text-cyan-200",
+  ExecuteOneScript: "bg-sky-200 text-sky-900 dark:bg-sky-900/50 dark:text-sky-200",
 };
 
-const nodeKinds = ["Simple", "TryCatch"] as const;
 const nodeColor = "rgb(15 23 42)";
 const selectedNodeColor = "rgb(37 99 235)";
-const inputClassName = "w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900";
+const inputClassName = "w-full rounded border bg-background px-2 py-1 text-xs text-foreground";
 
 function stopPointer(event: SyntheticEvent) {
   event.stopPropagation();
@@ -101,56 +81,7 @@ function getStepLabel(kind: string) {
 }
 
 function getHeaderClass(kind: string) {
-  return stepKindChipClass[kind] ?? "bg-slate-200 text-slate-900";
-}
-
-function normalizeStepForKind(step: DiagramStep): DiagramStep {
-  return {
-    ...step,
-    copyInfoBaseStep:
-      step.kind === "CopyInfoBase"
-        ? (step.copyInfoBaseStep ?? {
-            sourceCredentialsId: null,
-            sourceInfoBaseId: null,
-            destinationCredentialsId: null,
-            destinationInfoBaseId: null,
-          })
-        : null,
-    executeOneScriptStep:
-      step.kind === "ExecuteOneScript"
-        ? (step.executeOneScriptStep ?? { debugMode: false, executablePath: "", fileId: null })
-        : null,
-    startExternalDataProcessorStep:
-      step.kind === "StartExternalDataProcessor"
-        ? (step.startExternalDataProcessorStep ?? { fileId: null })
-        : null,
-    updateConfigurationStep: step.kind === "UpdateConfiguration" ? (step.updateConfigurationStep ?? { fileId: null }) : null,
-    loadExtensionStep:
-      step.kind === "LoadExtension"
-        ? (step.loadExtensionStep ?? {
-            fromConfigRepository: false,
-            loadExactVersion: false,
-            version: 0,
-            extensionName: "",
-            fileId: null,
-            baseConfigurationRepositoryId: null,
-            configurationRepositoryId: null,
-          })
-        : null,
-    deleteExtensionStep: step.kind === "DeleteExtension" ? (step.deleteExtensionStep ?? { extensionName: "" }) : null,
-    loadConfigurationStep:
-      step.kind === "LoadConfiguration"
-        ? (step.loadConfigurationStep ?? {
-            fromConfigRepository: false,
-            loadExactVersion: false,
-            version: 0,
-            fileId: null,
-            configurationRepositoryId: null,
-          })
-        : null,
-    lockConnectionsStep:
-      step.kind === "LockConnections" ? (step.lockConnectionsStep ?? { accessCode: "", message: "" }) : null,
-  };
+  return stepKindChipClass[kind] ?? "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100";
 }
 
 function renderLookupOptions(items: { id: string; name: string }[]) {
@@ -165,16 +96,17 @@ function renderStepFields(
   step: DiagramStep,
   updateStep: (updater: (current: DiagramStep) => DiagramStep) => void,
   disabled: boolean,
-  lookups?: { files: { id: string; name: string }[]; credentials: { id: string; name: string }[]; infoBases: { id: string; name: string }[]; configurationRepositories: { id: string; name: string }[] }
+  lookups: MaintenanceTaskEditorLookupsDto | null
 ) {
-  const inputClassName = "w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900";
+  const files = lookups?.files ?? [];
+  const configurationRepositories = lookups?.configurationRepositories ?? [];
 
   switch (step.kind) {
     case "LockConnections":
       return (
         <div className="grid gap-2">
           <div>
-            <label className="mb-1 block text-[11px] text-slate-600">Код доступа</label>
+            <label className="mb-1 block text-[11px] text-muted-foreground">Код доступа</label>
             <input
               className={inputClassName}
               value={step.lockConnectionsStep?.accessCode ?? ""}
@@ -191,7 +123,7 @@ function renderStepFields(
             />
           </div>
           <div>
-            <label className="mb-1 block text-[11px] text-slate-600">Сообщение</label>
+            <label className="mb-1 block text-[11px] text-muted-foreground">Сообщение</label>
             <input
               className={inputClassName}
               value={step.lockConnectionsStep?.message ?? ""}
@@ -212,7 +144,7 @@ function renderStepFields(
     case "DeleteExtension":
       return (
         <div>
-          <label className="mb-1 block text-[11px] text-slate-600">Имя расширения</label>
+          <label className="mb-1 block text-[11px] text-muted-foreground">Имя расширения</label>
           <input
             className={inputClassName}
             value={step.deleteExtensionStep?.extensionName ?? ""}
@@ -228,8 +160,8 @@ function renderStepFields(
       );
     case "ExecuteOneScript":
       return (
-        <div className="grid gap-3">
-          <label className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs">
+        <div className="grid gap-2">
+          <label className="flex items-center gap-2 rounded border px-2 py-1 text-[11px]">
             <input
               type="checkbox"
               checked={step.executeOneScriptStep?.debugMode ?? false}
@@ -247,55 +179,63 @@ function renderStepFields(
             />
             Debug Mode
           </label>
-          <div>
-            <label className="mb-1 block text-[11px] text-slate-600">Путь к исполняемому файлу</label>
-            <input
-              className={inputClassName}
-              value={step.executeOneScriptStep?.executablePath ?? ""}
-              disabled={disabled}
-              onChange={(event) =>
-                updateStep((current) => ({
-                  ...current,
-                  executeOneScriptStep: {
-                    debugMode: current.executeOneScriptStep?.debugMode ?? false,
-                    executablePath: event.target.value,
-                    fileId: current.executeOneScriptStep?.fileId ?? null,
-                  },
-                }))
-              }
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-[11px] text-slate-600">Файл</label>
-            <select
-              className={inputClassName}
-              value={step.executeOneScriptStep?.fileId ?? ""}
-              disabled={disabled}
-              onChange={(event) =>
-                updateStep((current) => ({
-                  ...current,
-                  executeOneScriptStep: {
-                    debugMode: current.executeOneScriptStep?.debugMode ?? false,
-                    executablePath: current.executeOneScriptStep?.executablePath ?? "",
-                    fileId: event.target.value || null,
-                  },
-                }))
-              }
-            >
-              <option value="">Не выбрано</option>
-              {lookups ? renderLookupOptions(lookups.files) : null}
-            </select>
-          </div>
+
+          {step.executeOneScriptStep?.debugMode ? (
+            <div>
+              <label className="mb-1 block text-[11px] text-muted-foreground">Путь к исполняемому файлу</label>
+              <input
+                className={inputClassName}
+                value={step.executeOneScriptStep?.executablePath ?? ""}
+                disabled={disabled}
+                onChange={(event) =>
+                  updateStep((current) => ({
+                    ...current,
+                    executeOneScriptStep: {
+                      debugMode: current.executeOneScriptStep?.debugMode ?? false,
+                      executablePath: event.target.value,
+                      fileId: current.executeOneScriptStep?.fileId ?? null,
+                    },
+                  }))
+                }
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1 block text-[11px] text-muted-foreground">Файл</label>
+              <select
+                className={inputClassName}
+                value={step.executeOneScriptStep?.fileId ?? ""}
+                disabled={disabled}
+                onMouseDown={stopPointer}
+                onPointerDown={stopPointer}
+                onChange={(event) =>
+                  updateStep((current) => ({
+                    ...current,
+                    executeOneScriptStep: {
+                      debugMode: current.executeOneScriptStep?.debugMode ?? false,
+                      executablePath: current.executeOneScriptStep?.executablePath ?? "",
+                      fileId: event.target.value || null,
+                    },
+                  }))
+                }
+              >
+                <option value="">Не выбрано</option>
+                {renderLookupOptions(files)}
+              </select>
+            </div>
+          )}
         </div>
       );
     case "StartExternalDataProcessor":
       return (
         <div>
-          <label className="mb-1 block text-[11px] text-slate-600">Файл</label>
+          <label className="mb-1 block text-[11px] text-muted-foreground">Файл</label>
           <select
             className={inputClassName}
             value={step.startExternalDataProcessorStep?.fileId ?? ""}
             disabled={disabled}
+            onMouseDown={stopPointer}
+            onPointerDown={stopPointer}
             onChange={(event) =>
               updateStep((current) => ({
                 ...current,
@@ -304,18 +244,20 @@ function renderStepFields(
             }
           >
             <option value="">Не выбрано</option>
-            {lookups ? renderLookupOptions(lookups.files) : null}
+            {renderLookupOptions(files)}
           </select>
         </div>
       );
     case "UpdateConfiguration":
       return (
         <div>
-          <label className="mb-1 block text-[11px] text-slate-600">Файл</label>
+          <label className="mb-1 block text-[11px] text-muted-foreground">Файл</label>
           <select
             className={inputClassName}
             value={step.updateConfigurationStep?.fileId ?? ""}
             disabled={disabled}
+            onMouseDown={stopPointer}
+            onPointerDown={stopPointer}
             onChange={(event) =>
               updateStep((current) => ({
                 ...current,
@@ -324,83 +266,114 @@ function renderStepFields(
             }
           >
             <option value="">Не выбрано</option>
-            {lookups ? renderLookupOptions(lookups.files) : null}
+            {renderLookupOptions(files)}
           </select>
         </div>
       );
     case "LoadConfiguration":
       return (
-        <div className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs">
-              <input
-                type="checkbox"
-                checked={step.loadConfigurationStep?.fromConfigRepository ?? false}
-                disabled={disabled}
-                onChange={(event) =>
-                  updateStep((current) => ({
-                    ...current,
-                    loadConfigurationStep: {
-                      fromConfigRepository: event.target.checked,
-                      loadExactVersion: current.loadConfigurationStep?.loadExactVersion ?? false,
-                      version: current.loadConfigurationStep?.version ?? 0,
-                      fileId: current.loadConfigurationStep?.fileId ?? null,
-                      configurationRepositoryId: current.loadConfigurationStep?.configurationRepositoryId ?? null,
-                    },
-                  }))
-                }
-              />
-              Из хранилища
-            </label>
-            <label className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs">
-              <input
-                type="checkbox"
-                checked={step.loadConfigurationStep?.loadExactVersion ?? false}
-                disabled={disabled}
-                onChange={(event) =>
-                  updateStep((current) => ({
-                    ...current,
-                    loadConfigurationStep: {
-                      fromConfigRepository: current.loadConfigurationStep?.fromConfigRepository ?? false,
-                      loadExactVersion: event.target.checked,
-                      version: current.loadConfigurationStep?.version ?? 0,
-                      fileId: current.loadConfigurationStep?.fileId ?? null,
-                      configurationRepositoryId: current.loadConfigurationStep?.configurationRepositoryId ?? null,
-                    },
-                  }))
-                }
-              />
-              Точная версия
-            </label>
-          </div>
-          <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-2">
+          <label className="flex items-center gap-2 rounded border px-2 py-1 text-[11px]">
+            <input
+              type="checkbox"
+              checked={step.loadConfigurationStep?.fromConfigRepository ?? false}
+              disabled={disabled}
+              onChange={(event) =>
+                updateStep((current) => ({
+                  ...current,
+                  loadConfigurationStep: {
+                    fromConfigRepository: event.target.checked,
+                    loadExactVersion: current.loadConfigurationStep?.loadExactVersion ?? false,
+                    version: current.loadConfigurationStep?.version ?? 0,
+                    fileId: current.loadConfigurationStep?.fileId ?? null,
+                    configurationRepositoryId: current.loadConfigurationStep?.configurationRepositoryId ?? null,
+                  },
+                }))
+              }
+            />
+            Из хранилища конфигурации
+          </label>
+
+          {step.loadConfigurationStep?.fromConfigRepository ? (
+            <>
+              <div>
+                <label className="mb-1 block text-[11px] text-muted-foreground">Хранилище конфигурации</label>
+                <select
+                  className={inputClassName}
+                  value={step.loadConfigurationStep?.configurationRepositoryId ?? ""}
+                  disabled={disabled}
+                  onMouseDown={stopPointer}
+                  onPointerDown={stopPointer}
+                  onChange={(event) =>
+                    updateStep((current) => ({
+                      ...current,
+                      loadConfigurationStep: {
+                        fromConfigRepository: current.loadConfigurationStep?.fromConfigRepository ?? false,
+                        loadExactVersion: current.loadConfigurationStep?.loadExactVersion ?? false,
+                        version: current.loadConfigurationStep?.version ?? 0,
+                        fileId: current.loadConfigurationStep?.fileId ?? null,
+                        configurationRepositoryId: event.target.value || null,
+                      },
+                    }))
+                  }
+                >
+                  <option value="">Не выбрано</option>
+                  {renderLookupOptions(configurationRepositories)}
+                </select>
+              </div>
+              <label className="flex items-center gap-2 rounded border px-2 py-1 text-[11px]">
+                <input
+                  type="checkbox"
+                  checked={step.loadConfigurationStep?.loadExactVersion ?? false}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    updateStep((current) => ({
+                      ...current,
+                      loadConfigurationStep: {
+                        fromConfigRepository: current.loadConfigurationStep?.fromConfigRepository ?? false,
+                        loadExactVersion: event.target.checked,
+                        version: current.loadConfigurationStep?.version ?? 0,
+                        fileId: current.loadConfigurationStep?.fileId ?? null,
+                        configurationRepositoryId: current.loadConfigurationStep?.configurationRepositoryId ?? null,
+                      },
+                    }))
+                  }
+                />
+                Точная версия
+              </label>
+              {step.loadConfigurationStep?.loadExactVersion ? (
+                <div>
+                  <label className="mb-1 block text-[11px] text-muted-foreground">Версия</label>
+                  <input
+                    type="number"
+                    className={inputClassName}
+                    value={step.loadConfigurationStep?.version ?? 0}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      updateStep((current) => ({
+                        ...current,
+                        loadConfigurationStep: {
+                          fromConfigRepository: current.loadConfigurationStep?.fromConfigRepository ?? false,
+                          loadExactVersion: current.loadConfigurationStep?.loadExactVersion ?? false,
+                          version: Number(event.target.value) || 0,
+                          fileId: current.loadConfigurationStep?.fileId ?? null,
+                          configurationRepositoryId: current.loadConfigurationStep?.configurationRepositoryId ?? null,
+                        },
+                      }))
+                    }
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : (
             <div>
-              <label className="mb-1 block text-[11px] text-slate-600">Версия</label>
-              <input
-                type="number"
-                className={inputClassName}
-                value={step.loadConfigurationStep?.version ?? 0}
-                disabled={disabled}
-                onChange={(event) =>
-                  updateStep((current) => ({
-                    ...current,
-                    loadConfigurationStep: {
-                      fromConfigRepository: current.loadConfigurationStep?.fromConfigRepository ?? false,
-                      loadExactVersion: current.loadConfigurationStep?.loadExactVersion ?? false,
-                      version: Number(event.target.value) || 0,
-                      fileId: current.loadConfigurationStep?.fileId ?? null,
-                      configurationRepositoryId: current.loadConfigurationStep?.configurationRepositoryId ?? null,
-                    },
-                  }))
-                }
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-[11px] text-slate-600">Файл</label>
+              <label className="mb-1 block text-[11px] text-muted-foreground">Файл</label>
               <select
                 className={inputClassName}
                 value={step.loadConfigurationStep?.fileId ?? ""}
                 disabled={disabled}
+                onMouseDown={stopPointer}
+                onPointerDown={stopPointer}
                 onChange={(event) =>
                   updateStep((current) => ({
                     ...current,
@@ -415,138 +388,174 @@ function renderStepFields(
                 }
               >
                 <option value="">Не выбрано</option>
-                {lookups ? renderLookupOptions(lookups.files) : null}
+                {renderLookupOptions(files)}
               </select>
             </div>
-            <div>
-              <label className="mb-1 block text-[11px] text-slate-600">Хранилище</label>
-              <select
-                className={inputClassName}
-                value={step.loadConfigurationStep?.configurationRepositoryId ?? ""}
-                disabled={disabled}
-                onChange={(event) =>
-                  updateStep((current) => ({
-                    ...current,
-                    loadConfigurationStep: {
-                      fromConfigRepository: current.loadConfigurationStep?.fromConfigRepository ?? false,
-                      loadExactVersion: current.loadConfigurationStep?.loadExactVersion ?? false,
-                      version: current.loadConfigurationStep?.version ?? 0,
-                      fileId: current.loadConfigurationStep?.fileId ?? null,
-                      configurationRepositoryId: event.target.value || null,
-                    },
-                  }))
-                }
-              >
-                <option value="">Не выбрано</option>
-                {lookups ? renderLookupOptions(lookups.configurationRepositories) : null}
-              </select>
-            </div>
-          </div>
+          )}
         </div>
       );
     case "LoadExtension":
       return (
-        <div className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs">
-              <input
-                type="checkbox"
-                checked={step.loadExtensionStep?.fromConfigRepository ?? false}
-                disabled={disabled}
-                onChange={(event) =>
-                  updateStep((current) => ({
-                    ...current,
-                    loadExtensionStep: {
-                      fromConfigRepository: event.target.checked,
-                      loadExactVersion: current.loadExtensionStep?.loadExactVersion ?? false,
-                      version: current.loadExtensionStep?.version ?? 0,
-                      extensionName: current.loadExtensionStep?.extensionName ?? "",
-                      fileId: current.loadExtensionStep?.fileId ?? null,
-                      baseConfigurationRepositoryId: current.loadExtensionStep?.baseConfigurationRepositoryId ?? null,
-                      configurationRepositoryId: current.loadExtensionStep?.configurationRepositoryId ?? null,
-                    },
-                  }))
-                }
-              />
-              Из хранилища
-            </label>
-            <label className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs">
-              <input
-                type="checkbox"
-                checked={step.loadExtensionStep?.loadExactVersion ?? false}
-                disabled={disabled}
-                onChange={(event) =>
-                  updateStep((current) => ({
-                    ...current,
-                    loadExtensionStep: {
-                      fromConfigRepository: current.loadExtensionStep?.fromConfigRepository ?? false,
-                      loadExactVersion: event.target.checked,
-                      version: current.loadExtensionStep?.version ?? 0,
-                      extensionName: current.loadExtensionStep?.extensionName ?? "",
-                      fileId: current.loadExtensionStep?.fileId ?? null,
-                      baseConfigurationRepositoryId: current.loadExtensionStep?.baseConfigurationRepositoryId ?? null,
-                      configurationRepositoryId: current.loadExtensionStep?.configurationRepositoryId ?? null,
-                    },
-                  }))
-                }
-              />
-              Точная версия
-            </label>
+        <div className="grid gap-2">
+          <div>
+            <label className="mb-1 block text-[11px] text-muted-foreground">Имя расширения</label>
+            <input
+              className={inputClassName}
+              value={step.loadExtensionStep?.extensionName ?? ""}
+              disabled={disabled}
+              onChange={(event) =>
+                updateStep((current) => ({
+                  ...current,
+                  loadExtensionStep: {
+                    fromConfigRepository: current.loadExtensionStep?.fromConfigRepository ?? false,
+                    loadExactVersion: current.loadExtensionStep?.loadExactVersion ?? false,
+                    version: current.loadExtensionStep?.version ?? 0,
+                    extensionName: event.target.value,
+                    fileId: current.loadExtensionStep?.fileId ?? null,
+                    baseConfigurationRepositoryId: current.loadExtensionStep?.baseConfigurationRepositoryId ?? null,
+                    configurationRepositoryId: current.loadExtensionStep?.configurationRepositoryId ?? null,
+                  },
+                }))
+              }
+            />
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
+
+          <label className="flex items-center gap-2 rounded border px-2 py-1 text-[11px]">
+            <input
+              type="checkbox"
+              checked={step.loadExtensionStep?.fromConfigRepository ?? false}
+              disabled={disabled}
+              onChange={(event) =>
+                updateStep((current) => ({
+                  ...current,
+                  loadExtensionStep: {
+                    fromConfigRepository: event.target.checked,
+                    loadExactVersion: current.loadExtensionStep?.loadExactVersion ?? false,
+                    version: current.loadExtensionStep?.version ?? 0,
+                    extensionName: current.loadExtensionStep?.extensionName ?? "",
+                    fileId: current.loadExtensionStep?.fileId ?? null,
+                    baseConfigurationRepositoryId: current.loadExtensionStep?.baseConfigurationRepositoryId ?? null,
+                    configurationRepositoryId: current.loadExtensionStep?.configurationRepositoryId ?? null,
+                  },
+                }))
+              }
+            />
+            Из хранилища конфигурации
+          </label>
+
+          {step.loadExtensionStep?.fromConfigRepository ? (
+            <>
+              <div>
+                <label className="mb-1 block text-[11px] text-muted-foreground">Базовое хранилище</label>
+                <select
+                  className={inputClassName}
+                  value={step.loadExtensionStep?.baseConfigurationRepositoryId ?? ""}
+                  disabled={disabled}
+                  onMouseDown={stopPointer}
+                  onPointerDown={stopPointer}
+                  onChange={(event) =>
+                    updateStep((current) => ({
+                      ...current,
+                      loadExtensionStep: {
+                        fromConfigRepository: current.loadExtensionStep?.fromConfigRepository ?? false,
+                        loadExactVersion: current.loadExtensionStep?.loadExactVersion ?? false,
+                        version: current.loadExtensionStep?.version ?? 0,
+                        extensionName: current.loadExtensionStep?.extensionName ?? "",
+                        fileId: current.loadExtensionStep?.fileId ?? null,
+                        baseConfigurationRepositoryId: event.target.value || null,
+                        configurationRepositoryId: current.loadExtensionStep?.configurationRepositoryId ?? null,
+                      },
+                    }))
+                  }
+                >
+                  <option value="">Не выбрано</option>
+                  {renderLookupOptions(configurationRepositories)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] text-muted-foreground">Хранилище расширения</label>
+                <select
+                  className={inputClassName}
+                  value={step.loadExtensionStep?.configurationRepositoryId ?? ""}
+                  disabled={disabled}
+                  onMouseDown={stopPointer}
+                  onPointerDown={stopPointer}
+                  onChange={(event) =>
+                    updateStep((current) => ({
+                      ...current,
+                      loadExtensionStep: {
+                        fromConfigRepository: current.loadExtensionStep?.fromConfigRepository ?? false,
+                        loadExactVersion: current.loadExtensionStep?.loadExactVersion ?? false,
+                        version: current.loadExtensionStep?.version ?? 0,
+                        extensionName: current.loadExtensionStep?.extensionName ?? "",
+                        fileId: current.loadExtensionStep?.fileId ?? null,
+                        baseConfigurationRepositoryId: current.loadExtensionStep?.baseConfigurationRepositoryId ?? null,
+                        configurationRepositoryId: event.target.value || null,
+                      },
+                    }))
+                  }
+                >
+                  <option value="">Не выбрано</option>
+                  {renderLookupOptions(configurationRepositories)}
+                </select>
+              </div>
+              <label className="flex items-center gap-2 rounded border px-2 py-1 text-[11px]">
+                <input
+                  type="checkbox"
+                  checked={step.loadExtensionStep?.loadExactVersion ?? false}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    updateStep((current) => ({
+                      ...current,
+                      loadExtensionStep: {
+                        fromConfigRepository: current.loadExtensionStep?.fromConfigRepository ?? false,
+                        loadExactVersion: event.target.checked,
+                        version: current.loadExtensionStep?.version ?? 0,
+                        extensionName: current.loadExtensionStep?.extensionName ?? "",
+                        fileId: current.loadExtensionStep?.fileId ?? null,
+                        baseConfigurationRepositoryId: current.loadExtensionStep?.baseConfigurationRepositoryId ?? null,
+                        configurationRepositoryId: current.loadExtensionStep?.configurationRepositoryId ?? null,
+                      },
+                    }))
+                  }
+                />
+                Точная версия
+              </label>
+              {step.loadExtensionStep?.loadExactVersion ? (
+                <div>
+                  <label className="mb-1 block text-[11px] text-muted-foreground">Версия</label>
+                  <input
+                    type="number"
+                    className={inputClassName}
+                    value={step.loadExtensionStep?.version ?? 0}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      updateStep((current) => ({
+                        ...current,
+                        loadExtensionStep: {
+                          fromConfigRepository: current.loadExtensionStep?.fromConfigRepository ?? false,
+                          loadExactVersion: current.loadExtensionStep?.loadExactVersion ?? false,
+                          version: Number(event.target.value) || 0,
+                          extensionName: current.loadExtensionStep?.extensionName ?? "",
+                          fileId: current.loadExtensionStep?.fileId ?? null,
+                          baseConfigurationRepositoryId: current.loadExtensionStep?.baseConfigurationRepositoryId ?? null,
+                          configurationRepositoryId: current.loadExtensionStep?.configurationRepositoryId ?? null,
+                        },
+                      }))
+                    }
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : (
             <div>
-              <label className="mb-1 block text-[11px] text-slate-600">Версия</label>
-              <input
-                type="number"
-                className={inputClassName}
-                value={step.loadExtensionStep?.version ?? 0}
-                disabled={disabled}
-                onChange={(event) =>
-                  updateStep((current) => ({
-                    ...current,
-                    loadExtensionStep: {
-                      fromConfigRepository: current.loadExtensionStep?.fromConfigRepository ?? false,
-                      loadExactVersion: current.loadExtensionStep?.loadExactVersion ?? false,
-                      version: Number(event.target.value) || 0,
-                      extensionName: current.loadExtensionStep?.extensionName ?? "",
-                      fileId: current.loadExtensionStep?.fileId ?? null,
-                      baseConfigurationRepositoryId: current.loadExtensionStep?.baseConfigurationRepositoryId ?? null,
-                      configurationRepositoryId: current.loadExtensionStep?.configurationRepositoryId ?? null,
-                    },
-                  }))
-                }
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-[11px] text-slate-600">Имя расширения</label>
-              <input
-                className={inputClassName}
-                value={step.loadExtensionStep?.extensionName ?? ""}
-                disabled={disabled}
-                onChange={(event) =>
-                  updateStep((current) => ({
-                    ...current,
-                    loadExtensionStep: {
-                      fromConfigRepository: current.loadExtensionStep?.fromConfigRepository ?? false,
-                      loadExactVersion: current.loadExtensionStep?.loadExactVersion ?? false,
-                      version: current.loadExtensionStep?.version ?? 0,
-                      extensionName: event.target.value,
-                      fileId: current.loadExtensionStep?.fileId ?? null,
-                      baseConfigurationRepositoryId: current.loadExtensionStep?.baseConfigurationRepositoryId ?? null,
-                      configurationRepositoryId: current.loadExtensionStep?.configurationRepositoryId ?? null,
-                    },
-                  }))
-                }
-              />
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-[11px] text-slate-600">Файл .cfe</label>
+              <label className="mb-1 block text-[11px] text-muted-foreground">Файл .cfe</label>
               <select
                 className={inputClassName}
                 value={step.loadExtensionStep?.fileId ?? ""}
                 disabled={disabled}
+                onMouseDown={stopPointer}
+                onPointerDown={stopPointer}
                 onChange={(event) =>
                   updateStep((current) => ({
                     ...current,
@@ -563,128 +572,10 @@ function renderStepFields(
                 }
               >
                 <option value="">Не выбрано</option>
-                {lookups ? renderLookupOptions(lookups.files) : null}
+                {renderLookupOptions(files)}
               </select>
             </div>
-            <div>
-              <label className="mb-1 block text-[11px] text-slate-600">Хранилище</label>
-              <select
-                className={inputClassName}
-                value={step.loadExtensionStep?.configurationRepositoryId ?? ""}
-                disabled={disabled}
-                onChange={(event) =>
-                  updateStep((current) => ({
-                    ...current,
-                    loadExtensionStep: {
-                      fromConfigRepository: current.loadExtensionStep?.fromConfigRepository ?? false,
-                      loadExactVersion: current.loadExtensionStep?.loadExactVersion ?? false,
-                      version: current.loadExtensionStep?.version ?? 0,
-                      extensionName: current.loadExtensionStep?.extensionName ?? "",
-                      fileId: current.loadExtensionStep?.fileId ?? null,
-                      baseConfigurationRepositoryId: current.loadExtensionStep?.baseConfigurationRepositoryId ?? null,
-                      configurationRepositoryId: event.target.value || null,
-                    },
-                  }))
-                }
-              >
-                <option value="">Не выбрано</option>
-                {lookups ? renderLookupOptions(lookups.configurationRepositories) : null}
-              </select>
-            </div>
-          </div>
-        </div>
-      );
-    case "CopyInfoBase":
-      return (
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-[11px] text-slate-600">Учетные данные СУБД-источника</label>
-            <select
-              className={inputClassName}
-              value={step.copyInfoBaseStep?.sourceCredentialsId ?? ""}
-              disabled={disabled}
-              onChange={(event) =>
-                updateStep((current) => ({
-                  ...current,
-                  copyInfoBaseStep: {
-                    sourceCredentialsId: event.target.value || null,
-                    sourceInfoBaseId: current.copyInfoBaseStep?.sourceInfoBaseId ?? null,
-                    destinationCredentialsId: current.copyInfoBaseStep?.destinationCredentialsId ?? null,
-                    destinationInfoBaseId: current.copyInfoBaseStep?.destinationInfoBaseId ?? null,
-                  },
-                }))
-              }
-            >
-              <option value="">Не выбрано</option>
-              {lookups ? renderLookupOptions(lookups.credentials) : null}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-[11px] text-slate-600">Учетные данные СУБД-приемника</label>
-            <select
-              className={inputClassName}
-              value={step.copyInfoBaseStep?.destinationCredentialsId ?? ""}
-              disabled={disabled}
-              onChange={(event) =>
-                updateStep((current) => ({
-                  ...current,
-                  copyInfoBaseStep: {
-                    sourceCredentialsId: current.copyInfoBaseStep?.sourceCredentialsId ?? null,
-                    sourceInfoBaseId: current.copyInfoBaseStep?.sourceInfoBaseId ?? null,
-                    destinationCredentialsId: event.target.value || null,
-                    destinationInfoBaseId: current.copyInfoBaseStep?.destinationInfoBaseId ?? null,
-                  },
-                }))
-              }
-            >
-              <option value="">Не выбрано</option>
-              {lookups ? renderLookupOptions(lookups.credentials) : null}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-[11px] text-slate-600">ИБ-источник</label>
-            <select
-              className={inputClassName}
-              value={step.copyInfoBaseStep?.sourceInfoBaseId ?? ""}
-              disabled={disabled}
-              onChange={(event) =>
-                updateStep((current) => ({
-                  ...current,
-                  copyInfoBaseStep: {
-                    sourceCredentialsId: current.copyInfoBaseStep?.sourceCredentialsId ?? null,
-                    sourceInfoBaseId: event.target.value || null,
-                    destinationCredentialsId: current.copyInfoBaseStep?.destinationCredentialsId ?? null,
-                    destinationInfoBaseId: current.copyInfoBaseStep?.destinationInfoBaseId ?? null,
-                  },
-                }))
-              }
-            >
-              <option value="">Не выбрано</option>
-              {lookups ? renderLookupOptions(lookups.infoBases) : null}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-[11px] text-slate-600">ИБ-приемник</label>
-            <select
-              className={inputClassName}
-              value={step.copyInfoBaseStep?.destinationInfoBaseId ?? ""}
-              disabled={disabled}
-              onChange={(event) =>
-                updateStep((current) => ({
-                  ...current,
-                  copyInfoBaseStep: {
-                    sourceCredentialsId: current.copyInfoBaseStep?.sourceCredentialsId ?? null,
-                    sourceInfoBaseId: current.copyInfoBaseStep?.sourceInfoBaseId ?? null,
-                    destinationCredentialsId: current.copyInfoBaseStep?.destinationCredentialsId ?? null,
-                    destinationInfoBaseId: event.target.value || null,
-                  },
-                }))
-              }
-            >
-              <option value="">Не выбрано</option>
-              {lookups ? renderLookupOptions(lookups.infoBases) : null}
-            </select>
-          </div>
+          )}
         </div>
       );
     default:
@@ -706,12 +597,12 @@ function createStepNode(step: DiagramStep, index: number) {
   node.getOptions().extras = { stepId: step.stepId };
   node.setPosition(x, y);
   node.addInPort("in");
+  // leftStepId - это "следующий шаг" как для Simple, так и для успешной ветки TryCatch,
+  // поэтому этот порт есть у любого узла; rightStepId (ветка исключения) - только у TryCatch.
+  node.addOutPort("left");
 
   if (step.nodeKind === "TryCatch") {
-    node.addOutPort("left");
     node.addOutPort("right");
-  } else {
-    node.addOutPort("previous");
   }
 
   return node;
@@ -719,7 +610,6 @@ function createStepNode(step: DiagramStep, index: number) {
 
 function StepNodeWidget({ model, engine }: { model: DefaultNodeModel; engine: DiagramEngine }) {
   const context = useContext(StepDiagramContext);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [draftStep, setDraftStep] = useState<DiagramStep | null>(null);
   const draftStepIdRef = useRef<string | null>(null);
 
@@ -750,7 +640,6 @@ function StepNodeWidget({ model, engine }: { model: DefaultNodeModel; engine: Di
   }
 
   const inPort = model.getPort("in");
-  const previousPort = model.getPort("previous");
   const leftPort = model.getPort("left");
   const rightPort = model.getPort("right");
   const isTryCatch = step.nodeKind === "TryCatch";
@@ -765,9 +654,17 @@ function StepNodeWidget({ model, engine }: { model: DefaultNodeModel; engine: Di
     context.onUpdateStep(stepId, () => nextStep);
   };
 
+  const handleNodeKindChange = (nextNodeKind: string) => {
+    updateStep((current) => ({
+      ...current,
+      nodeKind: nextNodeKind,
+      rightStepId: nextNodeKind === "Simple" ? null : current.rightStepId,
+    }));
+  };
+
   return (
     <div
-      className={`w-[320px] rounded-xl border bg-white shadow-md ${isSelected ? "border-blue-500 ring-2 ring-blue-200" : "border-slate-200"}`}
+      className={`w-[320px] rounded-xl border bg-card shadow-md ${isSelected ? "border-blue-500 ring-2 ring-blue-500/30" : ""}`}
       style={{ userSelect: "none", touchAction: "none" }}
       onBlurCapture={(event) => {
         window.setTimeout(() => {
@@ -777,75 +674,103 @@ function StepNodeWidget({ model, engine }: { model: DefaultNodeModel; engine: Di
         }, 0);
       }}
     >
-      <div className={`relative flex items-center justify-between rounded-t-xl px-3 py-2 ${getHeaderClass(step.kind)}`}>
-        <div className="text-xs font-medium">{getStepLabel(step.kind)}</div>
-        <button
-          type="button"
-          className="rounded bg-white/20 px-2 py-0.5 text-[11px]"
-          onClick={() => context.onSelectStep(stepId)}
-          disabled={context.disabled}
-        >
-          Выбрать
-        </button>
+      <div className={`relative flex items-center justify-between gap-2 rounded-t-xl px-3 py-2 ${getHeaderClass(step.kind)}`}>
+        <div className="min-w-0 truncate text-xs font-medium">{getStepLabel(step.kind)}</div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div
+            className="flex items-center rounded-full bg-black/10 p-0.5 text-[10px] font-semibold dark:bg-white/10"
+            title="Режим шага"
+            onMouseDown={stopPointer}
+            onPointerDown={stopPointer}
+          >
+            {stepNodeKindOptions.map((option) => {
+              const isActive = step.nodeKind === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`rounded-full px-1.5 py-0.5 transition-colors ${
+                    isActive ? "bg-white/80 text-slate-900 dark:bg-white/90" : "opacity-60 hover:opacity-100"
+                  }`}
+                  onClick={() => handleNodeKindChange(option.value)}
+                  disabled={context.disabled}
+                  title={option.label}
+                >
+                  {option.value === "TryCatch" ? "T/C" : "S"}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className="rounded bg-white/20 px-2 py-0.5 text-[11px]"
+            onClick={() => context.onSelectStep(stepId)}
+            disabled={context.disabled}
+          >
+            Выбрать
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-2 p-3">
-        <div className="flex items-center justify-between gap-2 text-[10px] text-slate-500">
-          <span>in</span>
+        <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
           {inPort ? (
             <PortWidget port={inPort} engine={engine}>
-              <div className="h-3 w-3 rounded-full border border-slate-400 bg-slate-100" />
+              <div className="h-3 w-3 rounded-full border border-slate-400 bg-slate-100 dark:bg-slate-700" />
             </PortWidget>
-          ) : null}
+          ) : (
+            <span />
+          )}
+          <span>in</span>
         </div>
 
         {isTryCatch ? (
-          <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
-            <div className="flex items-center justify-between gap-1">
-              <span>left</span>
+          <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-1">
               {leftPort ? (
                 <PortWidget port={leftPort} engine={engine}>
-                  <div className="h-3 w-3 rounded-full border border-amber-500 bg-amber-100" />
+                  <div className="h-3 w-3 rounded-full border border-amber-500 bg-amber-100 dark:bg-amber-950" />
                 </PortWidget>
               ) : null}
+              <span>left</span>
             </div>
-            <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center justify-end gap-1">
               <span>right</span>
               {rightPort ? (
                 <PortWidget port={rightPort} engine={engine}>
-                  <div className="h-3 w-3 rounded-full border border-emerald-500 bg-emerald-100" />
+                  <div className="h-3 w-3 rounded-full border border-emerald-500 bg-emerald-100 dark:bg-emerald-950" />
                 </PortWidget>
               ) : null}
             </div>
           </div>
-        ) : previousPort ? (
-          <div className="flex items-center justify-between gap-1 text-[10px] text-slate-500">
-            <PortWidget port={previousPort} engine={engine}>
-              <div className="h-3 w-3 rounded-full border border-blue-500 bg-blue-100" />
-            </PortWidget>
+        ) : leftPort ? (
+          <div className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground">
             <span>out</span>
+            <PortWidget port={leftPort} engine={engine}>
+              <div className="h-3 w-3 rounded-full border border-blue-500 bg-blue-100 dark:bg-blue-950" />
+            </PortWidget>
           </div>
         ) : null}
 
         <div>
-          <label className="mb-1 block text-[11px] text-slate-600">Тип шага</label>
+          <label className="mb-1 block text-[11px] text-muted-foreground">Тип шага</label>
           <select
             className={inputClassName}
             value={step.kind}
             disabled={context.disabled}
             onMouseDown={stopPointer}
             onPointerDown={stopPointer}
-            onChange={(event) => updateStep((current) => normalizeStepForKind({ ...current, kind: event.target.value }))}
+            onChange={(event) => updateStep((current) => normalizeStepByKind({ ...current, kind: event.target.value }))}
           >
-            {stepKinds.map((value) => (
-              <option key={value} value={value}>
-                {getStepLabel(value)}
+            {stepKindOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
         </div>
 
-        {renderStepFields(step, updateStep, context.disabled, { files: [], credentials: [], infoBases: [], configurationRepositories: [] })}
+        {renderStepFields(step, updateStep, context.disabled, context.lookups)}
       </div>
     </div>
   );
@@ -877,9 +802,9 @@ export function StepsDiagram({
   onRemoveStep,
   onMoveStep,
   onUpdateStep,
+  lookups,
   disabled = false,
 }: StepsDiagramProps) {
-  const engineRef = useRef<DiagramEngine | null>(null);
   const canvasHostRef = useRef<HTMLDivElement | null>(null);
   const previousStepIdsRef = useRef<string[]>([]);
   const viewportInitializedRef = useRef(false);
@@ -940,7 +865,6 @@ export function StepsDiagram({
     };
 
     steps.forEach((step) => {
-      createLink(step.stepId, "previous", step.previousStepId);
       createLink(step.stepId, "left", step.leftStepId);
       createLink(step.stepId, "right", step.rightStepId);
     });
@@ -956,9 +880,10 @@ export function StepsDiagram({
       onSelectStep,
       onRemoveStep,
       onUpdateStep,
+      lookups,
       disabled,
     }),
-    [disabled, onRemoveStep, onSelectStep, onUpdateStep, selectedStepId, steps]
+    [disabled, lookups, onRemoveStep, onSelectStep, onUpdateStep, selectedStepId, steps]
   );
 
   useEffect(() => {
@@ -981,7 +906,6 @@ export function StepsDiagram({
     }
 
     engine.setModel(model.diagramModel);
-
 
     previousStepIdsRef.current = currentIds;
     engine.repaintCanvas();
@@ -1076,7 +1000,7 @@ export function StepsDiagram({
           return;
         }
 
-        if (role !== "previous" && role !== "left" && role !== "right") {
+        if (role !== "left" && role !== "right") {
           model.diagramModel.removeLink(link);
           engine.repaintCanvas();
           return;
@@ -1097,25 +1021,21 @@ export function StepsDiagram({
 
         const adjacency = new Map<string, string[]>();
         steps.forEach((step) => {
-          const targets = [step.previousStepId, step.leftStepId, step.rightStepId].filter((value): value is string => !!value);
+          const targets = [step.leftStepId, step.rightStepId].filter((value): value is string => !!value);
           adjacency.set(step.stepId, [...targets]);
         });
 
         const nextTargets: string[] = [];
-        if (role === "previous") {
+        if (role === "left") {
           nextTargets.push(targetStepId);
-        } else {
-          if (role === "left") {
-            nextTargets.push(targetStepId);
-            if (sourceStep.rightStepId) {
-              nextTargets.push(sourceStep.rightStepId);
-            }
-          } else {
-            if (sourceStep.leftStepId) {
-              nextTargets.push(sourceStep.leftStepId);
-            }
-            nextTargets.push(targetStepId);
+          if (sourceStep.rightStepId) {
+            nextTargets.push(sourceStep.rightStepId);
           }
+        } else {
+          if (sourceStep.leftStepId) {
+            nextTargets.push(sourceStep.leftStepId);
+          }
+          nextTargets.push(targetStepId);
         }
 
         adjacency.set(sourceStepId, nextTargets);
@@ -1131,13 +1051,8 @@ export function StepsDiagram({
             return current;
           }
 
-          if (role === "previous") {
-            return { ...current, previousStepId: targetStepId, leftStepId: null, rightStepId: null };
-          }
-
           return {
             ...current,
-            previousStepId: null,
             leftStepId: role === "left" ? targetStepId : current.leftStepId,
             rightStepId: role === "right" ? targetStepId : current.rightStepId,
           };
@@ -1164,30 +1079,33 @@ export function StepsDiagram({
   }, [disabled, engine, model, onMoveStep, onSelectStep, onUpdateStep, steps, selectedStepId]);
 
   return (
-    <Card className="flex h-full flex-col rounded-lg border bg-slate-100/80 p-2">
+    <Card className="flex h-full flex-col rounded-lg border bg-muted/40 p-2">
       <CardHeader className="space-y-2 p-2">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-base">Шаги задачи</CardTitle>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => selectedStepId && onRemoveStep(selectedStepId)}
-            disabled={disabled || !selectedStepId}
-          >
-            Удалить
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground">Колесо мыши - масштаб, перетаскивание фона - перемещение</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => selectedStepId && onRemoveStep(selectedStepId)}
+              disabled={disabled || !selectedStepId}
+            >
+              Удалить
+            </Button>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {stepKinds.map((kind) => (
+          {stepKindOptions.map((option) => (
             <button
-              key={kind}
+              key={option.value}
               type="button"
-              onClick={() => onAddStep(kind)}
+              onClick={() => onAddStep(option.value)}
               disabled={disabled}
-              className={`rounded-full px-3 py-1 text-xs shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 ${stepKindChipClass[kind] ?? "bg-slate-200 text-slate-900"}`}
+              className={`rounded-full px-3 py-1 text-xs shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 ${stepKindChipClass[option.value] ?? "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100"}`}
             >
-              {stepKindLabels[kind] ?? kind}
+              {option.label}
             </button>
           ))}
         </div>
@@ -1196,8 +1114,11 @@ export function StepsDiagram({
         <StepDiagramContext.Provider value={diagramContext}>
           <div
             ref={canvasHostRef}
-            className="relative h-full min-h-[520px] w-full overflow-auto rounded-md border bg-white"
-            style={{ backgroundImage: "radial-gradient(#dbe2ea 1px, transparent 1px)", backgroundSize: "18px 18px" }}
+            className="relative h-full min-h-0 w-full overflow-auto rounded-md border bg-background"
+            style={{
+              backgroundImage: "radial-gradient(var(--color-border) 1px, transparent 1px)",
+              backgroundSize: "18px 18px",
+            }}
           >
             <div className="h-[900px] min-w-[1800px]">
               <CanvasWidget className="h-full w-full" engine={engine} />

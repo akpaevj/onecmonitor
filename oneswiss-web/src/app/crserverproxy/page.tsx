@@ -21,6 +21,7 @@ import {
   type CrServerProxyMiddlewareItem,
 } from "@/lib/api/cr-server-proxy";
 import { getFiles, type FileListItem } from "@/lib/api/files";
+import { generateUuid } from "@/lib/uuid";
 
 function repositoryLabel(repo: ConfigurationRepositoryListItem) {
   return `${repo.name} (${repo.host}:${repo.port})`;
@@ -104,7 +105,7 @@ export default function CrServerProxyPage() {
   const addLocation = () => {
     setLocations((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), configurationRepositoryId: repositories[0]?.id ?? "", location: "" },
+      { id: generateUuid(), configurationRepositoryId: repositories[0]?.id ?? "", location: "" },
     ]);
   };
 
@@ -137,7 +138,7 @@ export default function CrServerProxyPage() {
     setMiddlewares((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: generateUuid(),
         debugMode: false,
         executablePath: "",
         fileId: null,
@@ -172,7 +173,7 @@ export default function CrServerProxyPage() {
     if (!item) return;
 
     updateMiddleware(middlewareIndex, {
-      arguments: [...item.arguments, { id: crypto.randomUUID(), key: "", value: "" }],
+      arguments: [...item.arguments, { id: generateUuid(), key: "", value: "" }],
     });
   };
 

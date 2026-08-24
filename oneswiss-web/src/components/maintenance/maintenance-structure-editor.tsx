@@ -19,102 +19,26 @@ import {
   updateMaintenanceTaskStructure,
   updateMaintenanceTaskTemplateStructure,
 } from "@/lib/api/maintenance-tasks";
+import { StepsDiagram } from "@/components/maintenance/steps-diagram";
+import {
+  createDefaultStep,
+  getIncomingStepId,
+  normalizeStepByKind,
+  stepKindOptions,
+  stepKindsWithoutParameters,
+  stepNodeKindOptions,
+  withDerivedPreviousStepIds,
+} from "@/components/maintenance/step-kinds";
+import { generateUuid } from "@/lib/uuid";
 
 type MaintenanceStructureEditorProps = {
   params: Promise<{ id: string }>;
   mode: "task" | "template";
 };
 
-const stepKindOptions = [
-  { value: "LockConnections", label: "Блокировка соединений" },
-  { value: "CloseConnections", label: "Закрытие сеансов" },
-  { value: "UnlockConnections", label: "Разблокировка соединений" },
-  { value: "LoadExtension", label: "Загрузка расширения" },
-  { value: "DeleteExtension", label: "Удаление расширения" },
-  { value: "UpdateConfiguration", label: "Обновление конфигурации" },
-  { value: "LoadConfiguration", label: "Загрузка конфигурации" },
-  { value: "StartExternalDataProcessor", label: "Запуск внешней обработки" },
-  { value: "ExecuteOneScript", label: "Выполнение скрипта - OneScript" },
-] as const;
-
-const stepKindsWithoutParameters = new Set(["CloseConnections", "UnlockConnections"]);
-
-const stepNodeKindOptions = [
-  { value: "Simple", label: "Простой" },
-  { value: "TryCatch", label: "Попытка/Исключение" },
-] as const;
-
-function createDefaultStep(): MaintenanceTaskExportStepDto {
-  return {
-    stepId: crypto.randomUUID(),
-    kind: "LockConnections",
-    nodeKind: "Simple",
-    previousStepId: null,
-    leftStepId: null,
-    rightStepId: null,
-    positionX: 0,
-    positionY: 0,
-    copyInfoBaseStep: null,
-    executeOneScriptStep: null,
-    startExternalDataProcessorStep: null,
-    updateConfigurationStep: null,
-    loadExtensionStep: null,
-    deleteExtensionStep: null,
-    loadConfigurationStep: null,
-    lockConnectionsStep: { accessCode: "", message: "" },
-  };
-}
-
-function normalizeStepByKind(step: MaintenanceTaskExportStepDto): MaintenanceTaskExportStepDto {
-  return {
-    ...step,
-    copyInfoBaseStep:
-      step.kind === "CopyInfoBase"
-        ? (step.copyInfoBaseStep ?? {
-            sourceCredentialsId: null,
-            sourceInfoBaseId: null,
-            destinationCredentialsId: null,
-            destinationInfoBaseId: null,
-          })
-        : null,
-    executeOneScriptStep:
-      step.kind === "ExecuteOneScript"
-        ? (step.executeOneScriptStep ?? { debugMode: false, executablePath: "", fileId: null })
-        : null,
-    startExternalDataProcessorStep:
-      step.kind === "StartExternalDataProcessor"
-        ? (step.startExternalDataProcessorStep ?? { fileId: null })
-        : null,
-    updateConfigurationStep: step.kind === "UpdateConfiguration" ? (step.updateConfigurationStep ?? { fileId: null }) : null,
-    loadExtensionStep:
-      step.kind === "LoadExtension"
-        ? (step.loadExtensionStep ?? {
-            fromConfigRepository: false,
-            loadExactVersion: false,
-            version: 0,
-            extensionName: "",
-            fileId: null,
-            baseConfigurationRepositoryId: null,
-            configurationRepositoryId: null,
-          })
-        : null,
-    deleteExtensionStep: step.kind === "DeleteExtension" ? (step.deleteExtensionStep ?? { extensionName: "" }) : null,
-    loadConfigurationStep:
-      step.kind === "LoadConfiguration"
-        ? (step.loadConfigurationStep ?? {
-            fromConfigRepository: false,
-            loadExactVersion: false,
-            version: 0,
-            fileId: null,
-            configurationRepositoryId: null,
-          })
-        : null,
-    lockConnectionsStep:
-      step.kind === "LockConnections" ? (step.lockConnectionsStep ?? { accessCode: "", message: "" }) : null,
-  };
-}
-
-const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// Версия [1-8] - принимаем и current-gen time-ordered GUID'ы (v7), которые генерирует Npgsql/EF Core
+// для серверных сущностей (ИБ, файлы, хранилища конфигураций), а не только классические v1-v5.
+const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function normalizeGuid(value: string | null | undefined): string | null {
   if (!value) {
@@ -134,7 +58,7 @@ function normalizeStepForApi(step: MaintenanceTaskExportStepDto, validStepIds: S
 
   return {
     ...normalized,
-    stepId: normalizeGuid(normalized.stepId) ?? crypto.randomUUID(),
+    stepId: normalizeGuid(normalized.stepId) ?? generateUuid(),
     previousStepId: normalizeStepRef(normalized.previousStepId),
     leftStepId: normalizeStepRef(normalized.leftStepId),
     rightStepId: normalizeStepRef(normalized.rightStepId),
@@ -261,6 +185,7 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
   const [dragStepId, setDragStepId] = useState<string | null>(null);
   const [dragOverStepId, setDragOverStepId] = useState<string | null>(null);
   const [infoBaseSearch, setInfoBaseSearch] = useState("");
+  const [stepsViewMode, setStepsViewMode] = useState<"table" | "diagram">("table");
 
   useEffect(() => {
     let cancelled = false;
@@ -344,13 +269,7 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
     }
 
     template.steps.forEach((currentStep) => {
-      const incomingStep = template.steps.find(
-        (candidate) =>
-          candidate.stepId !== currentStep.stepId &&
-          [candidate.previousStepId, candidate.leftStepId, candidate.rightStepId].includes(currentStep.stepId)
-      );
-
-      map.set(currentStep.stepId, incomingStep?.stepId ?? null);
+      map.set(currentStep.stepId, getIncomingStepId(template.steps, currentStep.stepId));
     });
 
     return map;
@@ -373,15 +292,26 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
     setTemplate((prev) => (prev ? updater(prev) : prev));
   };
 
+  const updateStepById = (
+    stepId: string,
+    updater: (current: MaintenanceTaskExportStepDto) => MaintenanceTaskExportStepDto
+  ) => {
+    updateTemplate((current) => ({
+      ...current,
+      steps: current.steps.map((step) => (step.stepId === stepId ? updater(step) : step)),
+    }));
+  };
+
   const updateSelectedStep = (updater: (current: MaintenanceTaskExportStepDto) => MaintenanceTaskExportStepDto) => {
     if (!selectedStepId) {
       return;
     }
 
-    updateTemplate((current) => ({
-      ...current,
-      steps: current.steps.map((step) => (step.stepId === selectedStepId ? updater(step) : step)),
-    }));
+    updateStepById(selectedStepId, updater);
+  };
+
+  const onMoveStep = (stepId: string, x: number, y: number) => {
+    updateStepById(stepId, (current) => ({ ...current, positionX: x, positionY: y }));
   };
 
   const onAddStep = (stepKind: string) => {
@@ -422,13 +352,8 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
       }
 
       const anchor = nextSteps[anchorIndex];
-      if (anchor.nodeKind === "TryCatch") {
-        stepToAdd.previousStepId = anchor.leftStepId;
-        anchor.leftStepId = stepToAdd.stepId;
-      } else {
-        stepToAdd.previousStepId = anchor.previousStepId;
-        anchor.previousStepId = stepToAdd.stepId;
-      }
+      stepToAdd.leftStepId = anchor.leftStepId;
+      anchor.leftStepId = stepToAdd.stepId;
 
       return {
         ...current,
@@ -447,7 +372,6 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
         .filter((step) => step.stepId !== stepId)
         .map((step) => ({
           ...step,
-          previousStepId: step.previousStepId === stepId ? null : step.previousStepId,
           leftStepId: step.leftStepId === stepId ? null : step.leftStepId,
           rightStepId: step.rightStepId === stepId ? null : step.rightStepId,
         }));
@@ -481,20 +405,7 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
 
       const normalizedByOrder = reordered.map((step, index) => {
         const nextStepId = reordered[index + 1]?.stepId ?? null;
-        if (step.nodeKind === "TryCatch") {
-          return {
-            ...step,
-            previousStepId: null,
-            leftStepId: nextStepId,
-          };
-        }
-
-        return {
-          ...step,
-          previousStepId: nextStepId,
-          leftStepId: null,
-          rightStepId: null,
-        };
+        return { ...step, leftStepId: nextStepId };
       });
 
       return {
@@ -548,7 +459,7 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
         ...template,
         description,
         isTemplate: isTemplateMode,
-        steps: template.steps.map((step) => normalizeStepForApi(step, validStepIds)),
+        steps: withDerivedPreviousStepIds(template.steps).map((step) => normalizeStepForApi(step, validStepIds)),
       };
       delete (payload as { commonDestination?: boolean }).commonDestination;
 
@@ -721,31 +632,69 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
       <div className="min-h-0 flex-1 space-y-4">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Шаги задачи</CardTitle>
-                <CardDescription>Табличный редактор шагов</CardDescription>
+                <CardDescription>
+                  {stepsViewMode === "table" ? "Табличный редактор шагов" : "Графический редактор шагов"}
+                </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <select
-                  className="h-9 rounded-md border bg-background px-3 text-sm"
-                  value={newStepKind}
-                  onChange={(event) => setNewStepKind(event.target.value as (typeof stepKindOptions)[number]["value"])}
-                  disabled={isSaving}
-                >
-                  {stepKindOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <Button type="button" variant="outline" onClick={() => onAddStep(newStepKind)} disabled={isSaving}>
-                  Добавить шаг
-                </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-0.5 rounded-md border p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setStepsViewMode("table")}
+                    className={`rounded px-2.5 py-1 text-xs transition-colors ${stepsViewMode === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                  >
+                    Таблица
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStepsViewMode("diagram")}
+                    className={`rounded px-2.5 py-1 text-xs transition-colors ${stepsViewMode === "diagram" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                  >
+                    Диаграмма
+                  </button>
+                </div>
+
+                {stepsViewMode === "table" ? (
+                  <>
+                    <select
+                      className="h-9 rounded-md border bg-background px-3 text-sm"
+                      value={newStepKind}
+                      onChange={(event) => setNewStepKind(event.target.value as (typeof stepKindOptions)[number]["value"])}
+                      disabled={isSaving}
+                    >
+                      {stepKindOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Button type="button" variant="outline" onClick={() => onAddStep(newStepKind)} disabled={isSaving}>
+                      Добавить шаг
+                    </Button>
+                  </>
+                ) : null}
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className={stepsViewMode === "diagram" ? "p-0" : undefined}>
+            {stepsViewMode === "diagram" ? (
+              <div className="h-[70vh] min-h-[560px]">
+                <StepsDiagram
+                  steps={template.steps}
+                  selectedStepId={selectedStepId}
+                  onSelectStep={setSelectedStepId}
+                  onAddStep={onAddStep}
+                  onRemoveStep={onRemoveStep}
+                  onMoveStep={onMoveStep}
+                  onUpdateStep={updateStepById}
+                  lookups={lookups}
+                  disabled={isSaving}
+                />
+              </div>
+            ) : (
             <div className="overflow-auto rounded-md border">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40">
@@ -764,7 +713,7 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
                     const isSelected = selectedStepId === step.stepId;
                     const isTryCatch = step.nodeKind === "TryCatch";
                     const incomingStepId = incomingStepIdsByStepId.get(step.stepId) ?? null;
-                    const outStepId = isTryCatch ? step.leftStepId : step.previousStepId;
+                    const outStepId = step.leftStepId;
 
                     return (
                       <tr
@@ -831,21 +780,10 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
                                   }
 
                                   const nextNodeKind = event.target.value;
-                                  if (nextNodeKind === "Simple") {
-                                    return {
-                                      ...item,
-                                      nodeKind: nextNodeKind,
-                                      previousStepId: item.previousStepId ?? item.leftStepId,
-                                      leftStepId: null,
-                                      rightStepId: null,
-                                    };
-                                  }
-
                                   return {
                                     ...item,
                                     nodeKind: nextNodeKind,
-                                    previousStepId: null,
-                                    leftStepId: item.leftStepId ?? item.previousStepId,
+                                    rightStepId: nextNodeKind === "Simple" ? null : item.rightStepId,
                                   };
                                 }),
                               }))
@@ -877,9 +815,7 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
                                   }
 
                                   const nextStepId = event.target.value || null;
-                                  return isTryCatch
-                                    ? { ...item, previousStepId: null, leftStepId: nextStepId }
-                                    : { ...item, previousStepId: nextStepId, leftStepId: null, rightStepId: null };
+                                  return { ...item, leftStepId: nextStepId };
                                 }),
                               }))
                             }
@@ -938,10 +874,11 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
                 </tbody>
               </table>
             </div>
+            )}
           </CardContent>
         </Card>
 
-        {selectedStep && stepKindsWithoutParameters.has(selectedStep.kind) ? null : (
+        {stepsViewMode === "table" && !(selectedStep && stepKindsWithoutParameters.has(selectedStep.kind)) ? (
         <Card>
           <CardHeader>
             <CardTitle>Параметры шага</CardTitle>
@@ -1441,7 +1378,7 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
             )}
           </CardContent>
         </Card>
-        )}
+        ) : null}
       </div>
 
       <div className="flex gap-2">
