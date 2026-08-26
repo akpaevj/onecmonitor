@@ -1,8 +1,8 @@
 "use client";
 
-import { AlertTriangle, Plus, Save, ScrollText, TableProperties, Trash2 } from "lucide-react";
+import { AlertTriangle, Save, ScrollText, TableProperties, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,27 +65,6 @@ export default function EventLogPage() {
 
     void run();
   }, [loadData]);
-
-  const usedInfoBaseIds = useMemo(() => new Set(items.map((i) => i.infoBaseId)), [items]);
-
-  const addExportItem = () => {
-    const firstAvailable = infoBases.find((i) => !usedInfoBaseIds.has(i.id));
-    if (!firstAvailable) {
-      setError("Все информационные базы уже добавлены");
-      return;
-    }
-
-    setItems((prev) => [
-      ...prev,
-      {
-        infoBaseId: firstAvailable.id,
-        isActive: true,
-        ttl: form.defaultTtl > 0 ? form.defaultTtl : 365,
-      },
-    ]);
-    setError(null);
-    setMessage(null);
-  };
 
   const removeExportItem = (index: number) => {
     setItems((prev) => prev.filter((_, i) => i !== index));
@@ -254,10 +233,7 @@ export default function EventLogPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="text-sm font-medium">Экспортируемые журналы</div>
-              <Button type="button" variant="outline" size="sm" onClick={addExportItem}>
-                <Plus className="h-4 w-4" />
-                Добавить
-              </Button>
+              <div className="text-xs text-muted-foreground">Информационные базы добавляются автоматически по регулярному выражению</div>
             </div>
 
             <div className="max-h-[65vh] overflow-auto rounded-md border">

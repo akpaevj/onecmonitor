@@ -5,8 +5,6 @@ export const Roles = {
   ReadTechLogSeances: "ReadTechLogSeances",
   WriteTechLogSeances: "WriteTechLogSeances",
   ReadErrorLoggingReports: "ReadErrorLoggingReports",
-  ReadGitRepositories: "ReadGitRepositories",
-  WriteGitRepositories: "WriteGitRepositories",
   ReadEventLog: "ReadEventLog",
   ReadBuildTasks: "ReadBuildTasks",
   ConfigBuildTasks: "ConfigBuildTasks",

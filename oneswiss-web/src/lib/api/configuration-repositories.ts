@@ -12,7 +12,6 @@ export type ConfigurationRepositoryListItem = {
 export type RepositoryUserItem = {
   id: string;
   name: string;
-  gitUser: string | null;
   deleted: boolean;
 };
 
@@ -30,14 +29,8 @@ export type RepositoryCredentialsItem = {
   name: string;
 };
 
-export type UpdateRepositoryUserRequest = {
-  id: string;
-  gitUser: string | null;
-};
-
 export type UpdateConfigurationRepositoryRequest = {
   credentialsId: string | null;
-  users: UpdateRepositoryUserRequest[];
 };
 
 export function getConfigurationRepositories() {

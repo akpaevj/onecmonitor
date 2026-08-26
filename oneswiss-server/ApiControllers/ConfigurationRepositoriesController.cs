@@ -42,7 +42,7 @@ public class ConfigurationRepositoriesController(AppDbContext dbContext) : Contr
                 c.CredentialsId,
                 c.Users
                     .OrderBy(u => u.Name)
-                    .Select(u => new RepositoryUserItem(u.Id, u.Name, u.GitUser, u.Deleted))
+                    .Select(u => new RepositoryUserItem(u.Id, u.Name, u.Deleted))
                     .ToList()))
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -89,13 +89,6 @@ public class ConfigurationRepositoriesController(AppDbContext dbContext) : Contr
 
         repository.CredentialsId = request.CredentialsId;
 
-        var usersById = repository.Users.ToDictionary(u => u.Id, u => u);
-        foreach (var userRequest in request.Users)
-        {
-            if (usersById.TryGetValue(userRequest.Id, out var user))
-                user.GitUser = string.IsNullOrWhiteSpace(userRequest.GitUser) ? null : userRequest.GitUser.Trim();
-        }
-
         await dbContext.SaveChangesAsync(cancellationToken);
 
         var response = new ConfigurationRepositoryDetails(
@@ -106,7 +99,7 @@ public class ConfigurationRepositoriesController(AppDbContext dbContext) : Contr
             repository.CredentialsId,
             repository.Users
                 .OrderBy(u => u.Name)
-                .Select(u => new RepositoryUserItem(u.Id, u.Name, u.GitUser, u.Deleted))
+                .Select(u => new RepositoryUserItem(u.Id, u.Name, u.Deleted))
                 .ToList());
 
         return Ok(response);
@@ -131,18 +124,12 @@ public class ConfigurationRepositoriesController(AppDbContext dbContext) : Contr
     public sealed record RepositoryUserItem(
         Guid Id,
         string Name,
-        string? GitUser,
         bool Deleted);
 
     public sealed record RepositoryCredentialsItem(
         Guid Id,
         string Name);
 
-    public sealed record UpdateRepositoryUserRequest(
-        Guid Id,
-        string? GitUser);
-
     public sealed record UpdateConfigurationRepositoryRequest(
-        Guid? CredentialsId,
-        IReadOnlyList<UpdateRepositoryUserRequest> Users);
+        Guid? CredentialsId);
 }

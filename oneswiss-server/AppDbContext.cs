@@ -43,7 +43,6 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<CustomNotification> CustomNotifications { get; set; }
     public DbSet<AccessGroup> AccessGroups { get; set; }
     public DbSet<UsersGroup> UsersGroups { get; set; }
-    public DbSet<GitRepository> GitRepositories { get; set; }
     public DbSet<CrServerProxySettings> CrServerProxySettings { get; set; }
     public DbSet<CrServerProxyMiddleware> CrServerProxyMiddlewares { get; set; }
     public DbSet<CrServerProxyLocation> CrServerProxyLocations { get; set; }

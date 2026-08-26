@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiError } from "@/lib/api/client";
 import {
+  getClusterLicenses,
   getClusterProcesses,
   getServersAdministrationOverview,
+  type V8LicenseItem,
   type V8ProcessItem,
 } from "@/lib/api/servers-administration";
 import { cn } from "@/lib/utils";
@@ -27,8 +29,19 @@ export default function ClusterProcessesPage({ params }: ClusterProcessesPagePro
   const [clusterName, setClusterName] = useState<string>("");
 
   const [items, setItems] = useState<V8ProcessItem[]>([]);
+  const [licenses, setLicenses] = useState<V8LicenseItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const licenseByProcessId = useMemo(() => {
+    const map = new Map<string, V8LicenseItem>();
+    for (const license of licenses) {
+      if (license.source === "process" && license.processId) {
+        map.set(license.processId, license);
+      }
+    }
+    return map;
+  }, [licenses]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,8 +81,9 @@ export default function ClusterProcessesPage({ params }: ClusterProcessesPagePro
 
     try {
       await loadClusterName(clusterId);
-      const data = await getClusterProcesses(clusterId);
+      const [data, licensesData] = await Promise.all([getClusterProcesses(clusterId), getClusterLicenses(clusterId)]);
       setItems(data);
+      setLicenses(licensesData);
     } catch (e) {
       if (e instanceof ApiError && typeof e.details === "string") {
         setError(e.details);
@@ -118,6 +132,7 @@ export default function ClusterProcessesPage({ params }: ClusterProcessesPagePro
             <thead className="bg-muted/50 text-left">
               <tr>
                 <th className="px-3 py-2 font-medium">Хост</th>
+                <th className="px-3 py-2 font-medium">Лицензия</th>
                 <th className="px-3 py-2 font-medium">PID</th>
                 <th className="px-3 py-2 font-medium">Порт</th>
                 <th className="px-3 py-2 font-medium">Запущен</th>
@@ -142,13 +157,13 @@ export default function ClusterProcessesPage({ params }: ClusterProcessesPagePro
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td className="px-3 py-2 text-muted-foreground" colSpan={20}>
+                  <td className="px-3 py-2 text-muted-foreground" colSpan={21}>
                     Загрузка...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td className="px-3 py-2 text-muted-foreground" colSpan={20}>
+                  <td className="px-3 py-2 text-muted-foreground" colSpan={21}>
                     Процессы не найдены
                   </td>
                 </tr>
@@ -156,6 +171,7 @@ export default function ClusterProcessesPage({ params }: ClusterProcessesPagePro
                 items.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-3 py-2">{item.host}</td>
+                    <td className="px-3 py-2">{licenseByProcessId.get(item.id)?.shortPresentation || "—"}</td>
                     <td className="px-3 py-2">{item.pid}</td>
                     <td className="px-3 py-2">{item.port}</td>
                     <td className="px-3 py-2">{item.turnedOn ? "Да" : "Нет"}</td>

@@ -140,11 +140,6 @@ public class CredentialsController(AppDbContext dbContext) : ControllerBase
         if (isUsedInEventLog)
             return BadRequest("Учетные данные используются в настройках журнала регистрации");
 
-        var isUsedInGitRepositories = await dbContext.GitRepositories.AsNoTracking()
-            .AnyAsync(c => c.TokenId == id, cancellationToken);
-        if (isUsedInGitRepositories)
-            return BadRequest("Токен используется в git-репозиториях");
-
         var isUsedInMaintenanceSteps = await dbContext.MaintenanceSteps.AsNoTracking()
             .AnyAsync(s =>
                     (s.CopyInfoBaseStep != null && s.CopyInfoBaseStep.SourceCredentialsId == id) ||

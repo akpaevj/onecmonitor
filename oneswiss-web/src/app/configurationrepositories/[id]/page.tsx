@@ -81,24 +81,6 @@ export default function ConfigurationRepositoryEditPage({ params }: PageProps) {
     });
   };
 
-  const onChangeGitUser = (userId: string, value: string) => {
-    if (!details) {
-      return;
-    }
-
-    setDetails({
-      ...details,
-      users: details.users.map((user) =>
-        user.id === userId
-          ? {
-              ...user,
-              gitUser: value,
-            }
-          : user
-      ),
-    });
-  };
-
   const onSave = async () => {
     if (!id || !details) {
       return;
@@ -111,10 +93,6 @@ export default function ConfigurationRepositoryEditPage({ params }: PageProps) {
     try {
       await updateConfigurationRepository(id, {
         credentialsId: details.credentialsId,
-        users: details.users.map((user) => ({
-          id: user.id,
-          gitUser: user.gitUser,
-        })),
       });
 
       router.push("/configurationrepositories");
@@ -174,14 +152,8 @@ export default function ConfigurationRepositoryEditPage({ params }: PageProps) {
         <div className="space-y-2">
           <div className={formLabelClassName}>Пользователи</div>
           {details.users.map((user) => (
-            <div key={user.id} className={formFieldClassName}>
-              <div className="text-xs text-muted-foreground">{user.name}</div>
-              <input
-                className={formControlClassName}
-                value={user.gitUser ?? ""}
-                onChange={(event) => onChangeGitUser(user.id, event.target.value)}
-                placeholder="Git пользователь"
-              />
+            <div key={user.id} className="text-sm">
+              {user.name}
             </div>
           ))}
         </div>

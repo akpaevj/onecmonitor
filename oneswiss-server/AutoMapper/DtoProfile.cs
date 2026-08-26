@@ -21,8 +21,6 @@ public class DtoProfile : Profile
 
         CreateMap<Dbms, DbmsDto>().ReverseMap();
 
-        CreateMap<GitRepository, GitRepositoryDto>().ReverseMap();
-
         CreateMap<EventLogSettings, EventLogSettingsDto>().ReverseMap();
         CreateMap<EventLogExportItem, EventLogExportItemDto>().ReverseMap();
 

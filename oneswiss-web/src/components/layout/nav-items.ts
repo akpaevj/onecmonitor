@@ -7,7 +7,6 @@ import {
   Bug,
   Database,
   FileCode2,
-  FolderGit2,
   KeyRound,
   LayoutGrid,
   ScrollText,
@@ -63,7 +62,7 @@ export function getNavSections(ctx: NavContext): NavSection[] {
   }
 
   if (isInRoles(ctx, Roles.ReadEventLog) && ctx.features.eventLogEnabled) {
-    serviceItems.push({ title: "Журнал регистрации", href: "/eventlog", icon: ScrollText });
+    serviceItems.push({ title: "Журнал регистрации", href: "/eventlog/log", icon: ScrollText });
   }
 
   if (isInRoles(ctx, Roles.ReadErrorLoggingReports) && ctx.features.errorLoggingEnabled) {
@@ -80,10 +79,6 @@ export function getNavSections(ctx: NavContext): NavSection[] {
   if (isInRoles(ctx, Roles.ReadMaintenanceTasks, Roles.WriteMaintenanceTasks)) {
     referenceItems.push({ title: "Хранилища конфигураций", href: "/configurationrepositories", icon: Archive });
     referenceItems.push({ title: "Конфигурации обработки и скрипты", href: "/files", icon: FileCode2 });
-  }
-
-  if (isInRoles(ctx, Roles.ReadGitRepositories, Roles.WriteGitRepositories)) {
-    referenceItems.push({ title: "Репозитории Git", href: "/gitrepositories", icon: FolderGit2 });
   }
 
   if (isAdmin(ctx)) {

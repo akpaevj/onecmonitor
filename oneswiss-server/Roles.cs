@@ -14,8 +14,6 @@ public static class Roles
     public const string ReadTechLogSeances = "ReadTechLogSeances";
     public const string WriteTechLogSeances = "WriteTechLogSeances";
     public const string ReadErrorLoggingReports = "ReadErrorLoggingReports";
-    public const string ReadGitRepositories = "ReadGitRepositories";
-    public const string WriteGitRepositories = "WriteGitRepositories";
     public const string ReadEventLog = "ReadEventLog";
     public const string ReadBuildTasks = "ReadBuildTasks";
     public const string ConfigBuildTasks = "ConfigBuildTasks";
@@ -48,8 +46,6 @@ public static class Roles
             ReadTechLogSeances => "Чтение сеансов сбора ТЖ",
             WriteTechLogSeances => "Изменение сеансов сбора ТЖ",
             ReadErrorLoggingReports => "Просмотр отчетов об ошибках",
-            ReadGitRepositories => "Чтение репозиториев Git",
-            WriteGitRepositories => "Запись репозиториев Git",
             ReadEventLog => "Чтение журнала регистрации",
             ReadBuildTasks => "Чтение задач сборки",
             ConfigBuildTasks => "Настройка задач сборки",

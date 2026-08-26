@@ -34,5 +34,4 @@ public class Credentials : DatabaseObject
     public virtual List<Cluster> Clusters { get; set; } = [];
     public virtual List<InfoBase> InfoBases { get; set; } = [];
     public virtual List<ConfigurationRepository> ConfigurationRepositories { get; set; } = [];
-    public virtual List<GitRepository> GitRepositories { get; set; } = [];
 }

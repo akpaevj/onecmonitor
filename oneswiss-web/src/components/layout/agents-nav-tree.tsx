@@ -470,23 +470,6 @@ export function AgentsNavTree({ collapsed, onNavigate }: { collapsed: boolean; o
                             <div className="flex items-center gap-1" style={rowStyle(3)}>
                               <TreeSpacer />
                               <Link
-                                href={`/serversadministration/clusters/${cluster.id}/licenses`}
-                                onClick={onNavigate}
-                                className={cn(
-                                  rowClass(isActive(`/serversadministration/clusters/${cluster.id}/licenses`)),
-                                  "text-xs"
-                                )}
-                              >
-                                <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                                <span className="truncate">Лицензии</span>
-                              </Link>
-                            </div>
-                          ) : null}
-
-                          {agent.isConnected ? (
-                            <div className="flex items-center gap-1" style={rowStyle(3)}>
-                              <TreeSpacer />
-                              <Link
                                 href={`/serversadministration/clusters/${cluster.id}/resourcelimits`}
                                 onClick={onNavigate}
                                 className={cn(
