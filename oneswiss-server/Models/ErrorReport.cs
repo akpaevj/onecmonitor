@@ -1,5 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace OneSwiss.Server.Models;
 
+[Index(nameof(Hash))]
 public class ErrorReport : DatabaseObject
 {
     public DateTime CreatedAt { get; set; }

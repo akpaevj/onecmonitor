@@ -1,21 +1,12 @@
-using System.ComponentModel;
-using MessagePack;
-using OneScript.Contexts;
-
 namespace OneSwiss.V8.Platform.Services;
 
-[DisplayName("Служба 1С")]
-[ContextClass("СлужбаV8", "V8Service")]
-[MessagePackObject]
-public class V8Service
+// AutoContext<T> reflects properties/methods declared on the exact closed type T only, not on
+// further subclasses - so RagentService/RasService/CrServer can't share an AutoContext<V8Service>
+// base and still expose their own [ContextProperty] members. This stays a plain interface so each
+// concrete service can be its own AutoContext<T> while still sharing Name/IsActive polymorphically
+// for the internal service-discovery code in V8Services.cs.
+public interface IV8Service
 {
-    [DisplayName("Имя")]
-    [ContextProperty("Имя", "Name", CanWrite = false)]
-    [Key(0)]
-    public string Name { get; set; } = string.Empty;
-
-    [DisplayName("Запущена")]
-    [ContextProperty("Запущена", "IsActive", CanWrite = false)]
-    [Key(1)]
-    public bool IsActive { get; set; }
+    string Name { get; set; }
+    bool IsActive { get; set; }
 }

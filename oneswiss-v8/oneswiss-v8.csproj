@@ -8,7 +8,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="MessagePack.Annotations" Version="3.1.4" />
+        <PackageReference Include="MessagePack" Version="3.1.8" />
+        <PackageReference Include="MessagePack.Annotations" Version="3.1.8" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.1" />
         <PackageReference Include="OneScript" Version="2.0.0" />
         <PackageReference Include="OneSTools.FileDatabase" Version="1.0.1" />

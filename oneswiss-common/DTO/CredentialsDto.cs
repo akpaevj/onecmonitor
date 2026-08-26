@@ -1,11 +1,12 @@
 using MessagePack;
 using OneScript.Contexts;
+using ScriptEngine.Machine.Contexts;
 
 namespace OneSwiss.Common.DTO;
 
 [ContextClass("УчетныеДанные", "Credentials")]
 [MessagePackObject]
-public class CredentialsDto
+public class CredentialsDto : AutoContext<CredentialsDto>
 {
     [ContextProperty("Пользователь", "User")]
     [Key(0)]

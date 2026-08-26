@@ -1,16 +1,3 @@
-# Стек для развёртывания: PostgreSQL + oneswiss-server (Web API) + oneswiss-web (веб-панель),
-# каждый в своём контейнере.
-#
-#   docker compose up -d --build
-#
-# Образы именуются через IMAGE_REGISTRY/IMAGE_TAG (см. .env.example) - это позволяет собрать их
-# один раз и запушить в любой registry командой `docker compose push`, не редактируя сам файл:
-#   IMAGE_REGISTRY=registry.example.com/myuser/ docker compose build
-#   IMAGE_REGISTRY=registry.example.com/myuser/ docker compose push
-#
-# Перед использованием этого файла не только для локальной пробы, смените все значения-заглушки
-# ниже (пароль БД, ключ подписи JWT) и пересмотрите volumes/порты под своё окружение.
-
 services:
   db:
     image: postgres:17-alpine
@@ -28,10 +15,7 @@ services:
       retries: 10
 
   server:
-    image: ${IMAGE_REGISTRY:-}oneswiss-server:${IMAGE_TAG:-latest}
-    build:
-      context: .
-      dockerfile: oneswiss-server/Dockerfile
+    image: ${IMAGE_REGISTRY:-akpaevj/}oneswiss-server:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       db:
@@ -39,8 +23,9 @@ services:
     environment:
       ConnectionStrings__Default: "Host=db;Port=5432;Database=oneswiss;Username=oneswiss;Password=change-me"
 
-      # Адрес веб-панели, для CORS. Приведите в соответствие с тем, где реально опубликован oneswiss-web.
-      Ui__ReactUrl: "http://localhost:3000"
+      # Адрес веб-панели, для CORS. По умолчанию берётся из PUBLIC_UI_URL (см. .env.example) -
+      # приведите в соответствие с тем, где реально опубликован oneswiss-web.
+      Ui__ReactUrl: ${PUBLIC_UI_URL:-http://localhost:3000}
 
       # --- Аутентификация ---
       
@@ -69,14 +54,12 @@ services:
       # "Работа за reverse proxy".
       # ProxyAddress: "10.10.0.1"
     ports:
-      - "7002:7002"
+      - "${SERVER_PORT:-7002}:7002"
     volumes:
       - server_data:/app/Data
 
   web:
-    image: ${IMAGE_REGISTRY:-}oneswiss-web:${IMAGE_TAG:-latest}
-    build:
-      context: ./oneswiss-web
+    image: ${IMAGE_REGISTRY:-akpaevj/}oneswiss-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       - server
@@ -89,7 +72,7 @@ services:
       # там публичный домен/IP сервера, а не localhost.
       NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_BACKEND_URL:-http://localhost:7002}
     ports:
-      - "3000:3000"
+      - "${WEB_PORT:-3000}:3000"
 
 volumes:
   db_data:

@@ -63,7 +63,7 @@ public static partial class V8Services
         return GetV8Services(platforms).Where(c => c is CrServer).Select(c => (c as CrServer)!).ToList();
     }
 
-    private static List<V8Service> GetV8Services(IReadOnlyList<V8Platform> platforms)
+    private static List<IV8Service> GetV8Services(IReadOnlyList<V8Platform> platforms)
     {
         return Environment.OSVersion.Platform == PlatformID.Win32NT
             ? GetWindowsServices(platforms)
@@ -179,9 +179,9 @@ public static partial class V8Services
     #region Windows
 
 #pragma warning disable CA1416
-    private static List<V8Service> GetWindowsServices(IReadOnlyList<V8Platform> platforms)
+    private static List<IV8Service> GetWindowsServices(IReadOnlyList<V8Platform> platforms)
     {
-        var items = new List<V8Service>();
+        var items = new List<IV8Service>();
 
         foreach (var v8Service in ServiceController.GetServices())
         {
@@ -291,9 +291,9 @@ public static partial class V8Services
 
     #region LINUX
 
-    private static List<V8Service> GetLinuxDaemons(IReadOnlyList<V8Platform> platforms)
+    private static List<IV8Service> GetLinuxDaemons(IReadOnlyList<V8Platform> platforms)
     {
-        var items = new List<V8Service>();
+        var items = new List<IV8Service>();
 
         var output =
             RunCommandWithBash(

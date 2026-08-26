@@ -118,8 +118,12 @@ function validateTaskStepParameters(steps: MaintenanceTaskExportStepDto[]): stri
         if (!step.deleteExtensionStep?.extensionName?.trim()) return `Строка ${row}: заполните имя расширения`;
         break;
       case "ExecuteOneScript":
-        if (!step.executeOneScriptStep?.executablePath?.trim()) return `Строка ${row}: заполните путь к исполняемому файлу`;
-        if (!step.executeOneScriptStep?.fileId) return `Строка ${row}: выберите файл скрипта`;
+        if (step.executeOneScriptStep?.debugMode) {
+          if (!step.executeOneScriptStep?.executablePath?.trim())
+            return `Строка ${row}: заполните путь к исполняемому файлу`;
+        } else if (!step.executeOneScriptStep?.fileId) {
+          return `Строка ${row}: выберите файл скрипта`;
+        }
         break;
       case "StartExternalDataProcessor":
         if (!step.startExternalDataProcessorStep?.fileId) return `Строка ${row}: выберите файл внешней обработки`;

@@ -47,6 +47,7 @@ export function AgentsNavTree({ collapsed, onNavigate }: { collapsed: boolean; o
   const [expandedAgents, setExpandedAgents] = useState<string[]>([]);
   const [expandedClusters, setExpandedClusters] = useState<string[]>([]);
   const [expandedInfoBaseGroups, setExpandedInfoBaseGroups] = useState<string[]>([]);
+  const [expandedInfoBaseActions, setExpandedInfoBaseActions] = useState<string[]>([]);
 
   const loadData = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
@@ -115,6 +116,7 @@ export function AgentsNavTree({ collapsed, onNavigate }: { collapsed: boolean; o
           setExpandedClusters((prev) => (prev.includes(clusterId) ? prev : [...prev, clusterId]));
           if (currentInfoBaseId) {
             setExpandedInfoBaseGroups((prev) => (prev.includes(clusterId) ? prev : [...prev, clusterId]));
+            setExpandedInfoBaseActions((prev) => (prev.includes(currentInfoBaseId) ? prev : [...prev, currentInfoBaseId]));
           }
         }
         return;
@@ -128,6 +130,7 @@ export function AgentsNavTree({ collapsed, onNavigate }: { collapsed: boolean; o
             setExpandedAgents((prev) => (prev.includes(agent.id) ? prev : [...prev, agent.id]));
             setExpandedClusters((prev) => (prev.includes(cluster.id) ? prev : [...prev, cluster.id]));
             setExpandedInfoBaseGroups((prev) => (prev.includes(cluster.id) ? prev : [...prev, cluster.id]));
+            setExpandedInfoBaseActions((prev) => (prev.includes(infoBaseId) ? prev : [...prev, infoBaseId]));
             break;
           }
         }
@@ -279,17 +282,27 @@ export function AgentsNavTree({ collapsed, onNavigate }: { collapsed: boolean; o
                               const infoBaseSessionsHref = `/serversadministration/clusters/${cluster.id}/sessions?infoBaseId=${infoBase.id}`;
                               const infoBaseConnectionsHref = `/serversadministration/clusters/${cluster.id}/connections?infoBaseId=${infoBase.id}`;
                               const infoBaseLocksHref = `/serversadministration/clusters/${cluster.id}/locks?infoBaseId=${infoBase.id}`;
+                              const hasInfoBaseActions = agent.canOpenSessions || agent.isConnected;
+                              const infoBaseActionsExpanded = expandedInfoBaseActions.includes(infoBase.id);
 
                               return (
                                 <div key={infoBase.id}>
                                   <div className="flex items-center gap-1" style={rowStyle(4)}>
-                                    <TreeSpacer />
+                                    {hasInfoBaseActions ? (
+                                      <TreeToggle
+                                        expanded={infoBaseActionsExpanded}
+                                        onClick={() => toggle(infoBase.id, setExpandedInfoBaseActions)}
+                                        label={infoBase.name}
+                                      />
+                                    ) : (
+                                      <TreeSpacer />
+                                    )}
                                     <Link href={infoBaseHref} onClick={onNavigate} className={cn(rowClass(isActive(infoBaseHref)), "text-xs")}>
                                       <span className="h-2 w-2 shrink-0 rounded-full bg-sky-500" />
                                       <span className="truncate">{infoBase.name}</span>
                                     </Link>
                                   </div>
-                                  {agent.canOpenSessions ? (
+                                  {infoBaseActionsExpanded && agent.canOpenSessions ? (
                                     <div className="flex items-center gap-1" style={rowStyle(5)}>
                                       <TreeSpacer />
                                       <Link
@@ -308,7 +321,7 @@ export function AgentsNavTree({ collapsed, onNavigate }: { collapsed: boolean; o
                                       </Link>
                                     </div>
                                   ) : null}
-                                  {agent.canOpenSessions ? (
+                                  {infoBaseActionsExpanded && agent.canOpenSessions ? (
                                     <div className="flex items-center gap-1" style={rowStyle(5)}>
                                       <TreeSpacer />
                                       <Link
@@ -327,7 +340,7 @@ export function AgentsNavTree({ collapsed, onNavigate }: { collapsed: boolean; o
                                       </Link>
                                     </div>
                                   ) : null}
-                                  {agent.canOpenSessions ? (
+                                  {infoBaseActionsExpanded && agent.canOpenSessions ? (
                                     <div className="flex items-center gap-1" style={rowStyle(5)}>
                                       <TreeSpacer />
                                       <Link
@@ -346,7 +359,7 @@ export function AgentsNavTree({ collapsed, onNavigate }: { collapsed: boolean; o
                                       </Link>
                                     </div>
                                   ) : null}
-                                  {agent.isConnected ? (
+                                  {infoBaseActionsExpanded && agent.isConnected ? (
                                     <div className="flex items-center gap-1" style={rowStyle(5)}>
                                       <TreeSpacer />
                                       <Link

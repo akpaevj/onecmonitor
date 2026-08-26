@@ -227,7 +227,7 @@ export default function MaintenanceTaskTemplatesPage() {
         {message && <div className="mb-3 text-sm text-emerald-600 dark:text-emerald-500">{message}</div>}
         {error && <div className="mb-3 text-sm text-destructive">{error}</div>}
 
-        <div className="overflow-x-auto rounded-md border">
+        <div className="max-h-[65vh] overflow-auto rounded-md border">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left">
               <tr>

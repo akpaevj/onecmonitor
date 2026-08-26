@@ -68,10 +68,28 @@ public class ErrorLoggingServiceController(
 
     [HttpGet("reports")]
     [Authorize(Roles = Roles.ReadErrorLoggingReports)]
-    public async Task<IReadOnlyList<ErrorReportListItem>> GetReports(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<ErrorReportListItem>>> GetReports(
+        [FromQuery] string? hash,
+        CancellationToken cancellationToken)
     {
-        var entities = await dbContext.ErrorReports
-            .AsNoTracking()
+        var query = dbContext.ErrorReports.AsNoTracking();
+
+        if (!string.IsNullOrEmpty(hash))
+        {
+            byte[] hashBytes;
+            try
+            {
+                hashBytes = Convert.FromHexString(hash);
+            }
+            catch (FormatException)
+            {
+                return BadRequest("Некорректный идентификатор группы");
+            }
+
+            query = query.Where(c => c.Hash == hashBytes);
+        }
+
+        var entities = await query
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync(cancellationToken);
 
@@ -93,7 +111,66 @@ public class ErrorLoggingServiceController(
                 report.AdditionalInfo ?? string.Empty));
         }
 
-        return result;
+        return Ok(result);
+    }
+
+    [HttpGet("reports/groups")]
+    [Authorize(Roles = Roles.ReadErrorLoggingReports)]
+    public async Task<IReadOnlyList<ErrorReportGroupItem>> GetReportGroups(CancellationToken cancellationToken)
+    {
+        var summaries = await dbContext.ErrorReports
+            .AsNoTracking()
+            .Select(c => new { c.Id, c.CreatedAt, c.Hash })
+            .ToListAsync(cancellationToken);
+
+        var groups = summaries
+            .GroupBy(c => Convert.ToHexString(c.Hash))
+            .Select(g =>
+            {
+                var latest = g.OrderByDescending(c => c.CreatedAt).First();
+                return new
+                {
+                    HashHex = g.Key,
+                    Count = g.Count(),
+                    FirstSeen = g.Min(c => c.CreatedAt),
+                    LastSeen = latest.CreatedAt,
+                    LastId = latest.Id
+                };
+            })
+            .ToList();
+
+        var lastIds = groups.Select(g => g.LastId).ToList();
+        var lastReports = await dbContext.ErrorReports
+            .AsNoTracking()
+            .Where(c => lastIds.Contains(c.Id))
+            .ToDictionaryAsync(c => c.Id, cancellationToken);
+
+        var result = new List<ErrorReportGroupItem>(groups.Count);
+
+        foreach (var g in groups)
+        {
+            if (!lastReports.TryGetValue(g.LastId, out var entity))
+                continue;
+
+            var report = DeserializeReport(entity.Report);
+            if (report == null)
+                continue;
+
+            var error = report.ErrorInfo.ApplicationErrorInfo.Errors.FirstOrDefault();
+
+            result.Add(new ErrorReportGroupItem(
+                g.HashHex,
+                g.Count,
+                g.FirstSeen,
+                g.LastSeen,
+                report.ConfigInfo.Name,
+                report.ConfigInfo.Version,
+                report.ServerInfo.AppVersion,
+                report.AdditionalInfo ?? string.Empty,
+                error?.Text ?? string.Empty));
+        }
+
+        return result.OrderByDescending(c => c.LastSeen).ToList();
     }
 
     [HttpGet("reports/{id:guid}")]
@@ -142,13 +219,6 @@ public class ErrorLoggingServiceController(
             .SingleOrDefaultAsync(cancellationToken);
         var needSend = settings?.Enabled ?? false;
 
-        if (needSend)
-        {
-            // Если отправлять надо, то найдем, была ли такая ошибка 
-            var hash = GetHash(request.ClientStackHash ?? "", request.AppStackHash ?? "");
-            needSend = !await dbContext.ErrorReports.AnyAsync(c => c.Hash == hash, cancellationToken);
-        }
-
         var content = JsonSerializer.Serialize(new GetInfoResponse
         {
             NeedSendReport = needSend,
@@ -186,7 +256,6 @@ public class ErrorLoggingServiceController(
             }
             else
             {
-                // Сначала найдем отчет с таким же хешем
                 var model = new ErrorReport
                 {
                     CreatedAt = DateTime.UtcNow,
@@ -268,6 +337,17 @@ public class ErrorLoggingServiceController(
         string PlatformVersion,
         string UserName,
         string AdditionalInfo);
+
+    public sealed record ErrorReportGroupItem(
+        string Hash,
+        int Count,
+        DateTime FirstSeen,
+        DateTime LastSeen,
+        string Configuration,
+        string ConfigurationVersion,
+        string PlatformVersion,
+        string AdditionalInfo,
+        string ErrorText);
 
     public sealed record ErrorReportDetailsItem(
         Guid Id,

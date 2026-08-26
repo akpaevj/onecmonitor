@@ -494,45 +494,22 @@ public class AgentConnection : FastConnection
         await using var scope = _serviceProvider.CreateAsyncScope();
         await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+        // Один и тот же агент открывает несколько соединений одновременно (основное, для задач
+        // обслуживания, для передачи файлов и т.д.), и каждое шлет AgentInfo с одним и тем же Id -
+        // поэтому регистрация обязана быть атомарным upsert'ом, а не check-then-insert: под нагрузкой
+        // на пустую таблицу несколько соединений одновременно не находят строку и пытаются ее
+        // вставить, из-за чего все, кроме одного, падали с "duplicate key value violates unique
+        // constraint" (и молча теряли событие AgentConnected для себя).
         var strategy = dbContext.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () =>
-        {
-            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await strategy.ExecuteAsync(() => dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+             INSERT INTO "Agents" ("Id", "InstanceName")
+             VALUES ({AgentInstance.Id}, {AgentInstance.InstanceName})
+             ON CONFLICT ("Id") DO UPDATE SET "InstanceName" = EXCLUDED."InstanceName"
+             """,
+            cancellationToken));
 
-            try
-            {
-                var foundItem = await dbContext.Agents.AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Id == AgentInstance.Id, cancellationToken);
-
-                if (foundItem == null)
-                {
-                    var agent = new Agent
-                    {
-                        Id = AgentInstance.Id,
-                        InstanceName = AgentInstance.InstanceName
-                    };
-                    dbContext.Agents.Add(agent);
-
-                    await dbContext.SaveChangesAsync(cancellationToken);
-                }
-                else if (foundItem.InstanceName != AgentInstance.InstanceName)
-                {
-                    foundItem.InstanceName = AgentInstance.InstanceName;
-
-                    dbContext.Entry(foundItem).State = EntityState.Modified;
-
-                    await dbContext.SaveChangesAsync(cancellationToken);
-                }
-
-                await transaction.CommitAsync(cancellationToken);
-
-                AgentConnected?.Invoke(this);
-            }
-            catch (Exception)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-            }
-        });
+        AgentConnected?.Invoke(this);
     }
 
     private async Task HandleMaintenanceStepLog(Message requestMessage, CancellationToken cancellationToken)

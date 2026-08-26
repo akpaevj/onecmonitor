@@ -1,11 +1,12 @@
 using MessagePack;
 using OneScript.Contexts;
+using ScriptEngine.Machine.Contexts;
 
 namespace OneSwiss.Common.DTO;
 
 [ContextClass("Кластер", "Cluster")]
 [MessagePackObject]
-public class ClusterDto
+public class ClusterDto : AutoContext<ClusterDto>
 {
     [ContextProperty("Идентификатор", "Id")]
     [Key(0)]

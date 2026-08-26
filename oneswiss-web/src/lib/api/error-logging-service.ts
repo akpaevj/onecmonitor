@@ -22,6 +22,18 @@ export type ErrorReportListItem = {
   additionalInfo: string;
 };
 
+export type ErrorReportGroupItem = {
+  hash: string;
+  count: number;
+  firstSeen: string;
+  lastSeen: string;
+  configuration: string;
+  configurationVersion: string;
+  platformVersion: string;
+  additionalInfo: string;
+  errorText: string;
+};
+
 export type ErrorReportDetailsItem = {
   id: string;
   date: string;
@@ -54,8 +66,13 @@ export function saveErrorLoggingServiceSettings(request: SaveErrorLoggingService
   );
 }
 
-export function getErrorReports() {
-  return apiGet<ErrorReportListItem[]>("/api/errorloggingservice/reports");
+export function getErrorReports(hash?: string) {
+  const query = hash ? `?hash=${encodeURIComponent(hash)}` : "";
+  return apiGet<ErrorReportListItem[]>(`/api/errorloggingservice/reports${query}`);
+}
+
+export function getErrorReportGroups() {
+  return apiGet<ErrorReportGroupItem[]>("/api/errorloggingservice/reports/groups");
 }
 
 export function getErrorReportDetails(id: string) {

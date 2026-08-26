@@ -23,6 +23,8 @@
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --radius: 0.625rem;
+  --chart-sequential: #2a78d6;
+  --chart-sequential-track: #cde2fb;
 }
 
 .dark {
@@ -45,6 +47,8 @@
   --border: oklch(1 0 0 / 14%);
   --input: oklch(1 0 0 / 20%);
   --ring: oklch(0.62 0 0);
+  --chart-sequential: #3987e5;
+  --chart-sequential-track: #104281;
 }
 
 @theme inline {
@@ -67,6 +71,8 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-chart-sequential: var(--chart-sequential);
+  --color-chart-sequential-track: var(--chart-sequential-track);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

@@ -10,8 +10,8 @@
         <Configurations>Debug;Release;Debug agent;Debug server</Configurations>
         <Authors>Akpaev E.A.</Authors>
         <Company>Akpaev E.A.</Company>
-        <AssemblyVersion>0.4.3</AssemblyVersion>
-        <Version>0.4.3</Version>
+        <AssemblyVersion>0.5.1</AssemblyVersion>
+        <Version>0.5.1</Version>
         <ApplicationIcon>../icon.ico</ApplicationIcon>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
