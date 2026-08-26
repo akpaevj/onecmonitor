@@ -1,30 +1,33 @@
 using MessagePack;
 using OneScript.Contexts;
-using OneSwiss.OneScript.Oscript;
+using ScriptEngine.Machine.Contexts;
 
 namespace OneSwiss.Common.DTO;
 
 [ContextClass("ИнформационнаяБаза", "InfoBase")]
 [MessagePackObject]
-public class InfoBaseDto
+public class InfoBaseDto : AutoContext<InfoBaseDto>
 {
-    [ContextProperty("Идентификатор", "Id", Converter = typeof(GuidContextConverter))]
     [Key(0)]
     public Guid Id { get; set; }
 
-    [ContextProperty("ВнутреннийИдентификатор", "InternalId")]
+    // OneScript не умеет маршалить System.Guid как возвращаемое значение - отдаём строкой.
+    [IgnoreMember]
+    [ContextProperty("Идентификатор", "Id", CanWrite = false)]
+    public string IdAsString => Id.ToString();
+
     [Key(1)]
     public string InfoBaseInternalId { get; set; } = string.Empty;
 
-    [ContextProperty("ИмяИнформационнойБазы", "InfoBaseName")]
     [Key(2)]
+    [ContextProperty("ИмяИнформационнойБазы", "InfoBaseName", CanWrite = false)]
     public string InfoBaseName { get; set; } = string.Empty;
 
-    [ContextProperty("УчетныеДанные", "Credentials")]
     [Key(3)]
+    [ContextProperty("УчетныеДанные", "Credentials", CanWrite = false)]
     public CredentialsDto? Credentials { get; set; }
 
-    [ContextProperty("Кластер", "Cluster")]
     [Key(4)]
+    [ContextProperty("Кластер", "Cluster", CanWrite = false)]
     public required ClusterDto Cluster { get; set; }
 }

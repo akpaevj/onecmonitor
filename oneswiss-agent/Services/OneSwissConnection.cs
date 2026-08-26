@@ -109,6 +109,78 @@ public class OneSwissConnection(
         await Send(MessageType.V8Sessions, items, request, cancellationToken);
     }
 
+    public async Task SendV8Connections(Message request, List<V8Connection> items, CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8Connections, items, request, cancellationToken);
+    }
+
+    public async Task SendV8Licenses(Message request, List<V8License> items, CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8Licenses, items, request, cancellationToken);
+    }
+
+    public async Task SendV8Locks(Message request, List<V8Lock> items, CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8Locks, items, request, cancellationToken);
+    }
+
+    public async Task SendV8Servers(Message request, List<V8Server> items, CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8Servers, items, request, cancellationToken);
+    }
+
+    public async Task SendV8Managers(Message request, List<V8Manager> items, CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8Managers, items, request, cancellationToken);
+    }
+
+    public async Task SendV8ManagerServices(Message request, List<V8ManagerService> items,
+        CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8ManagerServices, items, request, cancellationToken);
+    }
+
+    public async Task SendV8AgentVersion(Message request, string version, CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8AgentVersion, version, request, cancellationToken);
+    }
+
+    public async Task SendV8SecurityProfiles(Message request, List<V8SecurityProfile> items,
+        CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8SecurityProfiles, items, request, cancellationToken);
+    }
+
+    public async Task SendV8ResourceCounters(Message request, List<V8ResourceCounter> items,
+        CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8ResourceCounters, items, request, cancellationToken);
+    }
+
+    public async Task SendV8ResourceLimits(Message request, List<V8ResourceLimit> items,
+        CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8ResourceLimits, items, request, cancellationToken);
+    }
+
+    public async Task SendV8AssignmentRules(Message request, List<V8AssignmentRule> items,
+        CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8AssignmentRules, items, request, cancellationToken);
+    }
+
+    public async Task SendV8ServiceSettings(Message request, List<V8ServiceSetting> items,
+        CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8ServiceSettings, items, request, cancellationToken);
+    }
+
+    public async Task SendV8BinaryDataStorages(Message request, List<V8BinaryDataStorage> items,
+        CancellationToken cancellationToken)
+    {
+        await Send(MessageType.V8BinaryDataStorages, items, request, cancellationToken);
+    }
+
     public async Task SendV8ClusterDetails(Message request, V8ClusterDetails item, CancellationToken cancellationToken)
     {
         await Send(MessageType.ClusterDetails, item, request, cancellationToken);
@@ -136,31 +208,6 @@ public class OneSwissConnection(
         await Send(MessageType.MaintenanceStepNodeLog, items, cancellationToken);
     }
 
-    public async Task NotifyGitSyncTaskItemProcessorStopped(Guid taskId, Guid repoId, string reason,
-        CancellationToken cancellationToken)
-    {
-        await Send(
-            MessageType.GitSyncTaskProcessorStopped,
-            new GitSyncTasksProcessorStopped
-            {
-                TaskId = taskId,
-                ConfigurationRepositoryId = repoId,
-                Reason = reason
-            }, cancellationToken);
-    }
-
-    public async Task NotifyGitSyncTaskProcessorStopped(Guid taskId, string reason,
-        CancellationToken cancellationToken)
-    {
-        await Send(
-            MessageType.GitSyncTaskProcessorStopped,
-            new GitSyncTasksProcessorStopped
-            {
-                TaskId = taskId,
-                Reason = reason
-            }, cancellationToken);
-    }
-
     public async Task QueueCustomNotification(string key, string message,
         CancellationToken cancellationToken)
     {
@@ -182,14 +229,6 @@ public class OneSwissConnection(
             {
                 Id = fileId
             }, cancellationToken);
-    }
-
-    public async Task<List<GitSyncTaskDto>> GetGitSyncTasks(CancellationToken cancellationToken)
-    {
-        return await Get<List<GitSyncTaskDto>>(
-            MessageType.GitSyncTasksRequest,
-            MessageType.GitSyncTasks,
-            cancellationToken);
     }
 
     public async Task<SettingsDto> GetSettings(CancellationToken cancellationToken)

@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using OneSwiss.Common.Converters.Sqlite;
 using OneSwiss.Server.Models;
 using OneSwiss.Server.Models.MaintenanceTasks;
 using File = OneSwiss.Server.Models.File;
@@ -10,15 +8,17 @@ namespace OneSwiss.Server;
 
 public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
 {
+    private readonly string _connectionString;
+
     public AppDbContext(DbContextOptions<AppDbContext> options,
-        IHostEnvironment hostEnvironment) : base(options)
+        IConfiguration configuration) : base(options)
     {
-        SetDbPath(hostEnvironment);
+        _connectionString = configuration.GetConnectionString("Default")
+            ?? throw new InvalidOperationException("Строка подключения ConnectionStrings:Default не задана");
     }
 
-    public string DbPath { get; private set; } = null!;
-
     public DbSet<Agent> Agents { get; set; }
+    public DbSet<AgentClient> AgentClients { get; set; }
     public DbSet<LogTemplate> LogTemplates { get; set; }
     public DbSet<TechLogSeance> TechLogSeances { get; set; }
     public DbSet<TechLogFilter> TechLogFilters { get; set; }
@@ -43,32 +43,15 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<CustomNotification> CustomNotifications { get; set; }
     public DbSet<AccessGroup> AccessGroups { get; set; }
     public DbSet<UsersGroup> UsersGroups { get; set; }
-    public DbSet<GitRepository> GitRepositories { get; set; }
-    public DbSet<GitSyncTask> GitSyncTasks { get; set; }
-    public DbSet<GitSyncSettings> GitSyncSettings { get; set; }
     public DbSet<CrServerProxySettings> CrServerProxySettings { get; set; }
     public DbSet<CrServerProxyMiddleware> CrServerProxyMiddlewares { get; set; }
     public DbSet<CrServerProxyLocation> CrServerProxyLocations { get; set; }
 
-    private void SetDbPath(IHostEnvironment hostEnvironment)
-    {
-        DbPath = Path.Join(hostEnvironment.ContentRootPath, "om-server.db");
-    }
-
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder
-            .UseSqlite($"Data Source={DbPath}")
+            .UseNpgsql(_connectionString, npgsql => npgsql.EnableRetryOnFailure())
             .UseAsyncSeeding(SeedLogTemplates);
-    }
-
-    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-    {
-        configurationBuilder.Properties<Guid>()
-            .HaveConversion<GuidStringConverter>();
-
-        configurationBuilder.Properties<DateTime>()
-            .HaveConversion<DateTimeToBinaryConverter>();
     }
 
     private static async Task SeedLogTemplates(DbContext context, bool seed, CancellationToken cancellationToken)

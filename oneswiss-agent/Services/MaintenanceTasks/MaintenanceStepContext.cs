@@ -9,30 +9,25 @@ using OneSwiss.V8.Platform.RemoteAdministration;
 
 namespace OneSwiss.Agent.Services.MaintenanceTasks;
 
-[ContextClass("КонтекстШагаОбслуживания", "MaintenanceStepContext")]
 public class MaintenanceStepContext
 {
-    [ContextProperty("ЗадачаОбслуживания", "MaintenanceTask")]
     public required MaintenanceTaskDto Task { get; init; }
 
-    [ContextProperty("ИнформационнаяБаза", "InfoBase")]
     public InfoBaseDto? InfoBase { get; init; }
 
-    [ContextProperty("Шаг", "Step")] public MaintenanceStepDto Step { get; set; } = null!;
-
-    [ContextProperty("КодДоступа", "AccessCode")]
+    public MaintenanceStepDto Step { get; set; } = null!;
+    
     public string AccessCode { get; set; } = string.Empty;
 
-    [ContextProperty("Файлы", "Files", Converter = typeof(FilesContextConverter))]
     public Dictionary<Guid, string> Files { get; set; } = [];
 
     public List<MaintenanceTaskLogItemDto> Log { get; init; } = [];
     public Rac Rac { get; set; } = null!;
 
-    [ContextProperty("Платформа", "Platform")]
     public V8Platform Platform { get; set; } = null!;
 
     public bool UseDesignerAgent { get; init; }
+
     public DesignerAgentClient? DesignerAgentClient { get; set; }
 
     public OnecV8BatchMode GetBatchDesigner()

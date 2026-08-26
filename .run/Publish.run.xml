@@ -9,11 +9,6 @@
           </ConditionSnapshot>
         </option>
         <option name="disableDebugging" value="true" />
-        <option name="executable">
-          <ExecutableSnapshot>
-            <option name="id" value="runConfig:npm.Build" />
-          </ExecutableSnapshot>
-        </option>
       </ExecutableRowSnapshot>
       <ExecutableRowSnapshot>
         <option name="condition">

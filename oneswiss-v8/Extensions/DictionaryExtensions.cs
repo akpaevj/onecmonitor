@@ -27,7 +27,7 @@ public static class DictionaryExtensions
                 continue;
 
             if (property.PropertyType == typeof(bool))
-                property.SetValue(racObject, racFieldValue.ToLower() is "1" or "on" or "yes" or "allow");
+                property.SetValue(racObject, racFieldValue.ToLower() is "1" or "on" or "yes" or "allow" or "used");
             else if (property.PropertyType == typeof(string))
                 property.SetValue(racObject, racFieldValue.Trim('"'));
             else if (property.PropertyType == typeof(int) && int.TryParse(racFieldValue, out var i))

@@ -7,7 +7,6 @@ using OneSwiss.Agent.Models;
 using OneSwiss.Agent.Oscript;
 using OneSwiss.Agent.Services;
 using OneSwiss.Agent.Services.EventLog;
-using OneSwiss.Agent.Services.GitSync;
 using OneSwiss.Agent.Services.MaintenanceTasks;
 using OneSwiss.Agent.Services.TechLog;
 using OneSwiss.Common.DTO;
@@ -33,7 +32,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<RasHolder>();
         services.AddDbContext<AppDbContext>();
 
-        services.AddSingleton<AgentInstance>(sp =>
+        services.AddSingleton(sp =>
         {
             using var scope = sp.CreateScope();
 
@@ -44,7 +43,7 @@ var host = Host.CreateDefaultBuilder(args)
         });
 
         services.AddTransient<OneSwissConnection>();
-        services.AddKeyedTransient<OneSwissConnection>(OneSwissConnection.CommonKey, (sp, _) =>
+        services.AddKeyedTransient(OneSwissConnection.CommonKey, (sp, _) =>
         {
             var connection = sp.GetRequiredService<OneSwissConnection>();
             connection.Start().Wait();
@@ -64,9 +63,6 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<TechLogFoldersManager>();
         services.AddSingleton<TechLogReadersManager>();
         services.AddSingleton<TechLogManager>();
-
-        services.AddSingleton<MonitorQueue<List<GitSyncTaskDto>>>();
-        services.AddSingleton<GitSyncTasksManager>();
 
         services.AddSingleton<CommandsWatcher>();
         services.AddSingleton<AgentsResourcesProvider>();
@@ -101,7 +97,7 @@ host.Run();
 
 return;
 
-AgentInstance CreateAgentInstance(IConfiguration configuration, AppDbContext appDbContext)
+static AgentInstance CreateAgentInstance(IConfiguration configuration, AppDbContext appDbContext)
 {
     var agentInstance = appDbContext.AgentInstance.AsNoTracking().SingleOrDefault();
 

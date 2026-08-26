@@ -4,13 +4,10 @@ using OneSwiss.V8.Edt;
 
 namespace OneSwiss.Agent.Services;
 
-[ContextClass("ПровайдерИнсталляцийEDT", "EdtInstallationsProvider")]
 public class EdtInstallationsProvider(IConfiguration configuration)
 {
     private readonly EdtPath[] _additionalPaths = configuration.GetSection("EDT:Paths").Get<EdtPath[]>() ?? [];
 
-    [ContextMethod("ПолучитьИнсталляции", "GetInstallations",
-        Converter = typeof(ReadOnlyListContextConverter<EdtInstallation>))]
     public IReadOnlyList<EdtInstallation> GetInstallations()
     {
         return EdtDiscoverer.GetInstalled(_additionalPaths.Select(c => (c.IsStarter, c.Path)).ToArray());

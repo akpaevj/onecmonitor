@@ -9,8 +9,8 @@ public class MaintenanceStepIntegrationGlobalContext(MaintenanceStepContext step
     : GlobalContextBase<MaintenanceStepIntegrationGlobalContext>
 {
     [ContextMethod("ПолучитьКонтекстЗадачиОбслуживания", "GetMaintenanceTaskContext")]
-    public MaintenanceStepContext GetContext()
+    public MaintenanceStepContextWrapper GetContext()
     {
-        return stepContext;
+        return new MaintenanceStepContextWrapper(stepContext);
     }
 }

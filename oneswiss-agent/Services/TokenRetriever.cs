@@ -22,7 +22,13 @@ public class TokenRetriever(IConfiguration configuration, ILogger<TokenRetriever
             ClientSecret = clientSecret
         });
 
-        return await client.RequestTokenAsync("client_credentials");
+        var response = await client.RequestTokenAsync("client_credentials");
+        if (response.IsError)
+            throw new InvalidOperationException(
+                $"Не удалось получить токен аутентификации ({tokensEndpoint}): {response.Error} {response.ErrorDescription}",
+                response.Exception);
+
+        return response;
     }
 
     public async Task<string?> GetValidTokenAsync()

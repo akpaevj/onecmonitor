@@ -25,11 +25,9 @@ public class FilesProvider
         _logger = logger;
 
         InitTechlogFolder();
-        InitGitRepositoriesFolder();
     }
 
     public string TechLogFolder { get; private set; } = null!;
-    public string GitSyncFolder { get; private set; } = null!;
 
     public async Task<List<DownloadedFileDescription>> DownloadFiles(List<FileDto> files,
         CancellationToken cancellationToken = default)
@@ -85,30 +83,6 @@ public class FilesProvider
         }
     }
 
-    private void InitGitRepositoriesFolder()
-    {
-        GitSyncFolder = _configuration.GetValue<string>("GitSyncFolder") ?? "";
-
-        if (string.IsNullOrEmpty(GitSyncFolder))
-        {
-            GitSyncFolder = GetGitRepositoriesDefaultFolder();
-            _logger.LogInformation(
-                $"Путь к служебному каталогу синхронизатора хранилищ и Git не указан, будет использован каталог по умолчанию: {GitSyncFolder}");
-        }
-
-        if (Directory.Exists(GitSyncFolder))
-            return;
-
-        try
-        {
-            Directory.CreateDirectory(GitSyncFolder);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Ошибка создания репозиториев git");
-        }
-    }
-
     private static string GetTechLogDefaultFolder()
     {
         return Environment.OSVersion.Platform switch
@@ -117,11 +91,6 @@ public class FilesProvider
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "oneswiss", "techlog"),
             _ => Path.Combine("/var", "log", "oneswiss", "techlog")
         };
-    }
-
-    private static string GetGitRepositoriesDefaultFolder()
-    {
-        return Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "repos");
     }
 
     public static bool WritingAvailable(string path)

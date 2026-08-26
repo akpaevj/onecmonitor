@@ -10,6 +10,4 @@ public class SettingsDto
     [Key(1)] public EventLogSettingsDto EventLogSettings { get; set; } = null!;
 
     [Key(2)] public TechLogSettingsDto TechLogSettings { get; set; } = null!;
-
-    [Key(3)] public GitSyncSettingsDto GitSyncSettings { get; set; } = null!;
 }

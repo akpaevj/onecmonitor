@@ -1,13 +1,19 @@
 using System.ComponentModel;
 using MessagePack;
+using MessagePack.Formatters;
 using OneScript.Contexts;
+using ScriptEngine.Machine.Contexts;
 
 namespace OneSwiss.V8.Platform;
 
+// См. комментарий в Services/CrServer.cs - AutoContext<T> примешивает публичные виртуальные
+// свойства движка OneScript, которые нельзя ни атрибутировать (объявлены во внешней библиотеке),
+// ни проигнорировать через override, поэтому автоматический контракт MessagePack здесь неприменим.
+[MessagePackFormatter(typeof(V8PlatformFormatter))]
 [DisplayName("Платформа 1С")]
 [ContextClass("ПлатформаV8", "PlatformV8")]
 [MessagePackObject]
-public class V8Platform
+public class V8Platform : AutoContext<V8Platform>
 {
     [Key(0)]
     [ContextProperty("Путь", "Path", CanWrite = false)]
@@ -71,5 +77,55 @@ public class V8Platform
     public override string ToString()
     {
         return $"{Version}";
+    }
+}
+
+public class V8PlatformFormatter : IMessagePackFormatter<V8Platform?>
+{
+    public void Serialize(ref MessagePackWriter writer, V8Platform? value, MessagePackSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNil();
+            return;
+        }
+
+        writer.WriteArrayHeader(10);
+        writer.Write(value.PlatformPath);
+        writer.Write(value.HasOnecV8);
+        writer.Write(value.OnecV8Path);
+        writer.Write(value.HasRac);
+        writer.Write(value.RacPath);
+        writer.Write(value.HasRas);
+        writer.Write(value.RasPath);
+        writer.Write(value.HasIbcmd);
+        writer.Write(value.IbcmdPath);
+        writer.Write(value.Version);
+    }
+
+    public V8Platform? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+    {
+        if (reader.TryReadNil())
+            return null;
+
+        var count = reader.ReadArrayHeader();
+        var result = new V8Platform
+        {
+            PlatformPath = reader.ReadString() ?? string.Empty,
+            HasOnecV8 = reader.ReadBoolean(),
+            OnecV8Path = reader.ReadString() ?? string.Empty,
+            HasRac = reader.ReadBoolean(),
+            RacPath = reader.ReadString() ?? string.Empty,
+            HasRas = reader.ReadBoolean(),
+            RasPath = reader.ReadString() ?? string.Empty,
+            HasIbcmd = reader.ReadBoolean(),
+            IbcmdPath = reader.ReadString() ?? string.Empty,
+            Version = reader.ReadString() ?? string.Empty
+        };
+
+        for (var i = 10; i < count; i++)
+            reader.Skip();
+
+        return result;
     }
 }

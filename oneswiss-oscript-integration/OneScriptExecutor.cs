@@ -9,6 +9,7 @@ using ScriptEngine.HostedScript;
 using ScriptEngine.Hosting;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
+using ScriptEngine.Machine.Debugger;
 using ExecutionContext = ScriptEngine.Machine.ExecutionContext;
 
 namespace OneSwiss.OneScript;
@@ -42,39 +43,32 @@ public class OneScriptExecutor : IHostApplication
     public void ExecutePackageScript(string path, string executable, string[] args,
         Action<ExecutionContext> engineBuilder, bool debugMode = false)
     {
-        IDebugController? debugController = null;
+        IDebugger? debugger = null;
 
-        try
+        if (debugMode)
         {
-            if (debugMode)
-            {
-                var debugServer = new TcpDebugServer(2801);
-                debugController = debugServer.CreateDebugController();
-            }
-
-            _args = args;
-            var executablePath = Path.Combine(path, executable);
-            var librariesPath = Path.Combine(path, "oscript_modules");
-
-            using var engine = CreateEngine(librariesPath, engineBuilder, debugController);
-
-            var source = SourceCodeBuilder
-                .Create()
-                .FromFile(executablePath)
-                .Build();
-
-            var process = engine.CreateProcess(this, source);
-            var exitCode = process.Start();
-
-            debugController?.NotifyProcessExit(exitCode);
-
-            if (exitCode != 0)
-                throw new Exception("Ошибка выполнения скрипта");
+            var debugServer = new TcpDebugServer(2801);
+            debugger = new DefaultDebugger(debugServer);
         }
-        finally
-        {
-            debugController?.Dispose();
-        }
+
+        _args = args;
+        var executablePath = Path.Combine(path, executable);
+        var librariesPath = Path.Combine(path, "oscript_modules");
+
+        using var engine = CreateEngine(librariesPath, engineBuilder, debugger);
+
+        var source = SourceCodeBuilder
+            .Create()
+            .FromFile(executablePath)
+            .Build();
+
+        var process = engine.CreateProcess(this, source);
+        var exitCode = process.Start();
+
+        debugger?.NotifyProcessExit(exitCode);
+
+        if (exitCode != 0)
+            throw new Exception("Ошибка выполнения скрипта");
     }
     
     public void ExecuteScriptMethod(string path,
@@ -84,48 +78,40 @@ public class OneScriptExecutor : IHostApplication
         Action<ExecutionContext> engineBuilder,
         bool debugMode = false)
     {
-        IDebugController? debugController = null;
+        DefaultDebugger? debugger = null;
 
-        try
+        if (debugMode)
         {
-            if (debugMode)
-            {
-                var debugServer = new TcpDebugServer(2801);
-                debugController = debugServer.CreateDebugController();
-            }
-
-            var executablePath = Path.Combine(path, executable);
-            var librariesPath = Path.Combine(path, "oscript_modules");
-
-            using var engine = CreateEngine(librariesPath, engineBuilder, debugController);
-
-            var source = SourceCodeBuilder
-                .Create()
-                .FromFile(executablePath)
-                .Build();
-
-            engine.Initialize();
-            
-            engine.SetGlobalEnvironment(this, source);
-
-            if (debugMode)
-            {
-                debugController!.Init();
-                debugController.Wait();
-            }
-            
-            var bslProcess = engine.Services.Resolve<BslProcessFactory>().NewProcess();
-            var compiledModule = engine.GetCompilerService().Compile(source, bslProcess);
-            var contextInstance = engine.Engine.NewObject(compiledModule, bslProcess);
-
-            var mn = contextInstance.GetMethodNumber(methodName);
-            
-            contextInstance.CallAsProcedure(mn, args, bslProcess);
+            var debugServer = new TcpDebugServer(2801);
+            debugger = new DefaultDebugger(debugServer);
         }
-        finally
+
+        var executablePath = Path.Combine(path, executable);
+        var librariesPath = Path.Combine(path, "oscript_modules");
+
+        using var engine = CreateEngine(librariesPath, engineBuilder, debugger);
+
+        var source = SourceCodeBuilder
+            .Create()
+            .FromFile(executablePath)
+            .Build();
+
+        engine.Initialize();
+
+        engine.SetGlobalEnvironment(this, source);
+
+        if (debugMode)
         {
-            debugController?.Dispose();
+            debugger!.Start();
         }
+
+        var bslProcess = engine.Services.Resolve<BslProcessFactory>().NewProcess();
+        var compiledModule = engine.GetCompilerService().Compile(source, bslProcess);
+        var contextInstance = engine.Engine.NewObject(compiledModule, bslProcess);
+
+        var mn = contextInstance.GetMethodNumber(methodName);
+
+        contextInstance.CallAsProcedure(mn, args, bslProcess);
     }
     
     public static IExecutableModule GetCompiledModule(string path, string executable, Action<ExecutionContext> engineBuilder)
@@ -148,15 +134,15 @@ public class OneScriptExecutor : IHostApplication
     public static HostedScriptEngine CreateEngine(
         string librariesPath,
         Action<ExecutionContext> engineBuilder,
-        IDebugController? debugController = null)
+        IDebugger? debugger = null)
     {
         var builder = DefaultEngineBuilder
             .Create()
             .SetDefaultOptions()
             .UseImports();
 
-        if (debugController != null)
-            builder.WithDebugger(debugController);
+        if (debugger != null)
+            builder.WithDebugger(debugger);
 
         builder.SetupEnvironment(e =>
         {

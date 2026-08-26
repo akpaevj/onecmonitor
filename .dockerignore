@@ -1,0 +1,15 @@
+**/bin
+**/obj
+**/node_modules
+**/.next
+**/.vs
+**/.vscode
+**/*.user
+**/*.db
+**/*.db-shm
+**/*.db-wal
+.git
+.dockerignore
+**/Dockerfile*
+**/docker-compose*
+docs

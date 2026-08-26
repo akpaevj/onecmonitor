@@ -122,7 +122,6 @@ public class ConfigurationRepositoriesDetector(
                                                         Name = configUser.Name,
                                                         RepositoryId = foundRep.Id,
                                                         Deleted = false,
-                                                        GitUser = string.Empty,
                                                         Id = Guid.NewGuid()
                                                     }, token);
                                             else

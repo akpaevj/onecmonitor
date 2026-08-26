@@ -726,6 +726,7 @@ public class MaintenanceTaskExecutor : BackgroundService
         {
             e.AddAssembly(typeof(OscriptIntegrationGlobalContext).Assembly);
             e.AddAssembly(typeof(V8Platform).Assembly);
+            e.AddAssembly(typeof(MaintenanceStepKind).Assembly);
             e.AddGlobalContext(_oscriptIntegrationGlobalContext);
 
             if (!context.Task.CommonDestination)

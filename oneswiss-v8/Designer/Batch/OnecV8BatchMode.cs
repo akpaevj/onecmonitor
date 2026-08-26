@@ -198,6 +198,40 @@ public sealed class OnecV8BatchMode : IDisposable
         await Start(true);
     }
 
+    public async Task<string> DumpConfiguration(string user = "", string password = "")
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        var listFilePath = Path.GetTempFileName();
+
+        try
+        {
+            Directory.CreateDirectory(path);
+
+            File.WriteAllText(listFilePath, "Configuration");
+
+            AddBatchModeCommonArgs(user, password);
+
+            _arguments.Add($"/DumpConfigToFiles\"{path}\"");
+            _arguments.Add($"-listFile\"{listFilePath}\"");
+
+            await Start(true);
+
+            return File.ReadAllText(Path.Combine(path, "Configuration.xml"));
+        }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, true);
+
+            if (File.Exists(listFilePath))
+                File.Delete(listFilePath);
+        }
+    }
+
     /// <summary>
     ///     Выгружает конфигурацию хранилища в файл
     /// </summary>

@@ -1,7 +1,0 @@
-@page "/maintenancetasks"
-@using OneSwiss.Server.Attributes
-@using OneSwiss.Server.Components.Pages.MaintenanceTasks.Components
-
-@attribute [ExtAuthorize(Roles.ReadMaintenanceTasks, Roles.WriteMaintenanceTasks)]
-
-<Index IsTemplate="false" Title="Задачи обслуживания" Route="maintenancetasks"></Index>

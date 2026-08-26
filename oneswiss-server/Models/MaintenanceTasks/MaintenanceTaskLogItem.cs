@@ -10,7 +10,9 @@ public class MaintenanceTaskLogItem : DatabaseObject
     public bool IsError { get; set; }
     public bool IsFinish { get; set; }
 
-    [MaxLength(200)] public string Message { get; set; } = string.Empty;
+    // Без MaxLength - сюда пишутся полные тексты исключений (Exception.ToString() со стеком)
+    // и вывод пакетного режима 1С, которые легко превышают пару сотен символов.
+    public string Message { get; set; } = string.Empty;
 
     public Guid? InfoBaseId { get; set; }
 

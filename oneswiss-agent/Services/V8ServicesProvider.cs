@@ -4,49 +4,38 @@ using OneSwiss.V8.Platform.Services;
 
 namespace OneSwiss.Agent.Services;
 
-[ContextClass("ПровайдерСлужб", "ServicesProvider")]
 public class V8ServicesProvider(V8PlatformsProvider v8PlatformsProvider)
 {
-    [ContextMethod("ПолучитьСлужбыRas", "GetRasServices", Converter = typeof(ListContextConverter<RasService>))]
     public List<RasService> GetRasServices()
     {
         return V8Services.GetRasServices(v8PlatformsProvider.GetInstalledPlatforms());
     }
 
-    [ContextMethod("ПолучитьЗапущеннуюСлужбуRagentДляПортаКластера", "GetActiveRagentForClusterPort")]
     public RagentService GetActiveRagentByPort(int port)
     {
         return V8Services.GetActiveRagentByPort(port, v8PlatformsProvider.GetInstalledPlatforms());
     }
 
-    [ContextMethod("ПолучитьЗапущенныеСлужбыRagent", "GetActiveRagentServices",
-        Converter = typeof(ListContextConverter<RagentService>))]
     public List<RagentService> GetActiveRagentServices()
     {
         return V8Services.GetActiveRagentServices(v8PlatformsProvider.GetInstalledPlatforms()).ToList();
     }
 
-    [ContextMethod("ПолучитьСлужбыRagent", "GetRagentServices",
-        Converter = typeof(ListContextConverter<RagentService>))]
     public List<RagentService> GetRagentServices()
     {
         return V8Services.GetRagentServices(v8PlatformsProvider.GetInstalledPlatforms()).ToList();
     }
 
-    [ContextMethod("ПолучитьСлужбуCrServerДляПорта", "GetCrServerForPort")]
     public CrServer GetCrServerForPort(int port)
     {
         return V8Services.GetCrServerForPort(port, v8PlatformsProvider.GetInstalledPlatforms());
     }
 
-    [ContextMethod("ПолучитьЗапущенныеСлужбыCrServer", "GetActiveCrServerServices",
-        Converter = typeof(ListContextConverter<CrServer>))]
     public List<CrServer> GetActiveCrServerServices()
     {
         return V8Services.GetActiveCrServerServices(v8PlatformsProvider.GetInstalledPlatforms()).ToList();
     }
 
-    [ContextMethod("ПолучитьСлужбыCrServer", "GetCrServerServices", Converter = typeof(ListContextConverter<CrServer>))]
     public List<CrServer> GetCrServerServices()
     {
         return V8Services.GetCrServerServices(v8PlatformsProvider.GetInstalledPlatforms()).ToList();

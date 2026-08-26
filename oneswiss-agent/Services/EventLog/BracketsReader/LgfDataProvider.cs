@@ -1,3 +1,4 @@
+using System.Text;
 using OneSwiss.Agent.Extensions;
 using OneSwiss.V8.Platform.Brackets;
 using BracketsParser = OneSwiss.V8.Platform.Brackets.BracketsParser;
@@ -15,7 +16,11 @@ internal class LgfDataProvider : IDisposable
 
     public LgfDataProvider(string path)
     {
-        _streamReader = new StreamReader(path);
+        // 1Cv8.lgf остаётся открытым на запись у rphost/rmngr, пока информационная база живая -
+        // без FileShare.ReadWrite чтение падает с ошибкой совместного доступа (см. аналогичный
+        // паттерн в LgpReader).
+        var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        _streamReader = new StreamReader(fs, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         SkipSignature();
         
         _parser = new BracketsParser();

@@ -4,7 +4,6 @@ public class ConfigurationRepositoryUser : DatabaseObject
 {
     public Guid InternalId { get; set; }
     public string Name { get; set; }
-    public string? GitUser { get; set; }
     public bool Deleted { get; set; }
     public Guid RepositoryId { get; set; }
 

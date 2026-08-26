@@ -16,7 +16,7 @@ public class ErrorReportsCleaner(IServiceProvider serviceProvider, ILogger<Error
 
             if (settings?.ReportsTtl > 0)
             {
-                var deleteFrom = DateTime.Now.AddDays(-settings.ReportsTtl);
+                var deleteFrom = DateTime.UtcNow.AddDays(-settings.ReportsTtl);
 
                 try
                 {

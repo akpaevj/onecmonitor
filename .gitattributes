@@ -61,3 +61,10 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+###############################################################################
+# Shell-скрипты запускаются внутри Linux-контейнеров - CRLF в shebang ломает их
+# (Docker build/entrypoint падает с "bad interpreter"). Форсируем LF независимо от
+# core.autocrlf на машине разработчика.
+###############################################################################
+*.sh text eol=lf

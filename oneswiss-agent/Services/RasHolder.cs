@@ -8,13 +8,12 @@ using OneSwiss.V8.Platform.Services;
 
 namespace OneSwiss.Agent.Services;
 
-[ContextClass("МенеджерRas", "RasManager")]
 public class RasHolder(V8ServicesProvider v8ServicesProvider) : IDisposable
 {
+    private readonly Lock _sync = new();
     private readonly List<Process> _processes = [];
     private readonly Dictionary<int, RasService> _rasServiceModels = [];
 
-    [ContextMethod("ПолучитьСлужбыRas", "GetRasServices", Converter = typeof(ListContextConverter<RasService>))]
     public List<RasService> GetRasServices()
     {
         var services = v8ServicesProvider.GetRasServices();
@@ -23,14 +22,19 @@ public class RasHolder(V8ServicesProvider v8ServicesProvider) : IDisposable
         return services;
     }
 
-    [ContextMethod("ПолучитьЗапущеннуюСлужбуRasДляRagent", "GetActiveRasForRagent")]
     public RasService GetActiveRasForRagent(RagentService ragent)
     {
-        var service = GetRasServices()
-            .Where(c => c.IsActive)
-            .FirstOrDefault(c => c.RagentHost.IsLocalHost() && c.RagentPort == ragent.Port);
+        // Check-then-start must run under a lock: concurrent calls for the same ragent (e.g. several
+        // inbound commands handled in parallel) could otherwise both see "no active RAS" and each
+        // start their own ras.exe, leaking one every time they race.
+        lock (_sync)
+        {
+            var service = GetRasServices()
+                .Where(c => c.IsActive)
+                .FirstOrDefault(c => c.RagentHost.IsLocalHost() && c.RagentPort == ragent.Port);
 
-        return service ?? StartRasForRagent(ragent);
+            return service ?? StartRasForRagent(ragent);
+        }
     }
 
     private RasService StartRasForRagent(RagentService ragent)
@@ -52,8 +56,9 @@ public class RasHolder(V8ServicesProvider v8ServicesProvider) : IDisposable
         };
 
         var process = Process.Start(psi);
+        process!.EnableRaisingEvents = true;
 
-        if (process!.HasExited)
+        if (process.HasExited)
         {
             using var stream = process.StandardError;
             var error = stream.ReadToEnd();
@@ -62,10 +67,16 @@ public class RasHolder(V8ServicesProvider v8ServicesProvider) : IDisposable
             throw new Exception($"Ошибка запуска RAS для агента кластера: {error}");
         }
 
+        if (OperatingSystem.IsWindows())
+            JobObjectProcessTracker.Add(process);
+
         process.Exited += (_, _) =>
         {
-            _rasServiceModels.Remove(process.Id);
-            _processes.Remove(process);
+            lock (_sync)
+            {
+                _rasServiceModels.Remove(process.Id);
+                _processes.Remove(process);
+            }
         };
 
         _processes.Add(process);
@@ -110,7 +121,25 @@ public class RasHolder(V8ServicesProvider v8ServicesProvider) : IDisposable
 
     private void ReleaseUnmanagedResources()
     {
-        _processes.ForEach(c => c.Kill());
+        // Snapshot under the lock: the Exited handler removes from _processes on its own thread,
+        // and mutating the list while ForEach enumerates it would throw.
+        Process[] processes;
+        lock (_sync)
+        {
+            processes = _processes.ToArray();
+        }
+
+        foreach (var process in processes)
+        {
+            try
+            {
+                process.Kill();
+            }
+            catch (InvalidOperationException)
+            {
+                // Already exited.
+            }
+        }
     }
     
     public void Dispose()

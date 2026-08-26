@@ -1,12 +1,10 @@
-﻿using MudBlazor;
-
-namespace OneSwiss.Server.Models;
+﻿namespace OneSwiss.Server.Models;
 
 public class LogTemplate : DatabaseObject
 {
-    [Label("Имя")] public string Name { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
 
-    [Label("Контент logcfg.xml")] public string Content { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
 
     public virtual List<TechLogSeance> Seances { get; set; } = new();
 

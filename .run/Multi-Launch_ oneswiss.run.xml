@@ -9,7 +9,7 @@
         </option>
         <option name="executable">
           <ExecutableSnapshot>
-            <option name="id" value="runConfig:npm.Build" />
+            <option name="id" value="runConfig:npm.build" />
           </ExecutableSnapshot>
         </option>
       </ExecutableRowSnapshot>
@@ -33,7 +33,7 @@
         </option>
         <option name="executable">
           <ExecutableSnapshot>
-            <option name="id" value="runConfig:.NET Launch Settings Profile.oneswiss-agent" />
+            <option name="id" value="runConfig:.NET Launch Settings Profile.oneswiss-agent: oneswiss_agent" />
           </ExecutableSnapshot>
         </option>
       </ExecutableRowSnapshot>
