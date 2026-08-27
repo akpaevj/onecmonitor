@@ -53,7 +53,23 @@ export default function AgentsPage() {
   useAgentsStateUpdated(onAgentsStateUpdated);
 
   const onDelete = async (item: AgentListItem) => {
-    const shouldDelete = window.confirm(`Удалить агента '${item.instanceName}'?`);
+    const relatedParts: string[] = [];
+    if (item.clustersCount > 0) {
+      relatedParts.push(`кластеры (${item.clustersCount}) и все их данные (ИБ, лог обслуживания и т.д.)`);
+    }
+    if (item.techLogSeancesCount > 0) {
+      relatedParts.push(`привязка к сеансам техжурнала (${item.techLogSeancesCount})`);
+    }
+    if (item.maintenanceTasksCount > 0) {
+      relatedParts.push(`привязка к задачам обслуживания (${item.maintenanceTasksCount})`);
+    }
+
+    const warning =
+      relatedParts.length > 0
+        ? `\n\nБудут безвозвратно удалены: ${relatedParts.join(", ")}. Собранные данные техжурнала и журнала регистрации по этому агенту также будут удалены.`
+        : "";
+
+    const shouldDelete = window.confirm(`Удалить агента '${item.instanceName}'?${warning}`);
     if (!shouldDelete) {
       return;
     }
@@ -64,7 +80,7 @@ export default function AgentsPage() {
     try {
       await deleteAgent(item.id);
       await loadData();
-      setMessage("Агент удален");
+      setMessage("Агент и связанные с ним данные удалены");
     } catch (e) {
       if (e instanceof ApiError && typeof e.details === "string") {
         setError(e.details);

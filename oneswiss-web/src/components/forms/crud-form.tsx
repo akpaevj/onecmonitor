@@ -20,6 +20,7 @@ export function CrudFormCard({
   backHref,
   backLabel = "Назад",
   icon: Icon,
+  actions,
   children,
 }: {
   title: string;
@@ -27,6 +28,7 @@ export function CrudFormCard({
   backHref: string;
   backLabel?: string;
   icon?: LucideIcon;
+  actions?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -40,12 +42,15 @@ export function CrudFormCard({
             </CardTitle>
             <CardDescription>{description}</CardDescription>
           </div>
-          <Button asChild variant="outline" size="sm">
-            <Link href={backHref}>
-              <ArrowLeft className="h-4 w-4" />
-              {backLabel}
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            {actions}
+            <Button asChild variant="outline" size="sm">
+              <Link href={backHref}>
+                <ArrowLeft className="h-4 w-4" />
+                {backLabel}
+              </Link>
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>{children}</CardContent>

@@ -1,10 +1,13 @@
 "use client";
 
-import { AlertTriangle, Cpu, Server, Wifi, WifiOff } from "lucide-react";
+import { AlertTriangle, Cpu, Server, Trash2, Wifi, WifiOff } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiError } from "@/lib/api/client";
+import { deleteAgent, getAgent, type AgentListItem } from "@/lib/api/agents";
 import { getAgentDetails, type AgentDetailsItem } from "@/lib/api/servers-administration";
 import { useAgentsStateUpdated } from "@/lib/signalr/agent-connections";
 
@@ -13,9 +16,12 @@ type AgentDetailsPageProps = {
 };
 
 export default function AgentDetailsPage({ params }: AgentDetailsPageProps) {
+  const router = useRouter();
   const [id, setId] = useState<string | null>(null);
   const [item, setItem] = useState<AgentDetailsItem | null>(null);
+  const [agent, setAgent] = useState<AgentListItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -64,6 +70,12 @@ export default function AgentDetailsPage({ params }: AgentDetailsPageProps) {
           setIsLoading(false);
         }
       }
+
+      try {
+        setAgent(await getAgent(id));
+      } catch {
+        // счетчики связанных данных нужны только для текста подтверждения удаления
+      }
     },
     [id]
   );
@@ -82,14 +94,57 @@ export default function AgentDetailsPage({ params }: AgentDetailsPageProps) {
 
   useAgentsStateUpdated(onAgentsStateUpdated);
 
+  const onDelete = async () => {
+    if (!id || isDeleting) return;
+
+    const relatedParts: string[] = [];
+    if (agent && agent.clustersCount > 0) {
+      relatedParts.push(`кластеры (${agent.clustersCount}) и все их данные (ИБ, лог обслуживания и т.д.)`);
+    }
+    if (agent && agent.techLogSeancesCount > 0) {
+      relatedParts.push(`привязка к сеансам техжурнала (${agent.techLogSeancesCount})`);
+    }
+    if (agent && agent.maintenanceTasksCount > 0) {
+      relatedParts.push(`привязка к задачам обслуживания (${agent.maintenanceTasksCount})`);
+    }
+
+    const warning =
+      relatedParts.length > 0
+        ? `\n\nБудут безвозвратно удалены: ${relatedParts.join(", ")}. Собранные данные техжурнала и журнала регистрации по этому агенту также будут удалены.`
+        : "";
+
+    const shouldDelete = window.confirm(`Удалить агента '${item?.instanceName || id}'?${warning}`);
+    if (!shouldDelete) return;
+
+    setIsDeleting(true);
+    setError(null);
+
+    try {
+      await deleteAgent(id);
+      router.push("/serversadministration");
+      router.refresh();
+    } catch (e) {
+      if (e instanceof ApiError && typeof e.details === "string") setError(e.details);
+      else setError("Не удалось удалить агента");
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Server className="h-5 w-5" />
-          Агент сервера
-        </CardTitle>
-        <CardDescription>{item?.instanceName || id || "Агент"}</CardDescription>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Server className="h-5 w-5" />
+              Агент сервера
+            </CardTitle>
+            <CardDescription>{item?.instanceName || id || "Агент"}</CardDescription>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => void onDelete()} disabled={isDeleting}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {error ? (

@@ -2,7 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Server } from "lucide-react";
+import { Save, Server, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
   formLabelClassName,
 } from "@/components/forms/crud-form";
 import { ApiError } from "@/lib/api/client";
-import { getAgent, type UpsertAgentRequest, updateAgent } from "@/lib/api/agents";
+import { deleteAgent, getAgent, type AgentListItem, type UpsertAgentRequest, updateAgent } from "@/lib/api/agents";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -27,9 +27,11 @@ const initialForm: UpsertAgentRequest = {
 export default function AgentEditPage({ params }: PageProps) {
   const router = useRouter();
   const [id, setId] = useState<string | null>(null);
+  const [agent, setAgent] = useState<AgentListItem | null>(null);
   const [form, setForm] = useState<UpsertAgentRequest>(initialForm);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -45,6 +47,7 @@ export default function AgentEditPage({ params }: PageProps) {
 
     try {
       const item = await getAgent(id);
+      setAgent(item);
       setForm({ instanceName: item.instanceName });
     } catch {
       setError("Не удалось загрузить агента");
@@ -82,6 +85,42 @@ export default function AgentEditPage({ params }: PageProps) {
     }
   };
 
+  const onDelete = async () => {
+    if (!id || isDeleting) return;
+
+    const relatedParts: string[] = [];
+    if (agent && agent.clustersCount > 0) {
+      relatedParts.push(`кластеры (${agent.clustersCount}) и все их данные (ИБ, лог обслуживания и т.д.)`);
+    }
+    if (agent && agent.techLogSeancesCount > 0) {
+      relatedParts.push(`привязка к сеансам техжурнала (${agent.techLogSeancesCount})`);
+    }
+    if (agent && agent.maintenanceTasksCount > 0) {
+      relatedParts.push(`привязка к задачам обслуживания (${agent.maintenanceTasksCount})`);
+    }
+
+    const warning =
+      relatedParts.length > 0
+        ? `\n\nБудут безвозвратно удалены: ${relatedParts.join(", ")}. Собранные данные техжурнала и журнала регистрации по этому агенту также будут удалены.`
+        : "";
+
+    const shouldDelete = window.confirm(`Удалить агента '${form.instanceName}'?${warning}`);
+    if (!shouldDelete) return;
+
+    setIsDeleting(true);
+    setError(null);
+
+    try {
+      await deleteAgent(id);
+      router.push("/agents");
+      router.refresh();
+    } catch (e) {
+      if (e instanceof ApiError && typeof e.details === "string") setError(e.details);
+      else setError("Не удалось удалить агента");
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return <CrudFormLoadingCard title="Агент" />;
   }
@@ -92,6 +131,11 @@ export default function AgentEditPage({ params }: PageProps) {
       description={form.instanceName || id || "—"}
       icon={Server}
       backHref="/agents"
+      actions={
+        <Button type="button" variant="outline" size="sm" onClick={() => void onDelete()} disabled={isDeleting}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      }
     >
       <form className="space-y-3" onSubmit={(event) => void onSubmit(event)}>
         <div className={formFieldClassName}>

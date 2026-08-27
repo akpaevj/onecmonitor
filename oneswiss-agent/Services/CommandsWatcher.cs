@@ -258,7 +258,8 @@ internal class CommandsWatcher
         var ras = _rasHolder.GetActiveRasForRagent(ragent);
         var rac = Rac.GetRacForRasService(_racLogger, ras);
 
-        await rac.UpdateClusterParameters(request.Item.ClusterInternalId, request.Parameters);
+        await rac.UpdateClusterParameters(request.Item.ClusterInternalId, request.Parameters,
+            request.Item.Credentials?.User ?? "", request.Item.Credentials?.Password ?? "");
 
         await _server.Ok(message, cancellationToken);
     }

@@ -12,4 +12,5 @@ public interface IEventLogRepository : IDisposable
         CancellationToken cancellationToken = default);
     Task<int> GetRowsCount(string filter = "", CancellationToken cancellationToken = default);
     Task<List<string>> GetEventsTypes(string filter = "", CancellationToken cancellationToken = default);
+    Task DeleteInfoBaseData(string infoBaseId, CancellationToken cancellationToken = default);
 }

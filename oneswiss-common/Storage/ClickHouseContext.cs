@@ -164,6 +164,15 @@ public class ClickHouseContext(
         await bulk.WriteToServerAsync(items, cancellationToken);
     }
     
+    public async Task DeleteInfoBaseData(string infoBaseId, CancellationToken cancellationToken = default)
+    {
+        await Connect(cancellationToken);
+
+        var query = $"ALTER TABLE {_tablePath} DELETE WHERE InfoBaseId = '{EscapeValue(infoBaseId)}'";
+
+        await _connection!.ExecuteAsync(query);
+    }
+
     public async Task<List<string>> GetEventsTypes(string filter = "", CancellationToken cancellationToken = default)
     {
         await Connect(cancellationToken);
@@ -502,6 +511,15 @@ public class ClickHouseContext(
         await _connection!.ExecuteAsync(query);
     }
 
+    public async Task DeleteAgentData(string agentId, CancellationToken cancellationToken = default)
+    {
+        await Connect(cancellationToken);
+
+        var query = $"ALTER TABLE {_tablePath} DELETE WHERE AgentId = toUUID('{agentId}')";
+
+        await _connection!.ExecuteAsync(query);
+    }
+
     public async Task<long> GetLastFilePosition(string agentId, string seanceId, string templateId, string fileName,
         CancellationToken cancellationToken)
     {
@@ -528,6 +546,11 @@ public class ClickHouseContext(
     private string BuildConnectionString()
     {
         return $"Host={dbms.Host};Port={dbms.Port};Username={credentials.User};Password={credentials.Password}";
+    }
+
+    private static string EscapeValue(string value)
+    {
+        return value.Replace("'", "''");
     }
     
     public void Dispose()

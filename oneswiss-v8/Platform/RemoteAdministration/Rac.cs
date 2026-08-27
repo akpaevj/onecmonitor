@@ -210,10 +210,13 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         return item;
     }
 
-    public async Task UpdateClusterParameters(string clusterId, Dictionary<string, string> parameters)
+    public async Task UpdateClusterParameters(string clusterId, Dictionary<string, string> parameters,
+        string clusterUser = "", string clusterPassword = "")
     {
         var parametersUpdateCommand = string.Join(' ', parameters.Select(c => $"--{c.Key}=\"{c.Value}\""));
-        await StartRacAndGetOutput($"cluster update --cluster={clusterId} {parametersUpdateCommand}", 20);
+        await StartRacAndGetOutput(
+            $"cluster update --cluster={clusterId} {parametersUpdateCommand} --cluster-user={clusterUser} --cluster-pwd={clusterPassword}",
+            20);
     }
 
     public async Task UpdateInfoBaseParameters(string clusterId, string infoBaseId,

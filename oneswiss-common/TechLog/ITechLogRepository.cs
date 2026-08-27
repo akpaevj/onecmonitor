@@ -25,4 +25,5 @@ public interface ITechLogRepository : IDisposable
 
     Task<int> GetRowsCount(string filter = "", CancellationToken cancellationToken = default);
     Task DeleteTechLogSeanceData(string seanceId, CancellationToken cancellationToken = default);
+    Task DeleteAgentData(string agentId, CancellationToken cancellationToken = default);
 }

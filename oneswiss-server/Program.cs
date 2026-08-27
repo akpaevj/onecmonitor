@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json.Serialization;
 using AutoMapper;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,10 @@ builder.WebHost.ConfigureKestrel((context, options) =>
 
     options.Listen(string.IsNullOrEmpty(host) ? IPAddress.Any : IPAddress.Parse(host), port);
 });
+
+// По умолчанию ASP.NET Core ограничивает multipart-запросы (загрузку файлов) 128 МБ
+// независимо от Kestrel MaxRequestBodySize выше - конфигурации 1С могут весить гигабайты.
+builder.Services.Configure<FormOptions>(options => { options.MultipartBodyLengthLimit = long.MaxValue; });
 
 builder.AddOneSwissAuthentication();
 
