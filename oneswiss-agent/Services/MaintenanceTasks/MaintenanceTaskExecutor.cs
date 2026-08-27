@@ -556,8 +556,8 @@ public class MaintenanceTaskExecutor : BackgroundService
                 await batch.DumpConfigRepository(
                     configPath,
                     address,
-                    stepInfo.ConfigurationRepository.Credentials!.User,
-                    stepInfo.ConfigurationRepository.Credentials!.Password,
+                    stepInfo.ConfigurationRepository.Credentials?.User ?? "",
+                    stepInfo.ConfigurationRepository.Credentials?.Password ?? "",
                     stepInfo.Version,
                     stepInfo.Extension);
 
