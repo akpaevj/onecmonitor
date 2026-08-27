@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, Copy, FileText, Pencil, Play, Plus, Trash2, Wrench } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { VariantProps } from "class-variance-authority";
 import { ApiError } from "@/lib/api/client";
 import {
   createMaintenanceTask,
@@ -26,16 +28,21 @@ function isEmptyDate(value: string) {
   return value.startsWith("0001-01-01");
 }
 
-function getTaskState(task: { startDateTime: string; finishDateTime: string; isFaulted: boolean }) {
+function getTaskState(task: { startDateTime: string; finishDateTime: string; isFaulted: boolean }): {
+  label: string;
+  variant: VariantProps<typeof badgeVariants>["variant"];
+} {
   if (isEmptyDate(task.startDateTime)) {
-    return "Новая";
+    return { label: "Новая", variant: "secondary" };
   }
 
   if (isEmptyDate(task.finishDateTime)) {
-    return "Выполняется";
+    return { label: "Выполняется", variant: "info" };
   }
 
-  return task.isFaulted ? "Завершена с ошибками" : "Завершена успешно";
+  return task.isFaulted
+    ? { label: "Завершена с ошибками", variant: "destructive" }
+    : { label: "Завершена успешно", variant: "success" };
 }
 
 function formatDate(value: string) {
@@ -266,12 +273,17 @@ export default function MaintenanceTasksPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {items.map((item) => {
+                const state = getTaskState(item);
+
+                return (
                 <tr key={item.id} className="border-t">
                   <td className="px-3 py-2">{item.description}</td>
                   <td className="px-3 py-2">{formatDate(item.startDateTime)}</td>
                   <td className="px-3 py-2">{formatDate(item.finishDateTime)}</td>
-                  <td className="px-3 py-2">{getTaskState(item)}</td>
+                  <td className="px-3 py-2">
+                    <Badge variant={state.variant}>{state.label}</Badge>
+                  </td>
                   <td className="px-3 py-2">
                     <div className="flex gap-2">
                       {isEmptyDate(item.startDateTime) ? (
@@ -296,7 +308,8 @@ export default function MaintenanceTasksPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
