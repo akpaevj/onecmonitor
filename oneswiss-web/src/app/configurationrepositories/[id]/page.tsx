@@ -141,6 +141,9 @@ export default function ConfigurationRepositoryEditPage({ params }: PageProps) {
             value={details.credentialsId ?? ""}
             onChange={(event) => onChangeCredentials(event.target.value)}
           >
+            <option value="" disabled>
+              Выберите учетные данные
+            </option>
             {credentials.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
