@@ -72,7 +72,5 @@ public enum MessageType
     V8BinaryDataStorages,
     V8BinaryDataStoragesRequest,
     V8Connections,
-    V8ConnectionsRequest,
-    V8Licenses,
-    V8LicensesRequest
+    V8ConnectionsRequest
 }

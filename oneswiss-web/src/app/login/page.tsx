@@ -6,7 +6,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { OneSwissLogo } from "@/components/layout/oneswiss-logo";
 import { buildExternalLoginUrl, getExternalProviders, login } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
-import { getAccessToken, setAccessToken } from "@/lib/auth/session";
+import { getAccessToken, setSession } from "@/lib/auth/session";
 
 const EXTERNAL_LOGIN_ERRORS: Record<string, string> = {
   "invalid-user": "Пользователь не найден",
@@ -60,7 +60,7 @@ export default function LoginPage() {
         password,
       });
 
-      setAccessToken(result.accessToken, result.expiresAtUtc);
+      setSession(result.accessToken, result.expiresAtUtc, result.refreshToken);
       router.replace("/");
     } catch (e) {
       if (e instanceof ApiError && typeof e.details === "string") {

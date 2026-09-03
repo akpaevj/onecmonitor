@@ -11,6 +11,7 @@ export type AuthUser = {
 export type LoginResponse = {
   accessToken: string;
   expiresAtUtc: string;
+  refreshToken: string;
   user: AuthUser;
 };
 
@@ -27,8 +28,8 @@ export function getCurrentUser() {
   return apiGet<AuthUser>("/api/auth/me");
 }
 
-export function logout() {
-  return apiPost<void, Record<string, never>>("/api/auth/logout", {});
+export function logout(refreshToken: string | null) {
+  return apiPost<void, { refreshToken: string | null }>("/api/auth/logout", { refreshToken });
 }
 
 export type ExternalProviders = {

@@ -19,6 +19,7 @@ public class EventLogExportManager(
     private CancellationTokenSource? _cts;
     private EventLogSettingsDto? _settings;
     private readonly List<BracketsEventLogReader> _readers = [];
+    private readonly object _readersLock = new();
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -28,12 +29,12 @@ public class EventLogExportManager(
             {
                 var settings = await settingsQueue.DequeueAsync(cancellationToken);
                 await InitFromSettings(settings, cancellationToken);
-            
+
                 DisposeReaders();
 
-                if (!settings.Enabled) 
+                if (!settings.Enabled)
                     continue;
-            
+
                 foreach (var exportItem in settings.Items.Where(c => c.IsActive))
                 {
                     var ragent = v8ServicesProvider.GetActiveRagentByPort(exportItem.InfoBase.Cluster.RagentPort);
@@ -42,12 +43,9 @@ public class EventLogExportManager(
 
                     var infoBaseInfo = new InfoBaseInfo(ragent.Platform, infoBaseLogCatalog,
                         exportItem.InfoBase.InfoBaseName, exportItem.InfoBase.InfoBaseInternalId, exportItem.Ttl);
-                
-                    var reader = new BracketsEventLogReader(infoBaseInfo, exporter, logReaderLogger);
-                    _readers.Add(reader);
-                
+
                     var position = await exporter.GetLastEventDateTime(infoBaseInfo.InfoBaseId, _cts!.Token);
-                    reader.Start(position, _cts!.Token);
+                    StartReader(infoBaseInfo, position);
                 }
             }
             catch (OperationCanceledException) {}
@@ -58,15 +56,64 @@ public class EventLogExportManager(
         }
     }
 
+    private void StartReader(InfoBaseInfo infoBaseInfo, DateTime position)
+    {
+        var reader = new BracketsEventLogReader(infoBaseInfo, exporter, logReaderLogger);
+        reader.Stopped += (_, _) => OnReaderStopped(reader, infoBaseInfo);
+
+        lock (_readersLock)
+        {
+            _readers.Add(reader);
+        }
+
+        reader.Start(position, _cts!.Token);
+    }
+
+    // Ридер сигнализирует о непредвиденном падении через Stopped - без этого менеджер
+    // узнал бы о мёртвом ридере только при следующей смене настроек
+    private void OnReaderStopped(BracketsEventLogReader reader, InfoBaseInfo infoBaseInfo)
+    {
+        lock (_readersLock)
+        {
+            if (!_readers.Remove(reader))
+                return; // ридер уже заменён более свежим циклом обработки настроек
+        }
+
+        reader.Dispose();
+
+        var cts = _cts;
+        if (cts is null || cts.IsCancellationRequested)
+            return;
+
+        _ = RestartReaderAsync(infoBaseInfo, cts.Token);
+    }
+
+    private async Task RestartReaderAsync(InfoBaseInfo infoBaseInfo, CancellationToken cancellationToken)
+    {
+        try
+        {
+            logger.LogWarning("Перезапуск чтения журнала регистрации после непредвиденной ошибки - {Name}",
+                infoBaseInfo.Name);
+
+            var position = await exporter.GetLastEventDateTime(infoBaseInfo.InfoBaseId, cancellationToken);
+            StartReader(infoBaseInfo, position);
+        }
+        catch (OperationCanceledException) {}
+        catch (Exception e)
+        {
+            logger.LogError(e, "Не удалось перезапустить чтение журнала регистрации - {Name}", infoBaseInfo.Name);
+        }
+    }
+
     private async Task InitFromSettings(EventLogSettingsDto settings, CancellationToken cancellationToken)
     {
         if (_cts != null)
             await _cts.CancelAsync();
-        
+
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         _settings = settings;
-        
+
         if (settings.Enabled)
             await exporter.Init(_settings.GetDbContext(), _settings, _cts.Token);
         else
@@ -75,22 +122,23 @@ public class EventLogExportManager(
 
     private void DisposeReaders()
     {
-        _readers.ForEach(c => c.Dispose());
-        _readers.Clear();
-    }
+        List<BracketsEventLogReader> readers;
 
-    private void Dispose(bool disposing)
-    {
-        if (disposing)
+        lock (_readersLock)
         {
-            _cts?.Cancel();
-            _cts?.Dispose();
-            DisposeReaders();
+            readers = [.._readers];
+            _readers.Clear();
         }
+
+        readers.ForEach(c => c.Dispose());
     }
 
-    ~EventLogExportManager()
+    public override void Dispose()
     {
-        Dispose(false);
+        _cts?.Cancel();
+        _cts?.Dispose();
+        DisposeReaders();
+        base.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

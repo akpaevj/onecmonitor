@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { setAccessToken } from "@/lib/auth/session";
+import { setSession } from "@/lib/auth/session";
 
 export default function LoginCallbackPage() {
   const router = useRouter();
@@ -14,14 +14,15 @@ export default function LoginCallbackPage() {
       const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
       const token = params.get("token");
       const expiresAtUtc = params.get("expiresAtUtc");
+      const refreshToken = params.get("refreshToken");
       const returnUrl = params.get("returnUrl") || "/";
 
-      if (!token || !expiresAtUtc) {
+      if (!token || !expiresAtUtc || !refreshToken) {
         setError(true);
         return;
       }
 
-      setAccessToken(token, expiresAtUtc);
+      setSession(token, expiresAtUtc, refreshToken);
       router.replace(returnUrl);
     }, 0);
 

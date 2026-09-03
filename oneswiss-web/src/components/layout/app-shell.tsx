@@ -10,9 +10,10 @@ import { OneSwissLogo } from "@/components/layout/oneswiss-logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { ApiError } from "@/lib/api/client";
 import { getCurrentUser, logout, type AuthUser } from "@/lib/api/auth";
 import { getSettingsSummary } from "@/lib/api/settings";
-import { clearAccessToken, getAccessToken } from "@/lib/auth/session";
+import { clearAccessToken, getAccessToken, getRefreshToken } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 
 import { getNavSections } from "./nav-items";
@@ -26,6 +27,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [profileError, setProfileError] = useState(false);
+  const [profileRetryCount, setProfileRetryCount] = useState(0);
   const [menuFeatures, setMenuFeatures] = useState({
     techLogEnabled: true,
     errorLoggingEnabled: true,
@@ -62,6 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     const loadProfile = async () => {
       setIsLoadingProfile(true);
+      setProfileError(false);
 
       try {
         const [profile, summary] = await Promise.all([getCurrentUser(), getSettingsSummary()]);
@@ -76,10 +80,18 @@ export function AppShell({ children }: { children: ReactNode }) {
           errorLoggingEnabled: summary.errorLoggingEnabled,
           eventLogEnabled: summary.eventLogEnabled,
         });
-      } catch {
-        if (!cancelled) {
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        // Разлогиниваем только при подтверждённом 401 - сетевой сбой, таймаут или
+        // временная недоступность бэкенда не должны сбрасывать валидный токен.
+        if (error instanceof ApiError && error.status === 401) {
           clearAccessToken();
           router.replace("/login");
+        } else {
+          setProfileError(true);
         }
       } finally {
         if (!cancelled) {
@@ -93,7 +105,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [isLoginPage, router]);
+  }, [isLoginPage, router, profileRetryCount]);
 
   useEffect(() => {
     const onUnauthorized = () => {
@@ -130,7 +142,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const onLogout = async () => {
     try {
-      await logout();
+      await logout(getRefreshToken());
     } catch {
       // ignore logout transport errors
     }
@@ -246,6 +258,20 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="w-full">
             {isLoadingProfile ? (
               <div className="rounded-md border bg-card p-4 text-sm text-muted-foreground">Загрузка профиля...</div>
+            ) : profileError ? (
+              <div className="flex flex-col items-start gap-3 rounded-md border bg-card p-4 text-sm">
+                <span className="text-muted-foreground">
+                  Не удалось загрузить профиль. Проверьте соединение с сервером и повторите попытку.
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setProfileRetryCount((count) => count + 1)}
+                >
+                  Повторить
+                </Button>
+              </div>
             ) : (
               children
             )}

@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
@@ -22,7 +23,7 @@ public sealed class AuthController(
 {
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.UserName) || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest("Логин и пароль обязательны");
@@ -39,12 +40,13 @@ public sealed class AuthController(
         var userRoles = await userManager.GetRolesAsync(user);
         var roles = ExpandRoles(userRoles).ToArray();
 
-        var expiresAtUtc = DateTime.UtcNow.AddMinutes(GetAccessTokenLifetimeMinutes());
-        var accessToken = BuildAccessToken(BuildUserClaims(user, roles), expiresAtUtc);
+        var (accessToken, expiresAtUtc, refreshToken) = await IssueTokensAsync(user, roles);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         return Ok(new LoginResponse(
             accessToken,
             expiresAtUtc,
+            refreshToken,
             new AuthUserDto(user.Id, user.UserName ?? string.Empty, user.DisplayName, roles)));
     }
 
@@ -63,8 +65,21 @@ public sealed class AuthController(
 
     [Authorize]
     [HttpPost("logout")]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout([FromBody] LogoutRequest? request, CancellationToken cancellationToken)
     {
+        if (!string.IsNullOrWhiteSpace(request?.RefreshToken))
+        {
+            var tokenHash = HashToken(request.RefreshToken);
+            var existing = await dbContext.RefreshTokens
+                .SingleOrDefaultAsync(t => t.TokenHash == tokenHash, cancellationToken);
+
+            if (existing is { RevokedAtUtc: null })
+            {
+                existing.RevokedAtUtc = DateTime.UtcNow;
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
+
         return NoContent();
     }
 
@@ -99,7 +114,7 @@ public sealed class AuthController(
 
     [AllowAnonymous]
     [HttpGet("external-login-callback")]
-    public async Task<IActionResult> ExternalLoginCallback([FromQuery] string? returnUrl)
+    public async Task<IActionResult> ExternalLoginCallback([FromQuery] string? returnUrl, CancellationToken cancellationToken)
     {
         var reactUrl = configuration.GetValue<string>("Ui:ReactUrl") ?? "http://localhost:3000";
 
@@ -127,14 +142,50 @@ public sealed class AuthController(
         var userRoles = await userManager.GetRolesAsync(user);
         var roles = ExpandRoles(userRoles).ToArray();
 
-        var expiresAtUtc = DateTime.UtcNow.AddMinutes(GetAccessTokenLifetimeMinutes());
-        var accessToken = BuildAccessToken(BuildUserClaims(user, roles), expiresAtUtc);
+        var (accessToken, expiresAtUtc, refreshToken) = await IssueTokensAsync(user, roles);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
-        var fragment = $"token={Uri.EscapeDataString(accessToken)}&expiresAtUtc={Uri.EscapeDataString(expiresAtUtc.ToString("O"))}";
+        var fragment = $"token={Uri.EscapeDataString(accessToken)}&expiresAtUtc={Uri.EscapeDataString(expiresAtUtc.ToString("O"))}" +
+            $"&refreshToken={Uri.EscapeDataString(refreshToken)}";
         if (!string.IsNullOrWhiteSpace(returnUrl))
             fragment += $"&returnUrl={Uri.EscapeDataString(returnUrl)}";
 
         return Redirect($"{reactUrl}/login/callback#{fragment}");
+    }
+
+    // Ротация refresh-токена: старый отзывается, выдаётся новая пара access+refresh.
+    // Так пользователь не вылетает по истечении AccessTokenLifetimeMinutes, пока сессия активна.
+    [AllowAnonymous]
+    [HttpPost("refresh")]
+    public async Task<ActionResult<LoginResponse>> Refresh([FromBody] RefreshRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.RefreshToken))
+            return Unauthorized();
+
+        var tokenHash = HashToken(request.RefreshToken);
+        var existing = await dbContext.RefreshTokens
+            .SingleOrDefaultAsync(t => t.TokenHash == tokenHash, cancellationToken);
+
+        if (existing == null || existing.RevokedAtUtc != null || existing.ExpiresAtUtc <= DateTime.UtcNow)
+            return Unauthorized();
+
+        var user = await userManager.FindByIdAsync(existing.UserId.ToString());
+        if (user == null || !await signInManager.CanSignInAsync(user))
+            return Unauthorized();
+
+        existing.RevokedAtUtc = DateTime.UtcNow;
+
+        var userRoles = await userManager.GetRolesAsync(user);
+        var roles = ExpandRoles(userRoles).ToArray();
+
+        var (accessToken, expiresAtUtc, refreshToken) = await IssueTokensAsync(user, roles);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Ok(new LoginResponse(
+            accessToken,
+            expiresAtUtc,
+            refreshToken,
+            new AuthUserDto(user.Id, user.UserName ?? string.Empty, user.DisplayName, roles)));
     }
 
     // Свой OAuth2-совместимый client_credentials-эндпоинт для агентов: позволяет требовать
@@ -233,6 +284,43 @@ public sealed class AuthController(
         return claims;
     }
 
+    // Выдаёт access-токен и добавляет в контекст новую запись refresh-токена (SaveChanges - на
+    // вызывающей стороне, чтобы можно было объединить с отзывом старого токена в одной транзакции).
+    private async Task<(string AccessToken, DateTime ExpiresAtUtc, string RefreshToken)> IssueTokensAsync(
+        ApplicationUser user, IEnumerable<string> roles)
+    {
+        var expiresAtUtc = DateTime.UtcNow.AddMinutes(GetAccessTokenLifetimeMinutes());
+        var accessToken = BuildAccessToken(BuildUserClaims(user, roles), expiresAtUtc);
+
+        var rawRefreshToken = GenerateRefreshToken();
+        await dbContext.RefreshTokens.AddAsync(new RefreshToken
+        {
+            UserId = user.Id,
+            TokenHash = HashToken(rawRefreshToken),
+            CreatedAtUtc = DateTime.UtcNow,
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(GetRefreshTokenLifetimeDays())
+        });
+
+        return (accessToken, expiresAtUtc, rawRefreshToken);
+    }
+
+    private static string GenerateRefreshToken()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(32);
+        return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    private static string HashToken(string token)
+    {
+        return Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+    }
+
+    private int GetRefreshTokenLifetimeDays()
+    {
+        var value = configuration.GetValue<int?>("Auth:Jwt:RefreshTokenLifetimeDays");
+        return value is > 0 ? value.Value : 14;
+    }
+
     private string BuildAccessToken(IEnumerable<Claim> claims, DateTime expiresAtUtc)
     {
         var jwtSection = configuration.GetSection("Auth").GetSection("Jwt");
@@ -281,7 +369,11 @@ public sealed class AuthController(
 
     public sealed record AuthUserDto(Guid Id, string UserName, string? DisplayName, string[] Roles);
 
-    public sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc, AuthUserDto User);
+    public sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc, string RefreshToken, AuthUserDto User);
 
     public sealed record ExternalProvidersResponse(bool Available, string? ProviderName);
+
+    public sealed record RefreshRequest(string RefreshToken);
+
+    public sealed record LogoutRequest(string? RefreshToken);
 }

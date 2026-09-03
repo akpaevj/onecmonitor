@@ -408,15 +408,6 @@ public class AgentConnection : FastConnection
             cancellationToken);
     }
 
-    public async Task<List<V8License>> GetV8Licenses(Cluster cluster, CancellationToken cancellationToken)
-    {
-        return await Get<ClusterDto, List<V8License>>(
-            MessageType.V8LicensesRequest,
-            MessageType.V8Licenses,
-            _mapper.Map<ClusterDto>(cluster),
-            cancellationToken);
-    }
-
     public async Task<List<V8Process>> GetV8Processes(Cluster cluster, CancellationToken cancellationToken)
     {
         return await Get<ClusterDto, List<V8Process>>(

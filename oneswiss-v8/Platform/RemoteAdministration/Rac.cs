@@ -8,6 +8,8 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
 {
     private const string EmptyId = "00000000-0000-0000-0000-000000000000";
 
+    private static string Quote(string value) => $"\"{value.Replace("\"", "\\\"")}\"";
+
     public static Rac GetRacForRasService(ILogger<Rac> logger, RasService rasService)
     {
         if (!rasService.Platform.HasRac)
@@ -35,7 +37,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка рабочих серверов кластера из RAS");
 
         var items = (await GetOutputItems(
-                $"server --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                $"server --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list",
                 20))
             .ToRacObjects<V8Server>();
 
@@ -50,7 +52,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка менеджеров кластера из RAS");
 
         var items = (await GetOutputItems(
-                $"manager --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                $"manager --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list",
                 20))
             .ToRacObjects<V8Manager>();
 
@@ -65,7 +67,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка сервисов менеджера кластера из RAS");
 
         var items = (await GetOutputItems(
-                $"service --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                $"service --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list",
                 20))
             .ToRacObjects<V8ManagerService>();
 
@@ -80,7 +82,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка профилей безопасности кластера из RAS");
 
         var items = (await GetOutputItems(
-                $"profile --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                $"profile --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list",
                 20))
             .ToRacObjects<V8SecurityProfile>();
 
@@ -95,7 +97,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка счетчиков потребления ресурсов кластера из RAS");
 
         var items = (await GetOutputItems(
-                $"counter --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                $"counter --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list",
                 20))
             .ToRacObjects<V8ResourceCounter>();
 
@@ -110,7 +112,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка ограничений потребления ресурсов кластера из RAS");
 
         var items = (await GetOutputItems(
-                $"limit --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                $"limit --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list",
                 20))
             .ToRacObjects<V8ResourceLimit>();
 
@@ -125,7 +127,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка требований назначения рабочего сервера из RAS");
 
         var items = (await GetOutputItems(
-                $"rule --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --server={serverId}",
+                $"rule --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list --server={serverId}",
                 20))
             .ToRacObjects<V8AssignmentRule>();
 
@@ -140,7 +142,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка настроек сервисов рабочего сервера из RAS");
 
         var items = (await GetOutputItems(
-                $"service-setting --cluster={clusterId} --server={serverId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                $"service-setting --cluster={clusterId} --server={serverId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list",
                 20))
             .ToRacObjects<V8ServiceSetting>();
 
@@ -155,35 +157,13 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка хранилищ двоичных данных информационной базы из RAS");
 
         var items = (await GetOutputItems(
-                $"binary-data-storage --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} list",
+                $"binary-data-storage --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} --infobase={infoBaseId} --infobase-user={Quote(user)} --infobase-pwd={Quote(password)} list",
                 20))
             .ToRacObjects<V8BinaryDataStorage>();
 
         logger.LogTrace("Список хранилищ двоичных данных информационной базы из RAS получен");
 
         return items;
-    }
-
-    public async Task<List<V8License>> GetLicenses(string clusterId, string clusterUser = "",
-        string clusterPassword = "")
-    {
-        logger.LogTrace("Запрос списка выданных лицензий кластера из RAS");
-
-        var processLicenses = (await GetOutputItems(
-                $"process --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --licenses",
-                20))
-            .ToRacObjects<V8License>();
-        processLicenses.ForEach(l => l.Source = "process");
-
-        var sessionLicenses = (await GetOutputItems(
-                $"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --licenses",
-                20))
-            .ToRacObjects<V8License>();
-        sessionLicenses.ForEach(l => l.Source = "session");
-
-        logger.LogTrace("Список выданных лицензий кластера из RAS получен");
-
-        return [..processLicenses, ..sessionLicenses];
     }
 
     public async Task<List<V8Cluster>> GetClusters()
@@ -215,7 +195,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     {
         var parametersUpdateCommand = string.Join(' ', parameters.Select(c => $"--{c.Key}=\"{c.Value}\""));
         await StartRacAndGetOutput(
-            $"cluster update --cluster={clusterId} {parametersUpdateCommand} --cluster-user={clusterUser} --cluster-pwd={clusterPassword}",
+            $"cluster update --cluster={clusterId} {parametersUpdateCommand} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)}",
             20);
     }
 
@@ -225,7 +205,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
     {
         var parametersUpdateCommand = string.Join(' ', parameters.Select(c => $"--{c.Key}=\"{c.Value}\""));
         await StartRacAndGetOutput(
-            $"infobase update --cluster={clusterId} {parametersUpdateCommand} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}",
+            $"infobase update --cluster={clusterId} {parametersUpdateCommand} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} --infobase={infoBaseId} --infobase-user={Quote(user)} --infobase-pwd={Quote(password)}",
             20);
     }
 
@@ -236,7 +216,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
 
         var output =
             await GetOutputItems(
-                $"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} summary list",
+                $"infobase --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} summary list",
                 10);
         var items = output.ToRacObjects<V8InfoBase>();
 
@@ -252,7 +232,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
 
         var output =
             await GetOutputItems(
-                $"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} info --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}",
+                $"infobase --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} info --infobase={infoBaseId} --infobase-user={Quote(user)} --infobase-pwd={Quote(password)}",
                 20);
         var item = output.ToRacObjects<V8InfoBaseDetails>().First();
 
@@ -265,7 +245,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         string clusterUser = "", string clusterPassword = "", string user = "", string password = "")
     {
         await StartRacAndGetOutput(
-            $"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=on --scheduled-jobs-deny=on --permission-code={permissionCode} --denied-message=\"{deniedMessage}\"",
+            $"infobase --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} update --infobase={infoBaseId} --infobase-user={Quote(user)} --infobase-pwd={Quote(password)} --sessions-deny=on --scheduled-jobs-deny=on --permission-code={permissionCode} --denied-message=\"{deniedMessage}\"",
             30);
     }
 
@@ -281,7 +261,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос информации о соединении из RAS");
 
         var output = await GetOutputItems(
-            $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} info --connection={connectionId}",
+            $"connection --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} info --connection={connectionId}",
             20);
         var item = output.ToRacObjects<V8Connection>(["process", "infobase"],
                 async void (f, c) =>
@@ -318,7 +298,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка соединений кластера из RAS");
 
         var items = (await GetOutputItems(
-                $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                $"connection --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list",
                 30))
             .ToRacObjects<V8Connection>(["process", "infobase"],
                 (f, c) => FillV8Connection(infoBases, processes, f, c));
@@ -343,7 +323,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка соединений информационной базы из RAS");
 
         var items = (await GetOutputItems(
-                $"connection --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password}",
+                $"connection --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list --infobase={infoBaseId} --infobase-user={Quote(user)} --infobase-pwd={Quote(password)}",
                 30))
             .ToRacObjects<V8Connection>(["process", "infobase"],
                 (f, c) => FillV8Connection(infoBases, processes, f, c));
@@ -372,7 +352,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка процессов кластера из RAS");
 
         var items = (await GetOutputItems(
-                $"process --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                $"process --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list",
                 20))
             .ToRacObjects<V8Process>();
 
@@ -387,7 +367,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос информации о процессе из RAS");
 
         var item = (await GetOutputItems(
-                $"process --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} info --process={processId}",
+                $"process --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} info --process={processId}",
                 20))
             .ToRacObjects<V8Process>().First();
 
@@ -408,7 +388,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка сеансов кластера из RAS");
 
         var items = (await GetOutputItems(
-                $"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list", 20))
+                $"session --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list", 20))
             .ToRacObjects<V8Session>(["infobase", "connection", "process"],
                 (f, c) => FillV8Session(infoBases, connections, processes, f, c));
 
@@ -430,7 +410,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка сеансов информационной базы из RAS");
 
         var items = (await GetOutputItems(
-                $"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId}",
+                $"session --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list --infobase={infoBaseId}",
                 20))
             .ToRacObjects<V8Session>(["infobase", "connection", "process"],
                 (f, c) => FillV8Session(infoBases, connections, processes, f, c));
@@ -468,7 +448,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка блокировок кластера из RAS");
 
         var items = (await GetOutputItems(
-                $"lock --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list",
+                $"lock --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list",
                 20))
             .ToRacObjects<V8Lock>(["connection", "session"],
                 (f, c) => FillV8Lock(connections, sessions, f, c));
@@ -489,7 +469,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         logger.LogTrace("Запрос списка блокировок информационной базы из RAS");
 
         var items = (await GetOutputItems(
-                $"lock --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} list --infobase={infoBaseId}",
+                $"lock --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} list --infobase={infoBaseId}",
                 20))
             .ToRacObjects<V8Lock>(["connection", "session"],
                 (f, c) => FillV8Lock(connections, sessions, f, c));
@@ -516,7 +496,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         string clusterPassword = "")
     {
         await StartRacAndGetOutput(
-            $"session --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} terminate --session={sessionId}",
+            $"session --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} terminate --session={sessionId}",
             20);
     }
 
@@ -524,7 +504,7 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         string clusterPassword = "", string user = "", string password = "")
     {
         await StartRacAndGetOutput(
-            $"infobase --cluster={clusterId} --cluster-user={clusterUser} --cluster-pwd={clusterPassword} update --infobase={infoBaseId} --infobase-user={user} --infobase-pwd={password} --sessions-deny=off --scheduled-jobs-deny=off",
+            $"infobase --cluster={clusterId} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)} update --infobase={infoBaseId} --infobase-user={Quote(user)} --infobase-pwd={Quote(password)} --sessions-deny=off --scheduled-jobs-deny=off",
             30);
     }
 

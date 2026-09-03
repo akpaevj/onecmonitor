@@ -1,16 +1,24 @@
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api/client";
 
+export type UsersGroupAccessGroupItem = {
+  id: string;
+  name: string;
+};
+
 export type UsersGroupListItem = {
   id: string;
   name: string;
   parentId: string | null;
   isBuiltIn: boolean;
   usersCount: number;
+  accessGroupIds: string[];
+  accessGroups: UsersGroupAccessGroupItem[];
 };
 
 export type UpsertUsersGroupRequest = {
   name: string;
   parentId: string | null;
+  accessGroupIds: string[];
 };
 
 export type UserAccountListItem = {

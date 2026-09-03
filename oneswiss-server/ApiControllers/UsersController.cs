@@ -22,6 +22,7 @@ public class UsersController(
     {
         return await dbContext.UsersGroups
             .AsNoTracking()
+            .Include(g => g.AccessGroups)
             .OrderBy(g => g.ParentId)
             .ThenBy(g => g.Name)
             .Select(g => new UsersGroupListItem(
@@ -29,7 +30,9 @@ public class UsersController(
                 g.Name,
                 g.ParentId,
                 g.IsBuiltIn,
-                g.Users.Count))
+                g.Users.Count,
+                g.AccessGroups.Select(a => a.Id).ToList(),
+                g.AccessGroups.Select(a => new AccessGroupSummaryItem(a.Id, a.Name)).ToList()))
             .ToListAsync(cancellationToken);
     }
 
@@ -39,13 +42,16 @@ public class UsersController(
     {
         var item = await dbContext.UsersGroups
             .AsNoTracking()
+            .Include(g => g.AccessGroups)
             .Where(g => g.Id == id)
             .Select(g => new UsersGroupListItem(
                 g.Id,
                 g.Name,
                 g.ParentId,
                 g.IsBuiltIn,
-                g.Users.Count))
+                g.Users.Count,
+                g.AccessGroups.Select(a => a.Id).ToList(),
+                g.AccessGroups.Select(a => new AccessGroupSummaryItem(a.Id, a.Name)).ToList()))
             .SingleOrDefaultAsync(cancellationToken);
 
         if (item == null)
@@ -63,17 +69,25 @@ public class UsersController(
         if (validationError != null)
             return validationError;
 
+        var accessGroups = await dbContext.AccessGroups
+            .Where(a => request.AccessGroupIds.Contains(a.Id))
+            .ToListAsync(cancellationToken);
+
         var entity = new UsersGroup
         {
             Name = request.Name.Trim(),
-            ParentId = request.ParentId
+            ParentId = request.ParentId,
+            AccessGroups = accessGroups
         };
 
         dbContext.UsersGroups.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
+        await groupsManager.UpdateUsersRoles();
 
         return CreatedAtAction(nameof(GetGroupById), new { id = entity.Id },
-            new UsersGroupListItem(entity.Id, entity.Name, entity.ParentId, entity.IsBuiltIn, 0));
+            new UsersGroupListItem(entity.Id, entity.Name, entity.ParentId, entity.IsBuiltIn, 0,
+                accessGroups.Select(a => a.Id).ToList(),
+                accessGroups.Select(a => new AccessGroupSummaryItem(a.Id, a.Name)).ToList()));
     }
 
     [HttpPut("groups/{id:guid}")]
@@ -81,7 +95,9 @@ public class UsersController(
     public async Task<ActionResult<UsersGroupListItem>> UpdateGroup(Guid id, [FromBody] UpsertUsersGroupRequest request,
         CancellationToken cancellationToken)
     {
-        var entity = await dbContext.UsersGroups.SingleOrDefaultAsync(g => g.Id == id, cancellationToken);
+        var entity = await dbContext.UsersGroups
+            .Include(g => g.AccessGroups)
+            .SingleOrDefaultAsync(g => g.Id == id, cancellationToken);
         if (entity == null)
             return NotFound();
 
@@ -92,16 +108,25 @@ public class UsersController(
         if (validationError != null)
             return validationError;
 
+        var accessGroups = await dbContext.AccessGroups
+            .Where(a => request.AccessGroupIds.Contains(a.Id))
+            .ToListAsync(cancellationToken);
+
         entity.Name = request.Name.Trim();
         entity.ParentId = request.ParentId;
+        entity.AccessGroups.Clear();
+        entity.AccessGroups.AddRange(accessGroups);
 
         await dbContext.SaveChangesAsync(cancellationToken);
+        await groupsManager.UpdateUsersRoles();
 
         var usersCount = await dbContext.Users
             .AsNoTracking()
             .CountAsync(u => u.GroupId == id, cancellationToken);
 
-        return Ok(new UsersGroupListItem(entity.Id, entity.Name, entity.ParentId, entity.IsBuiltIn, usersCount));
+        return Ok(new UsersGroupListItem(entity.Id, entity.Name, entity.ParentId, entity.IsBuiltIn, usersCount,
+            accessGroups.Select(a => a.Id).ToList(),
+            accessGroups.Select(a => new AccessGroupSummaryItem(a.Id, a.Name)).ToList()));
     }
 
     [HttpDelete("groups/{id:guid}")]
@@ -342,7 +367,8 @@ public class UsersController(
             .ToListAsync(cancellationToken);
 
         var childrenMap = all
-            .GroupBy(x => x.ParentId)
+            .Where(x => x.ParentId.HasValue)
+            .GroupBy(x => x.ParentId!.Value)
             .ToDictionary(g => g.Key, g => g.Select(x => x.Id).ToList());
 
         var result = new HashSet<Guid>();
@@ -387,6 +413,21 @@ public class UsersController(
                 return BadRequest("Указана несуществующая родительская группа");
         }
 
+        var accessGroupIds = request.AccessGroupIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToArray();
+
+        if (accessGroupIds.Length > 0)
+        {
+            var existingCount = await dbContext.AccessGroups
+                .AsNoTracking()
+                .CountAsync(a => accessGroupIds.Contains(a.Id), cancellationToken);
+
+            if (existingCount != accessGroupIds.Length)
+                return BadRequest("Указаны несуществующие группы доступа");
+        }
+
         return null;
     }
 
@@ -421,11 +462,18 @@ public class UsersController(
         string Name,
         Guid? ParentId,
         bool IsBuiltIn,
-        int UsersCount);
+        int UsersCount,
+        IReadOnlyList<Guid> AccessGroupIds,
+        IReadOnlyList<AccessGroupSummaryItem> AccessGroups);
+
+    public sealed record AccessGroupSummaryItem(
+        Guid Id,
+        string Name);
 
     public sealed record UpsertUsersGroupRequest(
         string Name,
-        Guid? ParentId);
+        Guid? ParentId,
+        IReadOnlyList<Guid> AccessGroupIds);
 
     public sealed record UserAccountListItem(
         Guid Id,

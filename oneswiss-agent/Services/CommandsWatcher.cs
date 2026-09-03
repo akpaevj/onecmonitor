@@ -95,9 +95,6 @@ internal class CommandsWatcher
                 case MessageType.V8ConnectionsRequest:
                     await SendV8Connections(message, _applicationLifetime.ApplicationStopping);
                     break;
-                case MessageType.V8LicensesRequest:
-                    await SendV8Licenses(message, _applicationLifetime.ApplicationStopping);
-                    break;
                 case MessageType.V8LocksRequest:
                     await SendV8Locks(message, _applicationLifetime.ApplicationStopping);
                     break;
@@ -543,22 +540,6 @@ internal class CommandsWatcher
         };
 
         await _server.SendV8Connections(message, result, cancellationToken);
-    }
-
-    private async Task SendV8Licenses(Message message, CancellationToken cancellationToken)
-    {
-        var cluster = MessagePackSerializer.Deserialize<ClusterDto>(message.Data, cancellationToken: cancellationToken);
-
-        var ragent = _v8ServicesProvider.GetActiveRagentByPort(cluster.RagentPort);
-        var ras = _rasHolder.GetActiveRasForRagent(ragent);
-        var rac = Rac.GetRacForRasService(_racLogger, ras);
-
-        var result = await rac.GetLicenses(
-            cluster.ClusterInternalId,
-            cluster.Credentials?.User ?? "",
-            cluster.Credentials?.Password ?? "");
-
-        await _server.SendV8Licenses(message, result, cancellationToken);
     }
 
     private async Task SendV8Processes(Message message, CancellationToken cancellationToken)

@@ -843,52 +843,6 @@ public class ServersAdministrationController(
         }
     }
 
-    [HttpGet("clusters/{clusterId:guid}/licenses")]
-    [Authorize(Roles = $"{Roles.ReadClusterItems},{Roles.WriteClusterItemsInfo}")]
-    public async Task<ActionResult<IReadOnlyList<V8LicenseItem>>> GetLicenses(
-        Guid clusterId,
-        CancellationToken cancellationToken = default)
-    {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
-
-        if (cluster == null)
-            return NotFound();
-
-        var connection = connectionsManager.GetAgentConnection(cluster.AgentId);
-        if (connection == null)
-            return BadRequest("Агент не подключен");
-
-        try
-        {
-            var licenses = await connection.GetV8Licenses(cluster, cancellationToken);
-            return Ok(licenses.Select(l => new V8LicenseItem(
-                l.Source,
-                l.ProcessId ?? string.Empty,
-                l.SessionId ?? string.Empty,
-                l.Host,
-                l.Port,
-                l.Pid,
-                l.FullName,
-                l.Series,
-                l.IssuedByServer,
-                l.LicenseType,
-                l.Net,
-                l.MaxUsersAll,
-                l.MaxUsersCur,
-                l.RmngrAddress,
-                l.RmngrPort,
-                l.RmngrPid,
-                l.ShortPresentation,
-                l.FullPresentation)).ToList());
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
-    }
-
     [HttpGet("clusters/{clusterId:guid}/processes/{processId}")]
     [Authorize(Roles = $"{Roles.ReadClusterItems},{Roles.WriteClusterItemsInfo}")]
     public async Task<ActionResult<V8ProcessItem>> GetProcessById(
@@ -1504,26 +1458,6 @@ public class ServersAdministrationController(
         string ServiceDataDir);
 
     public sealed record V8BinaryDataStorageItem(string Id, string Name);
-
-    public sealed record V8LicenseItem(
-        string Source,
-        string ProcessId,
-        string SessionId,
-        string Host,
-        int Port,
-        int Pid,
-        string FullName,
-        string Series,
-        bool IssuedByServer,
-        string LicenseType,
-        bool Net,
-        int MaxUsersAll,
-        int MaxUsersCur,
-        string RmngrAddress,
-        int RmngrPort,
-        int RmngrPid,
-        string ShortPresentation,
-        string FullPresentation);
 
     public sealed record V8ConnectionItem(
         string Id,

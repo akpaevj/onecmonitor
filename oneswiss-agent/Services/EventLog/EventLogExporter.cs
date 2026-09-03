@@ -1,5 +1,4 @@
 using System.Threading.Tasks.Dataflow;
-using OneSwiss.Agent.Extensions;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.EventLog;
 using OneSwiss.Common.Models;
@@ -17,15 +16,28 @@ public class EventLogExporter : IAsyncDisposable
     private readonly IHostApplicationLifetime _applicationLifetime;
     private bool _disposed;
 
-    public EventLogExporter(IHostApplicationLifetime applicationLifetime)
+    private readonly ILogger<EventLogExporter> _logger;
+
+    public EventLogExporter(IHostApplicationLifetime applicationLifetime, ILogger<EventLogExporter> logger)
     {
         _applicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
-        
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
         _timer = new Timer(5000)
         {
             AutoReset = true
         };
-        _timer.Elapsed += (_, _) => _eventsBatchBlock?.TriggerBatch();
+        _timer.Elapsed += (_, _) =>
+        {
+            try
+            {
+                _eventsBatchBlock?.TriggerBatch();
+            }
+            catch
+            {
+                // пайплайн мог быть остановлен/пересоздан одновременно со срабатыванием таймера
+            }
+        };
     }
 
     public async Task Init(IEventLogRepository repository, EventLogSettingsDto settings,
@@ -60,12 +72,29 @@ public class EventLogExporter : IAsyncDisposable
 
             _eventsBatchBlock.LinkTo(_senderBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
+            // Fault ActionBlock'а не распространяется вверх по потоку сам по себе -
+            // без этого наблюдателя продюсеры зависнут в SendAsync навсегда при ошибке записи
+            _ = ObserveSenderCompletion(_senderBlock, _eventsBatchBlock);
+
             _timer.Start();
         }
         else
         {
             _timer.Stop();
             _repository = null;
+        }
+    }
+
+    private async Task ObserveSenderCompletion(ActionBlock<EventLogItem[]> senderBlock, BatchBlock<EventLogItem> batchBlock)
+    {
+        try
+        {
+            await senderBlock.Completion;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Пайплайн экспорта журнала регистрации остановлен из-за ошибки записи");
+            ((IDataflowBlock)batchBlock).Fault(e);
         }
     }
 
@@ -104,12 +133,16 @@ public class EventLogExporter : IAsyncDisposable
         _senderBlock = null;
     }
 
-    public void Send(EventLogItem eventLogItem)
+    public async Task SendAsync(EventLogItem eventLogItem, CancellationToken cancellationToken = default)
     {
-        _timer.Reset();
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_eventsBatchBlock!.Post(eventLogItem))
-            throw new InvalidOperationException("Ошибка отправки события. Блок накопления завершен или переполнен");
+        if (_eventsBatchBlock is null)
+            throw new InvalidOperationException("EventLogExporter не инициализирован");
+
+        // При переполнении блока накопления ждем освобождения места вместо немедленного отказа
+        if (!await _eventsBatchBlock.SendAsync(eventLogItem, cancellationToken))
+            throw new InvalidOperationException("Ошибка отправки события. Блок накопления завершен");
     }
 
     public async Task<DateTime> GetLastEventDateTime(string infoBaseId, CancellationToken cancellationToken = default)

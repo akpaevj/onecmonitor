@@ -85,7 +85,7 @@ public class ClickHouseContext(
     {
         await Connect(cancellationToken);
 
-        return await _connection!.QuerySingleAsync<DateTime>($"SELECT MAX(Date) FROM {_tablePath} WHERE InfoBaseId = '{infoBaseId}'");
+        return await _connection!.QuerySingleAsync<DateTime>($"SELECT MAX(Date) FROM {_tablePath} WHERE InfoBaseId = '{EscapeValue(infoBaseId)}'");
     }
 
     public async Task WriteEvents(EventLogItem[] events, CancellationToken cancellationToken)
@@ -120,17 +120,6 @@ public class ClickHouseContext(
             "SessionDataSeparation",
             "SessionDataSeparationPresentation"
         ];
-        using var bulk = new ClickHouseBulkCopy(_connection)
-        {
-            MaxDegreeOfParallelism = Environment.ProcessorCount,
-            BatchSize = events.Length,
-            ColumnNames =
-            readOnlyCollection,
-            DestinationTableName = _tablePath
-        };
-
-        await bulk.InitAsync();
-
         var items = events.Select(c => new object[]
         {
             c.Id,
@@ -159,9 +148,33 @@ public class ClickHouseContext(
             c.SyncPort,
             c.SessionDataSeparation,
             c.SessionDataSeparationPresentation
-        });
+        }).ToArray();
 
-        await bulk.WriteToServerAsync(items, cancellationToken);
+        // Гасим транзиентные сбои записи (сеть/недоступность ClickHouse) простым retry с backoff,
+        // чтобы не превращать их в фатальный Fault всего пайплайна экспорта
+        var retryDelays = new[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(9) };
+
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                using var bulk = new ClickHouseBulkCopy(_connection)
+                {
+                    MaxDegreeOfParallelism = Environment.ProcessorCount,
+                    BatchSize = events.Length,
+                    ColumnNames = readOnlyCollection,
+                    DestinationTableName = _tablePath
+                };
+
+                await bulk.InitAsync();
+                await bulk.WriteToServerAsync(items, cancellationToken);
+                return;
+            }
+            catch (Exception ex) when (attempt < retryDelays.Length && ex is not OperationCanceledException)
+            {
+                await Task.Delay(retryDelays[attempt], cancellationToken);
+            }
+        }
     }
     
     public async Task DeleteInfoBaseData(string infoBaseId, CancellationToken cancellationToken = default)

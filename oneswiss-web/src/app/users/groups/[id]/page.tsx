@@ -11,11 +11,14 @@ import {
   CrudFormError,
   CrudFormLoadingCard,
   formActionsClassName,
+  formCheckboxClassName,
+  formCheckboxRowClassName,
   formControlClassName,
   formFieldClassName,
   formLabelClassName,
 } from "@/components/forms/crud-form";
 import { ApiError } from "@/lib/api/client";
+import { getAccessGroups, type AccessGroupListItem } from "@/lib/api/access-groups";
 import {
   getUsersGroup,
   getUsersGroups,
@@ -33,6 +36,7 @@ type PageProps = {
 const initialForm: UpsertUsersGroupRequest = {
   name: "",
   parentId: null,
+  accessGroupIds: [],
 };
 
 export default function UsersGroupEditPage({ params }: PageProps) {
@@ -40,6 +44,7 @@ export default function UsersGroupEditPage({ params }: PageProps) {
   const [id, setId] = useState<string | null>(null);
   const [form, setForm] = useState<UpsertUsersGroupRequest>(initialForm);
   const [items, setItems] = useState<UsersGroupListItem[]>([]);
+  const [accessGroups, setAccessGroups] = useState<AccessGroupListItem[]>([]);
   const [isBuiltIn, setIsBuiltIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -57,12 +62,14 @@ export default function UsersGroupEditPage({ params }: PageProps) {
     setError(null);
 
     try {
-      const [item, groups] = await Promise.all([getUsersGroup(id), getUsersGroups()]);
+      const [item, groups, accessGroupsData] = await Promise.all([getUsersGroup(id), getUsersGroups(), getAccessGroups()]);
       setItems(groups);
+      setAccessGroups(accessGroupsData);
       setIsBuiltIn(item.isBuiltIn);
       setForm({
         name: item.name,
         parentId: item.parentId,
+        accessGroupIds: [...item.accessGroupIds],
       });
     } catch {
       setError("Не удалось загрузить группу пользователей");
@@ -80,6 +87,15 @@ export default function UsersGroupEditPage({ params }: PageProps) {
   }, [loadData]);
 
   const parentOptions = useMemo(() => items.filter((item) => !id || item.id !== id), [items, id]);
+
+  const toggleAccessGroup = (accessGroupId: string, checked: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      accessGroupIds: checked
+        ? Array.from(new Set([...prev.accessGroupIds, accessGroupId]))
+        : prev.accessGroupIds.filter((idValue) => idValue !== accessGroupId),
+    }));
+  };
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -139,6 +155,27 @@ export default function UsersGroupEditPage({ params }: PageProps) {
               </option>
             ))}
           </select>
+        </div>
+        <div className="space-y-2">
+          <div className={formLabelClassName}>Группы доступа</div>
+          <div className="max-h-72 space-y-2 overflow-auto rounded-md border p-2">
+            {accessGroups.length === 0 ? (
+              <div className="text-sm text-muted-foreground">Нет доступных групп доступа</div>
+            ) : (
+              accessGroups.map((accessGroup) => (
+                <label key={accessGroup.id} className={formCheckboxRowClassName}>
+                  <input
+                    className={formCheckboxClassName}
+                    type="checkbox"
+                    checked={form.accessGroupIds.includes(accessGroup.id)}
+                    onChange={(event) => toggleAccessGroup(accessGroup.id, event.target.checked)}
+                    disabled={isBuiltIn}
+                  />
+                  <span>{accessGroup.name}</span>
+                </label>
+              ))
+            )}
+          </div>
         </div>
         {isBuiltIn ? <div className="text-sm text-muted-foreground">Системную группу редактировать нельзя</div> : null}
         <CrudFormError error={error} />

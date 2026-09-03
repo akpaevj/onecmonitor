@@ -19,6 +19,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 
     public DbSet<Agent> Agents { get; set; }
     public DbSet<AgentClient> AgentClients { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<LogTemplate> LogTemplates { get; set; }
     public DbSet<TechLogSeance> TechLogSeances { get; set; }
     public DbSet<TechLogFilter> TechLogFilters { get; set; }

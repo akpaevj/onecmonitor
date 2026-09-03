@@ -102,27 +102,6 @@ export type V8ProcessItem = {
   reserve: boolean;
 };
 
-export type V8LicenseItem = {
-  source: string;
-  processId: string;
-  sessionId: string;
-  host: string;
-  port: number;
-  pid: number;
-  fullName: string;
-  series: string;
-  issuedByServer: boolean;
-  licenseType: string;
-  net: boolean;
-  maxUsersAll: number;
-  maxUsersCur: number;
-  rmngrAddress: string;
-  rmngrPort: number;
-  rmngrPid: number;
-  shortPresentation: string;
-  fullPresentation: string;
-};
-
 export type V8ConnectionItem = {
   id: string;
   connId: number;
@@ -489,10 +468,6 @@ export function getClusterServerServiceSettings(clusterId: string, serverId: str
 
 export function getInfoBaseBinaryDataStorages(infoBaseId: string) {
   return apiGet<V8BinaryDataStorageItem[]>(`/api/serversadministration/infobases/${infoBaseId}/binarydatastorages`);
-}
-
-export function getClusterLicenses(clusterId: string) {
-  return apiGet<V8LicenseItem[]>(`/api/serversadministration/clusters/${clusterId}/licenses`);
 }
 
 export function getClusterProcesses(clusterId: string) {

@@ -10,11 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ApiError } from "@/lib/api/client";
 import {
   closeClusterSessions,
-  getClusterLicenses,
   getClusterSessions,
   getServersAdministrationOverview,
   type InfoBaseOverviewItem,
-  type V8LicenseItem,
   type V8SessionItem,
 } from "@/lib/api/servers-administration";
 import { cn } from "@/lib/utils";
@@ -27,10 +25,7 @@ function formatDate(value: string) {
   return new Date(value).toLocaleString("ru-RU");
 }
 
-type SessionRow = V8SessionItem & { licensePresentation: string };
-
-const COLUMN_FILTER_DEFS: ColumnFilterDef<SessionRow>[] = [
-  { key: "licensePresentation", label: "Лицензия", type: "text" },
+const COLUMN_FILTER_DEFS: ColumnFilterDef<V8SessionItem>[] = [
   { key: "infoBaseName", label: "Инф. база", type: "text" },
   { key: "sessionId", label: "Номер сеанса", type: "text" },
   { key: "userName", label: "Пользователь", type: "text" },
@@ -91,7 +86,6 @@ export default function ClusterSessionsPage({ params }: ClusterSessionsPageProps
   const [selectedInfoBaseId, setSelectedInfoBaseId] = useState<string>(() => searchParams.get("infoBaseId") ?? "");
 
   const [items, setItems] = useState<V8SessionItem[]>([]);
-  const [licenses, setLicenses] = useState<V8LicenseItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -99,27 +93,8 @@ export default function ClusterSessionsPage({ params }: ClusterSessionsPageProps
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const licenseBySessionId = useMemo(() => {
-    const map = new Map<string, V8LicenseItem>();
-    for (const license of licenses) {
-      if (license.source === "session" && license.sessionId) {
-        map.set(license.sessionId, license);
-      }
-    }
-    return map;
-  }, [licenses]);
-
-  const rows = useMemo<SessionRow[]>(
-    () =>
-      items.map((item) => ({
-        ...item,
-        licensePresentation: licenseBySessionId.get(item.id)?.shortPresentation ?? "",
-      })),
-    [items, licenseBySessionId]
-  );
-
   const columnFilters = useColumnFilters(COLUMN_FILTER_DEFS);
-  const filteredItems = useMemo(() => columnFilters.applyTo(rows), [columnFilters, rows]);
+  const filteredItems = useMemo(() => columnFilters.applyTo(items), [columnFilters, items]);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,12 +128,8 @@ export default function ClusterSessionsPage({ params }: ClusterSessionsPageProps
 
   const loadSessions = useCallback(
     async (id: string) => {
-      const [data, licensesData] = await Promise.all([
-        getClusterSessions(id, selectedInfoBaseId || undefined),
-        getClusterLicenses(id),
-      ]);
+      const data = await getClusterSessions(id, selectedInfoBaseId || undefined);
       setItems(data);
-      setLicenses(licensesData);
       setSelectedIds([]);
     },
     [selectedInfoBaseId]
@@ -312,7 +283,6 @@ export default function ClusterSessionsPage({ params }: ClusterSessionsPageProps
                 <th className="px-3 py-2 font-medium">Инф. база</th>
                 <th className="px-3 py-2 font-medium">Номер сеанса</th>
                 <th className="px-3 py-2 font-medium">Пользователь</th>
-                <th className="px-3 py-2 font-medium">Лицензия</th>
                 <th className="px-3 py-2 font-medium">Хост</th>
                 <th className="px-3 py-2 font-medium">Приложение</th>
                 <th className="px-3 py-2 font-medium">Язык</th>
@@ -363,13 +333,13 @@ export default function ClusterSessionsPage({ params }: ClusterSessionsPageProps
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td className="px-3 py-2 text-muted-foreground" colSpan={50}>
+                  <td className="px-3 py-2 text-muted-foreground" colSpan={49}>
                     Загрузка...
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td className="px-3 py-2 text-muted-foreground" colSpan={50}>
+                  <td className="px-3 py-2 text-muted-foreground" colSpan={49}>
                     Сеансы не найдены
                   </td>
                 </tr>
@@ -386,7 +356,6 @@ export default function ClusterSessionsPage({ params }: ClusterSessionsPageProps
                     <td className="px-3 py-2">{item.infoBaseName}</td>
                     <td className="px-3 py-2">{item.sessionId}</td>
                     <td className="px-3 py-2">{item.userName}</td>
-                    <td className="px-3 py-2">{item.licensePresentation || "—"}</td>
                     <td className="px-3 py-2">{item.host}</td>
                     <td className="px-3 py-2">{item.appId}</td>
                     <td className="px-3 py-2">{item.locale}</td>

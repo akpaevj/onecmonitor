@@ -99,7 +99,7 @@ export default function UserEditPage({ params }: PageProps) {
         password: form.password?.trim() ? form.password : null,
       });
 
-      router.push("/users/accounts");
+      router.push("/users");
       router.refresh();
       return;
     } catch (e) {
@@ -119,7 +119,7 @@ export default function UserEditPage({ params }: PageProps) {
       title="Редактирование учетной записи пользователя"
       description={form.userName || id || "—"}
       icon={User}
-      backHref="/users/accounts"
+      backHref="/users"
     >
       <form className="space-y-3" onSubmit={(event) => void onSubmit(event)}>
         <div className={formFieldClassName}>

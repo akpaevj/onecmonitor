@@ -114,11 +114,6 @@ public class OneSwissConnection(
         await Send(MessageType.V8Connections, items, request, cancellationToken);
     }
 
-    public async Task SendV8Licenses(Message request, List<V8License> items, CancellationToken cancellationToken)
-    {
-        await Send(MessageType.V8Licenses, items, request, cancellationToken);
-    }
-
     public async Task SendV8Locks(Message request, List<V8Lock> items, CancellationToken cancellationToken)
     {
         await Send(MessageType.V8Locks, items, request, cancellationToken);

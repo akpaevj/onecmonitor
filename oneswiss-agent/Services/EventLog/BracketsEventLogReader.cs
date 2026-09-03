@@ -12,15 +12,17 @@ public class BracketsEventLogReader(
     : IEventLogReader
 {
     private CancellationTokenSource? _cts;
+    private Task? _runTask;
     private readonly LgfDataProvider _lgfDataProvider = new(Path.Combine(infoBaseInfo.LogPath, "1Cv8.lgf"));
+    private readonly HashSet<string> _invalidLgpFileNames = [];
 
     public event EventHandler? Stopped;
 
     public void Start(DateTime startDateTime, CancellationToken cancellationToken)
     {
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        
-        Task.Run(async () =>
+
+        _runTask = Task.Run(async () =>
         {
             try
             {
@@ -46,15 +48,15 @@ public class BracketsEventLogReader(
                                 foreach (var eventLogItem in stream)
                                 {
                                     eventLogItem.TtlDate = DateTime.UtcNow.AddDays(infoBaseInfo.Ttl);
-                                    exporter.Send(eventLogItem);
+                                    await exporter.SendAsync(eventLogItem, _cts.Token);
                                 }
 
-                                if (NewLgpFilesExist(currentLgpFileInfo!))
+                                if (TryGetNextLgpFileInfo(currentLgpFileInfo!, out var nextLgpFileInfo))
                                 {
-                                    currentLgpFileInfo = GetNextLgpFileInfo(currentLgpFileInfo!);
+                                    currentLgpFileInfo = nextLgpFileInfo;
                                     break;
                                 }
-                        
+
                                 // Ждем немного и пытаемся читать данные с этого же файла
                                 await Task.Delay(1000, _cts.Token);
                             }
@@ -64,67 +66,90 @@ public class BracketsEventLogReader(
                 catch (OperationCanceledException){}
                 catch (Exception e)
                 {
+                    // Штатная остановка (смена настроек/завершение работы) может привести к ошибке
+                    // отправки события уже после того, как она была инициирована - это не ошибка чтения
+                    if (_cts.IsCancellationRequested) return;
+
                     throw new Exception($"Ошибка разбора файла журнала регистрации - {currentLgpFileInfo?.Name}", e);
                 }
             }
             catch (OperationCanceledException){}
             catch (Exception e)
             {
+                if (_cts.IsCancellationRequested) return;
+
                 logger.LogError(e, "Ошибка чтения журнала регистрации - {Name}", infoBaseInfo.Name);
-                await _cts.CancelAsync();
+
+                try
+                {
+                    await _cts.CancelAsync();
+                }
+                catch (ObjectDisposedException) { }
+
+                Stopped?.Invoke(this, EventArgs.Empty);
             }
-            
+
         }, _cts.Token);
     }
 
     private (DateTime DateTime, FileInfo FileInfo)[] GetLgpFiles()
     {
         var logDirInfo = new DirectoryInfo(infoBaseInfo.LogPath);
-        
-        return logDirInfo
-            .GetFiles("*.lgp")
-            .Select(c => (DateTime: DateTime.ParseExact(Path.GetFileNameWithoutExtension(c.Name), "yyyyMMddHHmmss", null), FileInfo: c))
-            .OrderBy(c => c.DateTime)
-            .ToArray();
+
+        var result = new List<(DateTime DateTime, FileInfo FileInfo)>();
+
+        foreach (var file in logDirInfo.GetFiles("*.lgp"))
+        {
+            if (DateTime.TryParseExact(Path.GetFileNameWithoutExtension(file.Name), "yyyyMMddHHmmss",
+                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateTime))
+            {
+                result.Add((dateTime, file));
+            }
+            else if (_invalidLgpFileNames.Add(file.Name))
+            {
+                logger.LogWarning("Не удалось разобрать имя файла журнала регистрации - {Name}, файл пропущен",
+                    file.Name);
+            }
+        }
+
+        return result.OrderBy(c => c.DateTime).ToArray();
     }
-    
-    private bool NewLgpFilesExist(FileInfo currentLgpFileInfo)
+
+    private bool TryGetNextLgpFileInfo(FileInfo currentLgpFileInfo, out FileInfo? nextLgpFileInfo)
     {
-        var files = GetLgpFiles().ToList();
-        var currentFileIndex = files.FindIndex(c => c.FileInfo.FullName == currentLgpFileInfo.FullName);
-        
+        var files = GetLgpFiles();
+        var currentFileIndex = Array.FindIndex(files, c => c.FileInfo.FullName == currentLgpFileInfo.FullName);
+
         if (currentFileIndex < 0)
-            return files.Count > 0;
+        {
+            nextLgpFileInfo = files.Length > 0 ? files[0].FileInfo : null;
+            return files.Length > 0;
+        }
 
-        var nextIndex = ++currentFileIndex;
-        return nextIndex < files.Count;
-    }
+        var nextIndex = currentFileIndex + 1;
+        if (nextIndex >= files.Length)
+        {
+            nextLgpFileInfo = null;
+            return false;
+        }
 
-    private FileInfo? GetNextLgpFileInfo(FileInfo currentLgpFileInfo)
-    {
-        var files = GetLgpFiles().ToList();
-        var currentFileIndex = files.FindIndex(c => c.FileInfo.FullName == currentLgpFileInfo.FullName);
-        
-        if (currentFileIndex < 0)
-            return files.FirstOrDefault().FileInfo;
-
-        var nextIndex = ++currentFileIndex;
-        return nextIndex >= files.Count ? null : files[nextIndex].FileInfo;
+        nextLgpFileInfo = files[nextIndex].FileInfo;
+        return true;
     }
 
     private FileInfo? GetLgpFileInfo(DateTime dateTime)
     {
         var files = GetLgpFiles();
-        
+
         // Берем первый файл с меньшей датой
         var firstFile = files
             .OrderByDescending(c => c.DateTime)
             .FirstOrDefault(c => c.DateTime <= dateTime)
             .FileInfo;
-        
+
         if (firstFile != null)
             return firstFile;
-        
+
         // Если текущий файл не нашелся, то просто берем самый старый
         return files
             .FirstOrDefault(c => c.DateTime >= dateTime).FileInfo;
@@ -133,6 +158,16 @@ public class BracketsEventLogReader(
     public void Dispose()
     {
         _cts?.Cancel();
+
+        try
+        {
+            _runTask?.Wait(TimeSpan.FromSeconds(5));
+        }
+        catch
+        {
+            // задача уже завершается по токену отмены, ошибки её ожидания не важны
+        }
+
         _cts?.Dispose();
         _lgfDataProvider.Dispose();
     }

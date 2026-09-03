@@ -1,5 +1,6 @@
 export const ACCESS_TOKEN_STORAGE_KEY = "oneswiss.auth.accessToken";
 export const ACCESS_TOKEN_EXPIRES_AT_STORAGE_KEY = "oneswiss.auth.expiresAtUtc";
+export const REFRESH_TOKEN_STORAGE_KEY = "oneswiss.auth.refreshToken";
 
 export type AuthSessionUser = {
   id: string;
@@ -8,13 +9,14 @@ export type AuthSessionUser = {
   roles: string[];
 };
 
-export function setAccessToken(token: string, expiresAtUtc: string) {
+export function setSession(accessToken: string, expiresAtUtc: string, refreshToken: string) {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+  window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, accessToken);
   window.localStorage.setItem(ACCESS_TOKEN_EXPIRES_AT_STORAGE_KEY, expiresAtUtc);
+  window.localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
 }
 
 export function getAccessToken(): string | null {
@@ -37,8 +39,15 @@ export function getAccessToken(): string | null {
     return token;
   }
 
-  clearAccessToken();
   return null;
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
 }
 
 export function clearAccessToken() {
@@ -48,4 +57,5 @@ export function clearAccessToken() {
 
   window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   window.localStorage.removeItem(ACCESS_TOKEN_EXPIRES_AT_STORAGE_KEY);
+  window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
 }

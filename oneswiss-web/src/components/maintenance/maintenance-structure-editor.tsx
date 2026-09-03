@@ -557,7 +557,7 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
 
           {message ? <div className="text-sm text-emerald-600 dark:text-emerald-500">{message}</div> : null}
 
-          <div className={`grid gap-3 ${isTemplateMode ? "lg:grid-cols-1" : "lg:grid-cols-[1fr_1fr]"}`}>
+          <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
             <div className="space-y-1">
               <label className="text-sm">Наименование</label>
               <input
@@ -566,69 +566,67 @@ export function MaintenanceStructureEditor({ params, mode }: MaintenanceStructur
                 onChange={(event) => updateTemplate((current) => ({ ...current, description: event.target.value }))}
               />
             </div>
-            {isTemplateMode ? null : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <label className="text-sm">Информационные базы</label>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                    Выбрано: {selectedInfoBaseIds.length}
-                  </span>
-                </div>
-
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    className="h-9 w-full rounded-md border bg-background pl-9 pr-3 text-sm"
-                    placeholder="Поиск по названию базы"
-                    value={infoBaseSearch}
-                    onChange={(event) => setInfoBaseSearch(event.target.value)}
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedInfoBaseIds(filteredInfoBases.map((item) => item.id))}
-                  >
-                    Выбрать найденные
-                  </Button>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedInfoBaseIds([])}>
-                    Очистить
-                  </Button>
-                </div>
-
-                <div className="max-h-48 overflow-auto rounded-md border bg-background p-2 text-sm">
-                  {filteredInfoBases.length === 0 ? (
-                    <div className="px-1 py-2 text-xs text-muted-foreground">Ничего не найдено</div>
-                  ) : (
-                    <div className="space-y-1">
-                      {filteredInfoBases.map((item) => {
-                        const checked = selectedInfoBaseIds.includes(item.id);
-                        return (
-                          <label
-                            key={item.id}
-                            className="flex items-center gap-2 rounded px-2 py-1.5 transition-colors hover:bg-muted/60"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(event) => {
-                                setSelectedInfoBaseIds((current) =>
-                                  event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id)
-                                );
-                              }}
-                            />
-                            <span className="truncate">{item.name}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-sm">Информационные базы</label>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  Выбрано: {selectedInfoBaseIds.length}
+                </span>
               </div>
-            )}
+
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  className="h-9 w-full rounded-md border bg-background pl-9 pr-3 text-sm"
+                  placeholder="Поиск по названию базы"
+                  value={infoBaseSearch}
+                  onChange={(event) => setInfoBaseSearch(event.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedInfoBaseIds(filteredInfoBases.map((item) => item.id))}
+                >
+                  Выбрать найденные
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedInfoBaseIds([])}>
+                  Очистить
+                </Button>
+              </div>
+
+              <div className="max-h-48 overflow-auto rounded-md border bg-background p-2 text-sm">
+                {filteredInfoBases.length === 0 ? (
+                  <div className="px-1 py-2 text-xs text-muted-foreground">Ничего не найдено</div>
+                ) : (
+                  <div className="space-y-1">
+                    {filteredInfoBases.map((item) => {
+                      const checked = selectedInfoBaseIds.includes(item.id);
+                      return (
+                        <label
+                          key={item.id}
+                          className="flex items-center gap-2 rounded px-2 py-1.5 transition-colors hover:bg-muted/60"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(event) => {
+                              setSelectedInfoBaseIds((current) =>
+                                event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id)
+                              );
+                            }}
+                          />
+                          <span className="truncate">{item.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

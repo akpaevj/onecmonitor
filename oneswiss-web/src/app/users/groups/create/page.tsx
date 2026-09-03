@@ -10,11 +10,14 @@ import {
   CrudFormError,
   CrudFormLoadingCard,
   formActionsClassName,
+  formCheckboxClassName,
+  formCheckboxRowClassName,
   formControlClassName,
   formFieldClassName,
   formLabelClassName,
 } from "@/components/forms/crud-form";
 import { ApiError } from "@/lib/api/client";
+import { getAccessGroups, type AccessGroupListItem } from "@/lib/api/access-groups";
 import {
   createUsersGroup,
   getUsersGroups,
@@ -25,11 +28,13 @@ import {
 const initialForm: UpsertUsersGroupRequest = {
   name: "",
   parentId: null,
+  accessGroupIds: [],
 };
 
 export default function UsersGroupCreatePage() {
   const router = useRouter();
   const [items, setItems] = useState<UsersGroupListItem[]>([]);
+  const [accessGroups, setAccessGroups] = useState<AccessGroupListItem[]>([]);
   const [form, setForm] = useState<UpsertUsersGroupRequest>(initialForm);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -43,9 +48,10 @@ export default function UsersGroupCreatePage() {
       setError(null);
 
       try {
-        const data = await getUsersGroups();
+        const [data, accessGroupsData] = await Promise.all([getUsersGroups(), getAccessGroups()]);
         if (!cancelled) {
           setItems(data);
+          setAccessGroups(accessGroupsData);
         }
       } catch {
         if (!cancelled) {
@@ -64,6 +70,15 @@ export default function UsersGroupCreatePage() {
       cancelled = true;
     };
   }, []);
+
+  const toggleAccessGroup = (accessGroupId: string, checked: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      accessGroupIds: checked
+        ? Array.from(new Set([...prev.accessGroupIds, accessGroupId]))
+        : prev.accessGroupIds.filter((id) => id !== accessGroupId),
+    }));
+  };
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -121,6 +136,26 @@ export default function UsersGroupCreatePage() {
               </option>
             ))}
           </select>
+        </div>
+        <div className="space-y-2">
+          <div className={formLabelClassName}>Группы доступа</div>
+          <div className="max-h-72 space-y-2 overflow-auto rounded-md border p-2">
+            {accessGroups.length === 0 ? (
+              <div className="text-sm text-muted-foreground">Нет доступных групп доступа</div>
+            ) : (
+              accessGroups.map((accessGroup) => (
+                <label key={accessGroup.id} className={formCheckboxRowClassName}>
+                  <input
+                    className={formCheckboxClassName}
+                    type="checkbox"
+                    checked={form.accessGroupIds.includes(accessGroup.id)}
+                    onChange={(event) => toggleAccessGroup(accessGroup.id, event.target.checked)}
+                  />
+                  <span>{accessGroup.name}</span>
+                </label>
+              ))
+            )}
+          </div>
         </div>
         <CrudFormError error={error} />
         <div className={formActionsClassName}>

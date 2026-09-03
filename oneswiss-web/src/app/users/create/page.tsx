@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +31,17 @@ const initialForm: UpsertUserAccountRequest = {
 };
 
 export default function UserCreatePage() {
+  return (
+    <Suspense fallback={<CrudFormLoadingCard title="Новый пользователь" />}>
+      <UserCreateForm />
+    </Suspense>
+  );
+}
+
+function UserCreateForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedGroupId = searchParams.get("groupId");
   const [groups, setGroups] = useState<UsersGroupListItem[]>([]);
   const [form, setForm] = useState<UpsertUserAccountRequest>(initialForm);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,7 +59,10 @@ export default function UserCreatePage() {
         const groupsData = await getUsersGroups();
         if (!cancelled) {
           setGroups(groupsData);
-          setForm((prev) => ({ ...prev, groupId: prev.groupId || groupsData[0]?.id || "" }));
+          const preferredGroupId = requestedGroupId && groupsData.some((g) => g.id === requestedGroupId)
+            ? requestedGroupId
+            : groupsData[0]?.id ?? "";
+          setForm((prev) => ({ ...prev, groupId: prev.groupId || preferredGroupId }));
         }
       } catch {
         if (!cancelled) {
@@ -84,7 +97,7 @@ export default function UserCreatePage() {
         password: form.password?.trim() ? form.password : null,
       });
 
-      router.push("/users/accounts");
+      router.push("/users");
       router.refresh();
     } catch (e) {
       if (e instanceof ApiError && typeof e.details === "string") {
@@ -106,7 +119,7 @@ export default function UserCreatePage() {
       title="Создание учетной записи пользователя"
       description="Новая учетная запись пользователя"
       icon={User}
-      backHref="/users/accounts"
+      backHref="/users"
     >
       <form className="space-y-3" onSubmit={(event) => void onSubmit(event)}>
         <div className={formFieldClassName}>
