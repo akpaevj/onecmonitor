@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Bot, Check, Copy, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Bot, Check, Copy, Link2, Plus, Trash2 } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   type AgentClientListItem,
 } from "@/lib/api/agent-clients";
 import { ApiError } from "@/lib/api/client";
+import { getMcpClients, revokeMcpClient, type McpClientListItem } from "@/lib/api/mcp-clients";
 
 function formatDate(value: string | null) {
   if (!value) return "—";
@@ -26,6 +27,10 @@ export default function AgentClientsPage() {
   const [name, setName] = useState("");
   const [newSecret, setNewSecret] = useState<{ clientId: string; clientSecret: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const [mcpClients, setMcpClients] = useState<McpClientListItem[]>([]);
+  const [isMcpLoading, setIsMcpLoading] = useState(true);
+  const [mcpError, setMcpError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -48,6 +53,46 @@ export default function AgentClientsPage() {
 
     return () => clearTimeout(timeoutId);
   }, [loadData]);
+
+  const loadMcpClients = useCallback(async () => {
+    setIsMcpLoading(true);
+    setMcpError(null);
+
+    try {
+      const data = await getMcpClients();
+      setMcpClients(data);
+    } catch {
+      setMcpError("Не удалось загрузить MCP-клиентов");
+    } finally {
+      setIsMcpLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      void loadMcpClients();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [loadMcpClients]);
+
+  const onRevokeMcpClient = async (item: McpClientListItem) => {
+    const shouldRevoke = window.confirm(
+      `Отозвать доступ клиента "${item.clientName ?? item.id}"? Все его активные сессии будут завершены.`
+    );
+    if (!shouldRevoke) {
+      return;
+    }
+
+    setMcpError(null);
+
+    try {
+      await revokeMcpClient(item.id);
+      await loadMcpClients();
+    } catch {
+      setMcpError("Не удалось отозвать доступ клиента");
+    }
+  };
 
   const onCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -116,109 +161,181 @@ export default function AgentClientsPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-5 w-5" />
-          Секреты агентов
-        </CardTitle>
-        <CardDescription>
-          Учётные данные (client_id/client_secret) для аутентификации агентов по протоколу OAuth2 client_credentials.
-          Указываются в конфигурации агента как Auth:ClientId/Auth:ClientSecret,
-          Auth:TokensEndpoint — адрес этого сервера, {"{адрес сервера}"}/api/auth/token. Всего: {items.length}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error ? (
-          <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            <AlertTriangle className="h-4 w-4" />
-            {error}
-          </div>
-        ) : null}
-
-        {newSecret ? (
-          <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-sm">
-            <div className="font-medium">
-              Секрет клиента показывается только сейчас — сохраните его, повторно он недоступен.
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5" />
+            Секреты агентов
+          </CardTitle>
+          <CardDescription>
+            Учётные данные (client_id/client_secret) для аутентификации агентов по протоколу OAuth2 client_credentials.
+            Указываются в конфигурации агента как Auth:ClientId/Auth:ClientSecret,
+            Auth:TokensEndpoint — адрес этого сервера, {"{адрес сервера}"}/api/auth/token. Всего: {items.length}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {error ? (
+            <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              {error}
             </div>
-            <div className="grid gap-1">
-              <div>
-                <span className="text-muted-foreground">Client ID: </span>
-                <span className="font-mono">{newSecret.clientId}</span>
+          ) : null}
+
+          {newSecret ? (
+            <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-sm">
+              <div className="font-medium">
+                Секрет клиента показывается только сейчас — сохраните его, повторно он недоступен.
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Client Secret: </span>
-                <span className="font-mono break-all">{newSecret.clientSecret}</span>
+              <div className="grid gap-1">
+                <div>
+                  <span className="text-muted-foreground">Client ID: </span>
+                  <span className="font-mono">{newSecret.clientId}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Client Secret: </span>
+                  <span className="font-mono break-all">{newSecret.clientSecret}</span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => void onCopySecret()}>
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? "Скопировано" : "Скопировать секрет"}
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setNewSecret(null)}>
+                  Закрыть
+                </Button>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => void onCopySecret()}>
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Скопировано" : "Скопировать секрет"}
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => setNewSecret(null)}>
-                Закрыть
-              </Button>
+          ) : null}
+
+          <form className="flex flex-wrap items-end gap-2" onSubmit={(event) => void onCreate(event)}>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor="agent-client-name">
+                Наименование
+              </label>
+              <input
+                id="agent-client-name"
+                className="w-64 rounded-md border bg-background px-3 py-2 text-sm"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Например, «Агенты продакшена»"
+              />
             </div>
-          </div>
-        ) : null}
+            <Button type="submit" disabled={isSaving}>
+              <Plus className="h-4 w-4" />
+              Создать
+            </Button>
+          </form>
 
-        <form className="flex flex-wrap items-end gap-2" onSubmit={(event) => void onCreate(event)}>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium" htmlFor="agent-client-name">
-              Наименование
-            </label>
-            <input
-              id="agent-client-name"
-              className="w-64 rounded-md border bg-background px-3 py-2 text-sm"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Например, «Агенты продакшена»"
-            />
-          </div>
-          <Button type="submit" disabled={isSaving}>
-            <Plus className="h-4 w-4" />
-            Создать
-          </Button>
-        </form>
-
-        <div className="max-h-[65vh] overflow-auto rounded-md border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left">
-              <tr>
-                <th className="px-3 py-2 font-medium">Наименование</th>
-                <th className="px-3 py-2 font-medium">Client ID</th>
-                <th className="px-3 py-2 font-medium">Создан</th>
-                <th className="px-3 py-2 font-medium">Последнее использование</th>
-                <th className="px-3 py-2 font-medium">Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.length === 0 ? (
+          <div className="max-h-[65vh] overflow-auto rounded-md border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-left">
                 <tr>
-                  <td className="px-3 py-2 text-muted-foreground" colSpan={5}>
-                    Секреты не созданы
-                  </td>
+                  <th className="px-3 py-2 font-medium">Наименование</th>
+                  <th className="px-3 py-2 font-medium">Client ID</th>
+                  <th className="px-3 py-2 font-medium">Создан</th>
+                  <th className="px-3 py-2 font-medium">Последнее использование</th>
+                  <th className="px-3 py-2 font-medium">Действия</th>
                 </tr>
-              ) : (
-                items.map((item) => (
-                  <tr key={item.id} className="border-t">
-                    <td className="px-3 py-2">{item.name}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{item.id}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDate(item.createdAt)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDate(item.lastUsedAt)}</td>
-                    <td className="px-3 py-2">
-                      <Button type="button" variant="outline" size="sm" onClick={() => void onDelete(item)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+              </thead>
+              <tbody>
+                {items.length === 0 ? (
+                  <tr>
+                    <td className="px-3 py-2 text-muted-foreground" colSpan={5}>
+                      Секреты не созданы
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+                ) : (
+                  items.map((item) => (
+                    <tr key={item.id} className="border-t">
+                      <td className="px-3 py-2">{item.name}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{item.id}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDate(item.createdAt)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDate(item.lastUsedAt)}</td>
+                      <td className="px-3 py-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => void onDelete(item)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="h-5 w-5" />
+            MCP-клиенты
+          </CardTitle>
+          <CardDescription>
+            Клиенты, зарегистрированные MCP-коннекторами (AI-ассистентами) через динамическую регистрацию. Всего:{" "}
+            {mcpClients.length}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {mcpError ? (
+            <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              {mcpError}
+            </div>
+          ) : null}
+
+          <div className="max-h-[65vh] overflow-auto rounded-md border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-left">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Клиент</th>
+                  <th className="px-3 py-2 font-medium">Redirect URI</th>
+                  <th className="px-3 py-2 font-medium">Создан</th>
+                  <th className="px-3 py-2 font-medium">Активных сессий</th>
+                  <th className="px-3 py-2 font-medium">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isMcpLoading ? (
+                  <tr>
+                    <td className="px-3 py-2 text-muted-foreground" colSpan={5}>
+                      Загрузка...
+                    </td>
+                  </tr>
+                ) : mcpClients.length === 0 ? (
+                  <tr>
+                    <td className="px-3 py-2 text-muted-foreground" colSpan={5}>
+                      MCP-клиенты не зарегистрированы
+                    </td>
+                  </tr>
+                ) : (
+                  mcpClients.map((item) => (
+                    <tr key={item.id} className="border-t">
+                      <td className="px-3 py-2">
+                        <div>{item.clientName ?? "—"}</div>
+                        <div className="font-mono text-xs text-muted-foreground">{item.id}</div>
+                      </td>
+                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
+                        {item.redirectUris.join(", ") || "—"}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDate(item.createdAtUtc)}</td>
+                      <td className="px-3 py-2">{item.activeSessionsCount}</td>
+                      <td className="px-3 py-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => void onRevokeMcpClient(item)}>
+                          <Trash2 className="h-4 w-4" />
+                          Отозвать
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

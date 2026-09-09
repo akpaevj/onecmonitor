@@ -39,6 +39,24 @@ public static class AuthenticationBuilder
             });
 
         authBuilder.AddIdentityCookies();
+
+        builder.Services.ConfigureApplicationCookie(options =>
+        {
+            options.Events.OnRedirectToLogin = context =>
+            {
+                var baseUrl = $"{context.Request.Scheme}://{context.Request.Host}";
+                context.Response.Headers.WWWAuthenticate =
+                    $"Bearer resource_metadata=\"{baseUrl}/.well-known/oauth-protected-resource\"";
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            };
+        });
+
         authBuilder.AddJwtBearer(opt =>
         {
             var signingKey = jwtSection.GetValue<string>("SigningKey");

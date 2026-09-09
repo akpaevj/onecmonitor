@@ -13,6 +13,7 @@ public class EventLogExportManager(
     EventLogExporter exporter,
     ILogger<IEventLogReader> logReaderLogger,
     MonitorQueue<EventLogSettingsDto> settingsQueue,
+    EventLogSettingsState settingsState,
     ILogger<EventLogExportManager> logger)
     : BackgroundService
 {
@@ -28,6 +29,7 @@ public class EventLogExportManager(
             try
             {
                 var settings = await settingsQueue.DequeueAsync(cancellationToken);
+                settingsState.Current = settings;
                 await InitFromSettings(settings, cancellationToken);
 
                 DisposeReaders();
@@ -54,6 +56,63 @@ public class EventLogExportManager(
                 logger.LogError(e, "Ошибка обработки новых настроек экспорта журнала регистрации");
             }
         }
+    }
+
+    // Позволяет EventLogReductionService на время получить монопольный доступ к файлам журнала:
+    // читатель снимается с сопровождения (не запуская OnReaderStopped/перезапуск) на время action,
+    // а затем поднимается заново с позиции, подтверждённой репозиторием - так же, как при обычном
+    // старте/перезапуске чтения.
+    public async Task<bool> RunExclusiveAsync(string infoBaseId, Func<InfoBaseInfo, Task> action,
+        CancellationToken cancellationToken)
+    {
+        BracketsEventLogReader? reader;
+
+        lock (_readersLock)
+        {
+            reader = _readers.FirstOrDefault(c => c.InfoBaseInfo.InfoBaseId == infoBaseId);
+
+            if (reader != null)
+                _readers.Remove(reader);
+        }
+
+        if (reader is null)
+            return false;
+
+        var infoBaseInfo = reader.InfoBaseInfo;
+        reader.Dispose();
+
+        try
+        {
+            await action(infoBaseInfo);
+        }
+        finally
+        {
+            var cts = _cts;
+
+            if (cts is { IsCancellationRequested: false })
+            {
+                // Пока action выполнялся, могли прийти новые настройки и уже поднять свежий
+                // читатель для этой же ИБ (settingsQueue обработан параллельно с этим методом) -
+                // тогда поднимать еще один не нужно, иначе получим два читателя одного файла.
+                bool alreadyRestarted;
+                lock (_readersLock)
+                {
+                    alreadyRestarted = _readers.Any(c => c.InfoBaseInfo.InfoBaseId == infoBaseInfo.InfoBaseId);
+                }
+
+                // ...а могли и выключить экспорт по этой ИБ - тогда воскрешать читателя для нее не нужно.
+                var stillActive = _settings is { Enabled: true } &&
+                    _settings.Items.Any(c => c.IsActive && c.InfoBase.InfoBaseInternalId == infoBaseInfo.InfoBaseId);
+
+                if (!alreadyRestarted && stillActive)
+                {
+                    var position = await exporter.GetLastEventDateTime(infoBaseInfo.InfoBaseId, cancellationToken);
+                    StartReader(infoBaseInfo, position);
+                }
+            }
+        }
+
+        return true;
     }
 
     private void StartReader(InfoBaseInfo infoBaseInfo, DateTime position)

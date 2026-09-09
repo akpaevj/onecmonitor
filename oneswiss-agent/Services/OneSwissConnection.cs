@@ -203,6 +203,11 @@ public class OneSwissConnection(
         await Send(MessageType.MaintenanceStepNodeLog, items, cancellationToken);
     }
 
+    public async Task SendEventLogReductionResult(EventLogReductionResultDto item, CancellationToken cancellationToken)
+    {
+        await Send(MessageType.EventLogReductionResult, item, cancellationToken);
+    }
+
     public async Task QueueCustomNotification(string key, string message,
         CancellationToken cancellationToken)
     {

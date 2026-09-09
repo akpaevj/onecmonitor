@@ -47,6 +47,13 @@ services:
       # Auth__OIDC__NameClaim: "preferred_username"
       # Auth__OIDC__DisplayNameClaim: "name"
 
+      # --- MCP (AI-ассистенты) ---
+      # Включает MCP-сервер (Model Context Protocol) для подключения AI-ассистентов - см. README.md,
+      # раздел "MCP-доступ для AI-ассистентов".
+      Mcp__Enabled: "false"
+      # Анонимизировать логин, имя компьютера и разделитель данных при анализе нагрузки сеансов через MCP.
+      # Mcp__AnonymizeSessionData: "false"
+
       # --- Reverse proxy ---
       # IP пограничного прокси (nginx/traefik/IIS и т.п.) перед этим контейнером, если он есть -
       # чтобы ASP.NET Core доверял его заголовкам X-Forwarded-For/X-Forwarded-Proto. Список

@@ -25,6 +25,9 @@ const initialForm: FormState = {
   credentialsId: null,
   infoBaseNameRegex: "",
   defaultTtl: 365,
+  reductionEnabled: false,
+  reductionHourUtc: 2,
+  reductionSafetyMarginHours: 24,
 };
 
 export default function EventLogPage() {
@@ -230,6 +233,51 @@ export default function EventLogPage() {
             </div>
           </div>
 
+          <div className="space-y-2 rounded-md border p-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={form.reductionEnabled}
+                onChange={(event) => setForm((prev) => ({ ...prev, reductionEnabled: event.target.checked }))}
+              />
+              Свёртка журнала регистрации источника
+            </label>
+            <div className="text-xs text-muted-foreground">
+              Периодически сокращает журнал регистрации на сервере 1С до даты, уже подтверждённо экспортированной в
+              oneswiss. Требует блокировки соединений на время операции - включайте только на базах, где это
+              приемлемо, и настройте окно на нерабочее время.
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-sm">Час запуска (UTC)</label>
+                <input
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={form.reductionHourUtc}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, reductionHourUtc: Number(event.target.value) || 0 }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm">Запас перед точкой экспорта, ч</label>
+                <input
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  type="number"
+                  min={0}
+                  value={form.reductionSafetyMarginHours}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, reductionSafetyMarginHours: Number(event.target.value) || 0 }))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="text-sm font-medium">Экспортируемые журналы</div>
@@ -243,13 +291,16 @@ export default function EventLogPage() {
                     <th className="px-3 py-2 font-medium">Информационная база</th>
                     <th className="px-3 py-2 font-medium">Активно</th>
                     <th className="px-3 py-2 font-medium">TTL</th>
+                    <th className="px-3 py-2 font-medium">Свёртка</th>
+                    <th className="px-3 py-2 font-medium">Хранить на источнике, дн.</th>
+                    <th className="px-3 py-2 font-medium">Сокращено до</th>
                     <th className="px-3 py-2 font-medium">Действия</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.length === 0 ? (
                     <tr>
-                      <td className="px-3 py-2 text-muted-foreground" colSpan={4}>
+                      <td className="px-3 py-2 text-muted-foreground" colSpan={7}>
                         Нет элементов
                       </td>
                     </tr>
@@ -288,6 +339,28 @@ export default function EventLogPage() {
                               value={item.ttl}
                               onChange={(event) => updateExportItem(index, { ttl: Number(event.target.value) || 0 })}
                             />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              type="checkbox"
+                              checked={item.reduceSourceLog}
+                              onChange={(event) => updateExportItem(index, { reduceSourceLog: event.target.checked })}
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              className="w-24 rounded-md border bg-background px-2 py-1 text-sm"
+                              type="number"
+                              min={1}
+                              disabled={!item.reduceSourceLog}
+                              value={item.reduceKeepDays}
+                              onChange={(event) =>
+                                updateExportItem(index, { reduceKeepDays: Number(event.target.value) || 0 })
+                              }
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-xs text-muted-foreground">
+                            {item.lastReducedUpTo ? new Date(item.lastReducedUpTo).toLocaleString() : "—"}
                           </td>
                           <td className="px-3 py-2">
                             <Button type="button" variant="outline" size="sm" onClick={() => removeExportItem(index)}>

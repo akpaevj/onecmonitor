@@ -23,6 +23,10 @@ public class EventLogSettings : DatabaseObject
     public string InfoBaseNameRegex { get; set; } = string.Empty;
     public int DefaultTtl { get; set; } = 365;
 
+    public bool ReductionEnabled { get; set; }
+    public int ReductionHourUtc { get; set; } = 2;
+    public int ReductionSafetyMarginHours { get; set; } = 24;
+
     public Dbms? Dbms { get; set; }
     public Credentials? Credentials { get; set; }
 }

@@ -56,7 +56,10 @@ var host = Host.CreateDefaultBuilder(args)
         
         services.AddSingleton<EventLogExporter>();
         services.AddSingleton<MonitorQueue<EventLogSettingsDto>>();
-        services.AddHostedService<EventLogExportManager>();
+        services.AddSingleton<EventLogSettingsState>();
+        services.AddSingleton<EventLogExportManager>();
+        services.AddHostedService(sp => sp.GetRequiredService<EventLogExportManager>());
+        services.AddHostedService<EventLogReductionService>();
 
         services.AddSingleton<TechLogRepositoryManager>();
         services.AddSingleton<TechLogExporter>();

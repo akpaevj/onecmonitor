@@ -28,7 +28,8 @@ public class EventLogSettingsController(
         var exportItems = await dbContext.EventLogExportItems
             .AsNoTracking()
             .OrderBy(i => i.InfoBaseId)
-            .Select(i => new EventLogExportItemRequest(i.InfoBaseId, i.IsActive, i.Ttl))
+            .Select(i => new EventLogExportItemRequest(i.InfoBaseId, i.IsActive, i.Ttl, i.ReduceSourceLog,
+                i.ReduceKeepDays, i.LastReducedUpTo))
             .ToListAsync(cancellationToken);
 
         var dbmsItems = await dbContext.Dbms
@@ -58,7 +59,10 @@ public class EventLogSettingsController(
                 settings?.Table ?? string.Empty,
                 settings?.CredentialsId,
                 settings?.InfoBaseNameRegex ?? string.Empty,
-                settings?.DefaultTtl ?? 365),
+                settings?.DefaultTtl ?? 365,
+                settings?.ReductionEnabled ?? false,
+                settings?.ReductionHourUtc ?? 2,
+                settings?.ReductionSafetyMarginHours ?? 24),
             exportItems,
             dbmsItems,
             credentialsItems,
@@ -91,6 +95,9 @@ public class EventLogSettingsController(
         settings.CredentialsId = request.CredentialsId;
         settings.InfoBaseNameRegex = request.InfoBaseNameRegex.Trim();
         settings.DefaultTtl = request.DefaultTtl;
+        settings.ReductionEnabled = request.ReductionEnabled;
+        settings.ReductionHourUtc = request.ReductionHourUtc;
+        settings.ReductionSafetyMarginHours = request.ReductionSafetyMarginHours;
 
         var existingItems = await dbContext.EventLogExportItems.ToListAsync(cancellationToken);
         var requestItems = request.Items
@@ -104,6 +111,8 @@ public class EventLogSettingsController(
             {
                 existingItem.IsActive = requested.IsActive;
                 existingItem.Ttl = requested.Ttl;
+                existingItem.ReduceSourceLog = requested.ReduceSourceLog;
+                existingItem.ReduceKeepDays = requested.ReduceKeepDays;
                 requestItems.Remove(existingItem.InfoBaseId);
             }
             else
@@ -118,7 +127,9 @@ public class EventLogSettingsController(
             {
                 InfoBaseId = newItem.InfoBaseId,
                 IsActive = newItem.IsActive,
-                Ttl = newItem.Ttl
+                Ttl = newItem.Ttl,
+                ReduceSourceLog = newItem.ReduceSourceLog,
+                ReduceKeepDays = newItem.ReduceKeepDays
             });
         }
 
@@ -136,7 +147,10 @@ public class EventLogSettingsController(
             settings.Table,
             settings.CredentialsId,
             settings.InfoBaseNameRegex,
-            settings.DefaultTtl));
+            settings.DefaultTtl,
+            settings.ReductionEnabled,
+            settings.ReductionHourUtc,
+            settings.ReductionSafetyMarginHours));
     }
 
     private async Task InitEventLogTable(Models.EventLogSettings settings, CancellationToken cancellationToken)
@@ -163,6 +177,15 @@ public class EventLogSettingsController(
 
         if (request.Items.Any(i => i.Ttl <= 0))
             return BadRequest("TTL экспортируемых журналов должен быть больше 0");
+
+        if (request.Items.Any(i => i.ReduceSourceLog && i.ReduceKeepDays <= 0))
+            return BadRequest("Количество дней хранения журнала на источнике должно быть больше 0");
+
+        if (request.ReductionEnabled && (request.ReductionHourUtc < 0 || request.ReductionHourUtc > 23))
+            return BadRequest("Час запуска свёртки журнала должен быть в диапазоне 0-23");
+
+        if (request.ReductionEnabled && request.ReductionSafetyMarginHours < 0)
+            return BadRequest("Запас перед подтверждённой точкой экспорта не может быть отрицательным");
 
         var duplicatedInfoBases = request.Items
             .GroupBy(i => i.InfoBaseId)
@@ -241,6 +264,9 @@ public class EventLogSettingsController(
         Guid? CredentialsId,
         string InfoBaseNameRegex,
         int DefaultTtl,
+        bool ReductionEnabled,
+        int ReductionHourUtc,
+        int ReductionSafetyMarginHours,
         IReadOnlyList<EventLogExportItemRequest> Items);
 
     public sealed record EventLogSettingsResponse(
@@ -257,12 +283,18 @@ public class EventLogSettingsController(
         string Table,
         Guid? CredentialsId,
         string InfoBaseNameRegex,
-        int DefaultTtl);
+        int DefaultTtl,
+        bool ReductionEnabled,
+        int ReductionHourUtc,
+        int ReductionSafetyMarginHours);
 
     public sealed record EventLogExportItemRequest(
         Guid InfoBaseId,
         bool IsActive,
-        int Ttl);
+        int Ttl,
+        bool ReduceSourceLog,
+        int ReduceKeepDays,
+        DateTime? LastReducedUpTo);
 
     public sealed record LookupItem(
         Guid Id,

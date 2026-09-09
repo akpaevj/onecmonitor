@@ -66,6 +66,9 @@ public class AgentConnection : FastConnection
                     case MessageType.MaintenanceStepNodeLog:
                         await HandleMaintenanceStepLog(message, cancellationToken);
                         break;
+                    case MessageType.EventLogReductionResult:
+                        await HandleEventLogReductionResult(message, cancellationToken);
+                        break;
                     case MessageType.SettingsRequest:
                         await HandleSettingsRequest(message, cancellationToken);
                         break;
@@ -117,7 +120,8 @@ public class AgentConnection : FastConnection
         var eventLogExportItems =
             await dbContext.EventLogExportItems
                 .AsNoTracking()
-                .Include(c => c.InfoBase.Cluster)
+                .Include(c => c.InfoBase.Credentials)
+                .Include(c => c.InfoBase.Cluster).ThenInclude(c => c.Credentials)
                 .Where(c => c.InfoBase.Cluster.AgentId == AgentInstance!.Id)
                 .ToListAsync(cancellationToken);
         var eventLogSettingsDto = _mapper.Map<EventLogSettingsDto>(eventLogSettings);
@@ -577,6 +581,33 @@ public class AgentConnection : FastConnection
         {
             await SendOk(requestMessage, cancellationToken);
         }
+    }
+
+    private async Task HandleEventLogReductionResult(Message requestMessage, CancellationToken cancellationToken)
+    {
+        var result = ParseMessageData<EventLogReductionResultDto>(requestMessage.Data, cancellationToken);
+
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var item = await dbContext.EventLogExportItems
+            .FirstOrDefaultAsync(c => c.InfoBaseId == result.InfoBaseId, cancellationToken);
+
+        if (result.Success && result.ReducedUpTo != null)
+        {
+            if (item != null)
+            {
+                item.LastReducedUpTo = result.ReducedUpTo;
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
+        else
+        {
+            _logger.LogWarning("Ошибка свёртки журнала регистрации ИБ {InfoBaseId}: {Error}", result.InfoBaseId,
+                result.ErrorMessage);
+        }
+
+        await SendOk(requestMessage, cancellationToken);
     }
 
     private async Task SendFile(Message message, CancellationToken cancellationToken)

@@ -289,6 +289,31 @@ public sealed class OnecV8BatchMode : IDisposable
     }
 
     /// <summary>
+    ///     Сокращает журнал регистрации ИБ до указанной даты
+    /// </summary>
+    /// <param name="date">Дата, до которой будет сокращен журнал регистрации</param>
+    /// <param name="user">Пользователь ИБ</param>
+    /// <param name="password">Пароль пользователя ИБ</param>
+    /// <param name="accessCode">Код доступа монопольного режима, выданный при блокировке соединений</param>
+    /// <param name="saveAsPath">Путь к файлу, в который будут сохранены удаляемые записи журнала</param>
+    /// <param name="keepSplitting">Сохранить разделение журнала регистрации на файлы по периодам</param>
+    public async Task ReduceEventLogSize(DateTime date, string user, string password, string accessCode = "",
+        string? saveAsPath = null, bool keepSplitting = false, bool waitForExit = true)
+    {
+        AddBatchModeCommonArgs(user, password, accessCode);
+
+        _arguments.Add($"/ReduceEventLogSize{date:yyyy-MM-dd}");
+
+        if (!string.IsNullOrEmpty(saveAsPath))
+            _arguments.Add($"-saveAs\"{saveAsPath}\"");
+
+        if (keepSplitting)
+            _arguments.Add("-KeepSplitting");
+
+        await Start(waitForExit);
+    }
+
+    /// <summary>
     /// !!! Never call it while batch operation is running
     /// </summary>
     public void Stop()
