@@ -35,7 +35,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     eventLogEnabled: true,
   });
 
-  const isLoginPage = pathname === "/login" || pathname.startsWith("/login/");
+  const isLoginPage =
+    pathname === "/login" || pathname.startsWith("/login/") || pathname.startsWith("/oauth/");
 
   const toggleSidebarCollapsed = () => {
     setIsSidebarCollapsed((prev) => {

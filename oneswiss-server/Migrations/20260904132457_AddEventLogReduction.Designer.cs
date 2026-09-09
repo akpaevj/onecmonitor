@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OneSwiss.Server;
@@ -12,9 +13,11 @@ using OneSwiss.Server;
 namespace OneSwiss.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260904132457_AddEventLogReduction")]
+    partial class AddEventLogReduction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1054,72 +1057,6 @@ namespace OneSwiss.Server.Migrations
                     b.ToTable("NotificationRecipients");
                 });
 
-            modelBuilder.Entity("OneSwiss.Server.Models.OAuthAuthorizationCode", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ClientId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CodeChallenge")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CodeChallengeMethod")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CodeHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("RedirectUri")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Scope")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UsedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("OAuthAuthorizationCodes");
-                });
-
-            modelBuilder.Entity("OneSwiss.Server.Models.OAuthClient", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ClientName")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("RedirectUrisJson")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("OAuthClients");
-                });
-
             modelBuilder.Entity("OneSwiss.Server.Models.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1131,9 +1068,6 @@ namespace OneSwiss.Server.Migrations
 
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("OAuthClientId")
-                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("RevokedAtUtc")
                         .HasColumnType("timestamp with time zone");

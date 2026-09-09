@@ -16,6 +16,8 @@ public class BracketsEventLogReader(
     private readonly LgfDataProvider _lgfDataProvider = new(Path.Combine(infoBaseInfo.LogPath, "1Cv8.lgf"));
     private readonly HashSet<string> _invalidLgpFileNames = [];
 
+    public InfoBaseInfo InfoBaseInfo => infoBaseInfo;
+
     public event EventHandler? Stopped;
 
     public void Start(DateTime startDateTime, CancellationToken cancellationToken)

@@ -1,12 +1,15 @@
 using System.Net;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using AutoMapper;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Console;
+using ModelContextProtocol.AspNetCore;
 using OneSwiss.Common.DTO;
 using OneSwiss.Common.Services;
 using OneSwiss.Server;
@@ -14,6 +17,7 @@ using OneSwiss.Server.ApiControllers;
 using OneSwiss.Server.AutoMapper;
 using OneSwiss.Server.Extensions;
 using OneSwiss.Server.Hubs;
+using OneSwiss.Server.Mcp;
 using OneSwiss.Server.Services;
 using OneSwiss.Server.Services.CrServerProxy;
 
@@ -123,12 +127,41 @@ builder.Services.AddHostedService<NewConfigRepositoryVersionHandler>();
 
 builder.Services.AddHostedService<EventLogExportConnector>();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("oauth-register", context =>
+    {
+        var key = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        });
+    });
+});
+
+var mcpEnabled = builder.Configuration.GetValue("Mcp:Enabled", false);
+
+if (mcpEnabled)
+{
+    builder.Services.AddMcpServer()
+        .WithHttpTransport(options => { options.SessionMode = HttpServerSessionMode.Stateful; })
+        .AddAuthorizationFilters()
+        .WithTools<ErrorLoggingMcpTools>()
+        .WithTools<MaintenanceTasksMcpTools>()
+        .WithTools<SessionsMcpTools>();
+}
+
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+app.UseRateLimiter();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -154,6 +187,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+if (mcpEnabled)
+    app.MapMcp("/mcp").RequireAuthorization();
 
 app.MapHub<AgentConnectionsHub>("/agentsHub");
 app.MapHub<MaintenanceTaskLogHub>("/taskLogHub");

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { sanitizeReturnUrl } from "@/lib/auth/return-url";
 import { setSession } from "@/lib/auth/session";
 
 export default function LoginCallbackPage() {
@@ -15,7 +16,7 @@ export default function LoginCallbackPage() {
       const token = params.get("token");
       const expiresAtUtc = params.get("expiresAtUtc");
       const refreshToken = params.get("refreshToken");
-      const returnUrl = params.get("returnUrl") || "/";
+      const returnUrl = sanitizeReturnUrl(params.get("returnUrl"));
 
       if (!token || !expiresAtUtc || !refreshToken) {
         setError(true);

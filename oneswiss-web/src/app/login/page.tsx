@@ -6,6 +6,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { OneSwissLogo } from "@/components/layout/oneswiss-logo";
 import { buildExternalLoginUrl, getExternalProviders, login } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
+import { sanitizeReturnUrl } from "@/lib/auth/return-url";
 import { getAccessToken, setSession } from "@/lib/auth/session";
 
 const EXTERNAL_LOGIN_ERRORS: Record<string, string> = {
@@ -20,23 +21,27 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [externalProviderName, setExternalProviderName] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (getAccessToken()) {
-      router.replace("/");
-    }
-  }, [router]);
+  const [returnUrl, setReturnUrl] = useState("/");
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      const errorCode = new URLSearchParams(window.location.search).get("error");
+      const params = new URLSearchParams(window.location.search);
+
+      const errorCode = params.get("error");
       if (errorCode) {
         setError(EXTERNAL_LOGIN_ERRORS[errorCode] ?? "Не удалось выполнить вход");
+      }
+
+      const nextReturnUrl = sanitizeReturnUrl(params.get("returnUrl"));
+      setReturnUrl(nextReturnUrl);
+
+      if (getAccessToken()) {
+        router.replace(nextReturnUrl);
       }
     }, 0);
 
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     getExternalProviders()
@@ -45,8 +50,8 @@ export default function LoginPage() {
   }, []);
 
   const onSsoLogin = useCallback(() => {
-    window.location.href = buildExternalLoginUrl("/");
-  }, []);
+    window.location.href = buildExternalLoginUrl(returnUrl);
+  }, [returnUrl]);
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -61,7 +66,7 @@ export default function LoginPage() {
       });
 
       setSession(result.accessToken, result.expiresAtUtc, result.refreshToken);
-      router.replace("/");
+      router.replace(returnUrl);
     } catch (e) {
       if (e instanceof ApiError && typeof e.details === "string") {
         setError(e.details);

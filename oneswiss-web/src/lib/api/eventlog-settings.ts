@@ -9,6 +9,9 @@ export type EventLogExportItem = {
   infoBaseId: string;
   isActive: boolean;
   ttl: number;
+  reduceSourceLog: boolean;
+  reduceKeepDays: number;
+  lastReducedUpTo: string | null;
 };
 
 export type EventLogSettingsItem = {
@@ -19,6 +22,9 @@ export type EventLogSettingsItem = {
   credentialsId: string | null;
   infoBaseNameRegex: string;
   defaultTtl: number;
+  reductionEnabled: boolean;
+  reductionHourUtc: number;
+  reductionSafetyMarginHours: number;
 };
 
 export type EventLogSettingsResponse = {
@@ -37,6 +43,9 @@ export type SaveEventLogSettingsRequest = {
   credentialsId: string | null;
   infoBaseNameRegex: string;
   defaultTtl: number;
+  reductionEnabled: boolean;
+  reductionHourUtc: number;
+  reductionSafetyMarginHours: number;
   items: EventLogExportItem[];
 };
 
