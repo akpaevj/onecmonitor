@@ -108,6 +108,7 @@ public sealed class SessionsMcpTools(
         {
             var cluster = await dbContext.Clusters
                 .AsNoTracking()
+                .Include(c => c.Credentials)
                 .SingleOrDefaultAsync(c => c.Id == clusterId.Value, cancellationToken);
 
             if (cluster == null)
@@ -116,7 +117,7 @@ public sealed class SessionsMcpTools(
             return [cluster];
         }
 
-        return await dbContext.Clusters.AsNoTracking().ToListAsync(cancellationToken);
+        return await dbContext.Clusters.AsNoTracking().Include(c => c.Credentials).ToListAsync(cancellationToken);
     }
 
     private async Task<ClusterSessionsFetchResult> FetchClusterSessionsAsync(
@@ -134,6 +135,7 @@ public sealed class SessionsMcpTools(
             {
                 var infoBase = await dbContext.InfoBases
                     .AsNoTracking()
+                    .Include(i => i.Credentials)
                     .SingleOrDefaultAsync(i => i.Id == infoBaseId.Value && i.ClusterId == cluster.Id, cancellationToken);
 
                 if (infoBase == null)

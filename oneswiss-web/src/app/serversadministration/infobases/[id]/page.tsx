@@ -322,7 +322,8 @@ function V8Tab({ id }: { id: string }) {
             <label className="text-sm">Пароль пользователя БД</label>
             <input
               className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={item.dbPwd}
+              placeholder="********"
+              value={item.dbPwd ?? ""}
               onChange={(event) => setItem((prev) => (prev ? { ...prev, dbPwd: event.target.value } : prev))}
               disabled={isSaving}
             />

@@ -172,10 +172,7 @@ public class ServersAdministrationController(
         [FromQuery] Guid? infoBaseId = null,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .Include(c => c.Credentials)
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -308,10 +305,7 @@ public class ServersAdministrationController(
         [FromQuery] Guid? infoBaseId = null,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .Include(c => c.Credentials)
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -356,10 +350,7 @@ public class ServersAdministrationController(
         [FromQuery] Guid? infoBaseId = null,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .Include(c => c.Credentials)
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -451,9 +442,7 @@ public class ServersAdministrationController(
         if (request.SessionIds.Count == 0)
             return BadRequest("Не выбраны сеансы для завершения");
 
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -479,9 +468,7 @@ public class ServersAdministrationController(
         Guid clusterId,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -507,9 +494,7 @@ public class ServersAdministrationController(
         Guid clusterId,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -535,9 +520,7 @@ public class ServersAdministrationController(
         Guid clusterId,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -563,9 +546,7 @@ public class ServersAdministrationController(
         Guid clusterId,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -621,9 +602,7 @@ public class ServersAdministrationController(
         Guid clusterId,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -661,9 +640,7 @@ public class ServersAdministrationController(
         Guid clusterId,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -706,9 +683,7 @@ public class ServersAdministrationController(
         Guid clusterId,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -751,9 +726,7 @@ public class ServersAdministrationController(
         string serverId,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -787,9 +760,7 @@ public class ServersAdministrationController(
         string serverId,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -850,9 +821,7 @@ public class ServersAdministrationController(
         string processId,
         CancellationToken cancellationToken = default)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(clusterId, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -981,10 +950,7 @@ public class ServersAdministrationController(
     [Authorize(Roles = $"{Roles.ReadClusterItems},{Roles.WriteClusterItemsInfo}")]
     public async Task<ActionResult<V8ClusterDetailsItem>> GetClusterV8Details(Guid id, CancellationToken cancellationToken)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .Include(c => c.Credentials)
-            .SingleOrDefaultAsync(c => c.Id == id, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(id, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -1011,10 +977,7 @@ public class ServersAdministrationController(
         [FromBody] SaveV8ClusterDetailsRequest request,
         CancellationToken cancellationToken)
     {
-        var cluster = await dbContext.Clusters
-            .AsNoTracking()
-            .Include(c => c.Credentials)
-            .SingleOrDefaultAsync(c => c.Id == id, cancellationToken);
+        var cluster = await GetClusterWithCredentialsAsync(id, cancellationToken);
 
         if (cluster == null)
             return NotFound();
@@ -1026,7 +989,7 @@ public class ServersAdministrationController(
         try
         {
             var srcModel = await connection.GetV8ClusterDetails(cluster, cancellationToken);
-            var editedModel = request.ToModel();
+            var editedModel = request.ToModel(srcModel);
             var changedProperties = GetChangedRacParameters(srcModel, editedModel);
 
             if (changedProperties.Count > 0)
@@ -1155,6 +1118,16 @@ public class ServersAdministrationController(
             details.MaximumScheduledJobsStartShiftWithoutActiveUsers);
     }
 
+    // Every RAC call needs cluster.Credentials loaded, or it silently sends an empty user/password
+    // to rac - go through this helper instead of querying dbContext.Clusters directly.
+    private Task<Models.Cluster?> GetClusterWithCredentialsAsync(Guid clusterId, CancellationToken cancellationToken)
+    {
+        return dbContext.Clusters
+            .AsNoTracking()
+            .Include(c => c.Credentials)
+            .SingleOrDefaultAsync(c => c.Id == clusterId, cancellationToken);
+    }
+
     private static Dictionary<string, string> GetChangedRacParameters<T>(T srcModel, T editedModel)
         where T : class
     {
@@ -1170,7 +1143,10 @@ public class ServersAdministrationController(
             var srcValue = propertyInfo.GetValue(srcModel);
             var editedValue = propertyInfo.GetValue(editedModel);
 
-            if (srcValue?.Equals(editedValue) != false)
+            // srcValue can legitimately be null (e.g. DbPwd - rac never returns it), and
+            // "null?.Equals(x) != false" always short-circuits to true, silently dropping any
+            // real change from a null baseline. Equals(a, b) compares both nulls correctly.
+            if (Equals(srcValue, editedValue) || editedValue == null)
                 continue;
 
             if (propertyInfo.PropertyType == typeof(bool))
@@ -1547,11 +1523,23 @@ public class ServersAdministrationController(
         int PingPeriod,
         int PingTimeout)
     {
-        public V8ClusterDetails ToModel()
+        // GetChangedRacParameters diffs every [RacField] property on V8ClusterDetails, including
+        // ones this form never exposes (Host, Port, LifetimeLimit, MaxMemorySize,
+        // MaxMemoryTimeLimit, ErrorCountThreshold - inherited from V8Cluster). Starting from a copy
+        // of the freshly-fetched srcModel keeps those at their real value instead of the type's
+        // default (e.g. Port defaulting to 0 and being sent to rac as a bogus "--port=0" change).
+        public V8ClusterDetails ToModel(V8ClusterDetails srcModel)
         {
             return new V8ClusterDetails
             {
                 Id = Id,
+                Host = srcModel.Host,
+                Port = srcModel.Port,
+                LifetimeLimit = srcModel.LifetimeLimit,
+                MaxMemorySize = srcModel.MaxMemorySize,
+                MaxMemoryTimeLimit = srcModel.MaxMemoryTimeLimit,
+                ErrorCountThreshold = srcModel.ErrorCountThreshold,
+                RagentPort = srcModel.RagentPort,
                 Name = Name,
                 SecurityLevel = SecurityLevel,
                 AllowAccessRightAuditEventsRecording = AllowAccessRightAuditEventsRecording,
@@ -1576,7 +1564,7 @@ public class ServersAdministrationController(
         string DbServer,
         string DbName,
         string DbUser,
-        string DbPwd,
+        string? DbPwd,
         bool LicenseDistribution,
         bool SessionsDeny,
         bool ScheduledJobsDeny,
@@ -1604,7 +1592,7 @@ public class ServersAdministrationController(
         string DbServer,
         string DbName,
         string DbUser,
-        string DbPwd,
+        string? DbPwd,
         bool LicenseDistribution,
         bool SessionsDeny,
         bool ScheduledJobsDeny,

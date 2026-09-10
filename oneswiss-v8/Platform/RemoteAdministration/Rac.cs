@@ -190,12 +190,13 @@ public class Rac(ILogger<Rac> logger, V8Platform platform, string host = "localh
         return item;
     }
 
-    public async Task UpdateClusterParameters(string clusterId, Dictionary<string, string> parameters,
-        string clusterUser = "", string clusterPassword = "")
+    public async Task UpdateClusterParameters(string clusterId, Dictionary<string, string> parameters)
     {
+        // "cluster update" does not accept --cluster-user/--cluster-pwd at all (unlike "cluster info"/"remove");
+        // per rac's own help it takes --agent-user/--agent-pwd instead, which OneSwiss does not currently model.
         var parametersUpdateCommand = string.Join(' ', parameters.Select(c => $"--{c.Key}=\"{c.Value}\""));
         await StartRacAndGetOutput(
-            $"cluster update --cluster={clusterId} {parametersUpdateCommand} --cluster-user={Quote(clusterUser)} --cluster-pwd={Quote(clusterPassword)}",
+            $"cluster update --cluster={clusterId} {parametersUpdateCommand}",
             20);
     }
 

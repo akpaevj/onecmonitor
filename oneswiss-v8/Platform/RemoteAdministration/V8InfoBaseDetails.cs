@@ -77,5 +77,7 @@ public class V8InfoBaseDetails : V8InfoBase
     [RacField("maximum-scheduled-jobs-start-shift-without-active-users")]
     public int MaximumScheduledJobsStartShiftWithoutActiveUsers { get; set; }
 
-    [Key(25)] [RacField("db-pwd")] public string DbPwd { get; set; }
+    // rac never returns the DB password in "infobase info" output (security), so this stays null
+    // unless the operator explicitly types a new one to change it.
+    [Key(25)] [RacField("db-pwd")] public string? DbPwd { get; set; }
 }

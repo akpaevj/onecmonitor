@@ -346,7 +346,7 @@ export type V8InfoBaseDetailsItem = {
   dbServer: string;
   dbName: string;
   dbUser: string;
-  dbPwd: string;
+  dbPwd: string | null;
   licenseDistribution: boolean;
   sessionsDeny: boolean;
   scheduledJobsDeny: boolean;

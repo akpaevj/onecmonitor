@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# vendored assets restored by `npm install` (see scripts/copy-monaco-assets.mjs)
+/public/monaco-editor/
+
 # production
 /build
 

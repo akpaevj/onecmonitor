@@ -6,21 +6,28 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "node scripts/copy-monaco-assets.mjs"
   },
   "dependencies": {
     "@microsoft/signalr": "^8.0.7",
+    "@monaco-editor/react": "^4.7.0",
     "@projectstorm/react-diagrams": "^7.0.4",
+    "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.541.0",
-    "next": "16.3.0",
+    "next": "16.3.4",
     "next-themes": "^0.4.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "react-zoom-pan-pinch": "^4.2.0",
     "tailwind-merge": "^3.3.1"
+  },
+  "overrides": {
+    "dompurify": "^3.4.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -28,7 +35,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.0",
+    "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
