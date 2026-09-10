@@ -5,8 +5,8 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>OneSwiss.Server</RootNamespace>
-        <Version>0.5.4</Version>
-        <AssemblyVersion>0.5.4</AssemblyVersion>
+        <Version>0.5.5</Version>
+        <AssemblyVersion>0.5.5</AssemblyVersion>
         <ApplicationIcon>../icon.ico</ApplicationIcon>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
