@@ -5,12 +5,17 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+# scripts/ нужен уже здесь - postinstall (npm ci) копирует ассеты Monaco им
+COPY scripts ./scripts
 RUN npm ci
 
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Ассеты Monaco, сгенерированные postinstall'ом в deps - явно поверх COPY . ., чтобы сборка не
+# зависела от того, запускался ли npm install на хосте (public/monaco-editor - в .gitignore)
+COPY --from=deps /app/public/monaco-editor ./public/monaco-editor
 RUN npm run build
 
 FROM node:22-alpine AS runtime
